@@ -5,8 +5,8 @@ only work once the apps exist (Phase 0+).
 
 ## Prerequisites
 
-- Node.js 20+ and npm (or pnpm)
-- Docker + Docker Compose
+- Node.js 20+ and pnpm (`corepack enable` or `npm i -g pnpm`)
+- Docker + Docker Compose (Docker Desktop on macOS/Windows)
 - A modern browser
 
 ## 1. Clone & configure env
@@ -27,14 +27,18 @@ Set at least:
 ```
 LIVEKIT_API_KEY=devkey
 LIVEKIT_API_SECRET=<paste generated secret>
+LIVEKIT_KEYS=devkey: <paste the same generated secret>
 LIVEKIT_URL=ws://localhost:7880
 NEXT_PUBLIC_LIVEKIT_URL=ws://localhost:7880
 API_PORT=3001
 WEB_ORIGIN=http://localhost:3000
 ```
 
-> The same key/secret must appear in `infra/livekit.yaml` (server side) and in
-> `.env` (backend that signs tokens).
+> The key/secret lives in **one place** — `.env`. docker-compose injects
+> `LIVEKIT_KEYS` into the LiveKit server, and the backend signs tokens with
+> `LIVEKIT_API_KEY`/`LIVEKIT_API_SECRET`. Keep `LIVEKIT_KEYS` as
+> `"<key>: <secret>"` matching the other two. `infra/livekit.yaml` has no keys
+> block. See `docs/adr/0001-livekit-secret-single-source.md`.
 
 ## 2. Start LiveKit + Redis
 
@@ -48,13 +52,13 @@ LiveKit signaling/API is now on `http://localhost:7880`.
 ## 3. Install dependencies _(after scaffolding)_
 
 ```bash
-npm install        # from repo root (workspaces)
+pnpm install        # from repo root (workspaces)
 ```
 
 ## 4. Run the backend _(after scaffolding)_
 
 ```bash
-npm run start:dev --workspace apps/api
+pnpm dev:api        # NestJS in watch mode
 # verify:
 curl http://localhost:3001/health     # -> {"status":"ok"}
 ```
@@ -62,7 +66,7 @@ curl http://localhost:3001/health     # -> {"status":"ok"}
 ## 5. Run the frontend _(after scaffolding)_
 
 ```bash
-npm run dev --workspace apps/web
+pnpm dev:web        # Next.js dev server
 # open http://localhost:3000
 ```
 
@@ -78,8 +82,9 @@ npm run dev --workspace apps/web
   Use `localhost`, not a LAN IP, for local testing — or set up TLS.
 - **Connected but no audio/video:** the WebRTC UDP range / TURN isn't reachable.
   See the ports table in `docs/LIVEKIT_INTEGRATION.md`.
-- **401/invalid token:** API key/secret in `.env` and `infra/livekit.yaml` don't
-  match.
+- **401/invalid token:** ensure `LIVEKIT_KEYS` in `.env` is
+  `"<LIVEKIT_API_KEY>: <LIVEKIT_API_SECRET>"` and that you ran compose via
+  `pnpm infra:up` (which passes `--env-file .env`).
 - **LiveKit container won't start:** check `infra/livekit.yaml` syntax and that
   ports 7880/7881 aren't already in use.
 

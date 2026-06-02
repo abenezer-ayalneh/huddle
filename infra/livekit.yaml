@@ -1,27 +1,24 @@
 # LiveKit server config (local development).
 # Docs: https://docs.livekit.io
 #
-# IMPORTANT: the key/secret here must match LIVEKIT_API_KEY / LIVEKIT_API_SECRET
-# in your .env (the backend signs tokens with the same pair).
-# For production, generate a strong secret and do NOT commit it.
+# Credentials are NOT defined here. docker-compose injects them via the
+# LIVEKIT_KEYS env var, sourced from the repo-root .env, so the key/secret lives
+# in exactly one place. See docs/adr/0001-livekit-secret-single-source.md.
 
 port: 7880                 # HTTP / WebSocket signaling + API (TCP)
 
 rtc:
   tcp_port: 7881           # WebRTC over TCP (fallback)
-  port_range_start: 50000  # WebRTC media (UDP) start
-  port_range_end: 60000    # WebRTC media (UDP) end
+  port_range_start: 50000  # WebRTC media (UDP) start (must match docker-compose)
+  port_range_end: 50200    # WebRTC media (UDP) end   (narrowed for Docker Desktop)
   # On a server with a public IP behind NAT, set this so clients get the right
   # address. Leave commented for local dev.
   # use_external_ip: true
 
-# API keys: "key: secret". Keep in sync with .env.
-keys:
-  devkey: replace-with-a-long-random-secret
-
 # Redis is required for multi-node and recommended generally.
+# Reachable by docker-compose service name on the default bridge network.
 redis:
-  address: localhost:6379
+  address: redis:6379
 
 # Built-in TURN — helps clients behind restrictive NATs.
 # For local-only testing you can leave this disabled. Enable + add TLS for prod.

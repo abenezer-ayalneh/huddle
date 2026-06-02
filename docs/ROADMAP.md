@@ -5,11 +5,11 @@ with something you can actually use. The MVP is Phases 0–3.
 
 ## Phase 0 — Foundations
 
-- [ ] Init monorepo (npm/pnpm workspaces): `apps/web`, `apps/api`.
-- [ ] Scaffold Next.js app (`apps/web`, TypeScript, App Router).
-- [ ] Scaffold NestJS app (`apps/api`, TypeScript).
-- [ ] Bring up self-hosted LiveKit + Redis via `infra/docker-compose.yml`.
-- [ ] `.env` files from `.env.example`; confirm LiveKit reachable on :7880.
+- [x] Init monorepo (pnpm workspaces): `apps/web`, `apps/api`.
+- [x] Scaffold Next.js app (`apps/web`, TypeScript, App Router, Tailwind).
+- [x] Scaffold NestJS app (`apps/api`, TypeScript).
+- [x] Bring up self-hosted LiveKit + Redis via `infra/docker-compose.yml`.
+- [x] `.env` files from `.env.example`; confirm LiveKit reachable on :7880.
 - **Done when:** all three services start locally and the api `/health` responds.
 
 ## Phase 1 — Token + connect (thin slice)

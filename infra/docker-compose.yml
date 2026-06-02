@@ -1,41 +1,39 @@
 # Self-hosted LiveKit + Redis for local development.
-# Start:  docker compose -f infra/docker-compose.yml up -d
-# Stop:   docker compose -f infra/docker-compose.yml down
+# Start:  docker compose -f infra/docker-compose.yml up -d   (or: pnpm infra:up)
+# Stop:   docker compose -f infra/docker-compose.yml down     (or: pnpm infra:down)
 #
-# Note on networking: WebRTC media needs a UDP port range. host networking is
-# the simplest way to expose it on Linux. On macOS/Windows Docker Desktop,
-# host networking is limited — see the comment block below if media won't flow.
+# Networking: this file uses explicit port mapping (not host networking) so it
+# works on macOS/Windows Docker Desktop, where `network_mode: host` does NOT
+# forward the WebRTC UDP media range. The UDP range is deliberately narrowed
+# (50000-50200) so Docker Desktop starts quickly; it must match
+# rtc.port_range_start/end in livekit.yaml.
+#
+# Reads LIVEKIT_KEYS from the repo-root .env (single source of truth for the
+# API key/secret — see docs/adr/0001-livekit-secret-single-source.md).
 
 services:
   livekit:
     image: livekit/livekit-server:latest
     restart: unless-stopped
     command: --config /etc/livekit.yaml
-    # Easiest on Linux: host networking exposes the UDP media range directly.
-    network_mode: host
+    environment:
+      # LiveKit reads its API keys from this env var ("key: secret").
+      # Interpolated from the repo-root .env (single source of truth); no
+      # credentials live in livekit.yaml. Run compose from the repo root so
+      # the .env is picked up (the pnpm infra:* scripts do this).
+      LIVEKIT_KEYS: ${LIVEKIT_KEYS}
+    ports:
+      - "7880:7880"                      # signaling / API (TCP)
+      - "7881:7881"                      # WebRTC over TCP (fallback)
+      - "50000-50200:50000-50200/udp"    # WebRTC media (RTP/RTCP)
     volumes:
       - ./livekit.yaml:/etc/livekit.yaml:ro
     depends_on:
       - redis
 
-  # ---- macOS / Windows alternative ----
-  # Docker Desktop doesn't support `network_mode: host` for UDP the same way.
-  # Comment out `network_mode: host` above and use explicit port mapping instead:
-  #
-  #   ports:
-  #     - "7880:7880"            # signaling / API (TCP)
-  #     - "7881:7881"            # WebRTC over TCP (fallback)
-  #     - "50000-60000:50000-60000/udp"  # WebRTC media (RTP/RTCP)
-  #     - "3478:3478/udp"        # TURN
-  #
-  # A large UDP range can be slow to start on Docker Desktop; you can narrow the
-  # range in livekit.yaml (port_range_start/end) for local testing.
-
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    network_mode: host
-    # If not using host networking, expose Redis explicitly:
-    #   ports:
-    #     - "6379:6379"
+    ports:
+      - "6379:6379"
     command: redis-server --save 60 1 --loglevel warning
