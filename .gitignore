@@ -1,0 +1,33 @@
+# Env & secrets
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# Builds / output
+dist/
+build/
+.next/
+out/
+coverage/
+
+# Caches
+.turbo/
+.cache/
+*.tsbuildinfo
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# LiveKit / infra runtime data
+infra/data/
+*.log

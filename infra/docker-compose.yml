@@ -1,0 +1,41 @@
+# Self-hosted LiveKit + Redis for local development.
+# Start:  docker compose -f infra/docker-compose.yml up -d
+# Stop:   docker compose -f infra/docker-compose.yml down
+#
+# Note on networking: WebRTC media needs a UDP port range. host networking is
+# the simplest way to expose it on Linux. On macOS/Windows Docker Desktop,
+# host networking is limited — see the comment block below if media won't flow.
+
+services:
+  livekit:
+    image: livekit/livekit-server:latest
+    restart: unless-stopped
+    command: --config /etc/livekit.yaml
+    # Easiest on Linux: host networking exposes the UDP media range directly.
+    network_mode: host
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml:ro
+    depends_on:
+      - redis
+
+  # ---- macOS / Windows alternative ----
+  # Docker Desktop doesn't support `network_mode: host` for UDP the same way.
+  # Comment out `network_mode: host` above and use explicit port mapping instead:
+  #
+  #   ports:
+  #     - "7880:7880"            # signaling / API (TCP)
+  #     - "7881:7881"            # WebRTC over TCP (fallback)
+  #     - "50000-60000:50000-60000/udp"  # WebRTC media (RTP/RTCP)
+  #     - "3478:3478/udp"        # TURN
+  #
+  # A large UDP range can be slow to start on Docker Desktop; you can narrow the
+  # range in livekit.yaml (port_range_start/end) for local testing.
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    network_mode: host
+    # If not using host networking, expose Redis explicitly:
+    #   ports:
+    #     - "6379:6379"
+    command: redis-server --save 60 1 --loglevel warning
