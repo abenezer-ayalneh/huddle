@@ -13,6 +13,14 @@
     "infra:up": "docker compose -f infra/docker-compose.yml --env-file .env up -d",
     "infra:down": "docker compose -f infra/docker-compose.yml --env-file .env down",
     "lint": "pnpm -r lint",
-    "build": "pnpm -r build"
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test": "pnpm -r --if-present test",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.7",
+    "prettier": "^3.8.3"
   }
 }
