@@ -16,17 +16,17 @@ web. No app install. No account required for the MVP (anonymous display name).
 
 ## 3. In scope (MVP)
 
-| # | Feature | Description |
-|---|---------|-------------|
-| F1 | Create / join room | User enters (or is given) a room name + display name and joins. Joining a non-existent room creates it. |
-| F2 | Camera & mic publish | On join, user can publish camera and microphone tracks. |
-| F3 | Subscribe to others | User sees/hears every other participant's tracks. |
-| F4 | Participant grid | Responsive grid of video tiles; shows name; handles 1–N participants. |
-| F5 | Mute / unmute audio | Toggle local microphone. State visible to others. |
-| F6 | Camera on / off | Toggle local camera. Shows avatar/placeholder when off. |
-| F7 | Device pre-join check | Before joining, pick camera/mic and see a self-preview. |
-| F8 | Leave call | Cleanly disconnect and return to the lobby. |
-| F9 | Connection state UI | Show connecting / reconnecting / disconnected states. |
+| #   | Feature               | Description                                                                                             |
+| --- | --------------------- | ------------------------------------------------------------------------------------------------------- |
+| F1  | Create / join room    | User enters (or is given) a room name + display name and joins. Joining a non-existent room creates it. |
+| F2  | Camera & mic publish  | On join, user can publish camera and microphone tracks.                                                 |
+| F3  | Subscribe to others   | User sees/hears every other participant's tracks.                                                       |
+| F4  | Participant grid      | Responsive grid of video tiles; shows name; handles 1–N participants.                                   |
+| F5  | Mute / unmute audio   | Toggle local microphone. State visible to others.                                                       |
+| F6  | Camera on / off       | Toggle local camera. Shows avatar/placeholder when off.                                                 |
+| F7  | Device pre-join check | Before joining, pick camera/mic and see a self-preview.                                                 |
+| F8  | Leave call            | Cleanly disconnect and return to the lobby.                                                             |
+| F9  | Connection state UI   | Show connecting / reconnecting / disconnected states.                                                   |
 
 ## 4. Explicitly out of scope (MVP — see ROADMAP for phase)
 
@@ -83,8 +83,11 @@ phone/SIP dial-in. None of these in the MVP.
 
 ## 9. Open questions (decide before/while building)
 
-- Room name strategy: free-text vs. generated codes (e.g. `abc-defg-hij`)?
+- ~~Room name strategy: free-text vs. generated codes?~~ **Decided (Phase 1):**
+  free-text room name entered in the lobby. Generated codes can come later.
+- ~~Anonymous-only, or a thin "host vs guest" distinction?~~ **Decided (Phase 1):**
+  anonymous only. Participant identity is generated client-side as
+  `<name-slug>-<random>` to stay unique within a room.
 - Do we cap participants in the MVP, or just document the practical limit?
-- Anonymous-only, or a thin "host vs guest" distinction even in MVP?
 
 Record decisions here as they're made.

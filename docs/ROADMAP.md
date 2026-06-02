@@ -14,10 +14,10 @@ with something you can actually use. The MVP is Phases 0–3.
 
 ## Phase 1 — Token + connect (thin slice)
 
-- [ ] `POST /token` in NestJS using `livekit-server-sdk` (see API_CONTRACT).
-- [ ] Frontend lobby: enter room + display name.
-- [ ] Frontend fetches a token and connects with `<LiveKitRoom>`.
-- [ ] Render `<VideoConference>` (prebuilt grid + controls).
+- [x] `POST /token` in NestJS using `livekit-server-sdk` (see API_CONTRACT).
+- [x] Frontend lobby: enter room + display name.
+- [x] Frontend fetches a token and connects with `<LiveKitRoom>`.
+- [x] Render `<VideoConference>` (prebuilt grid + controls).
 - **Done when:** one browser can join a room and see its own published video.
 
 ## Phase 2 — Multi-participant call (MVP core)
@@ -43,23 +43,29 @@ with something you can actually use. The MVP is Phases 0–3.
 ## Post-MVP (later — do not build until MVP ships)
 
 ### Phase 4 — Screen sharing
+
 Publish/stop a screen-share track; show it prominently in the grid.
 
 ### Phase 5 — In-call chat
+
 Text messages via LiveKit data channels; simple chat panel.
 
 ### Phase 6 — Host controls & rooms
+
 Webhook receiver, explicit room create/metadata, mute/remove participant,
 optional waiting room.
 
 ### Phase 7 — Accounts & scheduling
+
 Auth, persistent users, scheduled meetings (introduces a database — update
 ARCHITECTURE.md).
 
 ### Phase 8 — Recording
+
 LiveKit Egress to record/export sessions; storage target.
 
 ### Phase 9 — Scale & deploy hardening
+
 Multi-node LiveKit behind Redis + LB, TURN tuning, production TLS, observability,
 CI/CD.
 
