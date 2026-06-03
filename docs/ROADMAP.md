@@ -40,6 +40,7 @@ with something you can actually use. The MVP is Phases 0–3.
 > Note: the prebuilt control bar shows Screen-share and Chat buttons (Phase 4/5).
 > We deliberately leave them visible for the MVP rather than build a custom
 > control bar — they come free with `<VideoConference>`. Don't "fix" this.
+> (The Screen-share button is the Phase 4 control — see below.)
 
 ## Phase 3 — Polish the MVP
 
@@ -67,9 +68,24 @@ with something you can actually use. The MVP is Phases 0–3.
 
 ## Post-MVP (later — do not build until MVP ships)
 
-### Phase 4 — Screen sharing
+### Phase 4 — Screen sharing ✅ (delivered by the prebuilt component)
 
 Publish/stop a screen-share track; show it prominently in the grid.
+
+- [x] Publish / stop a screen-share track.
+- [x] Show the shared screen prominently.
+
+> Like Phase 2's multi-participant grid, this needs **no new feature code**: the
+> prebuilt `<VideoConference>` (already wired in `RoomClient.tsx`) ships a
+> screen-share toggle in its control bar (publish/stop) and **auto-focuses** the
+> screen-share track into the prominent focus layout when it starts. The token
+> grant already permits it (`canPublish: true`, no `canPublishSources`
+> restriction in `apps/api/src/token/token.service.ts`), so no backend change.
+>
+> Browsers gate `getDisplayMedia` behind a user gesture and the headless browser
+> can't capture a screen, so **acceptance is a manual test**: in the call, click
+> the Screen-share button, pick a window/tab, confirm the other participant sees
+> it focused, then stop and confirm it returns to the grid.
 
 ### Phase 5 — In-call chat
 
