@@ -29,6 +29,7 @@ LIVEKIT_API_KEY=devkey
 LIVEKIT_API_SECRET=<paste generated secret>
 LIVEKIT_KEYS=devkey: <paste the same generated secret>
 LIVEKIT_URL=ws://localhost:7880
+LIVEKIT_NODE_IP=<your LAN IP, e.g. 192.168.1.100>   # macOS: ipconfig getifaddr en0
 NEXT_PUBLIC_LIVEKIT_URL=ws://localhost:7880
 API_PORT=3001
 WEB_ORIGIN=http://localhost:3000
@@ -80,6 +81,12 @@ pnpm dev:web        # Next.js dev server
 
 - **Camera/mic blocked:** browsers only allow media on `https` or `localhost`.
   Use `localhost`, not a LAN IP, for local testing — or set up TLS.
+- **`could not establish pc connection` / connects then no media:** LiveKit is
+  advertising an unreachable ICE address. In Docker it defaults to its container
+  IP (172.x). Set `LIVEKIT_NODE_IP` in `.env` to your machine's LAN IP
+  (`ipconfig getifaddr en0` on macOS) and re-run `pnpm infra:up`. Confirm with:
+  `docker compose -f infra/docker-compose.yml logs livekit | grep "starting LiveKit"`
+  — `nodeIP` should be your LAN IP, not `172.x`.
 - **Connected but no audio/video:** the WebRTC UDP range / TURN isn't reachable.
   See the ports table in `docs/LIVEKIT_INTEGRATION.md`.
 - **401/invalid token:** ensure `LIVEKIT_KEYS` in `.env` is

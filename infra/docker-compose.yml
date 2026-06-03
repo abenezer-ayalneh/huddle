@@ -10,12 +10,18 @@
 #
 # Reads LIVEKIT_KEYS from the repo-root .env (single source of truth for the
 # API key/secret — see docs/adr/0001-livekit-secret-single-source.md).
+#
+# LIVEKIT_NODE_IP: the IP LiveKit advertises to browsers for WebRTC media.
+# Inside Docker's bridge network the server would otherwise advertise its
+# unreachable container IP (172.x), and ICE fails with "could not establish pc
+# connection". Set it in .env to your host's LAN IP (works for same-machine AND
+# other devices on the LAN). See docs/SETUP.md.
 
 services:
   livekit:
     image: livekit/livekit-server:latest
     restart: unless-stopped
-    command: --config /etc/livekit.yaml
+    command: --config /etc/livekit.yaml --node-ip ${LIVEKIT_NODE_IP}
     environment:
       # LiveKit reads its API keys from this env var ("key: secret").
       # Interpolated from the repo-root .env (single source of truth); no
@@ -23,9 +29,9 @@ services:
       # the .env is picked up (the pnpm infra:* scripts do this).
       LIVEKIT_KEYS: ${LIVEKIT_KEYS}
     ports:
-      - "7880:7880"                      # signaling / API (TCP)
-      - "7881:7881"                      # WebRTC over TCP (fallback)
-      - "50000-50200:50000-50200/udp"    # WebRTC media (RTP/RTCP)
+      - "7880:7880" # signaling / API (TCP)
+      - "7881:7881" # WebRTC over TCP (fallback)
+      - "50000-50200:50000-50200/udp" # WebRTC media (RTP/RTCP)
     volumes:
       - ./livekit.yaml:/etc/livekit.yaml:ro
     depends_on:
