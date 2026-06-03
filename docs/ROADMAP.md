@@ -43,13 +43,25 @@ with something you can actually use. The MVP is Phases 0–3.
 
 ## Phase 3 — Polish the MVP
 
-- [ ] Device pre-join screen with self-preview + device pickers (F7).
-- [ ] Connection-state UI: connecting / reconnecting / disconnected (F9).
-- [ ] Basic error handling (denied permissions, token failure, server down).
-- [ ] Responsive layout for mobile web.
-- [ ] Light pass on styling/branding.
+- [x] Device pre-join screen with self-preview + device pickers (F7).
+- [x] Connection-state UI: connecting / reconnecting / disconnected (F9).
+- [x] Basic error handling (denied permissions, token failure, server down).
+- [x] Responsive layout for mobile web.
+- [x] Light pass on styling/branding.
 - **Done when:** the full PRD MVP acceptance checklist passes against self-hosted
   LiveKit. **This is the MVP milestone.**
+
+> Implemented in `apps/web/src/app/rooms/[room]/RoomClient.tsx`: a three-step
+> flow — prebuilt `<PreJoin>` (self-preview + camera/mic pickers, F7) → token
+> fetch → `<LiveKitRoom>` publishing the chosen devices. `<ConnectionStateToast>`
+> surfaces connecting/reconnecting/disconnected (F9). Errors (denied
+> camera/mic via `PreJoin onError`, token/API failure via the fetch catch, lost
+> connection via `LiveKitRoom onError`) render a retry / back-to-lobby screen.
+> Pre-join, lobby, and the call grid use responsive layouts; `<PreJoin>` /
+> `<VideoConference>` come responsively styled from `@livekit/components-styles`.
+>
+> Live A/V acceptance remains a **manual two-window test** (headless browsers
+> can't establish WebRTC) — see `docs/SETUP.md`.
 
 ---
 
