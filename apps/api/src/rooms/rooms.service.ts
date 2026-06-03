@@ -64,6 +64,13 @@ export class RoomsService {
     return { knockId: knock.knockId };
   }
 
+  // Guest withdraws their request (cancelled before being admitted).
+  // Idempotent: returns ok whether or not the knock still existed.
+  cancelKnock(roomName: string, knockId: string): { ok: true } {
+    this.state.removeKnock(roomName, knockId);
+    return { ok: true };
+  }
+
   // Guest polls for the host's decision.
   knockStatus(roomName: string, knockId: string): KnockStatusResult {
     const knock = this.requireKnock(roomName, knockId);

@@ -86,6 +86,12 @@ export class RoomStateService {
     }
   }
 
+  // Withdraw a knock (guest cancelled). Idempotent — no-op if already gone.
+  removeKnock(room: string, knockId: string): void {
+    const knock = this.knocks.get(knockId);
+    if (knock && knock.room === room) this.knocks.delete(knockId);
+  }
+
   // Drop a room and all its knocks (called on the LiveKit room_finished webhook).
   removeRoom(name: string): void {
     this.rooms.delete(name);

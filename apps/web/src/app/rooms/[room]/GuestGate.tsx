@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, api } from "@/lib/api";
 import CallStage from "./CallStage";
 import { Centered } from "./ui";
@@ -81,6 +81,19 @@ export default function GuestGate({
     };
   }, [knockId, room]);
 
+  // Withdraw the pending knock before leaving, so the host stops seeing it.
+  // Best-effort: navigate home regardless of whether the request succeeds.
+  const cancel = useCallback(async () => {
+    if (knockId) {
+      try {
+        await api.cancelKnock(room, knockId);
+      } catch {
+        // ignore — the host can still deny a stale knock
+      }
+    }
+    onLeave();
+  }, [knockId, room, onLeave]);
+
   if (connection) {
     return (
       <CallStage
@@ -114,7 +127,7 @@ export default function GuestGate({
           : `Waiting for the host to let you in to “${room}”…`}
       </p>
       <button
-        onClick={onLeave}
+        onClick={cancel}
         className="rounded-md border border-black/15 px-4 py-2 text-sm dark:border-white/20"
       >
         Cancel

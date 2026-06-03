@@ -32,6 +32,12 @@ export class RoomsController {
     return this.rooms.knockStatus(room, knockId);
   }
 
+  // Guest withdraws their own pending request (knockId is the bearer).
+  @Delete(':room/knock/:knockId')
+  cancelKnock(@Param('room') room: string, @Param('knockId') knockId: string) {
+    return this.rooms.cancelKnock(room, knockId);
+  }
+
   // --- Host-only endpoints (x-host-key) ---
   @UseGuards(HostGuard)
   @Get(':room/knocks')

@@ -66,6 +66,11 @@ Guest polls for the host's decision. (Public — knockId is the bearer.)
 - `token`/`identity`/`livekitUrl` present only when `status = "admitted"`.
   **404** if the knock is unknown/expired.
 
+### DELETE /rooms/:room/knock/:knockId
+
+Guest withdraws their own pending request (knockId is the bearer). Idempotent.
+**Response 200:** `{ "ok": true }` whether or not the knock still existed.
+
 ### GET /rooms/:room/knocks _(host)_
 
 List pending knocks. Header `x-host-key` required.

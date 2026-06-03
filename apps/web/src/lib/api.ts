@@ -74,6 +74,12 @@ export const api = {
       `/rooms/${encodeURIComponent(room)}/knock/${knockId}`
     ),
 
+  cancelKnock: (room: string, knockId: string) =>
+    request<{ ok: true }>(
+      `/rooms/${encodeURIComponent(room)}/knock/${knockId}`,
+      { method: "DELETE" }
+    ),
+
   listKnocks: (room: string, hostKey: string) =>
     request<{ knocks: PendingKnock[] }>(
       `/rooms/${encodeURIComponent(room)}/knocks`,

@@ -35,6 +35,16 @@ describe('RoomStateService', () => {
     expect(state.getKnock('other', k.knockId)).toBeUndefined();
   });
 
+  it('removeKnock withdraws a pending knock', () => {
+    state.createRoom('standup', 'host-abc');
+    const k = state.addKnock('standup', 'Ada');
+    state.removeKnock('standup', k.knockId);
+    expect(state.getKnock('standup', k.knockId)).toBeUndefined();
+    expect(state.listPendingKnocks('standup')).toHaveLength(0);
+    // Idempotent — second call is a no-op, not an error.
+    expect(() => state.removeKnock('standup', k.knockId)).not.toThrow();
+  });
+
   it('removeRoom drops the room and its knocks', () => {
     state.createRoom('standup', 'host-abc');
     const k = state.addKnock('standup', 'Ada');
