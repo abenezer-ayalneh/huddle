@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ApiError, api } from "@/lib/api";
 import CallStage from "./CallStage";
 import { Centered } from "./ui";
@@ -23,55 +23,63 @@ export default function GuestGate({
   const [status, setStatus] = useState<"knocking" | "waiting" | "denied">(
     "knocking"
   );
+  const [knockId, setKnockId] = useState<string | null>(null);
   const [connection, setConnection] = useState<Connection | null>(null);
 
+  // Knock exactly once. A POST creates server-side state, so it must NOT fire
+  // twice — and React StrictMode (dev) intentionally double-invokes mount
+  // effects. A ref guard survives that double-invoke (same component instance).
+  const knockedRef = useRef(false);
   useEffect(() => {
-    let cancelled = false;
-    let timer: ReturnType<typeof setTimeout>;
+    if (knockedRef.current) return;
+    knockedRef.current = true;
 
-    async function start() {
-      let knockId: string;
+    (async () => {
       try {
-        ({ knockId } = await api.knock(room, displayName));
+        const res = await api.knock(room, displayName);
+        setKnockId(res.knockId);
+        setStatus("waiting");
       } catch (e) {
-        if (cancelled) return;
         if (e instanceof ApiError && e.status === 404) {
           onError("That room doesn't exist yet. Ask the host to create it.");
         } else {
           onError("Couldn't reach the server. Is the API running?");
         }
-        return;
       }
-      if (cancelled) return;
-      setStatus("waiting");
+    })();
+  }, [room, displayName, onError]);
 
-      // Poll the host's decision until admitted or denied.
-      async function poll() {
-        try {
-          const res = await api.knockStatus(room, knockId);
-          if (cancelled) return;
-          if (res.status === "admitted" && res.token && res.livekitUrl) {
-            setConnection({ token: res.token, livekitUrl: res.livekitUrl });
-            return;
-          }
-          if (res.status === "denied") {
-            setStatus("denied");
-            return;
-          }
-        } catch {
-          // Transient — keep waiting and retry.
+  // Poll the host's decision once we have a knock. Separate effect so its
+  // cleanup (clearing the timer) doesn't interfere with the one-shot knock.
+  useEffect(() => {
+    if (!knockId) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+
+    async function poll() {
+      try {
+        const res = await api.knockStatus(room, knockId!);
+        if (cancelled) return;
+        if (res.status === "admitted" && res.token && res.livekitUrl) {
+          setConnection({ token: res.token, livekitUrl: res.livekitUrl });
+          return;
         }
-        timer = setTimeout(poll, 2000);
+        if (res.status === "denied") {
+          setStatus("denied");
+          return;
+        }
+      } catch {
+        // Transient — keep waiting and retry.
       }
-      poll();
+      timer = setTimeout(poll, 2000);
     }
 
-    start();
+    poll();
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [room, displayName, onError]);
+  }, [knockId, room]);
 
   if (connection) {
     return (
