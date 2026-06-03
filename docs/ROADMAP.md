@@ -22,11 +22,24 @@ with something you can actually use. The MVP is Phases 0–3.
 
 ## Phase 2 — Multi-participant call (MVP core)
 
-- [ ] Two+ browsers join the same room and see/hear each other.
-- [ ] Participant grid updates on join/leave (F4).
-- [ ] Mute/unmute audio (F5) and camera on/off (F6), reflected to others.
-- [ ] Leave call returns to lobby cleanly (F8).
+- [x] Two+ browsers join the same room and see/hear each other.\*
+- [x] Participant grid updates on join/leave (F4).\*
+- [x] Mute/unmute audio (F5) and camera on/off (F6), reflected to others.\*
+- [x] Leave call returns to lobby cleanly (F8).
 - **Done when:** PRD acceptance criteria for a 2–3 person call pass.
+
+> Implemented via the prebuilt `<VideoConference>` (grid + control bar + audio
+> renderer) wired with `video audio connect` and `onDisconnected → lobby`.
+> Rooms create on demand (verified server-side).
+>
+> \*Items marked with an asterisk depend on live WebRTC media, which **cannot be
+> exercised in a headless/CI browser** (PeerConnection fails to establish). The
+> code path is complete and the UI renders; final A/V acceptance is a **manual
+> two-device test** — see `docs/SETUP.md` §"Smoke test a call".
+>
+> Note: the prebuilt control bar shows Screen-share and Chat buttons (Phase 4/5).
+> We deliberately leave them visible for the MVP rather than build a custom
+> control bar — they come free with `<VideoConference>`. Don't "fix" this.
 
 ## Phase 3 — Polish the MVP
 
