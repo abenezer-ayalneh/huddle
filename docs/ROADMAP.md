@@ -87,9 +87,26 @@ Publish/stop a screen-share track; show it prominently in the grid.
 > the Screen-share button, pick a window/tab, confirm the other participant sees
 > it focused, then stop and confirm it returns to the grid.
 
-### Phase 5 — In-call chat
+### Phase 5 — In-call chat ✅ (delivered by the prebuilt component)
 
 Text messages via LiveKit data channels; simple chat panel.
+
+- [x] Send/receive text messages over the LiveKit data channel.
+- [x] Simple chat panel toggled from the control bar.
+
+> Like Phases 2 and 4, the UI needs **no new feature code**: `<VideoConference>`
+> ships a Chat toggle in its control bar and a `.lk-chat` panel (message list +
+> input form) whose sends ride LiveKit's data channel (`useChat` →
+> `publishData` / text streams).
+>
+> One backend change was required: chat rides the data channel, which is gated by
+> the `canPublishData` grant. We now set it explicitly in
+> `apps/api/src/token/token.service.ts` (the server defaults it to true, but the
+> grant is our single source of truth for participant capabilities).
+>
+> The data channel rides the same WebRTC connection, so the headless browser
+> can't exercise it — **acceptance is a manual test**: open the chat panel in two
+> windows, send a message from each, confirm both see it.
 
 ### Phase 6 — Host controls & rooms
 

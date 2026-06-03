@@ -34,6 +34,10 @@ export class TokenService {
       room,
       canPublish: true,
       canSubscribe: true,
+      // Explicitly allow data-channel messages so in-call chat works (Phase 5).
+      // The server defaults this to true, but we set it so the grant is the
+      // single source of truth for what a participant may do.
+      canPublishData: true,
     });
 
     return { token: await at.toJwt(), livekitUrl };
