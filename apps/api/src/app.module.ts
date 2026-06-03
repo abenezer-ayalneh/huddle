@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { HealthController } from './health/health.controller';
-import { TokenModule } from './token/token.module';
+import { RoomsModule } from './rooms/rooms.module';
 
 @Module({
   imports: [
@@ -14,7 +14,7 @@ import { TokenModule } from './token/token.module';
       isGlobal: true,
       envFilePath: join(__dirname, '..', '..', '..', '.env'),
     }),
-    TokenModule,
+    RoomsModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],

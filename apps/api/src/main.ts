@@ -3,7 +3,8 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // rawBody is needed to verify LiveKit webhook signatures (raw bytes).
+  const app = await NestFactory.create(AppModule, { rawBody: true });
 
   // Validate and strip request bodies; reject unknown fields so the client
   // can never smuggle in grant fields (see docs/API_CONTRACT.md).

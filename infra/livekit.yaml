@@ -5,12 +5,12 @@
 # LIVEKIT_KEYS env var, sourced from the repo-root .env, so the key/secret lives
 # in exactly one place. See docs/adr/0001-livekit-secret-single-source.md.
 
-port: 7880                 # HTTP / WebSocket signaling + API (TCP)
+port: 7880 # HTTP / WebSocket signaling + API (TCP)
 
 rtc:
-  tcp_port: 7881           # WebRTC over TCP (fallback)
-  port_range_start: 50000  # WebRTC media (UDP) start (must match docker-compose)
-  port_range_end: 50200    # WebRTC media (UDP) end   (narrowed for Docker Desktop)
+  tcp_port: 7881 # WebRTC over TCP (fallback)
+  port_range_start: 50000 # WebRTC media (UDP) start (must match docker-compose)
+  port_range_end: 50200 # WebRTC media (UDP) end   (narrowed for Docker Desktop)
   # On a server with a public IP behind NAT, set this so clients get the right
   # address. Leave commented for local dev.
   # use_external_ip: true
@@ -27,6 +27,16 @@ turn:
   # udp_port: 3478
   # tls_port: 5349
   # domain: your-domain
+
+# Send room/participant events to the API (Phase 6 — drops in-memory room state
+# when a room ends). Signed with the key below; `api_key` is the key *id* (not
+# the secret) and must match LIVEKIT_API_KEY in .env (default: devkey).
+# host.docker.internal resolves to the host machine, where the API runs on :3001.
+# This is best-effort: if the API is down LiveKit just logs and calls continue.
+webhook:
+  api_key: devkey
+  urls:
+    - http://host.docker.internal:3001/livekit/webhook
 
 logging:
   level: info

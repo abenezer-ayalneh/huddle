@@ -8,10 +8,10 @@ export default async function RoomPage({
   searchParams,
 }: {
   params: Promise<{ room: string }>;
-  searchParams: Promise<{ name?: string }>;
+  searchParams: Promise<{ name?: string; role?: string }>;
 }) {
   const { room } = await params;
-  const { name } = await searchParams;
+  const { name, role } = await searchParams;
 
   const roomName = decodeURIComponent(room);
   const displayName = name?.trim();
@@ -21,5 +21,11 @@ export default async function RoomPage({
     redirect("/");
   }
 
-  return <RoomClient room={roomName} displayName={displayName} />;
+  return (
+    <RoomClient
+      room={roomName}
+      displayName={displayName}
+      role={role === "host" ? "host" : "guest"}
+    />
+  );
 }

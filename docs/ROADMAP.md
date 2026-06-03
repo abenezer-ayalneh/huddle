@@ -108,10 +108,33 @@ Text messages via LiveKit data channels; simple chat panel.
 > can't exercise it — **acceptance is a manual test**: open the chat panel in two
 > windows, send a message from each, confirm both see it.
 
-### Phase 6 — Host controls & rooms
+### Phase 6 — Host controls & rooms ✅
 
 Webhook receiver, explicit room create/metadata, mute/remove participant,
 optional waiting room.
+
+- [x] Explicit **create-room** flow (host) — `POST /rooms` mints a host token
+      (role=host metadata, roomAdmin grant) + a per-room `hostKey`.
+- [x] **Waiting room** — guests knock (`POST /rooms/:room/knock`) and poll;
+      host admits/denies. Guests can only join rooms a host created.
+- [x] **Mute** and **remove** a participant (host-only, `x-host-key` authorized).
+- [x] **Webhook receiver** (`POST /livekit/webhook`, signature-verified) — drops
+      a room's in-memory state on `room_finished`.
+
+> **Model change:** rooms are now **managed**. The Phase 1 public `POST /token`
+> was removed because it would let anyone bypass the waiting room; tokens are now
+> minted only by the managed-room flow. Host authority is enforced server-side
+> via `hostKey` (never trusted from the token's role claim).
+>
+> **State** lives in-memory in the API process (single-node). Moving it to Redis
+> is Phase 9 hardening. Backend: `apps/api/src/rooms/*`. Frontend: lobby
+> create-vs-join, `GuestGate` (knock/wait), `HostPanel` (admit/deny + mute/remove
+> overlay inside the call).
+>
+> Verified: the full create→knock→admit HTTP flow + host-auth (401/409/404) was
+> exercised against the live API and LiveKit, plus 14 unit tests. Live A/V parts
+> — mute/remove a real participant, the webhook firing, and the in-call host
+> panel — need a **manual two-window test**.
 
 ### Phase 7 — Accounts & scheduling
 

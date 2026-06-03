@@ -86,8 +86,10 @@ phone/SIP dial-in. None of these in the MVP.
 - ~~Room name strategy: free-text vs. generated codes?~~ **Decided (Phase 1):**
   free-text room name entered in the lobby. Generated codes can come later.
 - ~~Anonymous-only, or a thin "host vs guest" distinction?~~ **Decided (Phase 1):**
-  anonymous only. Participant identity is generated client-side as
-  `<name-slug>-<random>` to stay unique within a room.
+  anonymous only (MVP). **Revised (Phase 6):** still no accounts, but rooms are
+  now _managed_ — the creator is the **host** (holds a per-room `hostKey`) and
+  others are guests who must be admitted. Identity is now generated **server-side**
+  for managed rooms so guests can't spoof it.
 - Do we cap participants in the MVP, or just document the practical limit?
 
 Record decisions here as they're made.
