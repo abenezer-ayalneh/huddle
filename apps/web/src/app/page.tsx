@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ApiError, api, type RoomSummary } from "@/lib/api";
 import { signIn, signUp, signOut, useSession } from "@/lib/auth-client";
 import { saveHostSession } from "@/lib/hostSession";
+import RecordingControls from "./rooms/[room]/RecordingControls";
 
 // Lobby (Phase 7). Hosting now requires a signed-in account: sign in with an
 // email + password (or Google), then create or schedule a meeting and share its
@@ -341,6 +342,7 @@ function MeetingRow({
   onStart: () => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [showRecordings, setShowRecordings] = useState(false);
   const link =
     typeof window !== "undefined"
       ? `${window.location.origin}/rooms/${encodeURIComponent(room.room)}`
@@ -357,31 +359,48 @@ function MeetingRow({
   }
 
   return (
-    <li className="flex items-center justify-between gap-3 py-3">
-      <div className="min-w-0">
-        <p className="truncate font-medium">{room.title}</p>
-        <p className="text-xs text-black/50 dark:text-white/50">
-          {room.scheduledStart
-            ? new Date(room.scheduledStart).toLocaleString()
-            : "Anytime"}
-        </p>
+    <li className="py-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate font-medium">{room.title}</p>
+          <p className="text-xs text-black/50 dark:text-white/50">
+            {room.scheduledStart
+              ? new Date(room.scheduledStart).toLocaleString()
+              : "Anytime"}
+          </p>
+        </div>
+        <div className="flex shrink-0 gap-2">
+          <button
+            type="button"
+            onClick={() => setShowRecordings((v) => !v)}
+            className="rounded-md border border-black/15 px-3 py-1.5 text-sm dark:border-white/20"
+          >
+            {showRecordings ? "Hide" : "Recordings"}
+          </button>
+          <button
+            type="button"
+            onClick={copy}
+            className="rounded-md border border-black/15 px-3 py-1.5 text-sm dark:border-white/20"
+          >
+            {copied ? "Copied" : "Copy link"}
+          </button>
+          <button
+            type="button"
+            onClick={onStart}
+            className="rounded-md bg-black px-3 py-1.5 text-sm font-medium text-white dark:bg-white dark:text-black"
+          >
+            Start
+          </button>
+        </div>
       </div>
-      <div className="flex shrink-0 gap-2">
-        <button
-          type="button"
-          onClick={copy}
-          className="rounded-md border border-black/15 px-3 py-1.5 text-sm dark:border-white/20"
-        >
-          {copied ? "Copied" : "Copy link"}
-        </button>
-        <button
-          type="button"
-          onClick={onStart}
-          className="rounded-md bg-black px-3 py-1.5 text-sm font-medium text-white dark:bg-white dark:text-black"
-        >
-          Start
-        </button>
-      </div>
+
+      {showRecordings && (
+        // RecordingControls is styled for the dark in-call panel; wrap it in a
+        // dark surface so it reads well inside the light dashboard too.
+        <div className="mt-3 rounded-lg bg-black/85 p-3 text-white">
+          <RecordingControls room={room.room} hostKey={room.hostKey} />
+        </div>
+      )}
     </li>
   );
 }

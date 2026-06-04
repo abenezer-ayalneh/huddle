@@ -63,14 +63,25 @@ GOOGLE_CLIENT_SECRET=...
 > `"<key>: <secret>"` matching the other two. `infra/livekit.yaml` has no keys
 > block. See `docs/adr/0001-livekit-secret-single-source.md`.
 
-## 2. Start LiveKit + Redis + Postgres
+## 2. Start LiveKit + Redis + Postgres + MinIO + Egress
 
 ```bash
-docker compose -f infra/docker-compose.yml up -d
+pnpm infra:up                                      # or: docker compose -f infra/docker-compose.yml --env-file .env up -d
 docker compose -f infra/docker-compose.yml ps      # confirm all are up
 ```
 
-LiveKit signaling/API is on `http://localhost:7880`; Postgres on `localhost:5432`.
+LiveKit signaling/API is on `http://localhost:7880`; Postgres on `localhost:5432`;
+MinIO's S3 API on `http://localhost:9000` and its web console on
+`http://localhost:9001` (log in with `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD`).
+
+> **Recording services (Phase 8):** `egress` (records the composited room) and
+> `minio` (stores the MP4) join the stack. Egress needs the `${LIVEKIT_*}` vars,
+> so start it with `pnpm infra:up` (which passes `--env-file .env`) — a bare
+> `docker compose up` from the wrong directory won't interpolate them. The API
+> creates the `S3_BUCKET` automatically before the first recording. Egress
+> uploads via `S3_ENDPOINT_INTERNAL` (`minio:9000`); the API reads back via
+> `S3_ENDPOINT` (`localhost:9000`) — don't swap them. See
+> `docs/adr/0003-recording-egress-minio.md`.
 
 ## 3. Install dependencies _(after scaffolding)_
 

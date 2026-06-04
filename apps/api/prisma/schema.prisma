@@ -87,9 +87,33 @@ model Room {
   // only to the owner. Kept here so host authority survives an API restart.
   hostKey        String
   hostUserId     String
-  host           User      @relation(fields: [hostUserId], references: [id], onDelete: Cascade)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  host           User        @relation(fields: [hostUserId], references: [id], onDelete: Cascade)
+  recordings     Recording[]
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
   @@map("room")
+}
+
+// A room-composite recording (Phase 8). One row per egress job. The lifecycle
+// (starting → active → completed/failed) is driven by LiveKit Egress webhook
+// events; `objectKey` is the file's path in the S3/MinIO bucket.
+model Recording {
+  id         String    @id @default(cuid())
+  // LiveKit egress id; the webhook references the job by this.
+  egressId   String    @unique
+  roomId     String
+  room       Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  // starting | active | completed | failed | aborted
+  status     String    @default("starting")
+  // Path within the bucket; known at start time from the egress request.
+  objectKey  String
+  sizeBytes  BigInt?
+  durationMs Int?
+  error      String?
+  startedAt  DateTime  @default(now())
+  endedAt    DateTime?
+
+  @@index([roomId])
+  @@map("recording")
 }

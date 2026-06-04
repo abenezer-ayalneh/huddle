@@ -1,6 +1,7 @@
 import {
   Controller,
   HttpCode,
+  Logger,
   Post,
   Req,
   UnauthorizedException,
@@ -8,6 +9,7 @@ import {
 import type { RawBodyRequest } from '@nestjs/common';
 import type { Request } from 'express';
 import { LivekitService } from './livekit.service';
+import { RecordingsService } from './recordings.service';
 import { RoomsService } from './rooms.service';
 
 // Receives LiveKit server events. The body is signed with the API key; we
@@ -15,9 +17,12 @@ import { RoomsService } from './rooms.service';
 // (main.ts enables rawBody), since the signature covers the exact bytes.
 @Controller('livekit')
 export class WebhookController {
+  private readonly logger = new Logger(WebhookController.name);
+
   constructor(
     private readonly livekit: LivekitService,
     private readonly rooms: RoomsService,
+    private readonly recordings: RecordingsService,
   ) {}
 
   @Post('webhook')
@@ -27,12 +32,25 @@ export class WebhookController {
     let event;
     try {
       event = await this.livekit.receiveWebhook(raw, req.headers.authorization);
-    } catch {
+    } catch (err) {
+      // Log the reason (not the token) — the usual cause is an empty rawBody,
+      // which means the body parser didn't capture this content type.
+      this.logger.warn(
+        `webhook verify failed (rawLen=${raw.length}): ${String(err)}`,
+      );
       throw new UnauthorizedException('Invalid webhook signature');
     }
 
     if (event.event === 'room_finished' && event.room?.name) {
       this.rooms.onRoomFinished(event.room.name);
+    }
+
+    // Egress lifecycle (Phase 8): started / updated / ended carry the egressInfo
+    // we use to advance a recording's status and capture its file size/duration.
+    // If the room ends mid-recording, LiveKit stops egress and we learn the
+    // final state here, so room_finished needs no extra recording handling.
+    if (event.egressInfo) {
+      await this.recordings.handleEgressEvent(event.egressInfo);
     }
     return { received: true };
   }

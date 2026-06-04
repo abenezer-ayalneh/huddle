@@ -45,6 +45,19 @@ export type PendingKnock = {
   requestedAt: number;
 };
 
+// A room-composite recording (Phase 8).
+export type RecordingSummary = {
+  id: string;
+  status: "starting" | "active" | "completed" | "failed" | "aborted";
+  filename: string;
+  sizeBytes: number | null;
+  durationMs: number | null;
+  startedAt: string;
+  endedAt: string | null;
+  error: string | null;
+  downloadable: boolean;
+};
+
 class ApiError extends Error {
   constructor(
     public status: number,
@@ -150,6 +163,41 @@ export const api = {
       `/rooms/${encodeURIComponent(room)}/participants/${encodeURIComponent(identity)}`,
       { method: "DELETE", hostKey }
     ),
+
+  // --- Recording (host-only) ---
+  startRecording: (room: string, hostKey: string) =>
+    request<RecordingSummary>(`/rooms/${encodeURIComponent(room)}/recordings`, {
+      method: "POST",
+      hostKey,
+    }),
+
+  listRecordings: (room: string, hostKey: string) =>
+    request<{ recordings: RecordingSummary[] }>(
+      `/rooms/${encodeURIComponent(room)}/recordings`,
+      { hostKey }
+    ),
+
+  stopRecording: (room: string, id: string, hostKey: string) =>
+    request<RecordingSummary>(
+      `/rooms/${encodeURIComponent(room)}/recordings/${id}/stop`,
+      { method: "POST", hostKey }
+    ),
+
+  // The download is host-authorized (x-host-key), so it can't be a plain link —
+  // fetch it as a blob and let the caller trigger a save.
+  downloadRecording: async (
+    room: string,
+    id: string,
+    hostKey: string
+  ): Promise<Blob> => {
+    const res = await fetch(
+      `${API_URL}/rooms/${encodeURIComponent(room)}/recordings/${id}/download`,
+      { credentials: "include", headers: { "x-host-key": hostKey } }
+    );
+    if (!res.ok)
+      throw new ApiError(res.status, `Download failed (${res.status})`);
+    return res.blob();
+  },
 };
 
 export { ApiError };

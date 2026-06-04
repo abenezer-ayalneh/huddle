@@ -3,6 +3,7 @@
 import { useRemoteParticipants } from "@livekit/components-react";
 import { useCallback, useEffect, useState } from "react";
 import { api, type PendingKnock } from "@/lib/api";
+import RecordingControls from "./RecordingControls";
 
 // Host-only overlay: admit/deny waiting guests and mute/remove participants.
 // Rendered inside <LiveKitRoom>, so it can read the live participant list.
@@ -97,6 +98,13 @@ export default function HostPanel({
       </header>
 
       <div className="space-y-4 overflow-y-auto px-4 pb-4 text-sm">
+        <section>
+          <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-white/50">
+            Recording
+          </h3>
+          <RecordingControls room={room} hostKey={hostKey} />
+        </section>
+
         <section>
           <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-white/50">
             Waiting room

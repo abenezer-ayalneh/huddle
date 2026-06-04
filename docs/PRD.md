@@ -95,6 +95,10 @@ phone/SIP dial-in. None of these in the MVP.
   stable shareable link. Guests still need no account — they open the link and knock.
 - ~~Auth provider & database?~~ **Decided (Phase 7):** BetterAuth (local email +
   password, plus optional Google) + Postgres via Prisma. See `docs/ARCHITECTURE.md`.
+- ~~Recording: what, where, who?~~ **Decided (Phase 8):** **room-composite** MP4
+  via LiveKit Egress → **MinIO** (self-hosted S3) → **host-only manual** toggle
+  (`x-host-key`). Privacy note below is now scoped to Phases 0–7. See
+  `docs/adr/0003-recording-egress-minio.md`.
 - Do we cap participants in the MVP, or just document the practical limit?
 
 Record decisions here as they're made.

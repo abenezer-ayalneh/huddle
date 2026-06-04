@@ -77,7 +77,26 @@ only ever receives a scoped, expiring token.
   - `room` — a managed room: `slug` (unique; also the LiveKit room name),
     `title`, `scheduledStart?`, `hostKey` (per-room host capability), `hostUserId`
     (owner). Rooms now **survive an API restart**; knocks do not.
-- We still store **no media** — recording is Phase 8.
+  - `recording` (**Phase 8**) — one row per egress job: `egressId`, `roomId`,
+    `status` (`starting`→`active`→`completed`/`failed`), `objectKey` (path in the
+    S3 bucket), `sizeBytes?`, `durationMs?`. Lifecycle is webhook-driven.
+- Media is now stored too (Phase 8): recordings live in **MinIO** (S3-compatible
+  object store), not in Postgres — the DB only holds the recording metadata above.
+
+## Recording (Phase 8)
+
+- The host records the **composited room** (grid + mixed audio) to a single MP4
+  via LiveKit **Egress** (`startRoomCompositeEgress`). Egress runs as its own
+  container (bundled headless Chrome joins the room and composites it).
+- The file uploads to **MinIO** (`minio` container). The S3 target is built from
+  the **API's** env and passed to Egress per request, so the egress container
+  holds no storage creds. The API reaches MinIO on two endpoints: host-facing
+  (`S3_ENDPOINT`) to read files back for download, and the in-network one
+  (`S3_ENDPOINT_INTERNAL`, `minio:9000`) it hands to Egress for uploads.
+- **Authority:** recording is **host-only**, gated by `x-host-key` (same as
+  admit/mute/remove), not the session. Downloads are **proxied** through the
+  host-authorized API — bucket credentials never reach the browser. See
+  `docs/adr/0003-recording-egress-minio.md`.
 
 ## Accounts & auth (Phase 7)
 

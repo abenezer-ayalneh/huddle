@@ -162,9 +162,36 @@ Auth, persistent users, scheduled meetings (introduces a database).
 > Postgres-persisted room. Email/password sign-up + sign-in work end to end;
 > Google and live A/V need a **manual two-window test** (headless can't do WebRTC).
 
-### Phase 8 — Recording
+### Phase 8 — Recording ✅
 
 LiveKit Egress to record/export sessions; storage target.
+
+- [x] **Room-composite egress** — the host records the whole composited
+      meeting (grid + mixed audio) to a single MP4 (`apps/api/src/rooms/egress.service.ts`).
+- [x] **MinIO (S3) storage** — a self-hosted, S3-compatible store (`minio`
+      service in `infra/docker-compose.yml`); Egress uploads the file, the API
+      reads it back. The API ensures the bucket exists before recording.
+- [x] **Host-only manual toggle** — Record / Stop in the in-call host panel,
+      authorized by `x-host-key` (guests can't record). `POST/GET /rooms/:room/recordings`,
+      `POST /rooms/:room/recordings/:id/stop`, `GET …/:id/download`.
+- [x] **Egress webhook lifecycle** — the existing signed webhook now also
+      handles `egress_started/updated/ended`, advancing each recording's status
+      and capturing its file size/duration.
+- [x] **Download** — finished recordings are listed (in-call panel **and** the
+      host dashboard) and downloaded; the file is **proxied through the
+      host-authorized API**, so bucket credentials never reach the browser.
+
+> **Storage model:** a new `egress` (headless-Chrome compositor) and `minio`
+> service join the stack. The S3 upload target is built from the API's env and
+> handed to Egress **per request**, so the egress container holds no S3 creds.
+> The API talks to MinIO on two endpoints — host-facing (`localhost:9000`) for
+> reads, and the in-network one (`minio:9000`) it passes to Egress for uploads.
+> See `docs/adr/0003-recording-egress-minio.md`.
+>
+> Verified: the start → egress-webhook → completed → download round-trip against
+> live LiveKit Egress + MinIO, plus 6 unit tests. Recording real A/V content
+> still depends on a live two-window call (headless can't establish WebRTC), but
+> egress records the composited room regardless.
 
 ### Phase 9 — Scale & deploy hardening
 

@@ -44,6 +44,55 @@ services:
       - "6379:6379"
     command: redis-server --save 60 1 --loglevel warning
 
+  # LiveKit Egress records the composited room (Phase 8). It connects to the
+  # same Redis as livekit-server to receive jobs, joins the room as a headless
+  # Chrome client, and uploads the finished MP4 to MinIO (S3). The S3 upload
+  # target (bucket/endpoint/creds) is passed per-request by the API, so it lives
+  # in the API's env, not here. CAP_SYS_ADMIN is required for the bundled
+  # headless Chrome sandbox.
+  egress:
+    image: livekit/egress:latest
+    restart: unless-stopped
+    # Config is passed inline (not a committed file) so the API secret stays out
+    # of source — docker-compose interpolates ${LIVEKIT_*} from the repo-root
+    # .env, the same single-source pattern as LIVEKIT_KEYS. ws_url/redis use the
+    # compose service names (egress runs inside the bridge network).
+    environment:
+      EGRESS_CONFIG_BODY: |
+        redis:
+          address: redis:6379
+        ws_url: ws://livekit:7880
+        api_key: ${LIVEKIT_API_KEY}
+        api_secret: ${LIVEKIT_API_SECRET}
+        insecure: true
+        log_level: info
+    cap_add:
+      - CAP_SYS_ADMIN
+    depends_on:
+      - redis
+      - livekit
+
+  # MinIO is an S3-compatible object store; recordings land here. It keeps the
+  # app fully self-hosted/offline (no real AWS needed). Console on :9001, S3 API
+  # on :9000. The API ensures the bucket exists before starting a recording.
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-huddle}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-huddlehuddle}
+    ports:
+      - "9000:9000" # S3 API
+      - "9001:9001" # web console
+    volumes:
+      - huddle-minio:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   # Postgres backs accounts + persistent scheduled rooms (Phase 7). The API
   # connects via DATABASE_URL in the repo-root .env. Credentials are interpolated
   # from .env so they stay in one place; the named volume persists data across
@@ -67,3 +116,4 @@ services:
 
 volumes:
   huddle-postgres:
+  huddle-minio:

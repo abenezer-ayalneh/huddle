@@ -123,12 +123,38 @@ Force-mute/unmute a participant's microphone. Header `x-host-key`.
 
 Remove (kick) a participant. Header `x-host-key`. **Response 200:** `{ "ok": true }`.
 
+### POST /rooms/:room/recordings _(host)_
+
+Start a room-composite recording. Header `x-host-key`. One active recording per
+room → **409** if one is already running. **Response 200:** a `RecordingSummary`
+(`{ id, status, filename, sizeBytes, durationMs, startedAt, endedAt, error,
+downloadable }`) with `status: "starting"`.
+
+### GET /rooms/:room/recordings _(host)_
+
+List this room's recordings, newest first. Header `x-host-key`.
+**Response 200:** `{ "recordings": RecordingSummary[] }`.
+
+### POST /rooms/:room/recordings/:id/stop _(host)_
+
+Stop a running recording. Header `x-host-key`. **Response 200:** the updated
+`RecordingSummary`. The egress webhook finalises status shortly after.
+
+### GET /rooms/:room/recordings/:id/download _(host)_
+
+Stream the finished MP4 (`Content-Type: video/mp4`, `Content-Disposition:
+attachment`). Header `x-host-key` → so the browser fetches it as a blob, not a
+plain link. **409** if the recording isn't `completed` yet. The file is proxied
+from MinIO through the API; bucket credentials never reach the browser.
+
 ### POST /livekit/webhook
 
 Receive & verify LiveKit server events (signed with the API key). Verified with
 `WebhookReceiver`. On `room_finished`, the API drops that room's **ephemeral
-knocks** (the room record itself is persistent since Phase 7 and is kept).
-**Response 200** always (ack); invalid signatures → **401**.
+knocks** (the room record itself is persistent since Phase 7 and is kept). On
+`egress_started/updated/ended` (Phase 8) it advances the matching recording's
+status and captures the file's size/duration. **Response 200** always (ack);
+invalid signatures → **401**.
 
 **Host-auth failures** (missing/invalid `x-host-key`) → **401** on all _(host)_
 endpoints.

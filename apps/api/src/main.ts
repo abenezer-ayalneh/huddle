@@ -27,7 +27,12 @@ async function bootstrap() {
   const authHandler = toNodeHandler(auth);
 
   // JSON parser for our own routes; capture the raw bytes for the webhook.
+  // LiveKit sends webhooks as `application/webhook+json`, so we must accept that
+  // type too — otherwise the body isn't parsed, the `verify` hook never runs,
+  // `rawBody` stays empty, and the webhook signature check fails (sha256 of an
+  // empty body never matches). The raw bytes are required to verify the signature.
   const jsonParser = json({
+    type: ['application/json', 'application/webhook+json'],
     verify: (req: Request & { rawBody?: Buffer }, _res, buf) => {
       req.rawBody = buf;
     },
