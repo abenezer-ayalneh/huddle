@@ -12,6 +12,8 @@ Three independent pieces, plus Redis:
    routes audio/video between participants.
 4. **Redis** — required by LiveKit for state when running more than one node and
    for some features (and a sensible default even for a single node).
+5. **Postgres** (Phase 7) — persists user accounts and managed rooms (scheduled
+   meetings). The API talks to it via Prisma; auth tables are owned by BetterAuth.
 
 The browser talks to the **backend over HTTPS** (to get a token) and to the
 **LiveKit server over secure WebSocket + WebRTC** (for media). The backend talks
@@ -65,10 +67,38 @@ only ever receives a scoped, expiring token.
 
 ## Data & persistence
 
-- MVP stores **no media** and needs **no database**. Rooms are ephemeral; LiveKit
-  tracks live state in memory/Redis.
-- Add a database only when accounts, scheduling, or persistence land (later phase).
-  When that happens, document the schema here.
+- MVP stored **no media** and needed **no database**. Phases 6–7 changed this.
+- **Phase 6:** rooms became _managed_ — waiting-room knocks live in-memory in the
+  API process (ephemeral, single-node; Redis migration is Phase 9).
+- **Phase 7:** accounts and scheduled rooms persist in **Postgres** via **Prisma**
+  (`apps/api/prisma/schema.prisma`). Schema:
+  - `user`, `session`, `account`, `verification` — owned by **BetterAuth**
+    (created via Prisma migration; do not hand-edit their shape).
+  - `room` — a managed room: `slug` (unique; also the LiveKit room name),
+    `title`, `scheduledStart?`, `hostKey` (per-room host capability), `hostUserId`
+    (owner). Rooms now **survive an API restart**; knocks do not.
+- We still store **no media** — recording is Phase 8.
+
+## Accounts & auth (Phase 7)
+
+- **BetterAuth** is the auth system, mounted inside the NestJS API at
+  `/api/auth/*` (via `toNodeHandler`; see `apps/api/src/auth/auth.ts`).
+  better-auth is ESM-only, so it's loaded through a dynamic `import()` from the
+  CommonJS Nest app and built once, lazily (`getAuth()`).
+- Login is **social only**: Sign in with Google and Sign in with Apple. The Apple
+  "client secret" is a short-lived ES256 JWT minted at boot from the team key.
+- Two independent authorities, deliberately kept separate:
+  - **Session** (BetterAuth cookie) — "who is signed in". Required to _create_,
+    _list_, or _rejoin_ a room you own (`AuthGuard`). Read with `auth.api.getSession`.
+  - **Host key** (per-room secret, `x-host-key`) — "are you this room's host".
+    Authorizes in-call host actions (admit/deny/mute/remove) and is independent of
+    the session, so a guest is never trusted via the token's role claim
+    (`HostGuard`, now backed by the persisted room).
+- Cross-origin in dev: web is `:3000`, API is `:3001`. CORS runs with
+  `credentials: true` and the client sends `credentials: "include"` so the session
+  cookie travels. The auth routes read the raw request body, so body parsing is
+  configured per-route in `main.ts` (raw for `/api/auth`, JSON elsewhere — the
+  JSON parser also captures raw bytes for the LiveKit webhook signature).
 
 ## Scaling path (document now, build later)
 

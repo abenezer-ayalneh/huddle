@@ -1,0 +1,95 @@
+// Prisma schema for Huddle (Phase 7: accounts + persistent scheduled rooms).
+// The User/Session/Account/Verification models are the shape BetterAuth expects
+// (see docs/LIVEKIT_INTEGRATION.md / ARCHITECTURE.md). Room is our own model:
+// a managed room now persists in the DB so it survives an API restart and a
+// signed-in host can schedule it ahead of time.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- BetterAuth core models ---
+
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  rooms         Room[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("verification")
+}
+
+// --- Huddle managed rooms (persistent) ---
+
+model Room {
+  id             String    @id @default(cuid())
+  // URL-safe identifier; also the LiveKit room name.
+  slug           String    @unique
+  title          String
+  // When the meeting is scheduled to start; null means "start now".
+  scheduledStart DateTime?
+  // Per-room secret that authorizes in-call host actions (x-host-key). Returned
+  // only to the owner. Kept here so host authority survives an API restart.
+  hostKey        String
+  hostUserId     String
+  host           User      @relation(fields: [hostUserId], references: [id], onDelete: Cascade)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("room")
+}

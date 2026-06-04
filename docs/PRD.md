@@ -89,7 +89,12 @@ phone/SIP dial-in. None of these in the MVP.
   anonymous only (MVP). **Revised (Phase 6):** still no accounts, but rooms are
   now _managed_ — the creator is the **host** (holds a per-room `hostKey`) and
   others are guests who must be admitted. Identity is now generated **server-side**
-  for managed rooms so guests can't spoof it.
+  for managed rooms so guests can't spoof it. **Revised (Phase 7):** hosting now
+  requires a **signed-in account** (Sign in with Google / Apple via BetterAuth);
+  rooms **persist** in Postgres and can be **scheduled** with a start time and a
+  stable shareable link. Guests still need no account — they open the link and knock.
+- ~~Auth provider & database?~~ **Decided (Phase 7):** BetterAuth (social login:
+  Google + Apple) + Postgres via Prisma. See `docs/ARCHITECTURE.md`.
 - Do we cap participants in the MVP, or just document the practical limit?
 
 Record decisions here as they're made.

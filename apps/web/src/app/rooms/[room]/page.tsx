@@ -1,8 +1,8 @@
-import { redirect } from "next/navigation";
 import RoomClient from "./RoomClient";
 
 // Server component: unwrap the async route params/query (Next 16) and hand
-// the room + display name to the client connector.
+// the room + display name to the client connector. A guest may arrive via a
+// shared link with no name yet; RoomClient prompts for one in that case.
 export default async function RoomPage({
   params,
   searchParams,
@@ -14,12 +14,7 @@ export default async function RoomPage({
   const { name, role } = await searchParams;
 
   const roomName = decodeURIComponent(room);
-  const displayName = name?.trim();
-
-  // No display name means the lobby was bypassed — send them back.
-  if (!displayName) {
-    redirect("/");
-  }
+  const displayName = name?.trim() || undefined;
 
   return (
     <RoomClient

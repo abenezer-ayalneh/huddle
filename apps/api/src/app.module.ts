@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { HealthController } from './health/health.controller';
+import { PrismaModule } from './prisma/prisma.module';
 import { RoomsModule } from './rooms/rooms.module';
 
 @Module({
@@ -14,6 +15,7 @@ import { RoomsModule } from './rooms/rooms.module';
       isGlobal: true,
       envFilePath: join(__dirname, '..', '..', '..', '.env'),
     }),
+    PrismaModule,
     RoomsModule,
   ],
   controllers: [AppController, HealthController],

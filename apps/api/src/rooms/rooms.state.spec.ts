@@ -7,17 +7,7 @@ describe('RoomStateService', () => {
     state = new RoomStateService();
   });
 
-  it('creates a room with a host key and resolves the host', () => {
-    const room = state.createRoom('standup', 'host-abc');
-    expect(room.hostKey).toHaveLength(32); // 24 random bytes, base64url
-    expect(state.isHost('standup', room.hostKey)).toBe(true);
-    expect(state.isHost('standup', 'wrong')).toBe(false);
-    expect(state.isHost('standup', undefined)).toBe(false);
-    expect(state.isHost('other', room.hostKey)).toBe(false);
-  });
-
   it('tracks pending knocks and only lists pending ones', () => {
-    state.createRoom('standup', 'host-abc');
     const a = state.addKnock('standup', 'Ada');
     state.addKnock('standup', 'Bo');
 
@@ -36,7 +26,6 @@ describe('RoomStateService', () => {
   });
 
   it('removeKnock withdraws a pending knock', () => {
-    state.createRoom('standup', 'host-abc');
     const k = state.addKnock('standup', 'Ada');
     state.removeKnock('standup', k.knockId);
     expect(state.getKnock('standup', k.knockId)).toBeUndefined();
@@ -45,11 +34,11 @@ describe('RoomStateService', () => {
     expect(() => state.removeKnock('standup', k.knockId)).not.toThrow();
   });
 
-  it('removeRoom drops the room and its knocks', () => {
-    state.createRoom('standup', 'host-abc');
-    const k = state.addKnock('standup', 'Ada');
-    state.removeRoom('standup');
-    expect(state.getRoom('standup')).toBeUndefined();
-    expect(state.getKnock('standup', k.knockId)).toBeUndefined();
+  it('clearKnocks drops only the named room’s knocks', () => {
+    const a = state.addKnock('standup', 'Ada');
+    const b = state.addKnock('other', 'Bo');
+    state.clearKnocks('standup');
+    expect(state.getKnock('standup', a.knockId)).toBeUndefined();
+    expect(state.getKnock('other', b.knockId)).toBe(b);
   });
 });

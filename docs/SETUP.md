@@ -35,26 +35,64 @@ API_PORT=3001
 WEB_ORIGIN=http://localhost:3000
 ```
 
+For **Phase 7 (accounts + scheduling)** also set:
+
+```
+# Postgres (the docker-compose postgres service uses these)
+POSTGRES_USER=huddle
+POSTGRES_PASSWORD=huddle
+POSTGRES_DB=huddle
+DATABASE_URL=postgresql://huddle:huddle@localhost:5432/huddle?schema=public
+
+# BetterAuth
+BETTER_AUTH_SECRET=<openssl rand -hex 32>
+BETTER_AUTH_URL=http://localhost:3001
+NEXT_PUBLIC_AUTH_URL=http://localhost:3001
+
+# Social login (the app boots without these, but login needs them):
+#   Google: console.cloud.google.com → OAuth client; redirect
+#           http://localhost:3001/api/auth/callback/google
+#   Apple : a Services ID + a .p8 key (Team ID, Key ID). Apple disallows
+#           localhost — use a tunnel/HTTPS host to test Apple end-to-end.
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+APPLE_CLIENT_ID=...
+APPLE_TEAM_ID=...
+APPLE_KEY_ID=...
+APPLE_PRIVATE_KEY=...   # .p8 contents, newlines escaped as \n
+```
+
 > The key/secret lives in **one place** — `.env`. docker-compose injects
 > `LIVEKIT_KEYS` into the LiveKit server, and the backend signs tokens with
 > `LIVEKIT_API_KEY`/`LIVEKIT_API_SECRET`. Keep `LIVEKIT_KEYS` as
 > `"<key>: <secret>"` matching the other two. `infra/livekit.yaml` has no keys
 > block. See `docs/adr/0001-livekit-secret-single-source.md`.
 
-## 2. Start LiveKit + Redis
+## 2. Start LiveKit + Redis + Postgres
 
 ```bash
 docker compose -f infra/docker-compose.yml up -d
-docker compose -f infra/docker-compose.yml ps      # confirm both are up
+docker compose -f infra/docker-compose.yml ps      # confirm all are up
 ```
 
-LiveKit signaling/API is now on `http://localhost:7880`.
+LiveKit signaling/API is on `http://localhost:7880`; Postgres on `localhost:5432`.
 
 ## 3. Install dependencies _(after scaffolding)_
 
 ```bash
 pnpm install        # from repo root (workspaces)
 ```
+
+## 3b. Apply database migrations (Phase 7)
+
+```bash
+pnpm --filter @huddle/api prisma:deploy   # apply migrations to Postgres
+pnpm --filter @huddle/api prisma:generate # generate the Prisma client
+```
+
+> The Prisma scripts load `DATABASE_URL` from the repo-root `.env` via
+> `dotenv-cli`. Use `prisma:migrate` (instead of `prisma:deploy`) when changing
+> the schema during development.
 
 ## 4. Run the backend _(after scaffolding)_
 
@@ -73,9 +111,11 @@ pnpm dev:web        # Next.js dev server
 
 ## 6. Smoke test a call
 
-1. Open `http://localhost:3000` in two browser windows (or two devices on the LAN).
-2. Join the **same room name** with different display names.
-3. You should see/hear both participants.
+1. Open `http://localhost:3000`. **Sign in** (Google/Apple) to host — needs the
+   social-login env above; without it the buttons render but can't complete.
+2. Create (or schedule) a meeting; copy its link.
+3. Open the link in a second window, enter a name, and **knock**.
+4. Back in the host window, **admit** the guest. You should see/hear both.
 
 ## Troubleshooting
 

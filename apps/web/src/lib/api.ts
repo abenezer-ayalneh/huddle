@@ -3,12 +3,31 @@
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
-export type CreateRoomResult = {
+// Host join: what a signed-in host needs to connect to LiveKit and run the
+// room. Returned by both create (new room) and host-token (rejoin own room).
+export type HostJoinResult = {
   room: string;
+  title: string;
+  scheduledStart: string | null;
   identity: string;
   token: string;
   hostKey: string;
   livekitUrl: string;
+};
+
+// A room the signed-in user hosts (includes the host key — they own it).
+export type RoomSummary = {
+  room: string;
+  title: string;
+  scheduledStart: string | null;
+  hostKey: string;
+  createdAt: string;
+};
+
+export type PublicRoom = {
+  room: string;
+  title: string;
+  scheduledStart: string | null;
 };
 
 export type KnockStatus = "pending" | "admitted" | "denied";
@@ -41,6 +60,9 @@ async function request<T>(
 ): Promise<T> {
   const { hostKey, headers, ...rest } = init ?? {};
   const res = await fetch(`${API_URL}${path}`, {
+    // Send the BetterAuth session cookie on cross-origin API calls (the auth
+    // routes that need a signed-in host depend on it).
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(hostKey ? { "x-host-key": hostKey } : {}),
@@ -57,11 +79,29 @@ async function request<T>(
 }
 
 export const api = {
-  createRoom: (room: string, name: string) =>
-    request<CreateRoomResult>("/rooms", {
+  // Signed-in host creates a (optionally scheduled) room. Auth via session cookie.
+  createRoom: (input: {
+    title: string;
+    slug?: string;
+    scheduledStart?: string;
+  }) =>
+    request<HostJoinResult>("/rooms", {
       method: "POST",
-      body: JSON.stringify({ room, name }),
+      body: JSON.stringify(input),
     }),
+
+  // Rooms the signed-in host owns.
+  listMine: () => request<{ rooms: RoomSummary[] }>("/rooms/mine"),
+
+  // Owner mints a fresh host token to (re)join their own room.
+  hostJoin: (room: string) =>
+    request<HostJoinResult>(`/rooms/${encodeURIComponent(room)}/host-token`, {
+      method: "POST",
+    }),
+
+  // Public info shown to a guest landing on a room link.
+  getPublicRoom: (room: string) =>
+    request<PublicRoom>(`/rooms/${encodeURIComponent(room)}`),
 
   knock: (room: string, name: string) =>
     request<{ knockId: string }>(`/rooms/${encodeURIComponent(room)}/knock`, {

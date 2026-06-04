@@ -43,3 +43,27 @@ services:
     ports:
       - "6379:6379"
     command: redis-server --save 60 1 --loglevel warning
+
+  # Postgres backs accounts + persistent scheduled rooms (Phase 7). The API
+  # connects via DATABASE_URL in the repo-root .env. Credentials are interpolated
+  # from .env so they stay in one place; the named volume persists data across
+  # `infra:down`/`infra:up`.
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-huddle}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-huddle}
+      POSTGRES_DB: ${POSTGRES_DB:-huddle}
+    ports:
+      - "5432:5432"
+    volumes:
+      - huddle-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-huddle}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  huddle-postgres:

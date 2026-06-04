@@ -136,10 +136,31 @@ optional waiting room.
 > — mute/remove a real participant, the webhook firing, and the in-call host
 > panel — need a **manual two-window test**.
 
-### Phase 7 — Accounts & scheduling
+### Phase 7 — Accounts & scheduling ✅
 
-Auth, persistent users, scheduled meetings (introduces a database — update
-ARCHITECTURE.md).
+Auth, persistent users, scheduled meetings (introduces a database).
+
+- [x] **Postgres + Prisma** added (`infra/docker-compose.yml`, `apps/api/prisma`).
+- [x] **BetterAuth** mounted in the API at `/api/auth/*`; **Sign in with Google
+      and Apple** (social only). Session gates room create/list/rejoin.
+- [x] **Persistent managed rooms**: a signed-in host creates a room with a title
+      and optional **scheduled start**; it gets a stable shareable link and
+      **survives an API restart** (was in-memory in Phase 6). Knocks stay
+      ephemeral.
+- [x] Lobby is now a host dashboard (create/schedule + "your meetings"). Guests
+      open the shared link and enter a name to knock — **no account needed**.
+
+> **Auth model:** two separate authorities — the BetterAuth **session** ("who is
+> signed in", required to own/create rooms) and the per-room **host key** ("are
+> you this room's host", authorizes in-call admit/mute/remove). See
+> `docs/ARCHITECTURE.md` → _Accounts & auth_. better-auth is ESM-only and is
+> loaded via dynamic `import()` from the CommonJS Nest app.
+>
+> Verified: API boots with auth mounted (`/api/auth/get-session` responds), auth
+> guards return 401, and the **full guest path** (shared link → name → knock →
+> host sees it via `x-host-key`, wrong key → 401) was exercised against a
+> Postgres-persisted room. The OAuth round-trip and live A/V need real Google/
+> Apple credentials + a **manual two-window test** (headless can't do WebRTC).
 
 ### Phase 8 — Recording
 

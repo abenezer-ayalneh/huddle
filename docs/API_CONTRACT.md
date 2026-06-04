@@ -38,16 +38,44 @@ moving it to Redis is Phase 9 hardening.
 > frontend can show host UI. Authority for admin actions is **never** trusted from
 > that claim — it is enforced server-side via `hostKey`.
 
-### POST /rooms
+### POST /rooms _(updated in Phase 7 — now requires a session)_
 
-Create a managed room and mint the host's token.
+Create a managed room and mint the host's token. **Requires a BetterAuth session**
+(see "Phase 7"); the signed-in user becomes the room's owner and host. The host's
+display name comes from the account, not the request.
 
-**Request body:** `{ "room": string(1..128), "name": string(1..128) }`
-**Response 201:** `{ "room", "identity", "token", "hostKey", "livekitUrl" }`
+**Request body:** `{ "title": string(1..128), "slug"?: string([a-zA-Z0-9-]),
+"scheduledStart"?: ISO-8601 }`
+**Response 201:** `{ "room", "title", "scheduledStart", "identity", "token", "hostKey", "livekitUrl" }`
 
+- `room` — the slug (URL + LiveKit room name); derived from `title` if `slug` omitted.
+- `scheduledStart` — `null` for "start now", else the ISO time.
 - `token` — host LiveKit JWT (grants incl. `roomAdmin: true`, metadata role=host).
 - `hostKey` — opaque secret; the client stores it and sends it as `x-host-key`.
-  **409** if the room already exists (pick another name).
+  **401** if not signed in. Slug collisions are resolved server-side (suffix), so
+  there is no 409 here anymore.
+
+### GET /rooms/mine _(session)_ — Phase 7
+
+List the rooms the signed-in user hosts. Requires a BetterAuth session.
+
+**Response 200:** `{ "rooms": [{ "room", "title", "scheduledStart", "hostKey", "createdAt" }] }`
+
+- Includes `hostKey` because the caller owns these rooms. **401** if not signed in.
+
+### POST /rooms/:room/host-token _(session)_ — Phase 7
+
+The owner mints a fresh host token to (re)join their own room (e.g. starting a
+scheduled meeting). Requires a session **and** ownership.
+
+**Response 200:** same shape as `POST /rooms`. **401** if not signed in; **403**
+if signed in but not the owner; **404** if the room doesn't exist.
+
+### GET /rooms/:room — Phase 7
+
+Public room info for a guest landing on a shared link. Does **not** leak the host key.
+
+**Response 200:** `{ "room", "title", "scheduledStart" }`. **404** if unknown.
 
 ### POST /rooms/:room/knock
 
@@ -98,13 +126,27 @@ Remove (kick) a participant. Header `x-host-key`. **Response 200:** `{ "ok": tru
 ### POST /livekit/webhook
 
 Receive & verify LiveKit server events (signed with the API key). Verified with
-`WebhookReceiver`. On `room_finished`, the API drops that room's in-memory state.
+`WebhookReceiver`. On `room_finished`, the API drops that room's **ephemeral
+knocks** (the room record itself is persistent since Phase 7 and is kept).
 **Response 200** always (ack); invalid signatures → **401**.
 
 **Host-auth failures** (missing/invalid `x-host-key`) → **401** on all _(host)_
 endpoints.
 
+## Phase 7 — Accounts & auth
+
+BetterAuth is mounted at **`/api/auth/*`** inside the same API (login, OAuth
+callbacks, session). The frontend uses the BetterAuth client (`better-auth/react`)
+rather than calling these by hand. Relevant for this contract:
+
+- Login is **social only** — Google and Apple. There is no email/password route.
+- `GET /api/auth/get-session` → the current session (or `null`).
+- The session is a cookie set on the API origin. Session-gated endpoints
+  (`POST /rooms`, `GET /rooms/mine`, `POST /rooms/:room/host-token`) read it; the
+  client must send `credentials: "include"`.
+
 ## CORS
 
-Allow the web app's origin (e.g. `http://localhost:3000` in dev) for the
-endpoints above. Keep the allowed-origins list in env/config.
+Allow the web app's origin (e.g. `http://localhost:3000` in dev) **with
+`credentials: true`** so the BetterAuth session cookie is sent on cross-origin
+calls. Keep the allowed-origins list in env/config (`WEB_ORIGIN`).

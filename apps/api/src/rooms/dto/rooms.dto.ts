@@ -1,15 +1,33 @@
-import { IsBoolean, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsISO8601,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class CreateRoomDto {
+  // Human-readable meeting title (also used to derive the room slug).
   @IsString()
   @MinLength(1)
   @MaxLength(128)
-  room!: string;
+  title!: string;
 
+  // Optional explicit URL slug; otherwise derived from the title server-side.
+  @IsOptional()
   @IsString()
-  @MinLength(1)
   @MaxLength(128)
-  name!: string;
+  @Matches(/^[a-zA-Z0-9-]+$/, {
+    message: 'slug may only contain letters, numbers and hyphens',
+  })
+  slug?: string;
+
+  // Optional ISO-8601 scheduled start time; omit for "start now".
+  @IsOptional()
+  @IsISO8601()
+  scheduledStart?: string;
 }
 
 export class KnockDto {
