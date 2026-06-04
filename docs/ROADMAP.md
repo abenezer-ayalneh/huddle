@@ -141,8 +141,8 @@ optional waiting room.
 Auth, persistent users, scheduled meetings (introduces a database).
 
 - [x] **Postgres + Prisma** added (`infra/docker-compose.yml`, `apps/api/prisma`).
-- [x] **BetterAuth** mounted in the API at `/api/auth/*`; **Sign in with Google
-      and Apple** (social only). Session gates room create/list/rejoin.
+- [x] **BetterAuth** mounted in the API at `/api/auth/*`; **local email +
+      password** login, plus optional Google. Session gates room create/list/rejoin.
 - [x] **Persistent managed rooms**: a signed-in host creates a room with a title
       and optional **scheduled start**; it gets a stable shareable link and
       **survives an API restart** (was in-memory in Phase 6). Knocks stay
@@ -159,8 +159,8 @@ Auth, persistent users, scheduled meetings (introduces a database).
 > Verified: API boots with auth mounted (`/api/auth/get-session` responds), auth
 > guards return 401, and the **full guest path** (shared link → name → knock →
 > host sees it via `x-host-key`, wrong key → 401) was exercised against a
-> Postgres-persisted room. The OAuth round-trip and live A/V need real Google/
-> Apple credentials + a **manual two-window test** (headless can't do WebRTC).
+> Postgres-persisted room. Email/password sign-up + sign-in work end to end;
+> Google and live A/V need a **manual two-window test** (headless can't do WebRTC).
 
 ### Phase 8 — Recording
 

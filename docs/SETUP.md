@@ -49,17 +49,12 @@ BETTER_AUTH_SECRET=<openssl rand -hex 32>
 BETTER_AUTH_URL=http://localhost:3001
 NEXT_PUBLIC_AUTH_URL=http://localhost:3001
 
-# Social login (the app boots without these, but login needs them):
-#   Google: console.cloud.google.com → OAuth client; redirect
-#           http://localhost:3001/api/auth/callback/google
-#   Apple : a Services ID + a .p8 key (Team ID, Key ID). Apple disallows
-#           localhost — use a tunnel/HTTPS host to test Apple end-to-end.
+# Login uses local email + password out of the box — no extra config needed.
+# Google login is OPTIONAL; set both to enable the "Continue with Google" button:
+#   console.cloud.google.com → OAuth client; redirect
+#   http://localhost:3001/api/auth/callback/google
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
-APPLE_CLIENT_ID=...
-APPLE_TEAM_ID=...
-APPLE_KEY_ID=...
-APPLE_PRIVATE_KEY=...   # .p8 contents, newlines escaped as \n
 ```
 
 > The key/secret lives in **one place** — `.env`. docker-compose injects
@@ -111,8 +106,8 @@ pnpm dev:web        # Next.js dev server
 
 ## 6. Smoke test a call
 
-1. Open `http://localhost:3000`. **Sign in** (Google/Apple) to host — needs the
-   social-login env above; without it the buttons render but can't complete.
+1. Open `http://localhost:3000`. **Create an account / sign in** (email +
+   password, or Google if configured) to host.
 2. Create (or schedule) a meeting; copy its link.
 3. Open the link in a second window, enter a name, and **knock**.
 4. Back in the host window, **admit** the guest. You should see/hear both.

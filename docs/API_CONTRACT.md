@@ -139,7 +139,9 @@ BetterAuth is mounted at **`/api/auth/*`** inside the same API (login, OAuth
 callbacks, session). The frontend uses the BetterAuth client (`better-auth/react`)
 rather than calling these by hand. Relevant for this contract:
 
-- Login is **social only** — Google and Apple. There is no email/password route.
+- Login is **local email + password** (sign-up + sign-in), with **Google** as an
+  optional social provider. The BetterAuth client wraps `POST /api/auth/sign-up/
+email`, `POST /api/auth/sign-in/email`, and `/api/auth/sign-in/social`.
 - `GET /api/auth/get-session` → the current session (or `null`).
 - The session is a cookie set on the API origin. Session-gated endpoints
   (`POST /rooms`, `GET /rooms/mine`, `POST /rooms/:room/host-token`) read it; the

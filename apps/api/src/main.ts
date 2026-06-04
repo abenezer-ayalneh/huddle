@@ -11,6 +11,14 @@ async function bootstrap() {
   // signature verification on ours.
   const app = await NestFactory.create(AppModule, { bodyParser: false });
 
+  // CORS must be registered FIRST so it handles the preflight OPTIONS (and adds
+  // headers) before our auth middleware terminates the response. credentials:true
+  // so the BetterAuth session cookie is sent on cross-origin fetches.
+  app.enableCors({
+    origin: process.env.WEB_ORIGIN ?? 'http://localhost:3000',
+    credentials: true,
+  });
+
   // Mount BetterAuth's handler on /api/auth/* (login, callbacks, session). It
   // must read the raw body itself, so it runs *before* express.json(). Loaded
   // via dynamic import because better-auth is ESM-only (see auth/auth.ts).
@@ -42,13 +50,6 @@ async function bootstrap() {
       transform: true,
     }),
   );
-
-  // Allow the web app's origin to call the API; credentials:true so the
-  // BetterAuth session cookie is sent on cross-origin fetches (see docs).
-  app.enableCors({
-    origin: process.env.WEB_ORIGIN ?? 'http://localhost:3000',
-    credentials: true,
-  });
 
   const port = process.env.API_PORT ?? 3001;
   await app.listen(port);

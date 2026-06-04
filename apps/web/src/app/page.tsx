@@ -3,12 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { ApiError, api, type RoomSummary } from "@/lib/api";
-import { signIn, signOut, useSession } from "@/lib/auth-client";
+import { signIn, signUp, signOut, useSession } from "@/lib/auth-client";
 import { saveHostSession } from "@/lib/hostSession";
 
-// Lobby (Phase 7). Hosting now requires a signed-in account: sign in with
-// Google or Apple, then create or schedule a meeting and share its link.
-// Guests don't need an account — they open the shared link and knock.
+// Lobby (Phase 7). Hosting now requires a signed-in account: sign in with an
+// email + password (or Google), then create or schedule a meeting and share its
+// link. Guests don't need an account — they open the shared link and knock.
 export default function Lobby() {
   const { data: session, isPending } = useSession();
 
@@ -47,15 +47,112 @@ function Shell({ children }: { children: React.ReactNode }) {
 function SignIn() {
   const callbackURL =
     typeof window !== "undefined" ? window.location.origin : undefined;
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const canSubmit =
+    email.trim() &&
+    password.length >= 8 &&
+    (mode === "signin" || name.trim()) &&
+    !busy;
+
+  async function submit() {
+    if (!canSubmit) return;
+    setBusy(true);
+    setError(null);
+    const result =
+      mode === "signup"
+        ? await signUp.email({
+            name: name.trim(),
+            email: email.trim(),
+            password,
+          })
+        : await signIn.email({ email: email.trim(), password });
+    setBusy(false);
+    if (result.error) {
+      setError(
+        result.error.message ??
+          (mode === "signup"
+            ? "Couldn’t create that account."
+            : "Wrong email or password.")
+      );
+    }
+    // On success the session updates and the lobby re-renders to the dashboard.
+  }
+
   return (
     <div className="space-y-5">
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold">Huddle</h1>
         <p className="text-sm text-black/60 dark:text-white/60">
-          Sign in to host or schedule a meeting.
+          {mode === "signup"
+            ? "Create an account to host or schedule a meeting."
+            : "Sign in to host or schedule a meeting."}
         </p>
       </div>
-      <div className="space-y-3">
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+        className="space-y-3"
+      >
+        {mode === "signup" && (
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Display name"
+            autoComplete="name"
+            className="w-full rounded-md border border-black/15 px-3 py-2 outline-none focus:border-black/40 dark:border-white/20 dark:focus:border-white/50"
+          />
+        )}
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
+          autoComplete="email"
+          className="w-full rounded-md border border-black/15 px-3 py-2 outline-none focus:border-black/40 dark:border-white/20 dark:focus:border-white/50"
+        />
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password (8+ characters)"
+          autoComplete={mode === "signup" ? "new-password" : "current-password"}
+          className="w-full rounded-md border border-black/15 px-3 py-2 outline-none focus:border-black/40 dark:border-white/20 dark:focus:border-white/50"
+        />
+
+        {error && <p className="text-sm text-red-500">{error}</p>}
+
+        <button
+          type="submit"
+          disabled={!canSubmit}
+          className="w-full rounded-md bg-black px-4 py-2 font-medium text-white transition disabled:opacity-40 dark:bg-white dark:text-black"
+        >
+          {busy ? "Working…" : mode === "signup" ? "Create account" : "Sign in"}
+        </button>
+      </form>
+
+      <button
+        type="button"
+        onClick={() => {
+          setMode(mode === "signin" ? "signup" : "signin");
+          setError(null);
+        }}
+        className="text-sm text-black/60 underline-offset-2 hover:underline dark:text-white/60"
+      >
+        {mode === "signin"
+          ? "Need an account? Create one"
+          : "Already have an account? Sign in"}
+      </button>
+
+      <div className="space-y-3 border-t border-black/10 pt-4 dark:border-white/10">
         <button
           type="button"
           onClick={() => signIn.social({ provider: "google", callbackURL })}
@@ -63,14 +160,8 @@ function SignIn() {
         >
           Continue with Google
         </button>
-        <button
-          type="button"
-          onClick={() => signIn.social({ provider: "apple", callbackURL })}
-          className="w-full rounded-md border border-black/15 px-4 py-2 font-medium transition hover:bg-black/5 dark:border-white/20 dark:hover:bg-white/10"
-        >
-          Continue with Apple
-        </button>
       </div>
+
       <p className="text-xs text-black/50 dark:text-white/50">
         Have a meeting link? Just open it — you don’t need an account to join.
       </p>

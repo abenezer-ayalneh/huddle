@@ -6,10 +6,10 @@ SQLite) because the Phase 9 target is multi-node behind a shared store, and
 queries and first-class migrations. Postgres runs as a fourth container in
 `infra/docker-compose.yml`; the API reads `DATABASE_URL` from the repo-root `.env`.
 
-For auth we chose **BetterAuth** with **social login only** (Sign in with Google
-and Apple) — no password storage to secure. BetterAuth owns its own tables
-(`user`, `session`, `account`, `verification`) in the same Prisma schema; our
-`room` model references `user`.
+For auth we chose **BetterAuth** with **local email + password** as the primary
+method, plus **Google** as an optional social provider (wired only when its env
+is present). BetterAuth owns its own tables (`user`, `session`, `account`,
+`verification`) in the same Prisma schema; our `room` model references `user`.
 
 ## Two consequences worth remembering
 

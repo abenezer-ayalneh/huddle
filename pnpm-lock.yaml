@@ -44,9 +44,6 @@ importers:
       class-validator:
         specifier: ^0.15.1
         version: 0.15.1
-      jose:
-        specifier: ^6.2.3
-        version: 6.2.3
       livekit-server-sdk:
         specifier: ^2.15.4
         version: 2.15.4

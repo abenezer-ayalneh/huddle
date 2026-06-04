@@ -85,8 +85,8 @@ only ever receives a scoped, expiring token.
   `/api/auth/*` (via `toNodeHandler`; see `apps/api/src/auth/auth.ts`).
   better-auth is ESM-only, so it's loaded through a dynamic `import()` from the
   CommonJS Nest app and built once, lazily (`getAuth()`).
-- Login is **social only**: Sign in with Google and Sign in with Apple. The Apple
-  "client secret" is a short-lived ES256 JWT minted at boot from the team key.
+- Login is **local email + password** (BetterAuth `emailAndPassword`), with
+  **Google** as an optional social provider (wired only when its env is set).
 - Two independent authorities, deliberately kept separate:
   - **Session** (BetterAuth cookie) — "who is signed in". Required to _create_,
     _list_, or _rejoin_ a room you own (`AuthGuard`). Read with `auth.api.getSession`.
