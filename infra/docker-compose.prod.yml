@@ -1,0 +1,100 @@
+# Production override (Phase 9 — single-VPS deploy). Layer it on top of the dev
+# compose:
+#   docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
+#     --env-file .env.prod up -d --build
+#
+# It adds the front door (Caddy) + containerized web/api, switches LiveKit to the
+# prod config (external IP, embedded TURN/TLS, metrics), and sets restart:always.
+# Internal stores (postgres/redis/minio) keep the localhost-only port bindings
+# from the base file — they're reached over the Docker network here. See
+# docs/adr/0004 and docs/SETUP.md.
+
+services:
+  # --- Front door: TLS termination + signal/WSS reverse proxy ---
+  caddy:
+    image: caddy:2-alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL}
+      APP_DOMAIN: ${APP_DOMAIN}
+      API_DOMAIN: ${API_DOMAIN}
+      LIVEKIT_DOMAIN: ${LIVEKIT_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - web
+      - api
+      - livekit
+
+  # --- Frontend (Next.js standalone) ---
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+      args:
+        # NEXT_PUBLIC_* are baked at build time (they ship to the browser).
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_LIVEKIT_URL: ${NEXT_PUBLIC_LIVEKIT_URL}
+        NEXT_PUBLIC_AUTH_URL: ${NEXT_PUBLIC_AUTH_URL}
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+    depends_on:
+      - api
+
+  # --- API (NestJS) ---
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    restart: always
+    # The API reads all its config from the environment in prod (no repo-root
+    # .env file inside the container). env_file is resolved relative to this
+    # compose file (infra/), so point at the repo-root .env.prod.
+    env_file:
+      - ../.env.prod
+    environment:
+      NODE_ENV: production
+      LOG_FORMAT: json # structured JSON logs in prod (logging/json.logger.ts)
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      minio:
+        condition: service_healthy
+
+  # --- LiveKit: prod config (external IP, TURN/TLS, metrics) ---
+  livekit:
+    restart: always
+    # node-ip is omitted so LiveKit auto-detects the public IP (use_external_ip
+    # in the prod config). Pin it with --node-ip ${LIVEKIT_NODE_IP} if needed.
+    command: --config /etc/livekit.yaml
+    volumes:
+      - ./livekit.prod.yaml:/etc/livekit.yaml:ro
+      - ./turn-certs:/etc/livekit/turn:ro # provision cert.pem/key.pem here
+    ports:
+      - "3478:3478/udp" # TURN/UDP
+      - "5349:5349" # TURN/TLS
+
+  egress:
+    restart: always
+
+  postgres:
+    restart: always
+
+  redis:
+    restart: always
+
+  minio:
+    restart: always
+
+volumes:
+  caddy-data:
+  caddy-config:

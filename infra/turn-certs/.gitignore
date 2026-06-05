@@ -1,0 +1,4 @@
+# Never commit real TURN certs; keep the directory + its README.
+*.pem
+*.crt
+*.key

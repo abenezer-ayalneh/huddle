@@ -5,11 +5,12 @@ Guidance for Claude Code (and any AI agent) working in this repository.
 ## What this project is
 
 A self-hosted, browser-based video conferencing app (a Google Meet–style product)
-built on **LiveKit** (open-source WebRTC SFU). This repo currently contains only
-**planning and configuration documents** — no application code has been written yet.
+built on **LiveKit** (open-source WebRTC SFU). The app is **implemented through
+Phase 9** (all roadmap phases done): `apps/web` (Next.js) + `apps/api` (NestJS),
+with `infra/` holding the dev and prod (`docker-compose.prod.yml`) stacks.
 
-When you start implementation, read the docs in `docs/` first, then scaffold the
-apps described below.
+Read the docs in `docs/` first — especially `docs/ROADMAP.md` (phase status) and
+the ADRs in `docs/adr/` — before changing anything.
 
 ## Scope (read this before building)
 
@@ -23,15 +24,15 @@ mute/unmute, leave call. Screen share, chat, recording, and scheduling are
 
 ## Target stack
 
-| Layer       | Choice                                  |
-|-------------|-----------------------------------------|
-| Frontend    | Next.js (App Router, TypeScript, React) |
-| Realtime UI | `@livekit/components-react`, `livekit-client` |
-| Backend     | NestJS (TypeScript)                     |
-| Token mgmt  | `livekit-server-sdk` (server-side JWT)  |
-| Media server| Self-hosted LiveKit (`livekit/livekit-server`) |
-| State store | Redis (required for LiveKit multi-node) |
-| Platform    | Web browsers only (desktop + mobile web)|
+| Layer        | Choice                                         |
+| ------------ | ---------------------------------------------- |
+| Frontend     | Next.js (App Router, TypeScript, React)        |
+| Realtime UI  | `@livekit/components-react`, `livekit-client`  |
+| Backend      | NestJS (TypeScript)                            |
+| Token mgmt   | `livekit-server-sdk` (server-side JWT)         |
+| Media server | Self-hosted LiveKit (`livekit/livekit-server`) |
+| State store  | Redis (required for LiveKit multi-node)        |
+| Platform     | Web browsers only (desktop + mobile web)       |
 
 Full rationale is in `docs/TECH_STACK.md`.
 
@@ -97,13 +98,16 @@ npm run build
 
 ## Where to look
 
-| I need to know…            | Read…                          |
-|----------------------------|--------------------------------|
-| What to build & acceptance | `docs/PRD.md`                  |
-| Build order / phases       | `docs/ROADMAP.md`              |
-| System design & data flow  | `docs/ARCHITECTURE.md`         |
-| Stack choices & why        | `docs/TECH_STACK.md`           |
-| LiveKit specifics & tokens | `docs/LIVEKIT_INTEGRATION.md`  |
-| HTTP API shape             | `docs/API_CONTRACT.md`         |
-| Local setup steps          | `docs/SETUP.md`                |
+| I need to know…            | Read…                         |
+| -------------------------- | ----------------------------- |
+| What to build & acceptance | `docs/PRD.md`                 |
+| Build order / phases       | `docs/ROADMAP.md`             |
+| System design & data flow  | `docs/ARCHITECTURE.md`        |
+| Stack choices & why        | `docs/TECH_STACK.md`          |
+| LiveKit specifics & tokens | `docs/LIVEKIT_INTEGRATION.md` |
+| HTTP API shape             | `docs/API_CONTRACT.md`        |
+| Local setup steps          | `docs/SETUP.md`               |
+
+```
+
 ```

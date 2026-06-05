@@ -1,0 +1,41 @@
+# CI gate (Phase 9). Runs the same checks as the local pre-commit hook plus a
+# full build, on every push and PR. Activates automatically once this repo has a
+# GitHub remote (there is none today — see docs/adr/0004). Deploy (CD) is a
+# manual runbook in docs/SETUP.md, not automated here.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @huddle/api exec prisma generate
+
+      - name: Prettier (check)
+        run: pnpm exec prettier --check .
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build

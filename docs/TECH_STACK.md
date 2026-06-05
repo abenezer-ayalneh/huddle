@@ -4,18 +4,18 @@ Decisions and rationale. Update this doc when a choice changes.
 
 ## Summary
 
-| Layer            | Choice                                      | Notes |
-|------------------|---------------------------------------------|-------|
-| Language         | TypeScript (frontend + backend)             | One language end-to-end; share types. |
-| Frontend         | Next.js (App Router) + React                | SSR/routing, strong ecosystem, official LiveKit React support. |
-| Realtime client  | `livekit-client`, `@livekit/components-react`, `@livekit/components-styles` | Prebuilt room/grid components + low-level control. |
-| Backend          | NestJS                                      | Structured, DI-based, great for a clean token/room service and future webhooks. |
-| LiveKit server   | `livekit-server-sdk` (token/admin)          | Server-side JWT minting and room API. |
-| Media server     | Self-hosted LiveKit (`livekit/livekit-server`) | Open-source WebRTC SFU; full control, no per-minute cloud cost. |
-| State store      | Redis                                       | Required for LiveKit multi-node; safe default. |
-| Packaging        | npm or pnpm workspaces (monorepo)           | `apps/web`, `apps/api`, optional `packages/*`. |
-| Containers       | Docker + docker compose                     | Run LiveKit + Redis locally and in prod. |
-| Target platform  | Web browsers (desktop + mobile web)         | No native apps in scope. |
+| Layer           | Choice                                                                      | Notes                                                                           |
+| --------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Language        | TypeScript (frontend + backend)                                             | One language end-to-end; share types.                                           |
+| Frontend        | Next.js (App Router) + React                                                | SSR/routing, strong ecosystem, official LiveKit React support.                  |
+| Realtime client | `livekit-client`, `@livekit/components-react`, `@livekit/components-styles` | Prebuilt room/grid components + low-level control.                              |
+| Backend         | NestJS                                                                      | Structured, DI-based, great for a clean token/room service and future webhooks. |
+| LiveKit server  | `livekit-server-sdk` (token/admin)                                          | Server-side JWT minting and room API.                                           |
+| Media server    | Self-hosted LiveKit (`livekit/livekit-server`)                              | Open-source WebRTC SFU; full control, no per-minute cloud cost.                 |
+| State store     | Redis                                                                       | Required for LiveKit multi-node; safe default.                                  |
+| Packaging       | npm or pnpm workspaces (monorepo)                                           | `apps/web`, `apps/api`, optional `packages/*`.                                  |
+| Containers      | Docker + docker compose                                                     | Run LiveKit + Redis locally and in prod.                                        |
+| Target platform | Web browsers (desktop + mobile web)                                         | No native apps in scope.                                                        |
 
 ## Why these
 

@@ -4,12 +4,18 @@ import type { NextFunction, Request, Response } from 'express';
 import { json } from 'express';
 import { AppModule } from './app.module';
 import { getAuth } from './auth/auth';
+import { makeLogger } from './logging/json.logger';
 
 async function bootstrap() {
   // We do our own body parsing below so we can (a) hand BetterAuth the raw
   // request stream on its routes and (b) keep the raw bytes for LiveKit webhook
   // signature verification on ours.
-  const app = await NestFactory.create(AppModule, { bodyParser: false });
+  // Logger is JSON in prod (LOG_FORMAT=json) and pretty in dev — see
+  // logging/json.logger.ts.
+  const app = await NestFactory.create(AppModule, {
+    bodyParser: false,
+    logger: makeLogger(),
+  });
 
   // CORS must be registered FIRST so it handles the preflight OPTIONS (and adds
   // headers) before our auth middleware terminates the response. credentials:true

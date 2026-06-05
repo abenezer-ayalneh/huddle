@@ -1,0 +1,13 @@
+# Keep build context small + avoid copying host artifacts into images.
+**/node_modules
+**/.next
+**/dist
+**/build
+**/coverage
+.git
+.env
+.env.*
+!.env.example
+!.env.prod.example
+infra/data
+**/*.log

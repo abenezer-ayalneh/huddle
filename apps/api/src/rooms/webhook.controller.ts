@@ -42,7 +42,7 @@ export class WebhookController {
     }
 
     if (event.event === 'room_finished' && event.room?.name) {
-      this.rooms.onRoomFinished(event.room.name);
+      await this.rooms.onRoomFinished(event.room.name);
     }
 
     // Egress lifecycle (Phase 8): started / updated / ended carry the egressInfo

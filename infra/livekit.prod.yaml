@@ -1,0 +1,52 @@
+# LiveKit server config for PRODUCTION (single-VPS deploy, Phase 9).
+# Template — edit the placeholder domains/paths for your deployment.
+# Docs: https://docs.livekit.io/home/self-hosting/deployment/
+#
+# Credentials are NOT here: docker-compose injects LIVEKIT_KEYS from .env.prod
+# (single source — see docs/adr/0001). This file differs from the dev
+# livekit.yaml in three ways: external IP for media, embedded TURN/TLS, and a
+# Prometheus metrics endpoint. Multi-node: keep `redis` pointed at the shared
+# Redis and add a second node with its OWN public UDP port range + node IP
+# (see docs/adr/0004 and docs/SETUP.md).
+
+port: 7880 # signaling / API — fronted by Caddy (WSS) on the LiveKit subdomain
+
+rtc:
+  tcp_port: 7881 # WebRTC over TCP (fallback)
+  port_range_start: 50000 # WebRTC media (UDP) — must match the published range
+  port_range_end: 50200 #   in docker-compose.prod.yml
+  # On a public VPS behind NAT, advertise the host's public IP to browsers so
+  # ICE succeeds. LiveKit auto-detects it; pin it via --node-ip if needed.
+  use_external_ip: true
+
+# Shared Redis: required for multi-node room state. Reachable by service name
+# on the compose network.
+redis:
+  address: redis:6379
+
+# Embedded TURN with TLS — relays media for clients behind restrictive NATs
+# (the only path that works when UDP is fully blocked). TLS needs a cert for the
+# TURN domain; provision it (certbot, or copy from Caddy) to the mounted path.
+# Port 5349 is published directly in docker-compose.prod.yml.
+turn:
+  enabled: true
+  domain: turn.example.com # EDIT: your TURN domain
+  tls_port: 5349
+  cert_file: /etc/livekit/turn/cert.pem # EDIT/provision
+  key_file: /etc/livekit/turn/key.pem # EDIT/provision
+
+# Prometheus metrics, scrapeable on :6789/metrics. Not published to the host in
+# prod (kept on the Docker network); add a Prometheus scraper later if desired.
+prometheus_port: 6789
+
+# Room/participant + egress lifecycle events POST to the API. `api_key` is the
+# key *id* (not a secret) and must match LIVEKIT_API_KEY in .env.prod — LiveKit
+# does NOT interpolate ${} in this file, so set it literally. In prod the API
+# runs as the `api` service, reachable by name on the compose network.
+webhook:
+  api_key: devkey # EDIT: your LIVEKIT_API_KEY (the key id, e.g. "APIxxxx")
+  urls:
+    - http://api:3001/livekit/webhook
+
+logging:
+  level: info

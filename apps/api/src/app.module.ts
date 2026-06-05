@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { HealthController } from './health/health.controller';
 import { PrismaModule } from './prisma/prisma.module';
+import { RedisModule } from './redis/redis.module';
 import { RoomsModule } from './rooms/rooms.module';
 
 @Module({
@@ -16,6 +17,7 @@ import { RoomsModule } from './rooms/rooms.module';
       envFilePath: join(__dirname, '..', '..', '..', '.env'),
     }),
     PrismaModule,
+    RedisModule,
     RoomsModule,
   ],
   controllers: [AppController, HealthController],

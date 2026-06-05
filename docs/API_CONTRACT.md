@@ -17,12 +17,30 @@ server-side. See "Phase 6 — Host controls & managed rooms".
 
 ## GET /health
 
-Liveness probe.
+Liveness probe — the process is up. Dependency-free.
 
 **Response 200**
 
 ```json
 { "status": "ok" }
+```
+
+## GET /ready
+
+Readiness probe (Phase 9) — the process can serve traffic, i.e. its backing
+stores answer. Checks Postgres and Redis. Use it to gate a node in/out of
+rotation; `/health` is for liveness/restart decisions.
+
+**Response 200**
+
+```json
+{ "status": "ok", "checks": { "postgres": "ok", "redis": "ok" } }
+```
+
+**Response 503** (one or more dependencies down)
+
+```json
+{ "status": "unavailable", "checks": { "postgres": "ok", "redis": "down" } }
 ```
 
 ## Phase 6 — Host controls & managed rooms

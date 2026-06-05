@@ -22,16 +22,16 @@ Screen share, chat, recording, and scheduling come later. See
 
 ## Documentation
 
-| Doc | Purpose |
-|-----|---------|
-| [CLAUDE.md](CLAUDE.md) | Guide for AI agents / Claude Code working here |
-| [docs/PRD.md](docs/PRD.md) | What the MVP must do + acceptance criteria |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | Phased build order |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design & data flow |
-| [docs/TECH_STACK.md](docs/TECH_STACK.md) | Stack choices & rationale |
-| [docs/LIVEKIT_INTEGRATION.md](docs/LIVEKIT_INTEGRATION.md) | LiveKit specifics, tokens, ports |
-| [docs/API_CONTRACT.md](docs/API_CONTRACT.md) | Backend HTTP API |
-| [docs/SETUP.md](docs/SETUP.md) | Run everything locally |
+| Doc                                                        | Purpose                                        |
+| ---------------------------------------------------------- | ---------------------------------------------- |
+| [CLAUDE.md](CLAUDE.md)                                     | Guide for AI agents / Claude Code working here |
+| [docs/PRD.md](docs/PRD.md)                                 | What the MVP must do + acceptance criteria     |
+| [docs/ROADMAP.md](docs/ROADMAP.md)                         | Phased build order                             |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)               | System design & data flow                      |
+| [docs/TECH_STACK.md](docs/TECH_STACK.md)                   | Stack choices & rationale                      |
+| [docs/LIVEKIT_INTEGRATION.md](docs/LIVEKIT_INTEGRATION.md) | LiveKit specifics, tokens, ports               |
+| [docs/API_CONTRACT.md](docs/API_CONTRACT.md)               | Backend HTTP API                               |
+| [docs/SETUP.md](docs/SETUP.md)                             | Run everything locally                         |
 
 ## Quick start (infra only — apps come in Phase 0)
 

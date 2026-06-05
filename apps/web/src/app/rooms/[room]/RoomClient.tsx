@@ -34,7 +34,12 @@ export default function RoomClient({
   const [host, setHost] = useState<ReturnType<typeof loadHostSession>>(null);
   const [hostChecked, setHostChecked] = useState(false);
   useEffect(() => {
+    // Client-only: sessionStorage isn't available during SSR, so the host
+    // session can only be read after mount. The setState-in-effect here is
+    // intentional (one-shot hydration of a client-only value), not a render loop.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (role === "host") setHost(loadHostSession(room));
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHostChecked(true);
   }, [role, room]);
 

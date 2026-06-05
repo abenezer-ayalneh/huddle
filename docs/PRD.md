@@ -100,5 +100,17 @@ phone/SIP dial-in. None of these in the MVP.
   (`x-host-key`). Privacy note below is now scoped to Phases 0–7. See
   `docs/adr/0003-recording-egress-minio.md`.
 - Do we cap participants in the MVP, or just document the practical limit?
+- ~~Scale & deploy target for hardening?~~ **Decided (Phase 9):** **single VPS /
+  Docker host** with a real domain. **Caddy** front door (auto-TLS, fronts
+  signal/WSS; media bypasses it). LiveKit is **multi-node-capable but run as one
+  node** (Redis-backed, configured for a future second SFU node). **Embedded
+  LiveKit TURN/TLS** (no coturn). **Knock state → Redis** (`ioredis` + TTL; API
+  stays single-instance). Observability = health/ready + structured logs +
+  exposed LiveKit Prometheus endpoint + compose healthchecks (no
+  dashboards yet). Prod config via `docker-compose.prod.yml` override +
+  `.env.prod.example`. **CI** (GitHub Actions gate) committed now; **CD** deferred
+  (no git remote yet) to a manual runbook. See
+  `docs/adr/0004-deploy-topology-single-vps.md` and
+  `docs/adr/0005-knock-state-to-redis.md`.
 
 Record decisions here as they're made.

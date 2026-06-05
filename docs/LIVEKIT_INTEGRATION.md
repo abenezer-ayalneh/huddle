@@ -49,13 +49,13 @@ never the secret.
 
 ```ts
 // apps/api — token.service.ts (illustrative)
-import { AccessToken } from 'livekit-server-sdk';
+import { AccessToken } from "livekit-server-sdk";
 
 async function createToken(room: string, identity: string, name?: string) {
   const at = new AccessToken(
     process.env.LIVEKIT_API_KEY,
     process.env.LIVEKIT_API_SECRET,
-    { identity, name, ttl: '1h' },
+    { identity, name, ttl: "1h" }
   );
   at.addGrant({
     roomJoin: true,
@@ -75,12 +75,17 @@ Expose it as `POST /token` returning `{ token, livekitUrl }`. See
 **Option A — prebuilt components (fastest for MVP):**
 
 ```tsx
-import { LiveKitRoom, VideoConference } from '@livekit/components-react';
-import '@livekit/components-styles';
+import { LiveKitRoom, VideoConference } from "@livekit/components-react";
+import "@livekit/components-styles";
 
-<LiveKitRoom token={token} serverUrl={livekitUrl} connect data-lk-theme="default">
+<LiveKitRoom
+  token={token}
+  serverUrl={livekitUrl}
+  connect
+  data-lk-theme="default"
+>
   <VideoConference />
-</LiveKitRoom>
+</LiveKitRoom>;
 ```
 
 `VideoConference` already gives a participant grid, mute/camera controls, and
@@ -99,12 +104,12 @@ starter config + keys with the official helper, or use the provided
 
 ### Ports to expose (critical for WebRTC)
 
-| Port        | Proto | Purpose                                  |
-|-------------|-------|------------------------------------------|
-| 7880        | TCP   | HTTP/WebSocket signaling + API           |
-| 7881        | TCP   | WebRTC over TCP (fallback)               |
-| 50000–60000 | UDP   | WebRTC media (RTP/RTCP)                   |
-| 3478        | UDP   | TURN (for clients behind strict NAT)     |
+| Port        | Proto | Purpose                              |
+| ----------- | ----- | ------------------------------------ |
+| 7880        | TCP   | HTTP/WebSocket signaling + API       |
+| 7881        | TCP   | WebRTC over TCP (fallback)           |
+| 50000–60000 | UDP   | WebRTC media (RTP/RTCP)              |
+| 3478        | UDP   | TURN (for clients behind strict NAT) |
 
 If media connects but you see no audio/video, it's almost always the **UDP
 range** or **TURN** not being reachable. Check this first.

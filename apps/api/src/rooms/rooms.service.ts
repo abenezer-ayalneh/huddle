@@ -94,20 +94,20 @@ export class RoomsService {
   // Guest knocks; must be a known managed room.
   async knock(slug: string, guestName: string): Promise<{ knockId: string }> {
     await this.requireRoom(slug);
-    const knock = this.state.addKnock(slug, guestName);
+    const knock = await this.state.addKnock(slug, guestName);
     return { knockId: knock.knockId };
   }
 
   // Guest withdraws their request (cancelled before being admitted).
   // Idempotent: returns ok whether or not the knock still existed.
-  cancelKnock(slug: string, knockId: string): { ok: true } {
-    this.state.removeKnock(slug, knockId);
+  async cancelKnock(slug: string, knockId: string): Promise<{ ok: true }> {
+    await this.state.removeKnock(slug, knockId);
     return { ok: true };
   }
 
   // Guest polls for the host's decision.
-  knockStatus(slug: string, knockId: string): KnockStatusResult {
-    const knock = this.requireKnock(slug, knockId);
+  async knockStatus(slug: string, knockId: string): Promise<KnockStatusResult> {
+    const knock = await this.requireKnock(slug, knockId);
     if (knock.status === 'admitted') {
       return {
         status: 'admitted',
@@ -119,9 +119,10 @@ export class RoomsService {
     return { status: knock.status };
   }
 
-  listKnocks(slug: string) {
+  async listKnocks(slug: string) {
+    const knocks = await this.state.listPendingKnocks(slug);
     return {
-      knocks: this.state.listPendingKnocks(slug).map((k) => ({
+      knocks: knocks.map((k) => ({
         knockId: k.knockId,
         name: k.name,
         requestedAt: k.requestedAt,
@@ -130,7 +131,7 @@ export class RoomsService {
   }
 
   async admit(slug: string, knockId: string): Promise<{ status: string }> {
-    const knock = this.requireKnock(slug, knockId);
+    const knock = await this.requireKnock(slug, knockId);
     if (knock.status === 'pending') {
       const identity = makeIdentity(knock.name);
       const token = await this.livekit.mintToken({
@@ -138,15 +139,15 @@ export class RoomsService {
         identity,
         name: knock.name,
       });
-      this.state.resolveKnock(knock, 'admitted', { identity, token });
+      await this.state.resolveKnock(knock, 'admitted', { identity, token });
     }
     return { status: knock.status };
   }
 
-  deny(slug: string, knockId: string): { status: string } {
-    const knock = this.requireKnock(slug, knockId);
+  async deny(slug: string, knockId: string): Promise<{ status: string }> {
+    const knock = await this.requireKnock(slug, knockId);
     if (knock.status === 'pending') {
-      this.state.resolveKnock(knock, 'denied');
+      await this.state.resolveKnock(knock, 'denied');
     }
     return { status: knock.status };
   }
@@ -163,8 +164,8 @@ export class RoomsService {
 
   // Called from the verified LiveKit webhook when a room ends. The room record
   // is persistent and kept; we just drop its now-stale waiting-room knocks.
-  onRoomFinished(slug: string): void {
-    this.state.clearKnocks(slug);
+  async onRoomFinished(slug: string): Promise<void> {
+    await this.state.clearKnocks(slug);
   }
 
   private async mintHostJoin(
@@ -208,8 +209,8 @@ export class RoomsService {
     return room;
   }
 
-  private requireKnock(slug: string, knockId: string): Knock {
-    const knock = this.state.getKnock(slug, knockId);
+  private async requireKnock(slug: string, knockId: string): Promise<Knock> {
+    const knock = await this.state.getKnock(slug, knockId);
     if (!knock) throw new NotFoundException('Unknown or expired knock');
     return knock;
   }

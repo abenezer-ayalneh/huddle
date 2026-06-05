@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+!.env.prod.example
 
 # Node
 node_modules/
@@ -27,6 +28,9 @@ coverage/
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Claude Code tooling runtime (scheduled-task lock) — .claude/launch.json stays tracked
+.claude/scheduled_tasks.lock
 
 # LiveKit / infra runtime data
 infra/data/

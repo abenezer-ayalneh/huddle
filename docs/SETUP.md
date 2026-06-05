@@ -146,3 +146,76 @@ pnpm dev:web        # Next.js dev server
 ```bash
 docker compose -f infra/docker-compose.yml down
 ```
+
+## Production deployment (Phase 9 — single VPS)
+
+The dev steps above run the apps via `pnpm` against containerized infra. For a
+real deployment we target a **single Linux VPS** with a domain: Caddy terminates
+TLS and reverse-proxies, web + api run as containers, and LiveKit serves media
+directly. See `docs/adr/0004-deploy-topology-single-vps.md` for the why.
+
+**There is no automated CD** (the repo has no remote yet) — this is the manual
+runbook. CI (`.github/workflows/ci.yml`) runs the test/build gate once a GitHub
+remote exists.
+
+### 1. DNS
+
+Point three subdomains at the VPS public IP (A records):
+`app.<domain>`, `api.<domain>`, `livekit.<domain>` (+ optionally
+`turn.<domain>`).
+
+### 2. Firewall
+
+Allow inbound: **80, 443** (Caddy), **3478/udp + 5349** (TURN),
+**50000–50200/udp** (WebRTC media), **7881** (WebRTC/TCP fallback). Everything
+else (Postgres/Redis/MinIO, and 7880) stays off the public interface — the base
+compose binds those stores to `127.0.0.1` and the containers reach each other
+over the Docker network.
+
+### 3. Config
+
+```bash
+cp .env.prod.example .env.prod   # then edit: domains, secrets, ACME_EMAIL
+```
+
+Edit `infra/livekit.prod.yaml`: set the TURN `domain` and the webhook
+`api_key` (your `LIVEKIT_API_KEY` — LiveKit does not interpolate env here).
+Provision TURN TLS certs into `infra/turn-certs/` (see its README).
+
+### 4. Build & run
+
+```bash
+docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
+  --env-file .env.prod up -d --build
+```
+
+### 5. Apply migrations
+
+```bash
+docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
+  --env-file .env.prod exec api node node_modules/prisma/build/index.js migrate deploy
+```
+
+(Or run `pnpm --filter @huddle/api prisma:deploy` from a checkout whose
+`DATABASE_URL` points at the prod Postgres.)
+
+### 6. Verify
+
+- `curl https://api.<domain>/health` → `{"status":"ok"}`
+- `curl https://api.<domain>/ready` → `200` with `postgres`/`redis` both `ok`
+- Open `https://app.<domain>`, create a room, run a two-window call.
+
+### Updating
+
+```bash
+git pull
+docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
+  --env-file .env.prod up -d --build   # rebuilds changed images, recreates
+```
+
+### Scaling out LiveKit (multi-node)
+
+The topology is multi-node-ready (shared Redis). To add a second SFU node it
+needs its **own public UDP media port range** and node IP — media reaches the
+owning node directly, it does not pass through Caddy. See
+`docs/adr/0004-deploy-topology-single-vps.md`.

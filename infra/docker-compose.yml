@@ -40,8 +40,11 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    # Bound to localhost: dev tools on the host still reach it, but it's never
+    # published on a public interface. Containers (api, livekit, egress) reach it
+    # by service name over the Docker network regardless of this mapping.
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     command: redis-server --save 60 1 --loglevel warning
 
   # LiveKit Egress records the composited room (Phase 8). It connects to the
@@ -82,9 +85,12 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-huddle}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-huddlehuddle}
+    # Localhost-only: in dev the host-run API reads recordings via localhost:9000
+    # and you can open the console on localhost:9001. In prod the API container
+    # talks to minio:9000 over the Docker network, so this is never public.
     ports:
-      - "9000:9000" # S3 API
-      - "9001:9001" # web console
+      - "127.0.0.1:9000:9000" # S3 API
+      - "127.0.0.1:9001:9001" # web console
     volumes:
       - huddle-minio:/data
     healthcheck:
@@ -104,8 +110,10 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-huddle}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-huddle}
       POSTGRES_DB: ${POSTGRES_DB:-huddle}
+    # Localhost-only (Prisma CLI on the host connects via localhost). The API
+    # container reaches it as postgres:5432 over the Docker network in prod.
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - huddle-postgres:/var/lib/postgresql/data
     healthcheck:

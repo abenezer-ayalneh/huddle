@@ -1,6 +1,8 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import type { Room } from '@prisma/client';
+import type Redis from 'ioredis';
 import type { AuthUser } from '../auth/auth.guard';
+import { FakeRedis } from '../redis/fake-redis';
 import { LivekitService } from './livekit.service';
 import { RoomRepository } from './rooms.repo';
 import { RoomsService } from './rooms.service';
@@ -56,7 +58,7 @@ describe('RoomsService', () => {
 
   beforeEach(() => {
     repo = new FakeRoomRepo();
-    state = new RoomStateService();
+    state = new RoomStateService(new FakeRedis() as unknown as Redis);
     livekit = {
       livekitUrl: 'ws://localhost:7880',
       createRoom: jest.fn().mockResolvedValue(undefined),
@@ -109,10 +111,12 @@ describe('RoomsService', () => {
     await service.createRoom(ada, { title: 'Standup' });
     const { knockId } = await service.knock('standup', 'Bo');
 
-    expect(service.knockStatus('standup', knockId).status).toBe('pending');
+    expect((await service.knockStatus('standup', knockId)).status).toBe(
+      'pending',
+    );
 
     await service.admit('standup', knockId);
-    const status = service.knockStatus('standup', knockId);
+    const status = await service.knockStatus('standup', knockId);
     expect(status.status).toBe('admitted');
     expect(status.token).toBe('jwt-token');
     expect(status.livekitUrl).toBe('ws://localhost:7880');
@@ -123,15 +127,17 @@ describe('RoomsService', () => {
   it('denies a guest', async () => {
     await service.createRoom(ada, { title: 'Standup' });
     const { knockId } = await service.knock('standup', 'Bo');
-    service.deny('standup', knockId);
-    expect(service.knockStatus('standup', knockId).status).toBe('denied');
+    await service.deny('standup', knockId);
+    expect((await service.knockStatus('standup', knockId)).status).toBe(
+      'denied',
+    );
   });
 
   it('clears knocks on room_finished without deleting the room', async () => {
     await service.createRoom(ada, { title: 'Standup' });
     const { knockId } = await service.knock('standup', 'Bo');
-    service.onRoomFinished('standup');
-    expect(() => service.knockStatus('standup', knockId)).toThrow(
+    await service.onRoomFinished('standup');
+    await expect(service.knockStatus('standup', knockId)).rejects.toThrow(
       NotFoundException,
     );
     // Room still exists (persistent) — a fresh knock succeeds.

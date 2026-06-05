@@ -193,10 +193,40 @@ LiveKit Egress to record/export sessions; storage target.
 > still depends on a live two-window call (headless can't establish WebRTC), but
 > egress records the composited room regardless.
 
-### Phase 9 — Scale & deploy hardening
+### Phase 9 — Scale & deploy hardening ✅
 
-Multi-node LiveKit behind Redis + LB, TURN tuning, production TLS, observability,
-CI/CD.
+Harden the stack for a **single-VPS / Docker-host** deployment with a real
+domain, while keeping the production topology multi-node-_capable_. Scoped with
+the user; see `docs/adr/0004-deploy-topology-single-vps.md` and
+`docs/adr/0005-knock-state-to-redis.md`.
+
+- [x] **LiveKit multi-node-capable, run as one node** — Redis-backed shared room
+      state; `infra/livekit.prod.yaml` sets `rtc.use_external_ip` and documents
+      adding a second SFU node with its own public UDP range. Media reaches the
+      owning node directly; the front door only fronts signal/WSS.
+- [x] **Caddy front door + TLS** — `infra/Caddyfile` + `caddy` service in the
+      prod override; automatic Let's Encrypt certs; reverse-proxies HTTPS/WSS to
+      `web`, `api`, and the LiveKit signal endpoint per-subdomain.
+- [x] **TURN** — LiveKit's **embedded TURN/TLS** enabled in `livekit.prod.yaml`
+      (cert dir `infra/turn-certs/`); no standalone coturn.
+- [x] **Knock state → Redis** — `apps/api/src/rooms/rooms.state.ts` is now
+      Redis-backed (`ioredis`, `RedisModule`) with a 1h **TTL**; survives API
+      restart, stale knocks self-expire. API stays single-instance.
+- [x] **Observability** — API `/health` + `/ready` (DB+Redis), structured JSON
+      logs (`LOG_FORMAT=json`), LiveKit Prometheus endpoint (`prometheus_port`),
+      compose healthchecks + `restart: always`. No dashboards yet.
+- [x] **Prod config layout** — `infra/docker-compose.prod.yml` override (Caddy,
+      containerized web/api via Dockerfiles, prod LiveKit, `restart: always`);
+      internal stores bound to `127.0.0.1` in the base; plus `.env.prod.example`.
+      Dev compose flow unchanged.
+- [x] **CI now, CD deferred** — `.github/workflows/ci.yml` runs prettier +
+      typecheck + tests + build on push/PR; activates once a GitHub remote
+      exists. CD is the manual runbook in `docs/SETUP.md`.
+
+> **Scope note:** target is a single VPS (not k8s, not LiveKit Cloud). True
+> horizontal LiveKit scale is **configured, not exercised** — the single-node
+> deployment is what gets verified. The lone application-code change is knock
+> state → Redis; everything else is infra/config.
 
 ---
 
