@@ -10,8 +10,8 @@
   "scripts": {
     "dev:web": "pnpm --filter @huddle/web dev",
     "dev:api": "pnpm --filter @huddle/api start:dev",
-    "infra:up": "docker compose -f infra/docker-compose.yml --env-file .env up -d",
-    "infra:down": "docker compose -f infra/docker-compose.yml --env-file .env down",
+    "infra:up": "docker compose -f infra/docker-compose.yml --env-file .env --profile dev-egress-fix up -d",
+    "infra:down": "docker compose -f infra/docker-compose.yml --env-file .env --profile dev-egress-fix down",
     "lint": "pnpm -r lint",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r --if-present typecheck",

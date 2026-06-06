@@ -56,6 +56,10 @@ services:
   egress:
     image: livekit/egress:latest
     restart: unless-stopped
+    # Egress runs a headless Chrome compositor; the default 64MB /dev/shm is too
+    # small and Chrome crashes on launch ("chrome failed to start"). LiveKit's
+    # egress docs require a larger shm.
+    shm_size: "1gb"
     # Config is passed inline (not a committed file) so the API secret stays out
     # of source — docker-compose interpolates ${LIVEKIT_*} from the repo-root
     # .env, the same single-source pattern as LIVEKIT_KEYS. ws_url/redis use the
@@ -71,9 +75,54 @@ services:
         log_level: info
     cap_add:
       - CAP_SYS_ADMIN
+    # Guarantees host.docker.internal resolves inside the egress network namespace
+    # (used by the egress-netfix sidecar below).
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - redis
       - livekit
+
+  # DEV-ONLY networking shim for Docker Desktop (macOS/Windows). LiveKit
+  # advertises a single ICE candidate (LIVEKIT_NODE_IP = the host LAN IP) so LAN
+  # browsers can reach media. But on Docker Desktop the egress *container* cannot
+  # route to that LAN IP, so its WebRTC never connects and recordings abort with
+  # "Start signal not received". This sidecar shares the egress network namespace
+  # and installs a DNAT rule redirecting the LAN IP to host.docker.internal —
+  # which DOES reach the host's published LiveKit ports — so egress media works.
+  #
+  # NOT needed in production: on a flat Linux host the egress reaches the node IP
+  # directly, so this service is absent from docker-compose.prod.yml. See the
+  # "in-call recording aborts" note in docs/SETUP.md.
+  egress-netfix:
+    image: alpine:latest
+    restart: unless-stopped
+    # Opt-in profile so this NEVER starts in prod. The prod stack is base + the
+    # prod override with no profile active, so egress-netfix is excluded there
+    # (on a flat Linux host the DNAT would be wrong/harmful). `pnpm infra:up`
+    # activates the profile for local dev.
+    profiles:
+      - dev-egress-fix
+    network_mode: "service:egress"
+    cap_add:
+      - NET_ADMIN
+    depends_on:
+      - egress
+    # Resolve the host gateway, then DNAT all traffic bound for the advertised
+    # LAN IP to it. Runs in a loop re-asserting the rule (idempotent via -C) so a
+    # transient egress restart that recreates the shared netns self-heals.
+    command:
+      - sh
+      - -c
+      - |
+        apk add -q iptables bind-tools
+        HOSTIP=$$(getent hosts host.docker.internal | awk '{print $$1}')
+        echo "egress-netfix: ensuring DNAT ${LIVEKIT_NODE_IP} -> $$HOSTIP"
+        while true; do
+          iptables -t nat -C OUTPUT -d ${LIVEKIT_NODE_IP} -j DNAT --to-destination $$HOSTIP 2>/dev/null \
+            || iptables -t nat -A OUTPUT -d ${LIVEKIT_NODE_IP} -j DNAT --to-destination $$HOSTIP
+          sleep 5
+        done
 
   # MinIO is an S3-compatible object store; recordings land here. It keeps the
   # app fully self-hosted/offline (no real AWS needed). Console on :9001, S3 API

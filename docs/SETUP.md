@@ -66,9 +66,15 @@ GOOGLE_CLIENT_SECRET=...
 ## 2. Start LiveKit + Redis + Postgres + MinIO + Egress
 
 ```bash
-pnpm infra:up                                      # or: docker compose -f infra/docker-compose.yml --env-file .env up -d
+pnpm infra:up                                      # docker compose --env-file .env --profile dev-egress-fix up -d
 docker compose -f infra/docker-compose.yml ps      # confirm all are up
 ```
+
+> Use **`pnpm infra:up`** (not a bare `docker compose up`): it passes
+> `--env-file .env` _and_ activates the `dev-egress-fix` profile that starts the
+> `egress-netfix` sidecar needed for recording on Docker Desktop (see
+> Troubleshooting → "Recording aborts"). That profile is dev-only and never runs
+> in prod.
 
 LiveKit signaling/API is on `http://localhost:7880`; Postgres on `localhost:5432`;
 MinIO's S3 API on `http://localhost:9000` and its web console on
@@ -140,6 +146,21 @@ pnpm dev:web        # Next.js dev server
   `pnpm infra:up` (which passes `--env-file .env`).
 - **LiveKit container won't start:** check `infra/livekit.yaml` syntax and that
   ports 7880/7881 aren't already in use.
+- **Recording aborts ("Starting…" → "Aborted"):** the egress headless-Chrome
+  compositor couldn't reach LiveKit's media. Two causes, both handled in the dev
+  compose:
+  - _Networking (Docker Desktop / macOS only):_ LiveKit advertises one ICE
+    candidate (`LIVEKIT_NODE_IP`, your LAN IP). LAN browsers reach it, but the
+    egress **container** can't route to the host's LAN IP on Docker Desktop, so
+    its WebRTC never connects ("removing participant without connection" in the
+    LiveKit log → "Start signal not received" in egress). The `egress-netfix`
+    sidecar fixes this by DNAT-ing the LAN IP to `host.docker.internal`. It's
+    **dev-only** — gated behind the `dev-egress-fix` compose profile that
+    `pnpm infra:up` activates and the prod stack never enables, so a flat Linux
+    host (where it would be harmful) never runs it. Confirm the rule is live:
+    `docker run --rm --network container:infra-egress-1 --cap-add NET_ADMIN alpine sh -c 'apk add -q iptables; iptables -t nat -S OUTPUT'`
+  - _Chrome crash ("chrome failed to start"):_ the default 64 MB `/dev/shm` is
+    too small; the egress service sets `shm_size: 1gb`.
 
 ## Stopping
 
