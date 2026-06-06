@@ -50,7 +50,7 @@ services:
     # Caddy) can reach it. Harmless when the containerized `caddy` service is used
     # instead (it reaches `web` by service name). Never bound to a public iface.
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:3001:3000"
     depends_on:
       - api
 
@@ -70,7 +70,7 @@ services:
       LOG_FORMAT: json # structured JSON logs in prod (logging/json.logger.ts)
     # Published on localhost for a host-installed reverse proxy (see `web` above).
     ports:
-      - "127.0.0.1:3001:3001"
+      - "127.0.0.1:3002:3001"
     depends_on:
       postgres:
         condition: service_healthy
