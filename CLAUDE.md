@@ -107,6 +107,7 @@ npm run build
 | LiveKit specifics & tokens | `docs/LIVEKIT_INTEGRATION.md` |
 | HTTP API shape             | `docs/API_CONTRACT.md`        |
 | Local setup steps          | `docs/SETUP.md`               |
+| Deploying to a VPS         | `docs/DEPLOYMENT.md`          |
 
 ```
 

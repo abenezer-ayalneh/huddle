@@ -170,6 +170,10 @@ docker compose -f infra/docker-compose.yml down
 
 ## Production deployment (Phase 9 — single VPS)
 
+> For a complete, start-from-a-fresh-box walkthrough (DNS, Docker install,
+> firewall, TURN certs, backups, troubleshooting), see **[`DEPLOYMENT.md`](./DEPLOYMENT.md)**.
+> The summary below is the quick runbook.
+
 The dev steps above run the apps via `pnpm` against containerized infra. For a
 real deployment we target a **single Linux VPS** with a domain: Caddy terminates
 TLS and reverse-proxies, web + api run as containers, and LiveKit serves media
