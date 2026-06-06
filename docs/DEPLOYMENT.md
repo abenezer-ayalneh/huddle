@@ -11,15 +11,22 @@ Caddy terminates TLS and reverse-proxies the web app, API, and LiveKit signal;
 the web and API run as containers; LiveKit serves WebRTC media directly; and the
 internal stores (Postgres, Redis, MinIO) stay on the Docker network.
 
+**Front door — two options.** This guide is written for a **host-installed Caddy**
+(a global `caddy` running under systemd on the VPS), which is what this deployment
+uses. The repo also ships a **containerized** `caddy` service in the prod compose;
+if you prefer that, skip the host-Caddy steps and don't pass `--scale caddy=0`
+below. Either way, the containers publish `web`/`api` on `127.0.0.1` and LiveKit
+signal on `:7880` so a reverse proxy can reach them.
+
 ```
-                          ┌──────────────────── VPS (Docker) ─────────────────────┐
-   Browser ──HTTPS/WSS──▶ │  Caddy :80/:443  ──▶ web :3000                         │
-                          │                  ──▶ api :3001 ──▶ postgres / redis    │
-                          │                  ──▶ livekit signal :7880              │
-   Browser ──WebRTC UDP──────────────────────▶ livekit media :50000-50200/udp     │
-   Browser ──TURN/TLS───────────────────────▶ livekit TURN :3478,:5349            │
-                          │   api ──▶ minio (S3)  ◀── egress uploads MP4           │
-                          └────────────────────────────────────────────────────────┘
+                          ┌──────────────────── VPS ───────────────────────────────┐
+   Browser ──HTTPS/WSS──▶ │  Caddy (host, :80/:443) ──▶ 127.0.0.1:3000  (web)       │
+                          │                          ──▶ 127.0.0.1:3001  (api)      │
+                          │                          ──▶ 127.0.0.1:7880  (livekit)  │
+   Browser ──WebRTC UDP──────────────────────────────▶ livekit media :50000-50200/udp
+   Browser ──TURN/TLS───────────────────────────────▶ livekit TURN :3478,:5349     │
+                          │   api ──▶ minio (S3)  ◀── egress uploads MP4 (Docker net)│
+                          └─────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -31,14 +38,15 @@ internal stores (Postgres, Redis, MinIO) stay on the Docker network.
 - A **domain** you control DNS for.
 - SSH access as a sudo-capable user.
 
-You will use **four hostnames** (subdomains of one domain are easiest):
+You will use **four hostnames**. The values below are the ones this deployment
+uses; substitute your own if different.
 
-| Purpose          | Example env var   | Example value         |
-| ---------------- | ----------------- | --------------------- |
-| Frontend         | `APP_DOMAIN`      | `app.example.com`     |
-| API              | `API_DOMAIN`      | `api.example.com`     |
-| LiveKit signal   | `LIVEKIT_DOMAIN`  | `livekit.example.com` |
-| TURN relay (TLS) | (in livekit conf) | `turn.example.com`    |
+| Purpose          | Env var / location | Value                                 |
+| ---------------- | ------------------ | ------------------------------------- |
+| Frontend         | `APP_DOMAIN`       | `huddle.abenezer-ayalneh.dev`         |
+| API              | `API_DOMAIN`       | `huddle-api.abenezer-ayalneh.dev`     |
+| LiveKit signal   | `LIVEKIT_DOMAIN`   | `huddle-livekit.abenezer-ayalneh.dev` |
+| TURN relay (TLS) | (in livekit conf)  | `huddle-turn.abenezer-ayalneh.dev`    |
 
 ---
 
@@ -47,24 +55,36 @@ You will use **four hostnames** (subdomains of one domain are easiest):
 Create **A records** for all four hostnames pointing at the VPS public IP:
 
 ```
-app.example.com      A   203.0.113.10
-api.example.com      A   203.0.113.10
-livekit.example.com  A   203.0.113.10
-turn.example.com     A   203.0.113.10
+huddle.abenezer-ayalneh.dev          A   <VPS_PUBLIC_IP>
+huddle-api.abenezer-ayalneh.dev      A   <VPS_PUBLIC_IP>
+huddle-livekit.abenezer-ayalneh.dev  A   <VPS_PUBLIC_IP>
+huddle-turn.abenezer-ayalneh.dev     A   <VPS_PUBLIC_IP>
 ```
 
-Wait until they resolve (`dig +short app.example.com`) before requesting certs —
-Caddy's automatic Let's Encrypt issuance needs the names to point at the box.
+Wait until they resolve (`dig +short huddle.abenezer-ayalneh.dev`) before
+requesting certs — Caddy's automatic Let's Encrypt issuance needs the names to
+point at the box.
 
 ---
 
-## 2. Install Docker + Compose on the VPS
+## 2. Install Docker + Compose (and host Caddy) on the VPS
 
 ```bash
+# Docker + Compose v2
 curl -fsSL https://get.docker.com | sh
 sudo usermod -aG docker "$USER"   # log out/in so the group applies
 docker compose version            # confirm the Compose v2 plugin is present
+
+# Host-installed Caddy (the front door used by this guide)
+sudo apt-get install -y debian-keyring debian-archive-keyring apt-transport-https curl
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+sudo apt-get update && sudo apt-get install -y caddy
+caddy version
 ```
+
+> Skip the Caddy install if you intend to use the **containerized** `caddy`
+> service instead (see the front-door note in the intro).
 
 ---
 
@@ -110,13 +130,16 @@ cp .env.prod.example .env.prod
 Edit `.env.prod` and set, at minimum:
 
 - **Domains:** `APP_DOMAIN`, `API_DOMAIN`, `LIVEKIT_DOMAIN`, `ACME_EMAIL`.
+  (`APP_DOMAIN`/`API_DOMAIN`/`LIVEKIT_DOMAIN` are only consumed by the
+  _containerized_ Caddy; with a host Caddy they're harmless but the hostnames
+  live in `/etc/caddy/Caddyfile` instead — see step 7.)
 - **Public URLs** (these are baked into the browser bundle at build time):
-  `NEXT_PUBLIC_API_URL=https://api.example.com`,
-  `NEXT_PUBLIC_LIVEKIT_URL=wss://livekit.example.com`,
-  `NEXT_PUBLIC_AUTH_URL=https://api.example.com`,
-  `WEB_ORIGIN=https://app.example.com`,
-  `BETTER_AUTH_URL=https://api.example.com`,
-  `LIVEKIT_URL=wss://livekit.example.com`.
+  `NEXT_PUBLIC_API_URL=https://huddle-api.abenezer-ayalneh.dev`,
+  `NEXT_PUBLIC_LIVEKIT_URL=wss://huddle-livekit.abenezer-ayalneh.dev`,
+  `NEXT_PUBLIC_AUTH_URL=https://huddle-api.abenezer-ayalneh.dev`,
+  `WEB_ORIGIN=https://huddle.abenezer-ayalneh.dev`,
+  `BETTER_AUTH_URL=https://huddle-api.abenezer-ayalneh.dev`,
+  `LIVEKIT_URL=wss://huddle-livekit.abenezer-ayalneh.dev`.
 - **Secrets** — generate each with `openssl rand -hex 32`:
   `LIVEKIT_API_SECRET`, `BETTER_AUTH_SECRET`, `POSTGRES_PASSWORD`,
   `MINIO_ROOT_PASSWORD`, `S3_SECRET_KEY`. Keep `LIVEKIT_KEYS` as
@@ -133,7 +156,7 @@ Edit `.env.prod` and set, at minimum:
 `infra/livekit.prod.yaml` is a committed template (LiveKit does **not**
 interpolate `${...}` in it). Edit the placeholders:
 
-- `turn.domain: turn.example.com` → your TURN hostname.
+- `turn.domain: huddle-turn.abenezer-ayalneh.dev` → your TURN hostname.
 - `webhook.api_key: devkey` → your real `LIVEKIT_API_KEY` (the key **id**, not
   the secret).
 
@@ -141,19 +164,20 @@ interpolate `${...}` in it). Edit the placeholders:
 
 ## 6. Provision the TURN TLS certificate
 
-LiveKit's embedded TURN/TLS needs a certificate for `turn.example.com`. Caddy
-issues certs for the other three hostnames automatically, but TURN is not an
-HTTP service, so you provision its cert separately. Easiest is **certbot**:
+LiveKit's embedded TURN/TLS needs a certificate for
+`huddle-turn.abenezer-ayalneh.dev`. Caddy issues certs for the other three
+hostnames automatically, but TURN is not an HTTP service, so you provision its
+cert separately. Easiest is **certbot**:
 
 ```bash
 sudo apt-get install -y certbot
-# Port 80 must be free for the challenge — do this BEFORE first 'up', or briefly
-# stop Caddy: docker compose ... stop caddy
-sudo certbot certonly --standalone -d turn.example.com
+# Port 80 must be free for the challenge. With a host Caddy running on :80,
+# briefly stop it: sudo systemctl stop caddy   (restart it after).
+sudo certbot certonly --standalone -d huddle-turn.abenezer-ayalneh.dev
 
 # Hand the cert to LiveKit (the prod compose mounts infra/turn-certs read-only):
-sudo cp /etc/letsencrypt/live/turn.example.com/fullchain.pem infra/turn-certs/cert.pem
-sudo cp /etc/letsencrypt/live/turn.example.com/privkey.pem   infra/turn-certs/key.pem
+sudo cp /etc/letsencrypt/live/huddle-turn.abenezer-ayalneh.dev/fullchain.pem infra/turn-certs/cert.pem
+sudo cp /etc/letsencrypt/live/huddle-turn.abenezer-ayalneh.dev/privkey.pem   infra/turn-certs/key.pem
 sudo chown "$USER" infra/turn-certs/*.pem
 ```
 
@@ -162,8 +186,8 @@ files and restart LiveKit:
 
 ```bash
 echo '#!/bin/sh
-cp /etc/letsencrypt/live/turn.example.com/fullchain.pem '"$PWD"'/infra/turn-certs/cert.pem
-cp /etc/letsencrypt/live/turn.example.com/privkey.pem   '"$PWD"'/infra/turn-certs/key.pem
+cp /etc/letsencrypt/live/huddle-turn.abenezer-ayalneh.dev/fullchain.pem '"$PWD"'/infra/turn-certs/cert.pem
+cp /etc/letsencrypt/live/huddle-turn.abenezer-ayalneh.dev/privkey.pem   '"$PWD"'/infra/turn-certs/key.pem
 docker compose -f '"$PWD"'/infra/docker-compose.yml -f '"$PWD"'/infra/docker-compose.prod.yml --env-file '"$PWD"'/.env.prod restart livekit' \
   | sudo tee /etc/letsencrypt/renewal-hooks/deploy/huddle-turn.sh
 sudo chmod +x /etc/letsencrypt/renewal-hooks/deploy/huddle-turn.sh
@@ -178,22 +202,44 @@ sudo chmod +x /etc/letsencrypt/renewal-hooks/deploy/huddle-turn.sh
 
 ## 7. Build & start the stack
 
+Because the front door is a **host-installed Caddy**, start everything _except_
+the containerized `caddy` service (it would fight the host Caddy for :80/:443):
+
 ```bash
 docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
-  --env-file .env.prod up -d --build
+  --env-file .env.prod up -d --build --scale caddy=0
 ```
 
-This builds the `api` and `web` images (first build is slow — it compiles both
-apps) and starts everything with `restart: always`. The **`egress-netfix`
-sidecar is dev-only and does not run here** (it's behind the `dev-egress-fix`
-profile); on a flat Linux host egress reaches LiveKit's media directly.
+> Using the **containerized** Caddy instead? Drop `--scale caddy=0` and skip the
+> host-Caddy sub-step below.
 
-Check status and watch Caddy obtain certificates:
+This builds the `api` and `web` images (first build is slow — it compiles both
+apps) and starts everything with `restart: always`. The containers publish
+`web` on `127.0.0.1:3000`, `api` on `127.0.0.1:3001`, and LiveKit signal on
+`:7880`. The **`egress-netfix` sidecar is dev-only and does not run here** (it's
+behind the `dev-egress-fix` profile); on a flat Linux host egress reaches
+LiveKit's media directly.
+
+Check status:
 
 ```bash
 docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml ps
-docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml logs -f caddy
 ```
+
+### Configure the host Caddy
+
+Add the three site blocks from [`infra/Caddyfile.host`](../infra/Caddyfile.host)
+to `/etc/caddy/Caddyfile` (already filled in with these hostnames), then reload:
+
+```bash
+sudo cp infra/Caddyfile.host /etc/caddy/Caddyfile   # or merge into your existing one
+sudo systemctl reload caddy
+sudo systemctl status caddy --no-pager               # confirm it's active
+journalctl -u caddy -f                               # watch it obtain certs
+```
+
+Caddy auto-issues Let's Encrypt certs for the three web hostnames and proxies
+WSS for LiveKit signal automatically. (The TURN cert is separate — step 6.)
 
 ---
 
@@ -212,13 +258,14 @@ docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
 ## 9. Verify
 
 ```bash
-curl https://api.example.com/health    # {"status":"ok"}
-curl https://api.example.com/ready     # 200 + {"postgres":"ok","redis":"ok"}
+curl https://huddle-api.abenezer-ayalneh.dev/health    # {"status":"ok"}
+curl https://huddle-api.abenezer-ayalneh.dev/ready     # 200 + {"postgres":"ok","redis":"ok"}
 ```
 
 Then in a browser:
 
-1. Open `https://app.example.com`, sign up (email + password), create a room.
+1. Open `https://huddle.abenezer-ayalneh.dev`, sign up (email + password), create
+   a room.
 2. From another browser/device, open the room link, enter a name, **knock**.
 3. Admit the guest from the host panel; confirm two-way audio/video.
 4. As host, click **Record**, talk for a few seconds, **Stop**, then download the
@@ -232,8 +279,9 @@ If media fails to connect, see Troubleshooting below.
 
 Set `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` in `.env.prod`
 (console.cloud.google.com → Credentials → OAuth client). Authorized redirect
-URI: `https://api.example.com/api/auth/callback/google`. Rebuild/restart `api`
-and `web` after changing env (NEXT*PUBLIC*\* are build-time for `web`).
+URI: `https://huddle-api.abenezer-ayalneh.dev/api/auth/callback/google`.
+Rebuild/restart `api` and `web` after changing env (NEXT*PUBLIC*\* are build-time
+for `web`).
 
 ---
 
@@ -242,7 +290,7 @@ and `web` after changing env (NEXT*PUBLIC*\* are build-time for `web`).
 ```bash
 git pull          # or rsync the new tree up
 docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
-  --env-file .env.prod up -d --build    # rebuilds changed images, recreates
+  --env-file .env.prod up -d --build --scale caddy=0   # keep host Caddy as the front door
 # then re-run migrations if the pull added any (step 8)
 ```
 
@@ -285,8 +333,16 @@ little; it's a config change, not a redesign, when you outgrow the VPS.
 
 ## Troubleshooting
 
+- **`api` container crash-loops with `Cannot find module '@nestjs/common'`:**
+  you built the image before the Dockerfile fix. pnpm's `node_modules` is
+  symlinked into the root store, so the run stage must copy the whole workspace
+  (the current `apps/api/Dockerfile` does). Rebuild without cache:
+  `docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml --env-file .env.prod build --no-cache api`
+  then `up -d --scale caddy=0`.
 - **Caddy can't get a certificate:** DNS for that hostname isn't pointing at the
-  box yet, or ports 80/443 aren't open/free. Check `logs -f caddy`.
+  box yet, or ports 80/443 aren't open/free. Host Caddy: `journalctl -u caddy -f`
+  (and make sure nothing else — including the containerized `caddy` — holds
+  :80/:443). Containerized Caddy: `... logs -f caddy`.
 - **`/ready` returns 503:** Postgres or Redis isn't up. The JSON body names the
   failing dependency (`{"postgres":"down"}`). Check `logs postgres` / `logs redis`.
 - **Connects but no audio/video:** WebRTC media can't traverse. Confirm the
@@ -305,6 +361,8 @@ little; it's a config change, not a redesign, when you outgrow the VPS.
 - **Webhooks failing / knocks not clearing:** LiveKit posts to `http://api:3001`
   over the Docker network; ensure `webhook.api_key` in `livekit.prod.yaml`
   matches `LIVEKIT_API_KEY`.
-- **`502` from Caddy:** the `web` or `api` container failed to start. Check
-  `logs api` / `logs web`; a common cause is a missing/typo'd env var in
-  `.env.prod`.
+- **`502`/`connection refused` from Caddy:** the `web` or `api` container isn't
+  up or isn't published on localhost. Confirm `docker compose ... ps` shows them
+  healthy and that they're bound to `127.0.0.1:3000` / `127.0.0.1:3001`
+  (`ss -ltnp | grep -E '3000|3001'`). Check `logs api` / `logs web`; a common
+  cause is a missing/typo'd env var in `.env.prod`.

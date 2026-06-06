@@ -45,6 +45,12 @@ services:
     environment:
       NODE_ENV: production
       PORT: "3000"
+      HOSTNAME: "0.0.0.0" # Next standalone must bind all interfaces (not just localhost)
+    # Published on localhost so a HOST-installed reverse proxy (e.g. a global
+    # Caddy) can reach it. Harmless when the containerized `caddy` service is used
+    # instead (it reaches `web` by service name). Never bound to a public iface.
+    ports:
+      - "127.0.0.1:3000:3000"
     depends_on:
       - api
 
@@ -62,6 +68,9 @@ services:
     environment:
       NODE_ENV: production
       LOG_FORMAT: json # structured JSON logs in prod (logging/json.logger.ts)
+    # Published on localhost for a host-installed reverse proxy (see `web` above).
+    ports:
+      - "127.0.0.1:3001:3001"
     depends_on:
       postgres:
         condition: service_healthy

@@ -15,14 +15,13 @@ RUN pnpm --filter @huddle/api exec prisma generate \
   && pnpm --filter @huddle/api build
 
 FROM node:20-alpine AS run
-WORKDIR /repo/apps/api
 ENV NODE_ENV=production
-# Carry over the compiled output, Prisma schema/migrations, and node_modules
-# (which include the generated Prisma client). Migrations are applied separately
-# at deploy time — see docs/SETUP.md.
-COPY --from=build /repo/apps/api/dist ./dist
-COPY --from=build /repo/apps/api/prisma ./prisma
-COPY --from=build /repo/apps/api/package.json ./package.json
-COPY --from=build /repo/apps/api/node_modules ./node_modules
+# Copy the WHOLE workspace, not just apps/api/node_modules. pnpm uses a symlinked
+# node_modules: apps/api/node_modules/<pkg> points into the root
+# /repo/node_modules/.pnpm store. Copying only apps/api/node_modules leaves those
+# symlinks dangling ("Cannot find module '@nestjs/common'"). Copying /repo
+# preserves the root store, the symlinks, and the generated Prisma client.
+COPY --from=build /repo /repo
+WORKDIR /repo/apps/api
 EXPOSE 3001
 CMD ["node", "dist/main.js"]
