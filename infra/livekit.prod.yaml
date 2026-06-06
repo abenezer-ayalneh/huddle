@@ -29,8 +29,11 @@ redis:
 # TURN domain; provision it (certbot, or copy from Caddy) to the mounted path.
 # Port 5349 is published directly in docker-compose.prod.yml.
 turn:
-  enabled: true
-  domain: turn.example.com # EDIT: your TURN domain
+  # Deferred for first bring-up: enabling TURN requires the cert.pem/key.pem for
+  # the TURN domain to already exist, or LiveKit fails to start. Get basic calls
+  # working first, then provision the cert and flip this to true (see runbook).
+  enabled: false
+  domain: huddle-turn.abenezer-ayalneh.dev
   tls_port: 5349
   cert_file: /etc/livekit/turn/cert.pem # EDIT/provision
   key_file: /etc/livekit/turn/key.pem # EDIT/provision
@@ -44,7 +47,7 @@ prometheus_port: 6789
 # does NOT interpolate ${} in this file, so set it literally. In prod the API
 # runs as the `api` service, reachable by name on the compose network.
 webhook:
-  api_key: devkey # EDIT: your LIVEKIT_API_KEY (the key id, e.g. "APIxxxx")
+  api_key: huddlekey # must match LIVEKIT_API_KEY in .env.prod (the key id, not the secret)
   urls:
     - http://api:3001/livekit/webhook
 

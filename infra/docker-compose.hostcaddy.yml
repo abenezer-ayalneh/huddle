@@ -1,0 +1,30 @@
+# Host-Caddy override (use when a Caddy already runs on the HOST, owning :80/:443
+# — e.g. it serves your portfolio). This DISABLES the bundled Caddy container and
+# instead publishes web + api on localhost so the host Caddy can reverse-proxy
+# them. LiveKit signal stays on 127.0.0.1:7880 (host Caddy proxies it as WSS);
+# LiveKit media (UDP) + TURN are published publicly by the base/prod files and
+# bypass Caddy as designed.
+#
+# Layer it LAST, after the prod override:
+#   docker compose -f infra/docker-compose.yml \
+#     -f infra/docker-compose.prod.yml \
+#     -f infra/docker-compose.hostcaddy.yml \
+#     --env-file .env.prod up -d --build
+#
+# Then add the matching reverse_proxy blocks to your global Caddyfile (see
+# infra/caddy-host.snippet.conf) and `caddy reload`.
+
+services:
+  # Park the bundled Caddy behind an inactive profile so it never starts here.
+  caddy:
+    profiles: ["bundled-caddy-disabled"]
+
+  # Publish the frontend on a free localhost port (your portfolio owns 3000).
+  web:
+    ports:
+      - "127.0.0.1:8080:3000" # host Caddy -> huddle.abenezer-ayalneh.dev
+
+  # Publish the API on a free localhost port.
+  api:
+    ports:
+      - "127.0.0.1:8081:3001" # host Caddy -> huddle-api.abenezer-ayalneh.dev
