@@ -228,15 +228,24 @@ docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml ps
 
 ### Configure the host Caddy
 
-Add the three site blocks from [`infra/Caddyfile.host`](../infra/Caddyfile.host)
-to `/etc/caddy/Caddyfile` (already filled in with these hostnames), then reload:
+The three site blocks live in [`infra/huddle.caddy`](../infra/huddle.caddy)
+(already filled in with these hostnames, and pointed at the localhost ports the
+prod compose publishes — web `127.0.0.1:3001`, api `127.0.0.1:3002`, LiveKit
+signal `127.0.0.1:7880`). If your host Caddy imports a sites directory
+(`import /etc/caddy/sites/*` in `/etc/caddy/Caddyfile`), symlink the repo file
+in so a `git pull` keeps it current:
 
 ```bash
-sudo cp infra/Caddyfile.host /etc/caddy/Caddyfile   # or merge into your existing one
+sudo ln -s "$PWD/infra/huddle.caddy" /etc/caddy/sites/huddle.caddy
+sudo caddy validate --config /etc/caddy/Caddyfile    # sanity-check before reload
 sudo systemctl reload caddy
 sudo systemctl status caddy --no-pager               # confirm it's active
 journalctl -u caddy -f                               # watch it obtain certs
 ```
+
+(No sites directory? Paste the three blocks into `/etc/caddy/Caddyfile`
+directly, or `sudo cp infra/huddle.caddy /etc/caddy/Caddyfile` if Huddle is the
+only site, then reload.)
 
 Caddy auto-issues Let's Encrypt certs for the three web hostnames and proxies
 WSS for LiveKit signal automatically. (The TURN cert is separate — step 6.)
