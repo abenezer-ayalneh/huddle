@@ -9,8 +9,10 @@
 # Requires your main /etc/caddy/Caddyfile to import the dir, e.g.:
 #   import /etc/caddy/sites/*
 #
-# Ports match infra/docker-compose.prod.yml, which publishes the containers on
-# localhost: web -> 127.0.0.1:3001, api -> 127.0.0.1:3002, livekit signal :7880.
+# Upstream ports are the published HOST ports from .env.prod — WEB_HOST_PORT
+# (default 3001) and API_HOST_PORT (default 3002) — plus LiveKit signal :7880.
+# Caddy can't read .env, so if you change those *_HOST_PORT values, update the
+# reverse_proxy targets below to match.
 # WebRTC media (UDP) and TURN do NOT pass through Caddy — they hit LiveKit
 # directly (see docs/adr/0004). Caddy auto-issues Let's Encrypt certs for these
 # three HTTP/WSS hostnames; it upgrades the LiveKit WebSocket automatically.

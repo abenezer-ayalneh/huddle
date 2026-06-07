@@ -44,13 +44,17 @@ services:
     restart: always
     environment:
       NODE_ENV: production
-      PORT: "3000"
+      # Container-internal listen port (NOT the published host port). Next reads
+      # PORT; the ports mapping below uses the same value so they can't drift.
+      PORT: "${WEB_PORT:-3000}"
       HOSTNAME: "0.0.0.0" # Next standalone must bind all interfaces (not just localhost)
     # Published on localhost so a HOST-installed reverse proxy (e.g. a global
     # Caddy) can reach it. Harmless when the containerized `caddy` service is used
     # instead (it reaches `web` by service name). Never bound to a public iface.
+    # ${WEB_HOST_PORT} is the host port Caddy proxies to (default 3001); the
+    # container side is the app's internal ${WEB_PORT} (default 3000).
     ports:
-      - "127.0.0.1:3001:3000"
+      - "127.0.0.1:${WEB_HOST_PORT:-3001}:${WEB_PORT:-3000}"
     depends_on:
       - api
 
@@ -69,8 +73,11 @@ services:
       NODE_ENV: production
       LOG_FORMAT: json # structured JSON logs in prod (logging/json.logger.ts)
     # Published on localhost for a host-installed reverse proxy (see `web` above).
+    # ${API_HOST_PORT} is the host port Caddy proxies to (default 3002); the
+    # container side is the app's internal ${API_PORT} (default 3001) — the same
+    # API_PORT the NestJS app binds (from .env.prod), so the two stay in sync.
     ports:
-      - "127.0.0.1:3002:3001"
+      - "127.0.0.1:${API_HOST_PORT:-3002}:${API_PORT:-3001}"
     depends_on:
       postgres:
         condition: service_healthy

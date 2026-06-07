@@ -151,6 +151,15 @@ Edit `.env.prod` and set, at minimum:
 
 `.env.prod` is gitignored — never commit it.
 
+**Ports (only if 3001/3002 are taken on your box).** The containers publish on
+`127.0.0.1:${WEB_HOST_PORT}` (default `3001`) and `127.0.0.1:${API_HOST_PORT}`
+(default `3002`) — these are what the host Caddy proxies to, so keep
+`infra/huddle.caddy` in sync if you change them. The `*_PORT` vars (`WEB_PORT`
+3000, `API_PORT` 3001) are the **container-internal** listen ports and almost
+never need changing — they live inside the Docker network and don't clash with
+anything else on the host. Do **not** set `API_PORT` to the host port (3002) —
+that's the mistake that makes Caddy return `502`.
+
 ### Edit the LiveKit prod config
 
 `infra/livekit.prod.yaml` is a committed template (LiveKit does **not**
