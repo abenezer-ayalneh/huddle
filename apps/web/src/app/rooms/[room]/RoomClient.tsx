@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { api } from "@/lib/api";
 import { loadHostSession, clearHostSession } from "@/lib/hostSession";
 import CallStage from "./CallStage";
 import GuestGate from "./GuestGate";
@@ -39,7 +38,6 @@ export default function RoomClient({
     // intentional (one-shot hydration of a client-only value), not a render loop.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (role === "host") setHost(loadHostSession(room));
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHostChecked(true);
   }, [role, room]);
 
@@ -114,18 +112,6 @@ export default function RoomClient({
 function NameGate({ room }: { room: string }) {
   const router = useRouter();
   const [name, setName] = useState("");
-  const [title, setTitle] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    api
-      .getPublicRoom(room)
-      .then((r) => active && setTitle(r.title))
-      .catch(() => active && setTitle(null));
-    return () => {
-      active = false;
-    };
-  }, [room]);
 
   function join() {
     const trimmed = name.trim();
@@ -144,7 +130,7 @@ function NameGate({ room }: { room: string }) {
         className="w-full max-w-sm space-y-4 rounded-xl border border-black/10 p-8 shadow-sm dark:border-white/15"
       >
         <div className="space-y-1">
-          <h1 className="text-xl font-semibold">{title ?? "Join meeting"}</h1>
+          <h1 className="text-xl font-semibold">Join meeting</h1>
           <p className="text-sm text-black/60 dark:text-white/60">
             Enter your name to ask the host to let you in.
           </p>

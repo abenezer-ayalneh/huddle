@@ -14,16 +14,13 @@ class FakeRoomRepo {
   private seq = 0;
 
   create(params: {
-    title: string;
-    slug?: string;
     scheduledStart?: Date | null;
     hostUserId: string;
   }): Promise<Room> {
-    const slug = params.slug ?? params.title.toLowerCase().replace(/\s+/g, '-');
+    const slug = `room-${++this.seq}`;
     const room: Room = {
-      id: `id-${++this.seq}`,
+      id: `id-${this.seq}`,
       slug,
-      title: params.title,
       scheduledStart: params.scheduledStart ?? null,
       hostKey: `key-${this.seq}`,
       hostUserId: params.hostUserId,
@@ -38,9 +35,16 @@ class FakeRoomRepo {
     return Promise.resolve(this.rooms.get(slug) ?? null);
   }
 
+  // Mirrors the real repo: only the host's future scheduled meetings.
   listByHost(hostUserId: string): Promise<Room[]> {
+    const now = Date.now();
     return Promise.resolve(
-      [...this.rooms.values()].filter((r) => r.hostUserId === hostUserId),
+      [...this.rooms.values()].filter(
+        (r) =>
+          r.hostUserId === hostUserId &&
+          r.scheduledStart != null &&
+          r.scheduledStart.getTime() > now,
+      ),
     );
   }
 }
@@ -71,32 +75,32 @@ describe('RoomsService', () => {
     );
   });
 
-  it('creates a room and mints a host token', async () => {
-    const res = await service.createRoom(ada, { title: 'Standup' });
-    expect(livekit.createRoom).toHaveBeenCalledWith('standup');
+  it('creates a room with a generated code and mints a host token', async () => {
+    const res = await service.createRoom(ada, {});
+    expect(res.room).toEqual(expect.any(String));
+    expect(livekit.createRoom).toHaveBeenCalledWith(res.room);
     expect(livekit.mintToken).toHaveBeenCalledWith(
-      expect.objectContaining({ room: 'standup', host: true }),
+      expect.objectContaining({ room: res.room, host: true }),
     );
     expect(res.token).toBe('jwt-token');
     expect(res.hostKey).toEqual(expect.any(String));
-    expect(res.title).toBe('Standup');
   });
 
-  it('lists only the rooms a host owns, exposing host keys', async () => {
-    await service.createRoom(ada, { title: 'Standup' });
-    await service.createRoom(bo, { title: 'Retro' });
+  it('lists only the host’s upcoming scheduled rooms', async () => {
+    const future = new Date(Date.now() + 3_600_000).toISOString();
+    await service.createRoom(ada, {}); // instant — excluded from the list
+    const scheduled = await service.createRoom(ada, { scheduledStart: future });
+    await service.createRoom(bo, { scheduledStart: future }); // another host
     const mine = await service.listMine(ada.id);
     expect(mine.rooms).toHaveLength(1);
-    expect(mine.rooms[0].room).toBe('standup');
+    expect(mine.rooms[0].room).toBe(scheduled.room);
     expect(mine.rooms[0].hostKey).toEqual(expect.any(String));
   });
 
   it('lets the owner rejoin but forbids a non-owner', async () => {
-    await service.createRoom(ada, { title: 'Standup' });
-    await expect(service.hostJoin('standup', ada)).resolves.toMatchObject({
-      room: 'standup',
-    });
-    await expect(service.hostJoin('standup', bo)).rejects.toThrow(
+    const { room } = await service.createRoom(ada, {});
+    await expect(service.hostJoin(room, ada)).resolves.toMatchObject({ room });
+    await expect(service.hostJoin(room, bo)).rejects.toThrow(
       ForbiddenException,
     );
   });
@@ -108,15 +112,13 @@ describe('RoomsService', () => {
   });
 
   it('admits a guest, minting a guest token delivered via poll', async () => {
-    await service.createRoom(ada, { title: 'Standup' });
-    const { knockId } = await service.knock('standup', 'Bo');
+    const { room } = await service.createRoom(ada, {});
+    const { knockId } = await service.knock(room, 'Bo');
 
-    expect((await service.knockStatus('standup', knockId)).status).toBe(
-      'pending',
-    );
+    expect((await service.knockStatus(room, knockId)).status).toBe('pending');
 
-    await service.admit('standup', knockId);
-    const status = await service.knockStatus('standup', knockId);
+    await service.admit(room, knockId);
+    const status = await service.knockStatus(room, knockId);
     expect(status.status).toBe('admitted');
     expect(status.token).toBe('jwt-token');
     expect(status.livekitUrl).toBe('ws://localhost:7880');
@@ -125,24 +127,20 @@ describe('RoomsService', () => {
   });
 
   it('denies a guest', async () => {
-    await service.createRoom(ada, { title: 'Standup' });
-    const { knockId } = await service.knock('standup', 'Bo');
-    await service.deny('standup', knockId);
-    expect((await service.knockStatus('standup', knockId)).status).toBe(
-      'denied',
-    );
+    const { room } = await service.createRoom(ada, {});
+    const { knockId } = await service.knock(room, 'Bo');
+    await service.deny(room, knockId);
+    expect((await service.knockStatus(room, knockId)).status).toBe('denied');
   });
 
   it('clears knocks on room_finished without deleting the room', async () => {
-    await service.createRoom(ada, { title: 'Standup' });
-    const { knockId } = await service.knock('standup', 'Bo');
-    await service.onRoomFinished('standup');
-    await expect(service.knockStatus('standup', knockId)).rejects.toThrow(
+    const { room } = await service.createRoom(ada, {});
+    const { knockId } = await service.knock(room, 'Bo');
+    await service.onRoomFinished(room);
+    await expect(service.knockStatus(room, knockId)).rejects.toThrow(
       NotFoundException,
     );
     // Room still exists (persistent) — a fresh knock succeeds.
-    await expect(service.knock('standup', 'Cy')).resolves.toHaveProperty(
-      'knockId',
-    );
+    await expect(service.knock(room, 'Cy')).resolves.toHaveProperty('knockId');
   });
 });

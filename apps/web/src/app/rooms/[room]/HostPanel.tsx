@@ -18,6 +18,24 @@ export default function HostPanel({
   const [knocks, setKnocks] = useState<PendingKnock[]>([]);
   const [open, setOpen] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  // The guest share-link. This is the only place a host of an INSTANT meeting can
+  // get it (instant meetings aren't in the lobby's upcoming list).
+  const inviteLink =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/rooms/${encodeURIComponent(room)}`
+      : "";
+
+  const copyInvite = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // clipboard may be blocked; ignore
+    }
+  }, [inviteLink]);
 
   // Poll the waiting room for pending guests.
   useEffect(() => {
@@ -98,6 +116,23 @@ export default function HostPanel({
       </header>
 
       <div className="space-y-4 overflow-y-auto px-4 pb-4 text-sm">
+        <section>
+          <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-white/50">
+            Invite
+          </h3>
+          <div className="flex items-center gap-2">
+            <code className="min-w-0 flex-1 truncate rounded bg-white/10 px-2 py-1 text-xs text-white/80">
+              {room}
+            </code>
+            <button
+              onClick={copyInvite}
+              className="shrink-0 rounded bg-white/15 px-2 py-1 text-xs font-medium hover:bg-white/25"
+            >
+              {copied ? "Copied" : "Copy link"}
+            </button>
+          </div>
+        </section>
+
         <section>
           <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-white/50">
             Recording

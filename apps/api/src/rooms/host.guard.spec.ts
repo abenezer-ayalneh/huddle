@@ -17,7 +17,6 @@ function fakeRoom(slug: string, hostKey: string): Room {
   return {
     id: `id-${slug}`,
     slug,
-    title: slug,
     scheduledStart: null,
     hostKey,
     hostUserId: 'user-1',

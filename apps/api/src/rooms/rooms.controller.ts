@@ -28,11 +28,7 @@ export class RoomsController {
   @UseGuards(AuthGuard)
   @Post()
   create(@SessionUser() host: AuthUser, @Body() dto: CreateRoomDto) {
-    return this.rooms.createRoom(host, {
-      title: dto.title,
-      slug: dto.slug,
-      scheduledStart: dto.scheduledStart,
-    });
+    return this.rooms.createRoom(host, { scheduledStart: dto.scheduledStart });
   }
 
   @UseGuards(AuthGuard)

@@ -12,7 +12,6 @@ import { Knock, RoomStateService } from './rooms.state';
 
 export interface HostJoinResult {
   room: string;
-  title: string;
   scheduledStart: string | null;
   identity: string;
   token: string;
@@ -22,7 +21,6 @@ export interface HostJoinResult {
 
 export interface RoomSummary {
   room: string;
-  title: string;
   scheduledStart: string | null;
   hostKey: string;
   createdAt: string;
@@ -47,14 +45,12 @@ export class RoomsService {
   // host token + host key so they can join right away.
   async createRoom(
     host: AuthUser,
-    params: { title: string; slug?: string; scheduledStart?: string },
+    params: { scheduledStart?: string },
   ): Promise<HostJoinResult> {
     const scheduledStart = params.scheduledStart
       ? new Date(params.scheduledStart)
       : null;
     const room = await this.repo.create({
-      title: params.title,
-      slug: params.slug,
       scheduledStart,
       hostUserId: host.id,
     });
@@ -80,13 +76,11 @@ export class RoomsService {
   // Public info for a guest landing on a room link (does NOT leak the host key).
   async getPublic(slug: string): Promise<{
     room: string;
-    title: string;
     scheduledStart: string | null;
   }> {
     const room = await this.requireRoom(slug);
     return {
       room: room.slug,
-      title: room.title,
       scheduledStart: room.scheduledStart?.toISOString() ?? null,
     };
   }
@@ -182,7 +176,6 @@ export class RoomsService {
     });
     return {
       room: room.slug,
-      title: room.title,
       scheduledStart: room.scheduledStart?.toISOString() ?? null,
       identity,
       token,
@@ -194,7 +187,6 @@ export class RoomsService {
   private toSummary(room: Room): RoomSummary {
     return {
       room: room.slug,
-      title: room.title,
       scheduledStart: room.scheduledStart?.toISOString() ?? null,
       hostKey: room.hostKey,
       createdAt: room.createdAt.toISOString(),

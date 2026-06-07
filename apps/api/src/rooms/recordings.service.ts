@@ -25,6 +25,13 @@ export interface RecordingSummary {
   downloadable: boolean;
 }
 
+// A recording listed across rooms (lobby /recordings view): adds the owning Room
+// Code and the host key needed to authorize its download.
+export interface MyRecordingSummary extends RecordingSummary {
+  room: string;
+  hostKey: string;
+}
+
 @Injectable()
 export class RecordingsService {
   private readonly logger = new Logger(RecordingsService.name);
@@ -73,6 +80,22 @@ export class RecordingsService {
     const room = await this.requireRoom(slug);
     const rows = await this.recordings.listByRoom(room.id);
     return { recordings: rows.map((r) => this.toSummary(r)) };
+  }
+
+  // Every recording across all rooms a signed-in host owns. Each carries its Room
+  // Code and host key so the lobby's /recordings view can download via the
+  // existing host-key endpoint (the owner is entitled to their own host keys).
+  async listMine(
+    hostUserId: string,
+  ): Promise<{ recordings: MyRecordingSummary[] }> {
+    const rows = await this.recordings.listByHostUser(hostUserId);
+    return {
+      recordings: rows.map((r) => ({
+        ...this.toSummary(r),
+        room: r.room.slug,
+        hostKey: r.room.hostKey,
+      })),
+    };
   }
 
   // Stream a finished recording back to the host for download.

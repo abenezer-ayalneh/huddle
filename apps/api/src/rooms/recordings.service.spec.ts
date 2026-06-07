@@ -12,7 +12,6 @@ class FakeRoomRepo {
     const room = {
       id: `room-${slug}`,
       slug,
-      title: slug,
       scheduledStart: null,
       hostKey: 'k',
       hostUserId: 'u',

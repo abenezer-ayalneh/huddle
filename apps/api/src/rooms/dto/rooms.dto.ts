@@ -3,27 +3,13 @@ import {
   IsISO8601,
   IsOptional,
   IsString,
-  Matches,
   MaxLength,
   MinLength,
 } from 'class-validator';
 
 export class CreateRoomDto {
-  // Human-readable meeting title (also used to derive the room slug).
-  @IsString()
-  @MinLength(1)
-  @MaxLength(128)
-  title!: string;
-
-  // Optional explicit URL slug; otherwise derived from the title server-side.
-  @IsOptional()
-  @IsString()
-  @MaxLength(128)
-  @Matches(/^[a-zA-Z0-9-]+$/, {
-    message: 'slug may only contain letters, numbers and hyphens',
-  })
-  slug?: string;
-
+  // A room has no title and no client-chosen identifier: the server always
+  // generates a unique Room Code. The only input is an optional scheduled time.
   // Optional ISO-8601 scheduled start time; omit for "start now".
   @IsOptional()
   @IsISO8601()

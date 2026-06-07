@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { EgressService } from './egress.service';
 import { HostGuard } from './host.guard';
 import { LivekitService } from './livekit.service';
+import { RecordingsController } from './recordings.controller';
 import { RecordingRepository } from './recordings.repo';
 import { RecordingsService } from './recordings.service';
 import { RoomRepository } from './rooms.repo';
@@ -12,7 +13,7 @@ import { StorageService } from './storage.service';
 import { WebhookController } from './webhook.controller';
 
 @Module({
-  controllers: [RoomsController, WebhookController],
+  controllers: [RoomsController, RecordingsController, WebhookController],
   providers: [
     RoomsService,
     RoomRepository,
