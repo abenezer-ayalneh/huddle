@@ -199,9 +199,11 @@ function HostDashboard({
         hostKey: result.hostKey,
         identity: result.identity,
         livekitUrl: result.livekitUrl,
+        name: userName,
       });
-      const params = new URLSearchParams({ name: userName, role: "host" });
-      router.push(`/rooms/${encodeURIComponent(result.room)}?${params}`);
+      // No query params: the host's name and role both live in the host session
+      // (sessionStorage), so the address bar stays a clean, shareable link.
+      router.push(`/rooms/${encodeURIComponent(result.room)}`);
     },
     [router, userName]
   );

@@ -7,6 +7,7 @@ export type HostSession = {
   hostKey: string;
   identity: string;
   livekitUrl: string;
+  name: string;
 };
 
 const key = (room: string) => `huddle:host:${room}`;

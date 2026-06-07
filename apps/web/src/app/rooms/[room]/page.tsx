@@ -1,26 +1,15 @@
 import RoomClient from "./RoomClient";
 
-// Server component: unwrap the async route params/query (Next 16) and hand
-// the room + display name to the client connector. A guest may arrive via a
-// shared link with no name yet; RoomClient prompts for one in that case.
+// Server component: unwrap the async route params (Next 16) and hand the room
+// to the client connector. The URL carries nothing but the Room Code — role
+// (host vs guest) and the host's name come from the host session in
+// sessionStorage, so a shared link is always clean.
 export default async function RoomPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ room: string }>;
-  searchParams: Promise<{ name?: string; role?: string }>;
 }) {
   const { room } = await params;
-  const { name, role } = await searchParams;
 
-  const roomName = decodeURIComponent(room);
-  const displayName = name?.trim() || undefined;
-
-  return (
-    <RoomClient
-      room={roomName}
-      displayName={displayName}
-      role={role === "host" ? "host" : "guest"}
-    />
-  );
+  return <RoomClient room={decodeURIComponent(room)} />;
 }
