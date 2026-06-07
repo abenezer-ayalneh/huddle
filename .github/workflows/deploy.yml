@@ -1,0 +1,34 @@
+name: Deploy
+
+# Runs only after the CI workflow completes on main. Gated on CI success below.
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch: {} # allow manual "Run workflow" from the Actions tab
+
+# Never let two deploys run at once; let an in-flight one finish.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # Skip unless CI passed (workflow_dispatch has no workflow_run, so allow it too).
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    environment: production # remove this line if you skipped Step 4
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          command_timeout: 30m # building both images on a small VPS is slow
+          script_stop: true # abort on the first failing command
+          script: |
+            cd /home/huddle
+            ./infra/deploy.sh
