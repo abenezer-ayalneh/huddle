@@ -28,6 +28,10 @@ export class JsonLogger extends ConsoleLogger {
 }
 
 // Pick the logger based on env: JSON in prod, Nest's default pretty logger in dev.
+// Reads process.env directly (not ConfigService) on purpose: the logger is passed
+// into NestFactory.create(), so it must exist *before* the app — and thus the
+// ConfigModule — is instantiated. This is the one place ConfigService isn't yet
+// available.
 export function makeLogger(): ConsoleLogger {
   return process.env.LOG_FORMAT === 'json'
     ? new JsonLogger()

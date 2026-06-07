@@ -1,4 +1,5 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   EgressClient,
   EncodedFileOutput,
@@ -19,10 +20,13 @@ export class EgressService {
 
   private _client?: EgressClient;
 
-  constructor(private readonly storage: StorageService) {
-    const apiKey = process.env.LIVEKIT_API_KEY;
-    const apiSecret = process.env.LIVEKIT_API_SECRET;
-    const livekitUrl = process.env.LIVEKIT_URL;
+  constructor(
+    private readonly storage: StorageService,
+    private readonly config: ConfigService,
+  ) {
+    const apiKey = this.config.get<string>('LIVEKIT_API_KEY');
+    const apiSecret = this.config.get<string>('LIVEKIT_API_SECRET');
+    const livekitUrl = this.config.get<string>('LIVEKIT_URL');
     if (!apiKey || !apiSecret || !livekitUrl) {
       throw new InternalServerErrorException('Egress service misconfigured');
     }

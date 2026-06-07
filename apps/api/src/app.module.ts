@@ -15,6 +15,7 @@ import { RoomsModule } from './rooms/rooms.module';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: join(__dirname, '..', '..', '..', '.env'),
+      expandVariables: true,
     }),
     PrismaModule,
     RedisModule,

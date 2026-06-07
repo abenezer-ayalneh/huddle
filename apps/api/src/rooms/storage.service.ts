@@ -9,6 +9,7 @@ import {
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import type { Readable } from 'node:stream';
 
 // Reads recordings back out of S3/MinIO. Egress writes the file directly to the
@@ -29,25 +30,26 @@ export class StorageService {
   private _client?: S3Client;
   private _bucketReady?: Promise<void>;
 
-  constructor() {
-    const bucket = process.env.S3_BUCKET;
-    const accessKey = process.env.S3_ACCESS_KEY;
-    const secretKey = process.env.S3_SECRET_KEY;
+  constructor(private readonly config: ConfigService) {
+    const bucket = this.config.get<string>('S3_BUCKET');
+    const accessKey = this.config.get<string>('S3_ACCESS_KEY');
+    const secretKey = this.config.get<string>('S3_SECRET_KEY');
     if (!bucket || !accessKey || !secretKey) {
       throw new InternalServerErrorException('Recording storage misconfigured');
     }
     this.bucket = bucket;
     this.accessKey = accessKey;
     this.secretKey = secretKey;
-    this.region = process.env.S3_REGION ?? 'us-east-1';
+    this.region = this.config.get<string>('S3_REGION') ?? 'us-east-1';
     this.internalEndpoint =
-      process.env.S3_ENDPOINT_INTERNAL ?? 'http://minio:9000';
+      this.config.get<string>('S3_ENDPOINT_INTERNAL') ?? 'http://minio:9000';
   }
 
   private get client(): S3Client {
     return (this._client ??= new S3Client({
       // Host-facing endpoint; path-style is required for MinIO.
-      endpoint: process.env.S3_ENDPOINT ?? 'http://localhost:9000',
+      endpoint:
+        this.config.get<string>('S3_ENDPOINT') ?? 'http://localhost:9000',
       region: this.region,
       credentials: {
         accessKeyId: this.accessKey,

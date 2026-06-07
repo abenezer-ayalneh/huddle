@@ -1,3 +1,4 @@
+import type { ConfigService } from '@nestjs/config';
 import { PrismaClient } from '@prisma/client';
 
 // BetterAuth is ESM-only and NestJS compiles to CommonJS, so we load it through
@@ -19,32 +20,36 @@ export type Auth = {
 
 let authPromise: Promise<Auth> | null = null;
 
-export function getAuth(): Promise<Auth> {
-  if (!authPromise) authPromise = build();
+// Memoised, so only the first caller's ConfigService is used to build it;
+// callers all pass the same global ConfigService instance.
+export function getAuth(config: ConfigService): Promise<Auth> {
+  if (!authPromise) authPromise = build(config);
   return authPromise;
 }
 
-async function build(): Promise<Auth> {
+async function build(config: ConfigService): Promise<Auth> {
   const { betterAuth } = await import('better-auth');
   const { prismaAdapter } = await import('better-auth/adapters/prisma');
 
   const prisma = new PrismaClient();
-  const webOrigin = process.env.WEB_ORIGIN ?? 'http://localhost:3000';
+  const webOrigin = config.get<string>('WEB_ORIGIN') ?? 'http://localhost:3000';
 
   // Optional Google social login — only wired when credentials are present, so
   // the API still boots in a fresh checkout before an OAuth app is configured.
   const socialProviders: Record<string, unknown> = {};
-  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  const googleClientId = config.get<string>('GOOGLE_CLIENT_ID');
+  const googleClientSecret = config.get<string>('GOOGLE_CLIENT_SECRET');
+  if (googleClientId && googleClientSecret) {
     socialProviders.google = {
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      clientId: googleClientId,
+      clientSecret: googleClientSecret,
     };
   }
 
   return betterAuth({
     database: prismaAdapter(prisma, { provider: 'postgresql' }),
-    secret: process.env.BETTER_AUTH_SECRET,
-    baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:3001',
+    secret: config.get<string>('BETTER_AUTH_SECRET'),
+    baseURL: config.get<string>('BETTER_AUTH_URL') ?? 'http://localhost:3001',
     // The web app runs on a different origin in dev; allow it so cookies are
     // accepted on cross-origin auth calls.
     trustedOrigins: [webOrigin],

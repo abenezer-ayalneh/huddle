@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
   createParamDecorator,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import type { IncomingHttpHeaders } from 'node:http';
 import type { Request } from 'express';
 import { getAuth } from './auth';
@@ -33,9 +34,11 @@ function toHeaders(headers: IncomingHttpHeaders): Headers {
 // x-host-key (HostGuard) — this guard is only about "is someone signed in".
 @Injectable()
 export class AuthGuard implements CanActivate {
+  constructor(private readonly config: ConfigService) {}
+
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<RequestWithUser>();
-    const auth = await getAuth();
+    const auth = await getAuth(this.config);
     const session = await auth.api.getSession({
       headers: toHeaders(req.headers),
     });

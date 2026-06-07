@@ -1,4 +1,5 @@
 import { ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import type { NextFunction, Request, Response } from 'express';
 import { json } from 'express';
@@ -17,18 +18,21 @@ async function bootstrap() {
     logger: makeLogger(),
   });
 
+  // Read config through the (global) ConfigModule rather than process.env.
+  const config = app.get(ConfigService);
+
   // CORS must be registered FIRST so it handles the preflight OPTIONS (and adds
   // headers) before our auth middleware terminates the response. credentials:true
   // so the BetterAuth session cookie is sent on cross-origin fetches.
   app.enableCors({
-    origin: process.env.WEB_ORIGIN ?? 'http://localhost:3000',
+    origin: config.get<string>('WEB_ORIGIN') ?? 'http://localhost:3000',
     credentials: true,
   });
 
   // Mount BetterAuth's handler on /api/auth/* (login, callbacks, session). It
   // must read the raw body itself, so it runs *before* express.json(). Loaded
   // via dynamic import because better-auth is ESM-only (see auth/auth.ts).
-  const auth = await getAuth();
+  const auth = await getAuth(config);
   const { toNodeHandler } = await import('better-auth/node');
   const authHandler = toNodeHandler(auth);
 
@@ -62,7 +66,7 @@ async function bootstrap() {
     }),
   );
 
-  const port = process.env.API_PORT ?? 3001;
+  const port = config.get<number>('API_PORT') ?? 3001;
   await app.listen(port);
 }
 void bootstrap();

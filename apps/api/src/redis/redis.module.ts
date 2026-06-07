@@ -1,4 +1,5 @@
 import { Global, Inject, Module, OnApplicationShutdown } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 
 // Injection token for the shared ioredis client.
@@ -16,13 +17,14 @@ export const REDIS_CLIENT = 'REDIS_CLIENT';
   providers: [
     {
       provide: REDIS_CLIENT,
-      useFactory: (): Redis => {
+      inject: [ConfigService],
+      useFactory: (config: ConfigService): Redis => {
         // REDIS_URL wins if set (prod compose); otherwise fall back to the
         // existing REDIS_HOST/REDIS_PORT convention from .env.example.
         const url =
-          process.env.REDIS_URL ??
-          `redis://${process.env.REDIS_HOST ?? 'localhost'}:${
-            process.env.REDIS_PORT ?? '6379'
+          config.get<string>('REDIS_URL') ??
+          `redis://${config.get<string>('REDIS_HOST') ?? 'localhost'}:${
+            config.get<string>('REDIS_PORT') ?? '6379'
           }`;
         return new Redis(url, {
           // Don't crash the process on a transient Redis blip; ioredis retries.
