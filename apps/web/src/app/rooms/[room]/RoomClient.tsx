@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { api } from "@/lib/api";
 import { loadHostSession, clearHostSession } from "@/lib/hostSession";
 import CallStage from "./CallStage";
 import GuestGate from "./GuestGate";
@@ -39,15 +38,8 @@ export default function RoomClient({
     // intentional (one-shot hydration of a client-only value), not a render loop.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (role === "host") setHost(loadHostSession(room));
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHostChecked(true);
   }, [role, room]);
-
-  // A guest opening a shared link has no display name yet — collect one and
-  // put it in the URL so a refresh keeps it. (Hosts always arrive with a name.)
-  if (!displayName) {
-    return <NameGate room={room} />;
-  }
 
   if (error) {
     return (
@@ -63,15 +55,10 @@ export default function RoomClient({
     );
   }
 
+  // A guest collects their name as part of the Device Check inside GuestGate
+  // (which also gates the knock), so no name is needed up front here.
   if (role === "guest") {
-    return (
-      <GuestGate
-        room={room}
-        displayName={displayName}
-        onLeave={leave}
-        onError={setError}
-      />
-    );
+    return <GuestGate room={room} onLeave={leave} onError={setError} />;
   }
 
   // role === "host"
@@ -101,69 +88,10 @@ export default function RoomClient({
   return (
     <CallStage
       connection={{ token: host.token, livekitUrl: host.livekitUrl }}
-      displayName={displayName}
+      displayName={displayName ?? "Host"}
       onLeave={leave}
       onError={setError}
       overlay={<HostPanel room={room} hostKey={host.hostKey} />}
     />
-  );
-}
-
-// Guest landing on a shared link: collect a display name, then re-enter the
-// room with it in the URL so a refresh (or the knock poll) keeps it.
-function NameGate({ room }: { room: string }) {
-  const router = useRouter();
-  const [name, setName] = useState("");
-  const [title, setTitle] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    api
-      .getPublicRoom(room)
-      .then((r) => active && setTitle(r.title))
-      .catch(() => active && setTitle(null));
-    return () => {
-      active = false;
-    };
-  }, [room]);
-
-  function join() {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    const params = new URLSearchParams({ name: trimmed, role: "guest" });
-    router.replace(`/rooms/${encodeURIComponent(room)}?${params}`);
-  }
-
-  return (
-    <Centered>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          join();
-        }}
-        className="w-full max-w-sm space-y-4 rounded-xl border border-black/10 p-8 shadow-sm dark:border-white/15"
-      >
-        <div className="space-y-1">
-          <h1 className="text-xl font-semibold">{title ?? "Join meeting"}</h1>
-          <p className="text-sm text-black/60 dark:text-white/60">
-            Enter your name to ask the host to let you in.
-          </p>
-        </div>
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Your name"
-          autoComplete="off"
-          className="w-full rounded-md border border-black/15 px-3 py-2 outline-none focus:border-black/40 dark:border-white/20 dark:focus:border-white/50"
-        />
-        <button
-          type="submit"
-          disabled={!name.trim()}
-          className="w-full rounded-md bg-black px-4 py-2 font-medium text-white transition disabled:opacity-40 dark:bg-white dark:text-black"
-        >
-          Continue
-        </button>
-      </form>
-    </Centered>
   );
 }

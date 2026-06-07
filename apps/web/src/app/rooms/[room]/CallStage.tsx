@@ -16,22 +16,31 @@ type Connection = { token: string; livekitUrl: string };
 // Device pre-join → connect → call. Given a ready connection (token already
 // minted, whether host or admitted guest), it owns only the local-device step
 // and the LiveKit connection. `overlay` renders inside the room (host panel).
+//
+// A guest has already completed the Device Check before knocking, so they pass
+// their `initialChoices` in and this skips PreJoin entirely — the guest does the
+// camera/mic step exactly once. A host arrives with no choices and PreJoins here.
 export default function CallStage({
   connection,
   displayName,
   onLeave,
   onError,
   overlay,
+  initialChoices,
 }: {
   connection: Connection;
   displayName: string;
   onLeave: () => void;
   onError: (message: string) => void;
   overlay?: ReactNode;
+  initialChoices?: LocalUserChoices;
 }) {
-  const [choices, setChoices] = useState<LocalUserChoices | null>(null);
+  const [choices, setChoices] = useState<LocalUserChoices | null>(
+    initialChoices ?? null
+  );
 
-  // Step 1 — pre-join: self-preview + camera/mic pickers (F7).
+  // Step 1 — pre-join: self-preview + camera/mic pickers (F7). Skipped when the
+  // caller supplied choices (an admitted guest who already did the Device Check).
   if (!choices) {
     return (
       <main
