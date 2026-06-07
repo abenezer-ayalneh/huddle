@@ -30,5 +30,10 @@ jobs:
           command_timeout: 30m # building both images on a small VPS is slow
           script_stop: true # abort on the first failing command
           script: |
+            set -e
             cd /home/huddle
-            ./infra/deploy.sh
+            # Sync the tree FIRST so infra/deploy.sh (and any change to it) is on
+            # disk before we invoke it — the script can't pull itself into existence.
+            git fetch --prune origin
+            git reset --hard origin/main
+            bash infra/deploy.sh
