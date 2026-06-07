@@ -5,9 +5,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 // Host join: what a signed-in host needs to connect to LiveKit and run the
 // room. Returned by both create (new room) and host-token (rejoin own room).
+// `room` is the auto-generated Room Code.
 export type HostJoinResult = {
   room: string;
-  title: string;
   scheduledStart: string | null;
   identity: string;
   token: string;
@@ -15,10 +15,10 @@ export type HostJoinResult = {
   livekitUrl: string;
 };
 
-// A room the signed-in user hosts (includes the host key — they own it).
+// An upcoming scheduled meeting the signed-in user hosts (includes the host key
+// — they own it). Instant and past meetings are not listed.
 export type RoomSummary = {
   room: string;
-  title: string;
   scheduledStart: string | null;
   hostKey: string;
   createdAt: string;
@@ -26,7 +26,6 @@ export type RoomSummary = {
 
 export type PublicRoom = {
   room: string;
-  title: string;
   scheduledStart: string | null;
 };
 
@@ -56,6 +55,13 @@ export type RecordingSummary = {
   endedAt: string | null;
   error: string | null;
   downloadable: boolean;
+};
+
+// A recording listed across all the host's rooms (lobby /recordings view): adds
+// the owning Room Code and the host key needed to authorize its download.
+export type MyRecording = RecordingSummary & {
+  room: string;
+  hostKey: string;
 };
 
 class ApiError extends Error {
@@ -92,12 +98,9 @@ async function request<T>(
 }
 
 export const api = {
-  // Signed-in host creates a (optionally scheduled) room. Auth via session cookie.
-  createRoom: (input: {
-    title: string;
-    slug?: string;
-    scheduledStart?: string;
-  }) =>
+  // Signed-in host creates a meeting; the server generates its Room Code. The
+  // only input is an optional scheduled start. Auth via session cookie.
+  createRoom: (input: { scheduledStart?: string } = {}) =>
     request<HostJoinResult>("/rooms", {
       method: "POST",
       body: JSON.stringify(input),
@@ -163,6 +166,11 @@ export const api = {
       `/rooms/${encodeURIComponent(room)}/participants/${encodeURIComponent(identity)}`,
       { method: "DELETE", hostKey }
     ),
+
+  // All of the signed-in host's recordings across their rooms (session-authed).
+  // Backs the lobby /recordings page; each item carries its Room Code + hostKey.
+  listMyRecordings: () =>
+    request<{ recordings: MyRecording[] }>("/recordings/mine"),
 
   // --- Recording (host-only) ---
   startRecording: (room: string, hostKey: string) =>

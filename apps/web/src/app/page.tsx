@@ -1,11 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { ApiError, api, type RoomSummary } from "@/lib/api";
 import { signIn, signUp, signOut, useSession } from "@/lib/auth-client";
 import { saveHostSession } from "@/lib/hostSession";
-import RecordingControls from "./rooms/[room]/RecordingControls";
 
 // Lobby (Phase 7). Hosting now requires a signed-in account: sign in with an
 // email + password (or Google), then create or schedule a meeting and share its
@@ -178,7 +178,6 @@ function HostDashboard({
   onSignOut: () => void;
 }) {
   const router = useRouter();
-  const [title, setTitle] = useState("");
   const [scheduledStart, setScheduledStart] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -208,19 +207,17 @@ function HostDashboard({
   );
 
   async function handleCreate() {
-    if (!title.trim() || busy) return;
+    if (busy) return;
     setBusy(true);
     setError(null);
     try {
       const result = await api.createRoom({
-        title: title.trim(),
         scheduledStart: scheduledStart
           ? new Date(scheduledStart).toISOString()
           : undefined,
       });
       // A scheduled (future) meeting goes to the list; "start now" jumps in.
       if (scheduledStart) {
-        setTitle("");
         setScheduledStart("");
         refresh();
       } else {
@@ -264,16 +261,6 @@ function HostDashboard({
 
       <form onSubmit={(e) => e.preventDefault()} className="space-y-3">
         <label className="block space-y-1">
-          <span className="text-sm font-medium">Meeting title</span>
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Team standup"
-            autoComplete="off"
-            className="w-full rounded-md border border-black/15 px-3 py-2 outline-none focus:border-black/40 dark:border-white/20 dark:focus:border-white/50"
-          />
-        </label>
-        <label className="block space-y-1">
           <span className="text-sm font-medium">
             Scheduled start{" "}
             <span className="text-black/40 dark:text-white/40">(optional)</span>
@@ -291,7 +278,7 @@ function HostDashboard({
         <button
           type="button"
           onClick={handleCreate}
-          disabled={!title.trim() || busy}
+          disabled={busy}
           className="w-full rounded-md bg-black px-4 py-2 font-medium text-white transition disabled:opacity-40 dark:bg-white dark:text-black"
         >
           {busy
@@ -303,6 +290,13 @@ function HostDashboard({
       </form>
 
       <MeetingList rooms={rooms} onStart={startRoom} />
+
+      <Link
+        href="/recordings"
+        className="block text-sm text-black/60 underline-offset-2 hover:underline dark:text-white/60"
+      >
+        View past recordings →
+      </Link>
     </div>
   );
 }
@@ -318,13 +312,13 @@ function MeetingList({
   if (rooms.length === 0) {
     return (
       <p className="text-sm text-black/50 dark:text-white/50">
-        No meetings yet. Create one above.
+        No upcoming scheduled meetings.
       </p>
     );
   }
   return (
     <div className="space-y-2">
-      <h2 className="text-sm font-medium">Your meetings</h2>
+      <h2 className="text-sm font-medium">Upcoming meetings</h2>
       <ul className="divide-y divide-black/10 dark:divide-white/10">
         {rooms.map((r) => (
           <MeetingRow key={r.room} room={r} onStart={() => onStart(r.room)} />
@@ -342,7 +336,6 @@ function MeetingRow({
   onStart: () => void;
 }) {
   const [copied, setCopied] = useState(false);
-  const [showRecordings, setShowRecordings] = useState(false);
   const link =
     typeof window !== "undefined"
       ? `${window.location.origin}/rooms/${encodeURIComponent(room.room)}`
@@ -362,21 +355,16 @@ function MeetingRow({
     <li className="py-3">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate font-medium">{room.title}</p>
-          <p className="text-xs text-black/50 dark:text-white/50">
+          <p className="truncate font-medium">
             {room.scheduledStart
               ? new Date(room.scheduledStart).toLocaleString()
               : "Anytime"}
           </p>
+          <p className="font-mono text-xs text-black/50 dark:text-white/50">
+            {room.room}
+          </p>
         </div>
         <div className="flex shrink-0 gap-2">
-          <button
-            type="button"
-            onClick={() => setShowRecordings((v) => !v)}
-            className="rounded-md border border-black/15 px-3 py-1.5 text-sm dark:border-white/20"
-          >
-            {showRecordings ? "Hide" : "Recordings"}
-          </button>
           <button
             type="button"
             onClick={copy}
@@ -393,14 +381,6 @@ function MeetingRow({
           </button>
         </div>
       </div>
-
-      {showRecordings && (
-        // RecordingControls is styled for the dark in-call panel; wrap it in a
-        // dark surface so it reads well inside the light dashboard too.
-        <div className="mt-3 rounded-lg bg-black/85 p-3 text-white">
-          <RecordingControls room={room.room} hostKey={room.hostKey} />
-        </div>
-      )}
     </li>
   );
 }

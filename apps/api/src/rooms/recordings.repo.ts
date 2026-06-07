@@ -38,6 +38,18 @@ export class RecordingRepository {
     });
   }
 
+  // Every recording across all rooms owned by a host, each joined to its room's
+  // code (slug) and host key — backs the lobby's cross-room /recordings view.
+  listByHostUser(
+    hostUserId: string,
+  ): Promise<(Recording & { room: { slug: string; hostKey: string } })[]> {
+    return this.prisma.recording.findMany({
+      where: { room: { hostUserId } },
+      orderBy: { startedAt: 'desc' },
+      include: { room: { select: { slug: true, hostKey: true } } },
+    });
+  }
+
   // Any recording for this room still being captured (used to stop on demand
   // and to reflect "recording in progress" to the host UI).
   listActiveByRoom(roomId: string): Promise<Recording[]> {

@@ -78,9 +78,9 @@ model Verification {
 
 model Room {
   id             String    @id @default(cuid())
-  // URL-safe identifier; also the LiveKit room name.
+  // Auto-generated Room Code (Meet-style, e.g. abz-mnpq-rfk). URL-safe; also the
+  // LiveKit room name. Rooms have no human title — this is their only identity.
   slug           String    @unique
-  title          String
   // When the meeting is scheduled to start; null means "start now".
   scheduledStart DateTime?
   // Per-room secret that authorizes in-call host actions (x-host-key). Returned

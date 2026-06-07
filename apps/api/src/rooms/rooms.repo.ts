@@ -10,58 +10,55 @@ import { PrismaService } from '../prisma/prisma.service';
 export class RoomRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  // Slugify a title for use as a URL-safe, LiveKit-safe room name.
-  private slugify(input: string): string {
-    return (
-      input
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-        .slice(0, 40) || 'room'
-    );
+  // Generate a Meet-style Room Code, e.g. "abz-mnpq-rfk". Lowercase letters only,
+  // omitting l/o to avoid 1/0 confusion when read aloud or typed.
+  private roomCode(): string {
+    const alphabet = 'abcdefghijkmnpqrstuvwxyz';
+    const group = (n: number): string => {
+      const bytes = randomBytes(n);
+      let out = '';
+      for (let i = 0; i < n; i++) out += alphabet[bytes[i] % alphabet.length];
+      return out;
+    };
+    return `${group(3)}-${group(4)}-${group(3)}`;
   }
 
-  // Create a room owned by hostUserId. If `slug` is taken (or derived from the
-  // title collides), append a short random suffix until it's unique.
+  // Create a room owned by hostUserId with a freshly generated, unique Room Code.
+  // Rooms have no title; the slug is always generated (never client-supplied).
   async create(params: {
-    title: string;
-    slug?: string;
     scheduledStart?: Date | null;
     hostUserId: string;
   }): Promise<Room> {
-    const base = this.slugify(params.slug ?? params.title);
-    let slug = base;
-    // Retry on unique-constraint collision rather than racing a pre-check.
+    // Retry on the (astronomically unlikely) unique-constraint collision.
     for (let attempt = 0; attempt < 5; attempt++) {
       try {
         return await this.prisma.room.create({
           data: {
-            slug,
-            title: params.title,
+            slug: this.roomCode(),
             scheduledStart: params.scheduledStart ?? null,
             hostKey: randomBytes(24).toString('base64url'),
             hostUserId: params.hostUserId,
           },
         });
       } catch (err: unknown) {
-        if (this.isUniqueViolation(err)) {
-          slug = `${base}-${randomBytes(2).toString('hex')}`;
-          continue;
-        }
+        if (this.isUniqueViolation(err)) continue;
         throw err;
       }
     }
-    throw new Error('Could not allocate a unique room slug');
+    throw new Error('Could not allocate a unique room code');
   }
 
   findBySlug(slug: string): Promise<Room | null> {
     return this.prisma.room.findUnique({ where: { slug } });
   }
 
+  // The host's UPCOMING scheduled meetings only: those with a future start time.
+  // Instant meetings (no scheduledStart) and past ones are intentionally omitted
+  // — the lobby list exists solely to get back into a not-yet-started meeting.
   listByHost(hostUserId: string): Promise<Room[]> {
     return this.prisma.room.findMany({
-      where: { hostUserId },
-      orderBy: [{ scheduledStart: 'asc' }, { createdAt: 'desc' }],
+      where: { hostUserId, scheduledStart: { gt: new Date() } },
+      orderBy: { scheduledStart: 'asc' },
     });
   }
 

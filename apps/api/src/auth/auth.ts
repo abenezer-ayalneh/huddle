@@ -56,5 +56,5 @@ async function build(config: ConfigService): Promise<Auth> {
     // Local email + password is the primary login; Google is optional.
     emailAndPassword: { enabled: true },
     socialProviders,
-  }) as unknown as Auth;
+  });
 }

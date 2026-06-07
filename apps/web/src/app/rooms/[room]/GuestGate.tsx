@@ -31,7 +31,6 @@ export default function GuestGate({
   const [phase, setPhase] = useState<
     "precheck" | "check" | "knocking" | "waiting" | "denied"
   >("precheck");
-  const [title, setTitle] = useState<string | null>(null);
   const [choices, setChoices] = useState<LocalUserChoices | null>(null);
   const [knockId, setKnockId] = useState<string | null>(null);
   const [connection, setConnection] = useState<Connection | null>(null);
@@ -42,9 +41,8 @@ export default function GuestGate({
     let active = true;
     api
       .getPublicRoom(room)
-      .then((r) => {
+      .then(() => {
         if (!active) return;
-        setTitle(r.title);
         setPhase("check");
       })
       .catch((e) => {
@@ -166,7 +164,7 @@ export default function GuestGate({
         data-lk-theme="default"
       >
         <div className="space-y-1 text-center">
-          <h1 className="text-xl font-semibold">{title ?? "Join meeting"}</h1>
+          <h1 className="text-xl font-semibold">Join meeting</h1>
           <p className="text-sm text-black/60 dark:text-white/60">
             Check your camera and microphone, then ask the host to let you in.
           </p>

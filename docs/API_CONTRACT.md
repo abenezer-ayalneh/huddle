@@ -60,26 +60,29 @@ moving it to Redis is Phase 9 hardening.
 
 Create a managed room and mint the host's token. **Requires a BetterAuth session**
 (see "Phase 7"); the signed-in user becomes the room's owner and host. The host's
-display name comes from the account, not the request.
+display name comes from the account, not the request. Rooms have **no title** —
+the server always generates a unique **Room Code** (a Meet-style identifier like
+`abz-mnpq-rfk`); the client cannot supply a name or slug.
 
-**Request body:** `{ "title": string(1..128), "slug"?: string([a-zA-Z0-9-]),
-"scheduledStart"?: ISO-8601 }`
-**Response 201:** `{ "room", "title", "scheduledStart", "identity", "token", "hostKey", "livekitUrl" }`
+**Request body:** `{ "scheduledStart"?: ISO-8601 }` (or empty `{}` for "start now")
+**Response 201:** `{ "room", "scheduledStart", "identity", "token", "hostKey", "livekitUrl" }`
 
-- `room` — the slug (URL + LiveKit room name); derived from `title` if `slug` omitted.
+- `room` — the generated Room Code (URL path + LiveKit room name).
 - `scheduledStart` — `null` for "start now", else the ISO time.
 - `token` — host LiveKit JWT (grants incl. `roomAdmin: true`, metadata role=host).
 - `hostKey` — opaque secret; the client stores it and sends it as `x-host-key`.
-  **401** if not signed in. Slug collisions are resolved server-side (suffix), so
-  there is no 409 here anymore.
+  **401** if not signed in.
 
 ### GET /rooms/mine _(session)_ — Phase 7
 
-List the rooms the signed-in user hosts. Requires a BetterAuth session.
+List the signed-in user's **upcoming scheduled meetings only** (those with a
+future `scheduledStart`). Instant meetings and past ones are not returned.
+Requires a BetterAuth session.
 
-**Response 200:** `{ "rooms": [{ "room", "title", "scheduledStart", "hostKey", "createdAt" }] }`
+**Response 200:** `{ "rooms": [{ "room", "scheduledStart", "hostKey", "createdAt" }] }`
 
-- Includes `hostKey` because the caller owns these rooms. **401** if not signed in.
+- `room` is the Room Code. Includes `hostKey` because the caller owns these rooms.
+  **401** if not signed in.
 
 ### POST /rooms/:room/host-token _(session)_ — Phase 7
 
@@ -93,7 +96,7 @@ if signed in but not the owner; **404** if the room doesn't exist.
 
 Public room info for a guest landing on a shared link. Does **not** leak the host key.
 
-**Response 200:** `{ "room", "title", "scheduledStart" }`. **404** if unknown.
+**Response 200:** `{ "room", "scheduledStart" }`. **404** if unknown.
 
 ### POST /rooms/:room/knock
 
@@ -164,6 +167,19 @@ Stream the finished MP4 (`Content-Type: video/mp4`, `Content-Disposition:
 attachment`). Header `x-host-key` → so the browser fetches it as a blob, not a
 plain link. **409** if the recording isn't `completed` yet. The file is proxied
 from MinIO through the API; bucket credentials never reach the browser.
+
+### GET /recordings/mine _(session)_
+
+List **all** recordings across every room the signed-in host owns, newest first
+— the lobby's cross-room recordings view (the room list itself is pared to
+upcoming scheduled meetings, so this is the only path to past/instant meetings'
+recordings). Requires a BetterAuth session.
+
+**Response 200:** `{ "recordings": (RecordingSummary & { "room", "hostKey" })[] }`
+
+- `room` is the owning Room Code; `hostKey` is included (the owner is entitled to
+  it) so the client can download via `GET /rooms/:room/recordings/:id/download`.
+  **401** if not signed in.
 
 ### POST /livekit/webhook
 
