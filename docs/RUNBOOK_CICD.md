@@ -44,15 +44,17 @@ end under "Variant".
 #### Step 1: Mint a dedicated SSH deploy key (run locally)
 
 Don't reuse a personal key. Create one key whose **only** job is "GitHub Actions →
-VPS". No passphrase (CI can't type one).
+VPS". No passphrase (CI can't type one). **Generate it outside the repo** (in `~/.ssh`)
+so a private key never lands in the working tree — `huddle_deploy_key*` is gitignored
+as a backstop, but don't rely on that.
 
 ```bash
-ssh-keygen -t ed25519 -C "github-actions-deploy@huddle" -f ./huddle_deploy_key -N ""
+ssh-keygen -t ed25519 -C "github-actions-deploy@huddle" -f ~/.ssh/huddle_deploy_key -N ""
 ```
 
-**Expected result:** two files — `huddle_deploy_key` (private) and
-`huddle_deploy_key.pub` (public).
-**If it fails:** ensure you're in a writable dir; on macOS `ssh-keygen` is built in.
+**Expected result:** two files — `~/.ssh/huddle_deploy_key` (private) and
+`~/.ssh/huddle_deploy_key.pub` (public).
+**If it fails:** ensure `~/.ssh` exists and is writable; on macOS `ssh-keygen` is built in.
 
 #### Step 2: Authorize the public key on the VPS
 
@@ -60,13 +62,13 @@ Append the **public** key to the deploy user's `authorized_keys` on the VPS:
 
 ```bash
 ssh <deploy_user>@<vps_host> "mkdir -p ~/.ssh && chmod 700 ~/.ssh && \
-  cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys" < ./huddle_deploy_key.pub
+  cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys" < ~/.ssh/huddle_deploy_key.pub
 ```
 
 **Expected result:** no error. Verify the new key works and nothing else is needed:
 
 ```bash
-ssh -i ./huddle_deploy_key <deploy_user>@<vps_host> "cd /home/huddle && docker compose version && git status -s"
+ssh -i ~/.ssh/huddle_deploy_key <deploy_user>@<vps_host> "cd /home/huddle && docker compose version && git status -s"
 ```
 
 **Expected result:** prints the Compose version and a clean (or expected) git status —
@@ -96,11 +98,15 @@ newline.
 gh secret set VPS_HOST  --body "<vps_public_ip>"
 gh secret set VPS_USER  --body "<deploy_user>"
 gh secret set VPS_PORT  --body "22"
-gh secret set VPS_SSH_KEY < ./huddle_deploy_key
+gh secret set VPS_SSH_KEY < ~/.ssh/huddle_deploy_key
 ```
 
 **Expected result:** four secrets listed under Actions secrets.
 **If it fails:** `gh` not authed → `gh auth login`. Wrong repo → `gh repo set-default`.
+
+> Once the secret is set and the public key is in the VPS's `authorized_keys`, the
+> local private key is no longer needed — you can `rm ~/.ssh/huddle_deploy_key*`.
+> Keep it only if you want to SSH in manually with that identity.
 
 #### Step 4: (Recommended) Create a `production` Environment with a manual gate
 

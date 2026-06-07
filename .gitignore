@@ -4,6 +4,10 @@
 !.env.example
 !.env.prod.example
 
+# SSH deploy keys — never commit private keys (see docs/RUNBOOK_CICD.md)
+huddle_deploy_key
+huddle_deploy_key.pub
+
 # Node
 node_modules/
 npm-debug.log*
