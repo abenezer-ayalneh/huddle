@@ -1,11 +1,10 @@
 "use client";
 
+import { Circle, Download, Square } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { api, type RecordingSummary } from "@/lib/api";
+import IconButton from "@/components/IconButton";
 
-// Host-only recording controls (Phase 8): start/stop the room-composite
-// recording and download finished files. Authorized with the per-room hostKey.
-// Reused inside the in-call HostPanel and the post-meeting dashboard.
 export default function RecordingControls({
   room,
   hostKey,
@@ -32,8 +31,6 @@ export default function RecordingControls({
     }
   }, [room, hostKey]);
 
-  // Poll so a recording's status (starting → active → completed) and a freshly
-  // finished file's download button appear without a manual refresh.
   useEffect(() => {
     let cancelled = false;
     const tick = () => {
@@ -54,7 +51,7 @@ export default function RecordingControls({
       await api.startRecording(room, hostKey);
       await refresh();
     } catch {
-      setError("Couldn’t start recording.");
+      setError("Couldn't start recording.");
     } finally {
       setBusy(false);
     }
@@ -67,7 +64,7 @@ export default function RecordingControls({
       await api.stopRecording(room, id, hostKey);
       await refresh();
     } catch {
-      setError("Couldn’t stop recording.");
+      setError("Couldn't stop recording.");
     } finally {
       setBusy(false);
     }
@@ -85,7 +82,7 @@ export default function RecordingControls({
       a.remove();
       URL.revokeObjectURL(url);
     } catch {
-      setError("Couldn’t download that recording.");
+      setError("Couldn't download that recording.");
     }
   };
 
@@ -93,26 +90,28 @@ export default function RecordingControls({
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         {active ? (
-          <button
+          <IconButton
+            icon={Square}
+            label="Stop recording"
+            size="sm"
+            className="bg-red-500 text-white hover:bg-red-400"
+            disabled={busy}
             onClick={() => stop(active.id)}
-            disabled={busy}
-            className="flex items-center gap-2 rounded bg-red-500 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
-          >
-            <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
-            Stop recording
-          </button>
+          />
         ) : (
-          <button
-            onClick={start}
+          <IconButton
+            icon={Circle}
+            label="Start recording"
+            variant="subtle"
+            size="sm"
+            className="[&>svg]:fill-red-500 [&>svg]:text-red-500"
             disabled={busy}
-            className="flex items-center gap-2 rounded bg-white/15 px-3 py-1.5 text-xs font-medium disabled:opacity-50"
-          >
-            <span className="h-2 w-2 rounded-full bg-red-500" />
-            Record
-          </button>
+            onClick={start}
+          />
         )}
         {active && (
-          <span className="text-xs text-white/60">
+          <span className="flex items-center gap-1.5 text-xs text-white/60">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
             {active.status === "starting" ? "Starting…" : "Recording"}
           </span>
         )}
@@ -132,12 +131,13 @@ export default function RecordingControls({
                 <span className="ml-2 text-white/40">{labelFor(r)}</span>
               </span>
               {r.downloadable ? (
-                <button
+                <IconButton
+                  icon={Download}
+                  label={`Download ${r.filename}`}
+                  size="sm"
+                  className="bg-emerald-500 text-black hover:bg-emerald-400"
                   onClick={() => download(r)}
-                  className="shrink-0 rounded bg-emerald-500 px-2 py-1 font-medium text-black"
-                >
-                  Download
-                </button>
+                />
               ) : (
                 <span className="shrink-0 text-white/40">{statusWord(r)}</span>
               )}

@@ -2,8 +2,10 @@
 
 import { PreJoin, type LocalUserChoices } from "@livekit/components-react";
 import "@livekit/components-styles";
+import { ArrowLeft, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, api } from "@/lib/api";
+import IconButton from "@/components/IconButton";
 import CallStage from "./CallStage";
 import { Centered } from "./ui";
 
@@ -153,8 +155,9 @@ export default function GuestGate({
         <p className="text-red-500">The host declined your request to join.</p>
         <button
           onClick={onLeave}
-          className="rounded-md border border-black/15 px-4 py-2 dark:border-white/20"
+          className="inline-flex items-center gap-2 rounded-md border border-black/15 px-4 py-2 transition-all hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:border-white/20 dark:hover:bg-white/10 dark:focus-visible:ring-white/30"
         >
+          <ArrowLeft className="h-4 w-4" />
           Back to lobby
         </button>
       </Centered>
@@ -200,12 +203,13 @@ export default function GuestGate({
             : `Waiting for the host to let you in to “${room}”…`}
       </p>
       {phase === "waiting" && (
-        <button
+        <IconButton
+          icon={X}
+          label="Cancel request"
+          size="lg"
+          className="border border-black/15 dark:border-white/20"
           onClick={cancel}
-          className="rounded-md border border-black/15 px-4 py-2 text-sm dark:border-white/20"
-        >
-          Cancel
-        </button>
+        />
       )}
     </Centered>
   );

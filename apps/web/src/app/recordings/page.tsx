@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { Download } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { api, type MyRecording } from "@/lib/api";
 import { useSession } from "@/lib/auth-client";
+import IconButton from "@/components/IconButton";
 
 // Cross-room recordings view. Since the lobby list is pared to upcoming
 // scheduled meetings, this is the only place to reach recordings of past and
@@ -81,13 +83,12 @@ export default function RecordingsPage() {
                   </p>
                 </div>
                 {r.downloadable ? (
-                  <button
-                    type="button"
+                  <IconButton
+                    icon={Download}
+                    label={`Download recording from ${r.room}`}
+                    variant="solid"
                     onClick={() => download(r)}
-                    className="shrink-0 rounded-md bg-black px-3 py-1.5 text-sm font-medium text-white dark:bg-white dark:text-black"
-                  >
-                    Download
-                  </button>
+                  />
                 ) : (
                   <span className="shrink-0 text-xs text-black/40 dark:text-white/40">
                     {statusWord(r.status)}

@@ -1,12 +1,21 @@
 "use client";
 
 import { useRemoteParticipants, useRoomInfo } from "@livekit/components-react";
+import {
+  Check,
+  Copy,
+  Settings2,
+  UserCheck,
+  UserMinus,
+  UserX,
+  VolumeX,
+  X,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, type PendingKnock } from "@/lib/api";
+import IconButton from "@/components/IconButton";
 import RecordingControls from "./RecordingControls";
 
-// Host-only overlay: admit/deny waiting guests and mute/remove participants.
-// Rendered inside <LiveKitRoom>, so it can read the live participant list.
 export default function HostPanel({
   room,
   hostKey,
@@ -15,8 +24,6 @@ export default function HostPanel({
   hostKey: string;
 }) {
   const participants = useRemoteParticipants();
-  // Live Mute-on-Entry state: LiveKit pushes room metadata changes to every
-  // client, so the toggle reflects the truth even if another host device flips it.
   const { metadata } = useRoomInfo();
   const muteOnEntry = useMemo(() => {
     if (!metadata) return false;
@@ -33,8 +40,6 @@ export default function HostPanel({
   const [busy, setBusy] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  // The guest share-link. This is the only place a host of an INSTANT meeting can
-  // get it (instant meetings aren't in the lobby's upcoming list).
   const inviteLink =
     typeof window !== "undefined"
       ? `${window.location.origin}/rooms/${encodeURIComponent(room)}`
@@ -46,11 +51,10 @@ export default function HostPanel({
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      // clipboard may be blocked; ignore
+      // clipboard may be blocked
     }
   }, [inviteLink]);
 
-  // Poll the waiting room for pending guests.
   useEffect(() => {
     let cancelled = false;
     async function poll() {
@@ -104,9 +108,6 @@ export default function HostPanel({
       api.removeParticipant(room, identity, hostKey)
     );
 
-  // Toggle Mute on Entry. Turning it on mutes everyone present; turning it off
-  // only stops auto-muting future joiners (it never unmutes anyone). The button
-  // label follows the live metadata, not local state.
   const toggleMuteOnEntry = () =>
     withBusy("mute-on-entry", () =>
       api.setMuteOnEntry(room, !muteOnEntry, hostKey)
@@ -114,26 +115,30 @@ export default function HostPanel({
 
   if (!open) {
     return (
-      <button
-        onClick={() => setOpen(true)}
-        className="absolute right-3 top-3 z-20 rounded-md bg-black/70 px-3 py-1.5 text-sm text-white backdrop-blur"
-      >
-        Host{knocks.length ? ` (${knocks.length})` : ""}
-      </button>
+      <div className="absolute right-3 top-3 z-20">
+        <IconButton
+          icon={Settings2}
+          label={`Host controls${knocks.length ? ` (${knocks.length} waiting)` : ""}`}
+          variant="subtle"
+          size="lg"
+          className="bg-black/70 backdrop-blur"
+          onClick={() => setOpen(true)}
+        />
+      </div>
     );
   }
 
   return (
-    <aside className="absolute right-3 top-3 z-20 flex max-h-[80dvh] w-72 max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-xl bg-black/75 text-white shadow-lg backdrop-blur">
+    <aside className="absolute right-3 top-3 z-20 flex max-h-[80dvh] w-72 max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-xl bg-black/75 text-white shadow-lg backdrop-blur transition-all">
       <header className="flex items-center justify-between px-4 py-3">
         <span className="font-semibold">Host controls</span>
-        <button
+        <IconButton
+          icon={X}
+          label="Collapse host controls"
+          size="sm"
+          className="text-white/60 hover:text-white hover:bg-white/15"
           onClick={() => setOpen(false)}
-          aria-label="Collapse host controls"
-          className="text-white/60 hover:text-white"
-        >
-          ✕
-        </button>
+        />
       </header>
 
       <div className="space-y-4 overflow-y-auto px-4 pb-4 text-sm">
@@ -145,12 +150,13 @@ export default function HostPanel({
             <code className="min-w-0 flex-1 truncate rounded bg-white/10 px-2 py-1 text-xs text-white/80">
               {room}
             </code>
-            <button
+            <IconButton
+              icon={copied ? Check : Copy}
+              label={copied ? "Copied!" : "Copy invite link"}
+              variant="subtle"
+              size="sm"
               onClick={copyInvite}
-              className="shrink-0 rounded bg-white/15 px-2 py-1 text-xs font-medium hover:bg-white/25"
-            >
-              {copied ? "Copied" : "Copy link"}
-            </button>
+            />
           </div>
         </section>
 
@@ -176,20 +182,22 @@ export default function HostPanel({
                 >
                   <span className="truncate">{k.name}</span>
                   <span className="flex shrink-0 gap-1">
-                    <button
-                      onClick={() => admit(k)}
+                    <IconButton
+                      icon={UserCheck}
+                      label={`Admit ${k.name}`}
+                      size="sm"
+                      className="bg-emerald-500 text-black hover:bg-emerald-400"
                       disabled={busy === `admit-${k.knockId}`}
-                      className="rounded bg-emerald-500 px-2 py-1 text-xs font-medium text-black disabled:opacity-50"
-                    >
-                      Admit
-                    </button>
-                    <button
-                      onClick={() => deny(k)}
+                      onClick={() => admit(k)}
+                    />
+                    <IconButton
+                      icon={UserX}
+                      label={`Deny ${k.name}`}
+                      variant="subtle"
+                      size="sm"
                       disabled={busy === `deny-${k.knockId}`}
-                      className="rounded bg-white/15 px-2 py-1 text-xs disabled:opacity-50"
-                    >
-                      Deny
-                    </button>
+                      onClick={() => deny(k)}
+                    />
                   </span>
                 </li>
               ))}
@@ -205,7 +213,7 @@ export default function HostPanel({
             onClick={toggleMuteOnEntry}
             disabled={busy === "mute-on-entry"}
             aria-pressed={muteOnEntry}
-            className={`mb-3 w-full rounded px-2 py-1.5 text-xs font-medium disabled:opacity-50 ${
+            className={`mb-3 w-full rounded-md px-2 py-1.5 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current/30 disabled:opacity-50 ${
               muteOnEntry
                 ? "bg-amber-400 text-black hover:bg-amber-300"
                 : "bg-white/15 hover:bg-white/25"
@@ -224,20 +232,22 @@ export default function HostPanel({
                 >
                   <span className="truncate">{p.name || p.identity}</span>
                   <span className="flex shrink-0 gap-1">
-                    <button
-                      onClick={() => mute(p.identity)}
+                    <IconButton
+                      icon={VolumeX}
+                      label={`Mute ${p.name || p.identity}`}
+                      variant="subtle"
+                      size="sm"
                       disabled={busy === `mute-${p.identity}`}
-                      className="rounded bg-white/15 px-2 py-1 text-xs disabled:opacity-50"
-                    >
-                      Mute
-                    </button>
-                    <button
-                      onClick={() => remove(p.identity)}
+                      onClick={() => mute(p.identity)}
+                    />
+                    <IconButton
+                      icon={UserMinus}
+                      label={`Remove ${p.name || p.identity}`}
+                      variant="danger"
+                      size="sm"
                       disabled={busy === `remove-${p.identity}`}
-                      className="rounded bg-red-500/90 px-2 py-1 text-xs font-medium disabled:opacity-50"
-                    >
-                      Remove
-                    </button>
+                      onClick={() => remove(p.identity)}
+                    />
                   </span>
                 </li>
               ))}

@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Calendar, Check, Copy, LogOut, Play } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { ApiError, api, type RoomSummary } from "@/lib/api";
 import { signIn, signUp, signOut, useSession } from "@/lib/auth-client";
 import { saveHostSession } from "@/lib/hostSession";
+import DateTimePicker from "@/components/DateTimePicker";
+import IconButton from "@/components/IconButton";
 
-// Lobby (Phase 7). Hosting now requires a signed-in account: sign in with an
-// email + password (or Google), then create or schedule a meeting and share its
-// link. Guests don't need an account — they open the shared link and knock.
 export default function Lobby() {
   const { data: session, isPending } = useSession();
 
@@ -78,11 +78,10 @@ function SignIn() {
       setError(
         result.error.message ??
           (mode === "signup"
-            ? "Couldn’t create that account."
+            ? "Couldn't create that account."
             : "Wrong email or password.")
       );
     }
-    // On success the session updates and the lobby re-renders to the dashboard.
   }
 
   return (
@@ -134,7 +133,7 @@ function SignIn() {
         <button
           type="submit"
           disabled={!canSubmit}
-          className="w-full rounded-md bg-black px-4 py-2 font-medium text-white transition disabled:opacity-40 dark:bg-white dark:text-black"
+          className="w-full rounded-md bg-black px-4 py-2 font-medium text-white transition-all hover:bg-black/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 disabled:opacity-40 dark:bg-white dark:text-black dark:hover:bg-white/80 dark:focus-visible:ring-white/30"
         >
           {busy ? "Working…" : mode === "signup" ? "Create account" : "Sign in"}
         </button>
@@ -157,14 +156,14 @@ function SignIn() {
         <button
           type="button"
           onClick={() => signIn.social({ provider: "google", callbackURL })}
-          className="w-full rounded-md border border-black/15 px-4 py-2 font-medium transition hover:bg-black/5 dark:border-white/20 dark:hover:bg-white/10"
+          className="w-full rounded-md border border-black/15 px-4 py-2 font-medium transition-all hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:border-white/20 dark:hover:bg-white/10 dark:focus-visible:ring-white/30"
         >
           Continue with Google
         </button>
       </div>
 
       <p className="text-xs text-black/50 dark:text-white/50">
-        Have a meeting link? Just open it — you don’t need an account to join.
+        Have a meeting link? Just open it — you don't need an account to join.
       </p>
     </div>
   );
@@ -191,7 +190,6 @@ function HostDashboard({
   }, []);
   useEffect(refresh, [refresh]);
 
-  // Stash the host session and open the room as host.
   const enterAsHost = useCallback(
     (result: Awaited<ReturnType<typeof api.createRoom>>) => {
       saveHostSession(result.room, {
@@ -201,37 +199,48 @@ function HostDashboard({
         livekitUrl: result.livekitUrl,
         name: userName,
       });
-      // No query params: the host's name and role both live in the host session
-      // (sessionStorage), so the address bar stays a clean, shareable link.
       router.push(`/rooms/${encodeURIComponent(result.room)}`);
     },
     [router, userName]
   );
 
-  async function handleCreate() {
+  // "Instant" button — create a room and jump straight into the call.
+  async function handleInstant() {
     if (busy) return;
     setBusy(true);
     setError(null);
     try {
-      const result = await api.createRoom({
-        scheduledStart: scheduledStart
-          ? new Date(scheduledStart).toISOString()
-          : undefined,
-      });
-      // A scheduled (future) meeting goes to the list; "start now" jumps in.
-      if (scheduledStart) {
-        setScheduledStart("");
-        refresh();
-      } else {
-        enterAsHost(result);
-      }
+      enterAsHost(await api.createRoom());
     } catch (e) {
       setBusy(false);
       setError(
         e instanceof ApiError && e.status === 401
           ? "Your session expired — sign in again."
-          : "Couldn’t create the meeting. Is the API running?"
+          : "Couldn't create the meeting. Is the API running?"
       );
+    }
+  }
+
+  // Called when the user picks a date+time in the calendar popover. Creates a
+  // scheduled meeting immediately and refreshes the upcoming list. Clearing the
+  // picker (empty string) is a no-op.
+  async function handleSchedule(iso: string) {
+    setScheduledStart(iso);
+    if (!iso || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await api.createRoom({ scheduledStart: iso });
+      setScheduledStart("");
+      refresh();
+    } catch (e) {
+      setError(
+        e instanceof ApiError && e.status === 401
+          ? "Your session expired — sign in again."
+          : "Couldn't create the meeting. Is the API running?"
+      );
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -239,7 +248,7 @@ function HostDashboard({
     try {
       enterAsHost(await api.hostJoin(slug));
     } catch {
-      setError("Couldn’t start that meeting.");
+      setError("Couldn't start that meeting.");
     }
   }
 
@@ -252,44 +261,31 @@ function HostDashboard({
             Signed in as {userName}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={onSignOut}
-          className="text-sm text-black/60 underline-offset-2 hover:underline dark:text-white/60"
-        >
-          Sign out
-        </button>
+        <IconButton icon={LogOut} label="Sign out" onClick={onSignOut} />
       </header>
 
-      <form onSubmit={(e) => e.preventDefault()} className="space-y-3">
-        <label className="block space-y-1">
-          <span className="text-sm font-medium">
-            Scheduled start{" "}
-            <span className="text-black/40 dark:text-white/40">(optional)</span>
-          </span>
-          <input
-            type="datetime-local"
-            value={scheduledStart}
-            onChange={(e) => setScheduledStart(e.target.value)}
-            className="w-full rounded-md border border-black/15 px-3 py-2 outline-none focus:border-black/40 dark:border-white/20 dark:focus:border-white/50"
-          />
-        </label>
+      {error && <p className="text-sm text-red-500">{error}</p>}
 
-        {error && <p className="text-sm text-red-500">{error}</p>}
-
+      <div className="flex gap-3">
         <button
           type="button"
-          onClick={handleCreate}
+          onClick={handleInstant}
           disabled={busy}
-          className="w-full rounded-md bg-black px-4 py-2 font-medium text-white transition disabled:opacity-40 dark:bg-white dark:text-black"
+          className="flex flex-1 items-center justify-center gap-2 rounded-md bg-black px-4 py-2.5 font-medium text-white transition-all hover:bg-black/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 disabled:opacity-40 dark:bg-white dark:text-black dark:hover:bg-white/80 dark:focus-visible:ring-white/30"
         >
-          {busy
-            ? "Working…"
-            : scheduledStart
-              ? "Schedule meeting"
-              : "Start meeting now"}
+          Instant
         </button>
-      </form>
+
+        <DateTimePicker
+          value={scheduledStart}
+          onChange={handleSchedule}
+          disabled={busy}
+          triggerClassName="flex flex-1 items-center justify-center gap-2 rounded-md border border-black/15 px-4 py-2.5 font-medium transition-all hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 disabled:opacity-40 dark:border-white/20 dark:hover:bg-white/10 dark:focus-visible:ring-white/30"
+        >
+          <span>Schedule</span>
+          <Calendar size={16} />
+        </DateTimePicker>
+      </div>
 
       <MeetingList rooms={rooms} onStart={startRoom} />
 
@@ -349,7 +345,7 @@ function MeetingRow({
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      // clipboard may be blocked; ignore
+      // clipboard may be blocked
     }
   }
 
@@ -366,21 +362,18 @@ function MeetingRow({
             {room.room}
           </p>
         </div>
-        <div className="flex shrink-0 gap-2">
-          <button
-            type="button"
+        <div className="flex shrink-0 gap-1">
+          <IconButton
+            icon={copied ? Check : Copy}
+            label={copied ? "Copied!" : "Copy meeting link"}
             onClick={copy}
-            className="rounded-md border border-black/15 px-3 py-1.5 text-sm dark:border-white/20"
-          >
-            {copied ? "Copied" : "Copy link"}
-          </button>
-          <button
-            type="button"
+          />
+          <IconButton
+            icon={Play}
+            label="Start meeting"
+            variant="solid"
             onClick={onStart}
-            className="rounded-md bg-black px-3 py-1.5 text-sm font-medium text-white dark:bg-white dark:text-black"
-          >
-            Start
-          </button>
+          />
         </div>
       </div>
     </li>
