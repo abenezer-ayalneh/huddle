@@ -11,10 +11,29 @@ import {
   VolumeX,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, type PendingKnock } from "@/lib/api";
 import IconButton from "@/components/IconButton";
 import RecordingControls from "./RecordingControls";
+
+function playDing() {
+  try {
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.2);
+    osc.onended = () => ctx.close();
+  } catch {
+    // Audio blocked or unavailable — glow still works.
+  }
+}
 
 export default function HostPanel({
   room,
@@ -36,6 +55,22 @@ export default function HostPanel({
     }
   }, [metadata]);
   const [knocks, setKnocks] = useState<PendingKnock[]>([]);
+  const seenKnockIds = useRef(new Set<string>());
+
+  useEffect(() => {
+    const currentIds = new Set(knocks.map((k) => k.knockId));
+    let newCount = 0;
+    for (const id of currentIds) {
+      if (!seenKnockIds.current.has(id)) newCount++;
+    }
+    seenKnockIds.current = currentIds;
+    if (newCount === 0) return;
+    playDing();
+    for (let i = 1; i < newCount; i++) {
+      setTimeout(() => playDing(), i * 250);
+    }
+  }, [knocks]);
+
   const [open, setOpen] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -121,7 +156,7 @@ export default function HostPanel({
           label={`Host controls${knocks.length ? ` (${knocks.length} waiting)` : ""}`}
           variant="subtle"
           size="lg"
-          className="bg-black/70 backdrop-blur"
+          className={`bg-black/70 backdrop-blur${knocks.length ? " knock-pulse-wrap" : ""}`}
           onClick={() => setOpen(true)}
         />
       </div>
