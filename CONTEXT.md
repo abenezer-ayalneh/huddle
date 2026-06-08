@@ -76,3 +76,16 @@ carried forward into the call. Passing the Device Check is the guest's act of
 "agreeing" to the camera/voice setup; there is no separate consent step.
 _Avoid_: Pre-join (the LiveKit component name — fine in code, but "Device Check"
 is the domain term), camera test, AV check, permission prompt
+
+### In-call host controls
+
+**Mute on Entry**:
+A room-level setting the host toggles during a call. While on, every participant
+present is force-muted and every new joiner arrives with their microphone off.
+It is a _default_, not a lock: a muted participant may unmute themselves to
+speak (the host can never force a microphone back on). Turning it off only stops
+auto-muting future joiners; it does not unmute anyone. Stored as a flag in the
+LiveKit room's metadata, so it propagates to every client in real time.
+_Avoid_: Mute all (implies a one-shot bulk action, hiding the persistent,
+mute-on-join behaviour), room mute (ambiguous — sounds like muting the room's
+output), hard mute / lockdown (this never revokes the right to speak)

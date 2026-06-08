@@ -27,6 +27,7 @@ export default function CallStage({
   onError,
   overlay,
   initialChoices,
+  startMuted = false,
 }: {
   connection: Connection;
   displayName: string;
@@ -34,6 +35,10 @@ export default function CallStage({
   onError: (message: string) => void;
   overlay?: ReactNode;
   initialChoices?: LocalUserChoices;
+  // Honors the room's Mute-on-Entry flag: connect with the mic off regardless of
+  // the device choice, so there's no window of live audio on entry. The
+  // participant can still unmute themselves once in the call (soft mute).
+  startMuted?: boolean;
 }) {
   const [choices, setChoices] = useState<LocalUserChoices | null>(
     initialChoices ?? null
@@ -77,7 +82,9 @@ export default function CallStage({
           choices.videoEnabled ? { deviceId: choices.videoDeviceId } : false
         }
         audio={
-          choices.audioEnabled ? { deviceId: choices.audioDeviceId } : false
+          startMuted || !choices.audioEnabled
+            ? false
+            : { deviceId: choices.audioDeviceId }
         }
         onDisconnected={onLeave}
         onError={(e) => onError(`Lost connection to the call: ${e.message}`)}

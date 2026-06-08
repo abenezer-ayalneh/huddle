@@ -78,6 +78,73 @@ export class LivekitService {
     await this.svc.removeParticipant(room, identity);
   }
 
+  // --- Mute on Entry (see docs/adr/0007) ---------------------------------
+  // The room-level "everyone starts muted" flag lives in the LiveKit room's
+  // metadata, so LiveKit pushes it to every connected client in real time.
+
+  // Read the current Mute-on-Entry flag from the room metadata. Missing room or
+  // metadata reads as "off".
+  async getMuteOnEntry(room: string): Promise<boolean> {
+    const [info] = await this.svc.listRooms([room]);
+    return this.readMuteOnEntry(info?.metadata);
+  }
+
+  // Set the flag, merging into any existing metadata so other keys survive.
+  async setMuteOnEntry(room: string, muted: boolean): Promise<void> {
+    const [info] = await this.svc.listRooms([room]);
+    let meta: Record<string, unknown> = {};
+    if (info?.metadata) {
+      try {
+        meta = JSON.parse(info.metadata) as Record<string, unknown>;
+      } catch {
+        meta = {};
+      }
+    }
+    meta.muteOnEntry = muted;
+    await this.svc.updateRoomMetadata(room, JSON.stringify(meta));
+  }
+
+  // Force-mute every non-host microphone currently published in the room. The
+  // host is identified by the role=host token metadata claim and skipped (the
+  // host is never muted on entry). Returns the number of tracks muted.
+  async muteAllMicsExceptHost(room: string): Promise<number> {
+    const participants = await this.svc.listParticipants(room);
+    let muted = 0;
+    await Promise.all(
+      participants
+        .filter((p) => !this.isHost(p.metadata))
+        .flatMap((p) =>
+          p.tracks
+            .filter((t) => t.source === TrackSource.MICROPHONE && !t.muted)
+            .map((t) => {
+              muted++;
+              return this.svc.mutePublishedTrack(room, p.identity, t.sid, true);
+            }),
+        ),
+    );
+    return muted;
+  }
+
+  private readMuteOnEntry(metadata?: string): boolean {
+    if (!metadata) return false;
+    try {
+      return (
+        (JSON.parse(metadata) as { muteOnEntry?: unknown }).muteOnEntry === true
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  private isHost(metadata?: string): boolean {
+    if (!metadata) return false;
+    try {
+      return (JSON.parse(metadata) as { role?: unknown }).role === 'host';
+    } catch {
+      return false;
+    }
+  }
+
   // Force-mute/unmute every microphone track the participant is publishing.
   // No-op if they have no audio track. Returns the number of tracks affected.
   async setParticipantMuted(

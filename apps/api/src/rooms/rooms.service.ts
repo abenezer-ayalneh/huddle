@@ -17,6 +17,8 @@ export interface HostJoinResult {
   token: string;
   hostKey: string;
   livekitUrl: string;
+  // Current Mute-on-Entry state, so a (re)joining host's panel reflects it.
+  muteOnEntry: boolean;
 }
 
 export interface RoomSummary {
@@ -31,6 +33,9 @@ export interface KnockStatusResult {
   token?: string;
   identity?: string;
   livekitUrl?: string;
+  // When admitted, whether the room is muted-on-entry so the guest connects
+  // with their microphone off.
+  muteOnEntry?: boolean;
 }
 
 @Injectable()
@@ -108,6 +113,7 @@ export class RoomsService {
         token: knock.token,
         identity: knock.identity,
         livekitUrl: this.livekit.livekitUrl,
+        muteOnEntry: await this.livekit.getMuteOnEntry(slug),
       };
     }
     return { status: knock.status };
@@ -151,6 +157,21 @@ export class RoomsService {
     return { ok: true };
   }
 
+  // Toggle Mute on Entry (see docs/adr/0007). Turning it on also force-mutes
+  // everyone present (except the host); turning it off never unmutes anyone — it
+  // only stops auto-muting future joiners.
+  async setMuteOnEntry(
+    slug: string,
+    muted: boolean,
+  ): Promise<{ muteOnEntry: boolean }> {
+    await this.requireRoom(slug);
+    await this.livekit.setMuteOnEntry(slug, muted);
+    if (muted) {
+      await this.livekit.muteAllMicsExceptHost(slug);
+    }
+    return { muteOnEntry: muted };
+  }
+
   async remove(slug: string, identity: string) {
     await this.livekit.removeParticipant(slug, identity);
     return { ok: true };
@@ -181,6 +202,7 @@ export class RoomsService {
       token,
       hostKey: room.hostKey,
       livekitUrl: this.livekit.livekitUrl,
+      muteOnEntry: await this.livekit.getMuteOnEntry(room.slug),
     };
   }
 

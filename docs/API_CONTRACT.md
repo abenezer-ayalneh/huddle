@@ -140,6 +140,20 @@ Force-mute/unmute a participant's microphone. Header `x-host-key`.
 **Request body:** `{ "identity": string, "muted": boolean }`
 **Response 200:** `{ "ok": true }` (no-op if the participant has no audio track).
 
+### POST /rooms/:room/mute-on-entry _(host)_
+
+Toggle **Mute on Entry** for the room (see `docs/adr/0007`). Header `x-host-key`.
+Turning it on force-mutes everyone present (except the host) and makes new
+joiners arrive mic-off; turning it off only stops auto-muting future joiners — it
+never unmutes anyone. The state is stored in the LiveKit room metadata.
+
+**Request body:** `{ "muted": boolean }`
+**Response 200:** `{ "muteOnEntry": boolean }` (the new state).
+
+> The flag is also returned by the host-join payload (`muteOnEntry`) and, on
+> admission, by the guest's knock-status poll (`muteOnEntry`), so a joining
+> client can connect with its microphone off.
+
 ### DELETE /rooms/:room/participants/:identity _(host)_
 
 Remove (kick) a participant. Header `x-host-key`. **Response 200:** `{ "ok": true }`.

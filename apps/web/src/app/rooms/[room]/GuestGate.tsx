@@ -34,6 +34,9 @@ export default function GuestGate({
   const [choices, setChoices] = useState<LocalUserChoices | null>(null);
   const [knockId, setKnockId] = useState<string | null>(null);
   const [connection, setConnection] = useState<Connection | null>(null);
+  // Set when the host admits us into a room that has Mute on Entry on, so we
+  // connect with the mic off.
+  const [startMuted, setStartMuted] = useState(false);
 
   // Precheck: the room must exist before we ever ask for camera/mic, so a guest
   // never grants permission for a dead room. 404 ends the flow immediately.
@@ -95,6 +98,7 @@ export default function GuestGate({
         const res = await api.knockStatus(room, knockId!);
         if (cancelled) return;
         if (res.status === "admitted" && res.token && res.livekitUrl) {
+          setStartMuted(res.muteOnEntry === true);
           setConnection({ token: res.token, livekitUrl: res.livekitUrl });
           return;
         }
@@ -136,6 +140,7 @@ export default function GuestGate({
         connection={connection}
         displayName={choices.username}
         initialChoices={choices}
+        startMuted={startMuted}
         onLeave={onLeave}
         onError={onError}
       />

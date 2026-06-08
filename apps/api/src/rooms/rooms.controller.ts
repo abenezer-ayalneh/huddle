@@ -12,7 +12,12 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthGuard, SessionUser, type AuthUser } from '../auth/auth.guard';
-import { CreateRoomDto, KnockDto, MuteDto } from './dto/rooms.dto';
+import {
+  CreateRoomDto,
+  KnockDto,
+  MuteDto,
+  MuteOnEntryDto,
+} from './dto/rooms.dto';
 import { HostGuard } from './host.guard';
 import { RecordingsService } from './recordings.service';
 import { RoomsService } from './rooms.service';
@@ -90,6 +95,12 @@ export class RoomsController {
   @Post(':room/mute')
   mute(@Param('room') room: string, @Body() dto: MuteDto) {
     return this.rooms.mute(room, dto.identity, dto.muted);
+  }
+
+  @UseGuards(HostGuard)
+  @Post(':room/mute-on-entry')
+  muteOnEntry(@Param('room') room: string, @Body() dto: MuteOnEntryDto) {
+    return this.rooms.setMuteOnEntry(room, dto.muted);
   }
 
   @UseGuards(HostGuard)

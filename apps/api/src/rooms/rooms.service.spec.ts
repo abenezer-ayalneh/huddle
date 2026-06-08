@@ -55,7 +55,9 @@ const bo: AuthUser = { id: 'user-bo', name: 'Bo', email: 'bo@x.dev' };
 describe('RoomsService', () => {
   let repo: FakeRoomRepo;
   let state: RoomStateService;
-  let livekit: jest.Mocked<Pick<LivekitService, 'createRoom' | 'mintToken'>> & {
+  let livekit: jest.Mocked<
+    Pick<LivekitService, 'createRoom' | 'mintToken' | 'getMuteOnEntry'>
+  > & {
     livekitUrl: string;
   };
   let service: RoomsService;
@@ -67,6 +69,7 @@ describe('RoomsService', () => {
       livekitUrl: 'ws://localhost:7880',
       createRoom: jest.fn().mockResolvedValue(undefined),
       mintToken: jest.fn().mockResolvedValue('jwt-token'),
+      getMuteOnEntry: jest.fn().mockResolvedValue(false),
     };
     service = new RoomsService(
       repo as unknown as RoomRepository,

@@ -32,3 +32,8 @@ export class MuteDto {
   @IsBoolean()
   muted!: boolean;
 }
+
+export class MuteOnEntryDto {
+  @IsBoolean()
+  muted!: boolean;
+}

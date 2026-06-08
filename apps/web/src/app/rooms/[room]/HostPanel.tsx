@@ -1,7 +1,7 @@
 "use client";
 
-import { useRemoteParticipants } from "@livekit/components-react";
-import { useCallback, useEffect, useState } from "react";
+import { useRemoteParticipants, useRoomInfo } from "@livekit/components-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, type PendingKnock } from "@/lib/api";
 import RecordingControls from "./RecordingControls";
 
@@ -15,6 +15,19 @@ export default function HostPanel({
   hostKey: string;
 }) {
   const participants = useRemoteParticipants();
+  // Live Mute-on-Entry state: LiveKit pushes room metadata changes to every
+  // client, so the toggle reflects the truth even if another host device flips it.
+  const { metadata } = useRoomInfo();
+  const muteOnEntry = useMemo(() => {
+    if (!metadata) return false;
+    try {
+      return (
+        (JSON.parse(metadata) as { muteOnEntry?: unknown }).muteOnEntry === true
+      );
+    } catch {
+      return false;
+    }
+  }, [metadata]);
   const [knocks, setKnocks] = useState<PendingKnock[]>([]);
   const [open, setOpen] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
@@ -89,6 +102,14 @@ export default function HostPanel({
   const remove = (identity: string) =>
     withBusy(`remove-${identity}`, () =>
       api.removeParticipant(room, identity, hostKey)
+    );
+
+  // Toggle Mute on Entry. Turning it on mutes everyone present; turning it off
+  // only stops auto-muting future joiners (it never unmutes anyone). The button
+  // label follows the live metadata, not local state.
+  const toggleMuteOnEntry = () =>
+    withBusy("mute-on-entry", () =>
+      api.setMuteOnEntry(room, !muteOnEntry, hostKey)
     );
 
   if (!open) {
@@ -180,6 +201,18 @@ export default function HostPanel({
           <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-white/50">
             Participants
           </h3>
+          <button
+            onClick={toggleMuteOnEntry}
+            disabled={busy === "mute-on-entry"}
+            aria-pressed={muteOnEntry}
+            className={`mb-3 w-full rounded px-2 py-1.5 text-xs font-medium disabled:opacity-50 ${
+              muteOnEntry
+                ? "bg-amber-400 text-black hover:bg-amber-300"
+                : "bg-white/15 hover:bg-white/25"
+            }`}
+          >
+            {muteOnEntry ? "Muted on entry — allow unmuting" : "Mute all"}
+          </button>
           {participants.length === 0 ? (
             <p className="text-white/50">No other participants.</p>
           ) : (

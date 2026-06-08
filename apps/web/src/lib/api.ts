@@ -13,6 +13,8 @@ export type HostJoinResult = {
   token: string;
   hostKey: string;
   livekitUrl: string;
+  // Current Mute-on-Entry state of the room.
+  muteOnEntry: boolean;
 };
 
 // An upcoming scheduled meeting the signed-in user hosts (includes the host key
@@ -36,6 +38,8 @@ export type KnockStatusResult = {
   token?: string;
   identity?: string;
   livekitUrl?: string;
+  // When admitted, whether the guest should connect with their mic off.
+  muteOnEntry?: boolean;
 };
 
 export type PendingKnock = {
@@ -160,6 +164,13 @@ export const api = {
       body: JSON.stringify({ identity, muted }),
       hostKey,
     }),
+
+  // Toggle Mute on Entry (host-only). Returns the new state.
+  setMuteOnEntry: (room: string, muted: boolean, hostKey: string) =>
+    request<{ muteOnEntry: boolean }>(
+      `/rooms/${encodeURIComponent(room)}/mute-on-entry`,
+      { method: "POST", body: JSON.stringify({ muted }), hostKey }
+    ),
 
   removeParticipant: (room: string, identity: string, hostKey: string) =>
     request<{ ok: true }>(
