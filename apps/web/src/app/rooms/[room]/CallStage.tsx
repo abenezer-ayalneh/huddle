@@ -8,7 +8,8 @@ import {
   type LocalUserChoices,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
-import { useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import LeaveConfirmDialog from "./LeaveConfirmDialog";
 import { Centered } from "./ui";
 
 type Connection = { token: string; livekitUrl: string };
@@ -43,6 +44,29 @@ export default function CallStage({
   const [choices, setChoices] = useState<LocalUserChoices | null>(
     initialChoices ?? null
   );
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+
+  // Intercept LiveKit's built-in disconnect button: capture the click before it
+  // reaches the button's own handler, show our confirmation modal instead.
+  // Uses a callback ref so the listener attaches when the call view mounts
+  // (after PreJoin completes), not on initial render when the ref would be null.
+  const roomRefCb = useCallback((node: HTMLDivElement | null) => {
+    if (!node) return;
+    const intercept = (e: MouseEvent) => {
+      const btn = (e.target as HTMLElement).closest(".lk-disconnect-button");
+      if (btn) {
+        e.stopPropagation();
+        e.preventDefault();
+        setShowLeaveDialog(true);
+      }
+    };
+    node.addEventListener("click", intercept, true);
+  }, []);
+
+  const confirmLeave = useCallback(() => {
+    setShowLeaveDialog(false);
+    onLeave();
+  }, [onLeave]);
 
   // Step 1 — pre-join: self-preview + camera/mic pickers (F7). Skipped when the
   // caller supplied choices (an admitted guest who already did the Device Check).
@@ -73,7 +97,7 @@ export default function CallStage({
 
   // Step 2 — connected: publish the chosen devices and render the call.
   return (
-    <main className="relative flex-1" data-lk-theme="default">
+    <main className="relative flex-1" data-lk-theme="default" ref={roomRefCb}>
       <LiveKitRoom
         token={connection.token}
         serverUrl={connection.livekitUrl}
@@ -95,6 +119,11 @@ export default function CallStage({
         <ConnectionStateToast />
         {overlay}
       </LiveKitRoom>
+      <LeaveConfirmDialog
+        open={showLeaveDialog}
+        onConfirm={confirmLeave}
+        onCancel={() => setShowLeaveDialog(false)}
+      />
     </main>
   );
 }
