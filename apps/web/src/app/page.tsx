@@ -222,7 +222,6 @@ function HostDashboard({
   onSignOut: () => void;
 }) {
   const router = useRouter();
-  const [scheduledStart, setScheduledStart] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -266,17 +265,12 @@ function HostDashboard({
     }
   }
 
-  // Called when the user picks a date+time in the calendar popover. Creates a
-  // scheduled meeting immediately and refreshes the upcoming list. Clearing the
-  // picker (empty string) is a no-op.
   async function handleSchedule(iso: string) {
-    setScheduledStart(iso);
     if (!iso || busy) return;
     setBusy(true);
     setError(null);
     try {
       await api.createRoom({ scheduledStart: iso });
-      setScheduledStart("");
       refresh();
     } catch (e) {
       setError(
@@ -328,8 +322,7 @@ function HostDashboard({
         </button>
 
         <DateTimePicker
-          value={scheduledStart}
-          onChange={handleSchedule}
+          onSchedule={handleSchedule}
           disabled={busy}
           triggerClassName="flex flex-1 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/5 px-4 py-2.5 font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50 disabled:opacity-40"
         >

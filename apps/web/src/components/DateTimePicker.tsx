@@ -7,15 +7,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
-// Generate time slots in 15-minute increments for the dropdown.
 const TIME_SLOTS = Array.from({ length: 96 }, (_, i) => {
   const h = Math.floor(i / 4);
   const m = (i % 4) * 15;
@@ -28,7 +20,6 @@ const TIME_SLOTS = Array.from({ length: 96 }, (_, i) => {
   return { value, label };
 });
 
-// Round a Date's time to the nearest future 15-minute slot (for the default).
 function roundToNextQuarter(date: Date): string {
   const h = date.getHours();
   const m = Math.ceil(date.getMinutes() / 15) * 15;
@@ -38,68 +29,53 @@ function roundToNextQuarter(date: Date): string {
   return `${String(rounded.getHours()).padStart(2, "0")}:${String(rounded.getMinutes() % 60).padStart(2, "0")}`;
 }
 
-// A calendar date-picker popover with a 15-minute-increment time select.
-// Built on shadcn/ui Calendar, Popover, and Select.
+function mergeDayTime(day: Date, time: string): string {
+  const [h, m] = time.split(":").map(Number);
+  const merged = new Date(day);
+  merged.setHours(h, m, 0, 0);
+  return merged.toISOString();
+}
+
 export default function DateTimePicker({
-  value,
-  onChange,
+  onSchedule,
   children,
   triggerClassName,
   disabled = false,
 }: {
-  // ISO string of the selected datetime, or "" for no selection.
-  value: string;
-  onChange: (iso: string) => void;
-  // Content rendered inside the popover trigger button.
+  onSchedule: (iso: string) => void;
   children?: ReactNode;
-  // Tailwind classes for the trigger button.
   triggerClassName?: string;
   disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
-
-  const selectedDate = useMemo(
-    () => (value ? new Date(value) : undefined),
-    [value]
+  const [selectedDay, setSelectedDay] = useState<Date | undefined>(undefined);
+  const [selectedTime, setSelectedTime] = useState(() =>
+    roundToNextQuarter(new Date())
   );
 
-  const selectedTime = useMemo(() => {
-    if (!selectedDate) return roundToNextQuarter(new Date());
-    const h = String(selectedDate.getHours()).padStart(2, "0");
-    const m = String(selectedDate.getMinutes()).padStart(2, "0");
-    return `${h}:${m}`;
-  }, [selectedDate]);
+  const summary = useMemo(() => {
+    if (!selectedDay) return null;
+    const dt = new Date(mergeDayTime(selectedDay, selectedTime));
+    return dt.toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  }, [selectedDay, selectedTime]);
 
-  // Merge a day + time into an ISO string and fire onChange.
-  const emit = useCallback(
-    (day: Date | undefined, time: string) => {
-      if (!day) {
-        onChange("");
-        return;
-      }
-      const [h, m] = time.split(":").map(Number);
-      const merged = new Date(day);
-      merged.setHours(h, m, 0, 0);
-      onChange(merged.toISOString());
-    },
-    [onChange]
-  );
+  const handleConfirm = useCallback(() => {
+    if (!selectedDay) return;
+    onSchedule(mergeDayTime(selectedDay, selectedTime));
+    setSelectedDay(undefined);
+    setSelectedTime(roundToNextQuarter(new Date()));
+    setOpen(false);
+  }, [selectedDay, selectedTime, onSchedule]);
 
-  const handleDaySelect = useCallback(
-    (day: Date | undefined) => {
-      emit(day, selectedTime);
-    },
-    [emit, selectedTime]
-  );
-
-  const handleTimeChange = useCallback(
-    (time: string | null) => {
-      if (!time) return;
-      const day = selectedDate ?? new Date();
-      emit(day, time);
-    },
-    [emit, selectedDate]
-  );
+  const handleClear = useCallback(() => {
+    setSelectedDay(undefined);
+    setSelectedTime(roundToNextQuarter(new Date()));
+  }, []);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -119,50 +95,57 @@ export default function DateTimePicker({
       <PopoverContent className="w-auto p-0" align="start">
         <Calendar
           mode="single"
-          selected={selectedDate}
-          onSelect={handleDaySelect}
+          selected={selectedDay}
+          onSelect={setSelectedDay}
           disabled={{ before: today }}
         />
 
-        {/* Time select */}
         <div className="border-t border-border px-3 py-3">
           <div className="flex items-center gap-2">
             <span className="shrink-0 text-sm font-medium">Time</span>
-            <Select value={selectedTime} onValueChange={handleTimeChange}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="max-h-60">
-                {TIME_SLOTS.map((slot) => (
-                  <SelectItem key={slot.value} value={slot.value}>
-                    {slot.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <select
+              value={selectedTime}
+              onChange={(e) => setSelectedTime(e.target.value)}
+              className="w-full rounded-lg border border-input bg-transparent py-2 pl-2.5 pr-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              {TIME_SLOTS.map((slot) => (
+                <option key={slot.value} value={slot.value}>
+                  {slot.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
-        {/* Selected summary + clear */}
-        {selectedDate && (
-          <div className="flex items-center justify-between border-t border-border px-3 py-2 text-sm">
-            <span className="text-muted-foreground">
-              {selectedDate.toLocaleString(undefined, {
-                month: "short",
-                day: "numeric",
-                hour: "numeric",
-                minute: "2-digit",
-              })}
+        <div className="flex items-center justify-between border-t border-border px-3 py-2">
+          {summary ? (
+            <>
+              <span className="text-sm text-muted-foreground">{summary}</span>
+              <button
+                type="button"
+                onClick={handleClear}
+                className="text-xs text-destructive hover:underline"
+              >
+                Clear
+              </button>
+            </>
+          ) : (
+            <span className="text-sm text-muted-foreground">
+              Pick a date above
             </span>
-            <button
-              type="button"
-              onClick={() => onChange("")}
-              className="text-xs text-destructive hover:underline"
-            >
-              Clear
-            </button>
-          </div>
-        )}
+          )}
+        </div>
+
+        <div className="border-t border-border px-3 py-3">
+          <button
+            type="button"
+            disabled={!selectedDay || disabled}
+            onClick={handleConfirm}
+            className="w-full rounded-lg bg-magenta px-4 py-2 font-display font-semibold text-sm tracking-wide text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Schedule
+          </button>
+        </div>
       </PopoverContent>
     </Popover>
   );
