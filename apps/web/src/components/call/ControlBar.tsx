@@ -14,23 +14,33 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-// Floating glass control pill. Mic, camera and screen share are wired to the
-// local tracks via LiveKit's headless toggle hook; the chat button toggles the
-// ChatPanel (state owned by CallStage). Leave routes through the confirm dialog.
 export default function ControlBar({
   onLeave,
   chatOpen,
   onToggleChat,
   unreadChat = 0,
+  iAmPresenting,
+  someoneElsePresenting,
+  onShareClick,
+  hasOutgoingRequest,
 }: {
   onLeave: () => void;
   chatOpen: boolean;
   onToggleChat: () => void;
   unreadChat?: number;
+  iAmPresenting: boolean;
+  someoneElsePresenting: boolean;
+  onShareClick: () => void;
+  hasOutgoingRequest: boolean;
 }) {
   const mic = useTrackToggle({ source: Track.Source.Microphone });
   const cam = useTrackToggle({ source: Track.Source.Camera });
-  const share = useTrackToggle({ source: Track.Source.ScreenShare });
+
+  const shareLabel = iAmPresenting
+    ? "Stop presenting"
+    : someoneElsePresenting
+      ? "Ask to present"
+      : "Share screen";
 
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex justify-center p-4 sm:p-6">
@@ -55,11 +65,11 @@ export default function ControlBar({
         <span className="mx-1 h-7 w-px bg-white/10" />
 
         <ControlButton
-          icon={share.enabled ? MonitorOff : MonitorUp}
-          label={share.enabled ? "Stop sharing screen" : "Share screen"}
-          active={share.enabled}
-          disabled={share.pending}
-          onClick={() => share.toggle()}
+          icon={iAmPresenting ? MonitorOff : MonitorUp}
+          label={shareLabel}
+          active={iAmPresenting}
+          disabled={hasOutgoingRequest}
+          onClick={onShareClick}
         />
         <ControlButton
           icon={MessageSquare}

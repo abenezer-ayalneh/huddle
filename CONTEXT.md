@@ -77,6 +77,29 @@ carried forward into the call. Passing the Device Check is the guest's act of
 _Avoid_: Pre-join (the LiveKit component name — fine in code, but "Device Check"
 is the domain term), camera test, AV check, permission prompt
 
+### Presenting
+
+**Present**:
+The act of sharing your screen with the room. Only one participant can present at
+a time. The participant whose screen is being shared is the Presenter.
+_Avoid_: Screen share (the LiveKit track-source name — fine in code, but "present"
+is the domain verb), broadcast
+
+**Presenter**:
+The participant currently sharing their screen. While someone is presenting, the
+call layout switches from the equal grid to a split view: the presented content
+fills the main area and participant thumbnails move to a sidebar.
+_Avoid_: Sharer, broadcaster
+
+**Ask to Present**:
+When a participant wants to present while someone else already is, they send a
+request to the current Presenter via LiveKit data messages. The Presenter can
+yield (their share stops, the requester's starts automatically) or decline. The
+request times out after 30 seconds with an auto-decline. The host bypasses this
+flow entirely — a host can force-take the presentation at any time, stopping the
+current share immediately.
+_Avoid_: Request to share, take over request
+
 ### In-call host controls
 
 **Mute on Entry**:

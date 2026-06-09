@@ -10,25 +10,15 @@ import { useCallback, useState, type ReactNode } from "react";
 import ChatPanel from "@/components/call/ChatPanel";
 import ConnectionStatus from "@/components/call/ConnectionStatus";
 import ControlBar from "@/components/call/ControlBar";
+import PresentationToast from "@/components/call/PresentationToast";
 import PreJoinScreen from "@/components/call/PreJoinScreen";
 import VideoGrid from "@/components/call/VideoGrid";
+import { usePresentation } from "@/components/call/usePresentation";
 import LeaveConfirmDialog from "./LeaveConfirmDialog";
 import { Centered } from "./ui";
 
 type Connection = { token: string; livekitUrl: string };
 
-// Device pre-join → connect → call. Given a ready connection (token already
-// minted, whether host or admitted guest), it owns only the local-device step
-// and the LiveKit connection. `overlay` renders inside the room (host panel).
-//
-// A guest has already completed the Device Check before knocking, so they pass
-// their `initialChoices` in and this skips PreJoin entirely — the guest does the
-// camera/mic step exactly once. A host arrives with no choices and PreJoins here.
-//
-// The call view is built from our own components (VideoGrid + ControlBar + chat)
-// on top of LiveKit's headless hooks — see ADR 0008. RoomAudioRenderer is
-// included explicitly because we no longer use <VideoConference>, which bundled
-// it (and the screen-share + chat controls we now provide ourselves).
 export default function CallStage({
   connection,
   displayName,
@@ -37,6 +27,7 @@ export default function CallStage({
   overlay,
   initialChoices,
   startMuted = false,
+  isHost = false,
 }: {
   connection: Connection;
   displayName: string;
@@ -44,10 +35,8 @@ export default function CallStage({
   onError: (message: string) => void;
   overlay?: ReactNode;
   initialChoices?: LocalUserChoices;
-  // Honors the room's Mute-on-Entry flag: connect with the mic off regardless of
-  // the device choice, so there's no window of live audio on entry. The
-  // participant can still unmute themselves once in the call (soft mute).
   startMuted?: boolean;
+  isHost?: boolean;
 }) {
   const [choices, setChoices] = useState<LocalUserChoices | null>(
     initialChoices ?? null
@@ -59,8 +48,6 @@ export default function CallStage({
     onLeave();
   }, [onLeave]);
 
-  // Step 1 — pre-join: self-preview + camera/mic pickers (F7). Skipped when the
-  // caller supplied choices (an admitted guest who already did the Device Check).
   if (!choices) {
     return (
       <PreJoinScreen
@@ -82,7 +69,6 @@ export default function CallStage({
     );
   }
 
-  // Step 2 — connected: publish the chosen devices and render the call.
   return (
     <main className="relative flex-1">
       <LiveKitRoom
@@ -105,6 +91,7 @@ export default function CallStage({
         <CallView
           onLeaveClick={() => setShowLeaveDialog(true)}
           overlay={overlay}
+          isHost={isHost}
         />
         <RoomAudioRenderer />
       </LiveKitRoom>
@@ -117,23 +104,20 @@ export default function CallStage({
   );
 }
 
-// Lives inside the LiveKitRoom context so it can use room hooks. Owns the single
-// chat subscription (shared by the panel and the control-bar unread badge) and
-// the chat open/close state.
 function CallView({
   onLeaveClick,
   overlay,
+  isHost,
 }: {
   onLeaveClick: () => void;
   overlay?: ReactNode;
+  isHost: boolean;
 }) {
   const { chatMessages, send, isSending } = useChat();
   const [chatOpen, setChatOpen] = useState(false);
 
-  // Unread badge, reconciled by adjusting state during render (the pattern React
-  // recommends over an effect): whenever the message count or panel visibility
-  // changes, clear the badge if the panel is open, otherwise add the new
-  // messages to it.
+  const presentation = usePresentation(isHost);
+
   const [unread, setUnread] = useState(0);
   const [prev, setPrev] = useState({
     len: chatMessages.length,
@@ -164,7 +148,22 @@ function CallView({
         chatOpen={chatOpen}
         onToggleChat={() => setChatOpen((v) => !v)}
         unreadChat={unread}
+        iAmPresenting={presentation.iAmPresenting}
+        someoneElsePresenting={presentation.someoneElsePresenting}
+        onShareClick={presentation.handleShareClick}
+        hasOutgoingRequest={!!presentation.outgoing}
       />
+      <div className="pointer-events-none absolute inset-x-0 top-14 z-30 flex justify-center">
+        <PresentationToast
+          outgoing={presentation.outgoing}
+          incoming={presentation.incoming}
+          outcome={presentation.outcome}
+          onCancel={presentation.cancelRequest}
+          onYield={presentation.yieldPresentation}
+          onDecline={presentation.declinePresentation}
+          onDismissOutcome={presentation.dismissOutcome}
+        />
+      </div>
       <ConnectionStatus />
       {overlay}
     </>

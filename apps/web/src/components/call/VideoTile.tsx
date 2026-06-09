@@ -9,19 +9,22 @@ import { Track } from "livekit-client";
 import { MicOff, MonitorUp } from "lucide-react";
 import { useParticipantMedia } from "./useParticipantMedia";
 
-// One participant tile. The active speaker gets the full cyberpunk treatment
-// (animated magenta↔cyan border, scanline overlay, HUD readout); everyone else
-// gets a static neon-edged frame with clipped corners. Faces stay clear because
-// the heavy effects are scoped to a single tile at a time.
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2)
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  const word = parts[0] || "";
+  return word.length >= 2
+    ? word.slice(0, 2).toUpperCase()
+    : word.toUpperCase() || "?";
+}
+
 export default function VideoTile({
   trackRef,
   active,
-  prominent = false,
 }: {
   trackRef: TrackReferenceOrPlaceholder;
   active: boolean;
-  // Screen-share tiles span extra grid cells so the shared content reads large.
-  prominent?: boolean;
 }) {
   const participant = trackRef.participant;
   const { cameraOn, micOn } = useParticipantMedia(participant);
@@ -31,14 +34,10 @@ export default function VideoTile({
   const showVideo = isTrackReference(trackRef) && (isScreenShare || cameraOn);
 
   const label = participant.name || participant.identity || "Guest";
-  const initial = label.trim().charAt(0).toUpperCase() || "?";
+  const initials = getInitials(label);
 
   return (
-    <div
-      className={`relative min-h-0 min-w-0 ${
-        prominent ? "col-span-2 row-span-2" : ""
-      }`}
-    >
+    <div className="relative h-full w-full min-h-0 min-w-0">
       <div
         className={`cyber-clip h-full w-full transition-shadow ${
           active ? "cyber-frame-active" : "cyber-frame"
@@ -67,7 +66,7 @@ export default function VideoTile({
                   active ? "neon-magenta" : ""
                 } bg-[oklch(0.66_0.27_350_/_0.18)] ring-1 ring-magenta/40`}
               >
-                {initial}
+                {initials}
               </div>
             </div>
           )}
