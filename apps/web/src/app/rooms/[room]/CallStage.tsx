@@ -1,14 +1,17 @@
 "use client";
 
 import {
-  ConnectionStateToast,
   LiveKitRoom,
-  PreJoin,
-  VideoConference,
+  RoomAudioRenderer,
+  useChat,
   type LocalUserChoices,
 } from "@livekit/components-react";
-import "@livekit/components-styles";
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useState, type ReactNode } from "react";
+import ChatPanel from "@/components/call/ChatPanel";
+import ConnectionStatus from "@/components/call/ConnectionStatus";
+import ControlBar from "@/components/call/ControlBar";
+import PreJoinScreen from "@/components/call/PreJoinScreen";
+import VideoGrid from "@/components/call/VideoGrid";
 import LeaveConfirmDialog from "./LeaveConfirmDialog";
 import { Centered } from "./ui";
 
@@ -21,6 +24,11 @@ type Connection = { token: string; livekitUrl: string };
 // A guest has already completed the Device Check before knocking, so they pass
 // their `initialChoices` in and this skips PreJoin entirely — the guest does the
 // camera/mic step exactly once. A host arrives with no choices and PreJoins here.
+//
+// The call view is built from our own components (VideoGrid + ControlBar + chat)
+// on top of LiveKit's headless hooks — see ADR 0008. RoomAudioRenderer is
+// included explicitly because we no longer use <VideoConference>, which bundled
+// it (and the screen-share + chat controls we now provide ourselves).
 export default function CallStage({
   connection,
   displayName,
@@ -46,23 +54,6 @@ export default function CallStage({
   );
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
 
-  // Intercept LiveKit's built-in disconnect button: capture the click before it
-  // reaches the button's own handler, show our confirmation modal instead.
-  // Uses a callback ref so the listener attaches when the call view mounts
-  // (after PreJoin completes), not on initial render when the ref would be null.
-  const roomRefCb = useCallback((node: HTMLDivElement | null) => {
-    if (!node) return;
-    const intercept = (e: MouseEvent) => {
-      const btn = (e.target as HTMLElement).closest(".lk-disconnect-button");
-      if (btn) {
-        e.stopPropagation();
-        e.preventDefault();
-        setShowLeaveDialog(true);
-      }
-    };
-    node.addEventListener("click", intercept, true);
-  }, []);
-
   const confirmLeave = useCallback(() => {
     setShowLeaveDialog(false);
     onLeave();
@@ -72,32 +63,28 @@ export default function CallStage({
   // caller supplied choices (an admitted guest who already did the Device Check).
   if (!choices) {
     return (
-      <main
-        className="flex flex-1 items-center justify-center p-4"
-        data-lk-theme="default"
-      >
-        <PreJoin
-          defaults={{
-            username: displayName,
-            videoEnabled: true,
-            audioEnabled: true,
-          }}
-          onSubmit={setChoices}
-          onError={(e) =>
-            onError(
-              `Couldn't access your camera or microphone: ${e.message}. Check browser permissions and try again.`
-            )
-          }
-          joinLabel="Join call"
-          persistUserChoices={false}
-        />
-      </main>
+      <PreJoinScreen
+        defaults={{
+          username: displayName,
+          videoEnabled: true,
+          audioEnabled: true,
+        }}
+        onSubmit={setChoices}
+        onError={(e) =>
+          onError(
+            `Couldn't access your camera or microphone: ${e.message}. Check browser permissions and try again.`
+          )
+        }
+        heading="Ready to join?"
+        subheading="Check your camera and mic before you go live."
+        submitLabel="Join call"
+      />
     );
   }
 
   // Step 2 — connected: publish the chosen devices and render the call.
   return (
-    <main className="relative flex-1" data-lk-theme="default" ref={roomRefCb}>
+    <main className="relative flex-1">
       <LiveKitRoom
         token={connection.token}
         serverUrl={connection.livekitUrl}
@@ -113,11 +100,13 @@ export default function CallStage({
         onDisconnected={onLeave}
         onError={(e) => onError(`Lost connection to the call: ${e.message}`)}
         style={{ height: "100dvh" }}
+        className="bg-dotgrid"
       >
-        <VideoConference />
-        {/* F9 — surfaces connecting / reconnecting / disconnected states. */}
-        <ConnectionStateToast />
-        {overlay}
+        <CallView
+          onLeaveClick={() => setShowLeaveDialog(true)}
+          overlay={overlay}
+        />
+        <RoomAudioRenderer />
       </LiveKitRoom>
       <LeaveConfirmDialog
         open={showLeaveDialog}
@@ -125,6 +114,60 @@ export default function CallStage({
         onCancel={() => setShowLeaveDialog(false)}
       />
     </main>
+  );
+}
+
+// Lives inside the LiveKitRoom context so it can use room hooks. Owns the single
+// chat subscription (shared by the panel and the control-bar unread badge) and
+// the chat open/close state.
+function CallView({
+  onLeaveClick,
+  overlay,
+}: {
+  onLeaveClick: () => void;
+  overlay?: ReactNode;
+}) {
+  const { chatMessages, send, isSending } = useChat();
+  const [chatOpen, setChatOpen] = useState(false);
+
+  // Unread badge, reconciled by adjusting state during render (the pattern React
+  // recommends over an effect): whenever the message count or panel visibility
+  // changes, clear the badge if the panel is open, otherwise add the new
+  // messages to it.
+  const [unread, setUnread] = useState(0);
+  const [prev, setPrev] = useState({
+    len: chatMessages.length,
+    open: chatOpen,
+  });
+  if (prev.len !== chatMessages.length || prev.open !== chatOpen) {
+    if (chatOpen) {
+      setUnread(0);
+    } else {
+      const delta = chatMessages.length - prev.len;
+      if (delta > 0) setUnread((u) => u + delta);
+    }
+    setPrev({ len: chatMessages.length, open: chatOpen });
+  }
+
+  return (
+    <>
+      <VideoGrid />
+      <ChatPanel
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+        messages={chatMessages}
+        onSend={send}
+        isSending={isSending}
+      />
+      <ControlBar
+        onLeave={onLeaveClick}
+        chatOpen={chatOpen}
+        onToggleChat={() => setChatOpen((v) => !v)}
+        unreadChat={unread}
+      />
+      <ConnectionStatus />
+      {overlay}
+    </>
   );
 }
 

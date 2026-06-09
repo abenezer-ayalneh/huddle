@@ -1,15 +1,19 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Exo_2, Rajdhani } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Exo 2 — geometric, futuristic display face for headings and brand.
+const exo2 = Exo_2({
+  variable: "--font-exo2",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+// Rajdhani — techy, open sans for body and UI. Non-variable, so weights are
+// declared explicitly.
+const rajdhani = Rajdhani({
+  variable: "--font-rajdhani",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -17,31 +21,20 @@ export const metadata: Metadata = {
   description: "Self-hosted video conferencing on LiveKit",
 };
 
-// Inline script that runs before first paint to sync the .dark class with the
-// system color-scheme preference. This avoids a flash of the wrong theme.
-const darkModeScript = `(function(){
-  var m = window.matchMedia('(prefers-color-scheme: dark)');
-  function s(e){document.documentElement.classList.toggle('dark',e.matches)}
-  s(m);m.addEventListener('change',s);
-})()`;
-
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
+    // Dark-only: the cyberpunk aesthetic (neon glows, glass, dot-grid) depends
+    // on a dark base, so `.dark` is applied statically rather than tracking the
+    // system preference.
     <html
       lang="en"
-      // suppressHydrationWarning: the inline script may add .dark before React
-      // hydrates, which is intentional — suppress the mismatch warning.
-      suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`dark ${exo2.variable} ${rajdhani.variable} h-full antialiased`}
     >
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: darkModeScript }} />
-      </head>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="bg-dotgrid min-h-full flex flex-col">{children}</body>
     </html>
   );
 }

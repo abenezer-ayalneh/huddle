@@ -13,11 +13,10 @@ const sizes = {
 } as const;
 
 const variants: Record<Variant, string> = {
-  ghost: "hover:bg-black/10 dark:hover:bg-white/15",
-  subtle: "bg-white/15 hover:bg-white/25",
-  solid:
-    "bg-black text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/80",
-  danger: "bg-red-500/90 text-white hover:bg-red-500",
+  ghost: "hover:bg-white/15",
+  subtle: "bg-white/10 hover:bg-white/20",
+  solid: "bg-magenta text-white hover:brightness-110",
+  danger: "bg-destructive/90 text-white hover:bg-destructive",
 };
 
 type Props = ButtonHTMLAttributes<HTMLButtonElement> & {

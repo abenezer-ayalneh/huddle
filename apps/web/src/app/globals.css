@@ -7,9 +7,17 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+
+  /* Display = Exo 2, body/UI = Rajdhani. */
+  --font-sans: var(--font-rajdhani);
+  --font-display: var(--font-exo2);
+  --font-heading: var(--font-exo2);
+  --font-mono: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, monospace;
+
+  /* Brand neon accents. */
+  --color-magenta: var(--magenta);
+  --color-cyan: var(--cyan);
+
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -62,73 +70,58 @@ input[type="button"] {
   cursor: pointer;
 }
 
-:root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
-
+/* ── Cyberpunk dark theme ────────────────────────────────────────────────
+   Dark-only. `:root` and `.dark` carry the same values so utilities work
+   whether or not `.dark` is present, but `.dark` is applied statically on
+   <html>. */
+:root,
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* Raw neon brand colors, reused by glow utilities. */
+  --magenta: oklch(0.66 0.27 350);
+  --cyan: oklch(0.82 0.15 200);
+
+  --background: oklch(0.15 0.02 280);
+  --foreground: oklch(0.97 0.01 250);
+  --card: oklch(0.2 0.025 285);
+  --card-foreground: oklch(0.97 0.01 250);
+  --popover: oklch(0.19 0.025 285);
+  --popover-foreground: oklch(0.97 0.01 250);
+
+  /* Primary = magenta; text on it is near-white. */
+  --primary: oklch(0.66 0.27 350);
+  --primary-foreground: oklch(0.99 0 0);
+
+  --secondary: oklch(0.26 0.03 285);
+  --secondary-foreground: oklch(0.97 0.01 250);
+  --muted: oklch(0.24 0.02 285);
+  --muted-foreground: oklch(0.72 0.03 270);
+
+  /* Accent = cyan; text on it is dark. */
+  --accent: oklch(0.82 0.15 200);
+  --accent-foreground: oklch(0.18 0.03 240);
+
+  --destructive: oklch(0.62 0.24 18);
+
+  --border: oklch(0.92 0.05 320 / 14%);
+  --input: oklch(0.92 0.05 320 / 18%);
+  --ring: oklch(0.66 0.27 350);
+
+  --chart-1: oklch(0.66 0.27 350);
+  --chart-2: oklch(0.82 0.15 200);
+  --chart-3: oklch(0.7 0.2 320);
+  --chart-4: oklch(0.6 0.18 260);
+  --chart-5: oklch(0.75 0.16 180);
+
+  --radius: 0.75rem;
+
+  --sidebar: oklch(0.18 0.025 285);
+  --sidebar-foreground: oklch(0.97 0.01 250);
+  --sidebar-primary: oklch(0.66 0.27 350);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.26 0.03 285);
+  --sidebar-accent-foreground: oklch(0.97 0.01 250);
+  --sidebar-border: oklch(0.92 0.05 320 / 14%);
+  --sidebar-ring: oklch(0.66 0.27 350);
 }
 
 @layer base {
@@ -141,30 +134,230 @@ input[type="button"] {
   html {
     @apply font-sans;
   }
+  h1,
+  h2,
+  h3,
+  .font-display {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
 }
 
-@keyframes knock-pulse {
+/* ── Dot-grid background ─────────────────────────────────────────────────
+   A faint magenta dot lattice over a dark radial wash. Applied to the body
+   and any full-screen surface that wants the signature backdrop. */
+.bg-dotgrid {
+  background-color: var(--background);
+  background-image:
+    radial-gradient(
+      circle at 50% 0%,
+      oklch(0.66 0.27 350 / 0.12),
+      transparent 55%
+    ),
+    radial-gradient(
+      circle at 100% 100%,
+      oklch(0.82 0.15 200 / 0.1),
+      transparent 50%
+    ),
+    radial-gradient(oklch(0.92 0.05 320 / 0.09) 1px, transparent 1.6px);
+  background-size:
+    100% 100%,
+    100% 100%,
+    26px 26px;
+  background-attachment: fixed;
+}
+
+/* ── Glass surface ───────────────────────────────────────────────────────
+   Frosted translucent panel with a hairline border. */
+.glass {
+  background-color: oklch(0.2 0.025 285 / 0.62);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid var(--border);
+}
+
+.glass-strong {
+  background-color: oklch(0.17 0.025 285 / 0.82);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  border: 1px solid var(--border);
+}
+
+/* ── Neon glow utilities ─────────────────────────────────────────────────*/
+.neon-magenta {
+  box-shadow:
+    0 0 0 1px oklch(0.66 0.27 350 / 0.5),
+    0 0 18px oklch(0.66 0.27 350 / 0.45),
+    0 0 42px oklch(0.66 0.27 350 / 0.25);
+}
+.neon-cyan {
+  box-shadow:
+    0 0 0 1px oklch(0.82 0.15 200 / 0.5),
+    0 0 18px oklch(0.82 0.15 200 / 0.45),
+    0 0 42px oklch(0.82 0.15 200 / 0.25);
+}
+.text-glow-magenta {
+  text-shadow:
+    0 0 14px oklch(0.66 0.27 350 / 0.6),
+    0 0 36px oklch(0.66 0.27 350 / 0.35);
+}
+.text-glow-cyan {
+  text-shadow:
+    0 0 14px oklch(0.82 0.15 200 / 0.6),
+    0 0 36px oklch(0.82 0.15 200 / 0.35);
+}
+
+/* ── Cyberpunk tile frame ────────────────────────────────────────────────
+   Outer element paints the neon edge; clip-path cuts two diagonal corners.
+   The inner element (same clip) holds the video so the edge reads as a thin
+   bezel that follows the cut. */
+.cyber-clip {
+  clip-path: polygon(
+    16px 0,
+    100% 0,
+    100% calc(100% - 16px),
+    calc(100% - 16px) 100%,
+    0 100%,
+    0 16px
+  );
+}
+.cyber-frame {
+  position: relative;
+  padding: 1.5px;
+  background: linear-gradient(
+    135deg,
+    oklch(0.66 0.27 350 / 0.5),
+    oklch(0.82 0.15 200 / 0.45)
+  );
+}
+.cyber-frame-active {
+  padding: 2px;
+  background: conic-gradient(
+    from var(--cyber-angle, 0deg),
+    var(--magenta),
+    var(--cyan),
+    var(--magenta)
+  );
+  box-shadow:
+    0 0 22px oklch(0.66 0.27 350 / 0.45),
+    0 0 50px oklch(0.82 0.15 200 / 0.25);
+  animation: cyber-border-spin 5s linear infinite;
+}
+
+@property --cyber-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes cyber-border-spin {
+  to {
+    --cyber-angle: 360deg;
+  }
+}
+
+/* Scanline overlay — reserved for the active speaker's tile only. */
+.scanlines::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 2px,
+    oklch(0 0 0 / 0.12) 3px,
+    transparent 4px
+  );
+  mix-blend-mode: overlay;
+}
+
+/* ── Pulsing ring (guest waiting room) ───────────────────────────────────*/
+.pulse-ring {
+  position: relative;
+}
+.pulse-ring::before,
+.pulse-ring::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid var(--magenta);
+  animation: pulse-ring-out 2.4s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+}
+.pulse-ring::after {
+  border-color: var(--cyan);
+  animation-delay: 1.2s;
+}
+@keyframes pulse-ring-out {
   0% {
-    transform: scale(1);
-    opacity: 0.7;
+    transform: scale(0.85);
+    opacity: 0.9;
   }
   100% {
-    transform: scale(2);
+    transform: scale(1.9);
     opacity: 0;
   }
 }
 
-.knock-pulse-wrap {
-  position: relative;
+/* ── Knock attention border (recolored to brand) ─────────────────────────*/
+@keyframes knock-border-spin {
+  to {
+    --knock-angle: 360deg;
+  }
 }
-
-.knock-pulse-wrap::before {
+@property --knock-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+.knock-border-spin {
+  position: relative;
+  isolation: isolate;
+}
+.knock-border-spin::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--knock-angle),
+    transparent 55%,
+    var(--magenta) 80%,
+    var(--cyan) 100%
+  );
+  animation: knock-border-spin 3s linear infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+.knock-border-spin::after {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: #34d399;
-  animation: knock-pulse 1.5s ease-out infinite;
+  background: inherit;
   pointer-events: none;
-  z-index: -1;
+}
+
+/* Slow drift for hero accent blobs. */
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(2.5rem, -1.5rem, 0) scale(1.12);
+  }
+}
+.animate-drift {
+  animation: drift 14s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cyber-frame-active,
+  .knock-border-spin::before,
+  .pulse-ring::before,
+  .pulse-ring::after,
+  .animate-drift {
+    animation: none;
+  }
 }

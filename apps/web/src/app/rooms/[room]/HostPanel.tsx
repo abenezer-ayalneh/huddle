@@ -4,14 +4,21 @@ import { useRemoteParticipants, useRoomInfo } from "@livekit/components-react";
 import {
   Check,
   Copy,
-  Settings2,
+  ShieldCheck,
   UserCheck,
   UserMinus,
   UserX,
   VolumeX,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { api, type PendingKnock } from "@/lib/api";
 import IconButton from "@/components/IconButton";
 import RecordingControls from "./RecordingControls";
@@ -150,39 +157,48 @@ export default function HostPanel({
 
   if (!open) {
     return (
-      <div className="absolute right-3 top-3 z-20">
-        <IconButton
-          icon={Settings2}
-          label={`Host controls${knocks.length ? ` (${knocks.length} waiting)` : ""}`}
-          variant="subtle"
-          size="lg"
-          className={`bg-black/70 backdrop-blur${knocks.length ? " knock-pulse-wrap" : ""}`}
+      <div className="absolute right-4 top-4 z-30">
+        <button
+          type="button"
+          aria-label={`Host controls${knocks.length ? ` (${knocks.length} waiting)` : ""}`}
+          title={`Host controls${knocks.length ? ` (${knocks.length} waiting)` : ""}`}
           onClick={() => setOpen(true)}
-        />
+          className={`glass-strong relative flex h-12 items-center gap-2 rounded-full px-4 font-display text-sm font-medium tracking-wide text-white transition-all hover:brightness-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 ${
+            knocks.length ? "knock-border-spin" : ""
+          }`}
+        >
+          <ShieldCheck className="h-5 w-5 text-cyan" />
+          Host
+          {knocks.length > 0 && (
+            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-magenta px-1 text-xs font-semibold text-white">
+              {knocks.length}
+            </span>
+          )}
+        </button>
       </div>
     );
   }
 
   return (
-    <aside className="absolute right-3 top-3 z-20 flex max-h-[80dvh] w-72 max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-xl bg-black/75 text-white shadow-lg backdrop-blur transition-all">
-      <header className="flex items-center justify-between px-4 py-3">
-        <span className="font-semibold">Host controls</span>
+    <aside className="glass-strong absolute inset-y-0 right-0 z-30 flex w-80 max-w-[85vw] flex-col border-l border-white/10 shadow-[-8px_0_50px_oklch(0_0_0/0.5)] animate-in slide-in-from-right duration-200">
+      <header className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+        <span className="flex items-center gap-2 font-display text-base font-semibold tracking-wide text-white">
+          <ShieldCheck className="h-5 w-5 text-cyan" />
+          Host controls
+        </span>
         <IconButton
           icon={X}
-          label="Collapse host controls"
+          label="Close host controls"
           size="sm"
-          className="text-white/60 hover:text-white hover:bg-white/15"
+          className="text-white/60 hover:bg-white/15 hover:text-white"
           onClick={() => setOpen(false)}
         />
       </header>
 
-      <div className="space-y-4 overflow-y-auto px-4 pb-4 text-sm">
-        <section>
-          <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-white/50">
-            Invite
-          </h3>
+      <div className="flex-1 space-y-6 overflow-y-auto px-5 py-5 text-sm">
+        <Section title="Invite">
           <div className="flex items-center gap-2">
-            <code className="min-w-0 flex-1 truncate rounded bg-white/10 px-2 py-1 text-xs text-white/80">
+            <code className="min-w-0 flex-1 truncate rounded-md border border-white/10 bg-white/5 px-2.5 py-1.5 font-mono text-xs text-cyan">
               {room}
             </code>
             <IconButton
@@ -193,35 +209,32 @@ export default function HostPanel({
               onClick={copyInvite}
             />
           </div>
-        </section>
+        </Section>
 
-        <section>
-          <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-white/50">
-            Recording
-          </h3>
+        <Section title="Recording">
           <RecordingControls room={room} hostKey={hostKey} />
-        </section>
+        </Section>
 
-        <section>
-          <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-white/50">
-            Waiting room
-          </h3>
+        <Section
+          title="Waiting room"
+          badge={knocks.length > 0 ? knocks.length : undefined}
+        >
           {knocks.length === 0 ? (
-            <p className="text-white/50">No one waiting.</p>
+            <p className="text-white/45">No one waiting.</p>
           ) : (
             <ul className="space-y-2">
               {knocks.map((k) => (
                 <li
                   key={k.knockId}
-                  className="flex items-center justify-between gap-2"
+                  className="flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2"
                 >
-                  <span className="truncate">{k.name}</span>
+                  <span className="truncate text-white/90">{k.name}</span>
                   <span className="flex shrink-0 gap-1">
                     <IconButton
                       icon={UserCheck}
                       label={`Admit ${k.name}`}
                       size="sm"
-                      className="bg-emerald-500 text-black hover:bg-emerald-400"
+                      className="bg-cyan text-black hover:brightness-110"
                       disabled={busy === `admit-${k.knockId}`}
                       onClick={() => admit(k)}
                     />
@@ -238,34 +251,33 @@ export default function HostPanel({
               ))}
             </ul>
           )}
-        </section>
+        </Section>
 
-        <section>
-          <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-white/50">
-            Participants
-          </h3>
+        <Section title="Participants">
           <button
             onClick={toggleMuteOnEntry}
             disabled={busy === "mute-on-entry"}
             aria-pressed={muteOnEntry}
-            className={`mb-3 w-full rounded-md px-2 py-1.5 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current/30 disabled:opacity-50 ${
+            className={`mb-3 w-full rounded-lg px-3 py-2 text-xs font-medium tracking-wide transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50 disabled:opacity-50 ${
               muteOnEntry
-                ? "bg-amber-400 text-black hover:bg-amber-300"
-                : "bg-white/15 hover:bg-white/25"
+                ? "neon-magenta bg-magenta text-white hover:brightness-110"
+                : "bg-white/10 text-white/90 hover:bg-white/20"
             }`}
           >
             {muteOnEntry ? "Muted on entry — allow unmuting" : "Mute all"}
           </button>
           {participants.length === 0 ? (
-            <p className="text-white/50">No other participants.</p>
+            <p className="text-white/45">No other participants.</p>
           ) : (
             <ul className="space-y-2">
               {participants.map((p) => (
                 <li
                   key={p.identity}
-                  className="flex items-center justify-between gap-2"
+                  className="flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2"
                 >
-                  <span className="truncate">{p.name || p.identity}</span>
+                  <span className="truncate text-white/90">
+                    {p.name || p.identity}
+                  </span>
                   <span className="flex shrink-0 gap-1">
                     <IconButton
                       icon={VolumeX}
@@ -288,8 +300,34 @@ export default function HostPanel({
               ))}
             </ul>
           )}
-        </section>
+        </Section>
       </div>
     </aside>
+  );
+}
+
+// Section with a neon left-accent header and an optional count badge.
+function Section({
+  title,
+  badge,
+  children,
+}: {
+  title: string;
+  badge?: number;
+  children: ReactNode;
+}) {
+  return (
+    <section>
+      <h3 className="mb-2.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/55">
+        <span className="h-3 w-0.5 rounded-full bg-gradient-to-b from-magenta to-cyan" />
+        {title}
+        {badge !== undefined && (
+          <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-magenta px-1 text-[10px] font-semibold text-white">
+            {badge}
+          </span>
+        )}
+      </h3>
+      {children}
+    </section>
   );
 }

@@ -31,7 +31,11 @@ export default function LeaveConfirmDialog({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onCancel}>Cancel</AlertDialogCancel>
-          <AlertDialogAction variant="destructive" onClick={onConfirm}>
+          <AlertDialogAction
+            variant="destructive"
+            onClick={onConfirm}
+            className="bg-destructive text-white hover:bg-destructive/90"
+          >
             Leave
           </AlertDialogAction>
         </AlertDialogFooter>

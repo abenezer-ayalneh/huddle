@@ -135,7 +135,7 @@ export default function RecordingControls({
                   icon={Download}
                   label={`Download ${r.filename}`}
                   size="sm"
-                  className="bg-emerald-500 text-black hover:bg-emerald-400"
+                  className="bg-cyan text-black hover:brightness-110"
                   onClick={() => download(r)}
                 />
               ) : (

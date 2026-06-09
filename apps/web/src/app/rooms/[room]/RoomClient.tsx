@@ -39,10 +39,10 @@ export default function RoomClient({ room }: { room: string }) {
   if (error) {
     return (
       <Centered>
-        <p className="text-red-500">{error}</p>
+        <p className="text-magenta text-glow-magenta">{error}</p>
         <button
           onClick={leave}
-          className="rounded-md border border-black/15 px-4 py-2 dark:border-white/20"
+          className="rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-white/90 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50"
         >
           Back to lobby
         </button>
@@ -54,7 +54,7 @@ export default function RoomClient({ room }: { room: string }) {
   if (!hostChecked) {
     return (
       <Centered>
-        <p className="text-black/60 dark:text-white/60">Loading…</p>
+        <p className="text-white/60">Loading…</p>
       </Centered>
     );
   }
