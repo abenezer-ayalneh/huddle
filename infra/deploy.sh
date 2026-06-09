@@ -25,7 +25,18 @@ $COMPOSE exec -T api node node_modules/prisma/build/index.js migrate deploy
 echo "==> Pruning dangling images"
 docker image prune -f
 
-echo "==> Health check"
-curl -fsS "${HEALTH_URL:-https://huddle-api.abenezer-ayalneh.dev/health}"
-echo
+echo "==> Health check (waiting up to 60s for API readiness)"
+READY_URL="${HEALTH_URL:-https://huddle-api.abenezer-ayalneh.dev/ready}"
+for i in $(seq 1 20); do
+  if curl -fsS "$READY_URL" >/dev/null 2>&1; then
+    echo "==> API ready (attempt $i)"
+    break
+  fi
+  if [ "$i" -eq 20 ]; then
+    echo "==> API failed readiness check after 60s" >&2
+    curl -fsS "$READY_URL"
+    exit 1
+  fi
+  sleep 3
+done
 echo "==> Deploy complete."
