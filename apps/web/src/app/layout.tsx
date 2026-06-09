@@ -16,9 +16,28 @@ const rajdhani = Rajdhani({
   weight: ["300", "400", "500", "600", "700"],
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const siteName = "Huddle";
+const siteDescription =
+  "Self-hosted, browser-based video conferencing on LiveKit. Create or join a room and meet face to face — no installs.";
+
 export const metadata: Metadata = {
-  title: "Huddle",
-  description: "Self-hosted video conferencing on LiveKit",
+  metadataBase: new URL(siteUrl),
+  title: siteName,
+  description: siteDescription,
+  applicationName: siteName,
+  openGraph: {
+    type: "website",
+    siteName,
+    title: siteName,
+    description: siteDescription,
+    url: siteUrl,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteName,
+    description: siteDescription,
+  },
 };
 
 export default function RootLayout({
