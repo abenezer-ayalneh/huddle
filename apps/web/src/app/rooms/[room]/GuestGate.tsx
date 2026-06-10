@@ -126,7 +126,15 @@ export default function GuestGate({ room, onLeave, onError }: { room: string; on
   // its own PreJoin because we hand it the choices made before the knock.
   if (connection && choices) {
     return (
-      <CallStage connection={connection} displayName={choices.username} initialChoices={choices} startMuted={startMuted} onLeave={onLeave} onError={onError} />
+      <CallStage
+        room={room}
+        connection={connection}
+        displayName={choices.username}
+        initialChoices={choices}
+        startMuted={startMuted}
+        onLeave={onLeave}
+        onError={onError}
+      />
     );
   }
 

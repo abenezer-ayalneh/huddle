@@ -1,7 +1,7 @@
 // Typed client for the NestJS backend (see docs/API_CONTRACT.md).
 // Host-only calls authorize with the per-room hostKey via the x-host-key header.
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 // Host join: what a signed-in host needs to connect to LiveKit and run the
 // room. Returned by both create (new room) and host-token (rejoin own room).
@@ -150,6 +150,15 @@ export const api = {
 
   removeParticipant: (room: string, identity: string, hostKey: string) =>
     request<{ ok: true }>(`/rooms/${encodeURIComponent(room)}/participants/${encodeURIComponent(identity)}`, { method: "DELETE", hostKey }),
+
+  // Present with Control (docs/adr/0010): mint a one-time pairing code for the
+  // Control Agent. Authorized by the participant's own LiveKit token — anyone
+  // in the call may present, so anyone in the call may pair an agent.
+  controlAgentLink: (room: string, participantToken: string) =>
+    request<{ code: string; expiresInSeconds: number }>(`/rooms/${encodeURIComponent(room)}/control-agent-link`, {
+      method: "POST",
+      headers: { "x-participant-token": participantToken },
+    }),
 
   // All of the signed-in host's recordings across their rooms (session-authed).
   // Backs the lobby /recordings page; each item carries its Room Code + hostKey.

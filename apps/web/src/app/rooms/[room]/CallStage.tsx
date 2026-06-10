@@ -1,20 +1,30 @@
 "use client";
 
 import { LiveKitRoom, RoomAudioRenderer, useChat, type LocalUserChoices } from "@livekit/components-react";
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useState, useSyncExternalStore, type ReactNode } from "react";
+import AgentLaunchDialog from "@/components/call/AgentLaunchDialog";
 import ChatPanel from "@/components/call/ChatPanel";
 import ConnectionStatus from "@/components/call/ConnectionStatus";
 import ControlBar from "@/components/call/ControlBar";
 import PresentationToast from "@/components/call/PresentationToast";
 import PreJoinScreen from "@/components/call/PreJoinScreen";
+import RemoteControlBanner from "@/components/call/RemoteControlBanner";
+import RemoteControlSurface from "@/components/call/RemoteControlSurface";
+import RemoteControlToast from "@/components/call/RemoteControlToast";
 import VideoGrid from "@/components/call/VideoGrid";
 import { usePresentation } from "@/components/call/usePresentation";
+import { useRemoteControl } from "@/components/call/useRemoteControl";
+import { api, API_URL } from "@/lib/api";
 import LeaveConfirmDialog from "./LeaveConfirmDialog";
 import { Centered } from "./ui";
 
 type Connection = { token: string; livekitUrl: string };
 
+// Static capability — nothing to subscribe to.
+const emptySubscribe = () => () => {};
+
 export default function CallStage({
+  room,
   connection,
   displayName,
   onLeave,
@@ -24,6 +34,7 @@ export default function CallStage({
   startMuted = false,
   isHost = false,
 }: {
+  room: string;
   connection: Connection;
   displayName: string;
   onLeave: () => void;
@@ -71,7 +82,7 @@ export default function CallStage({
         style={{ height: "100dvh" }}
         className="bg-dotgrid"
       >
-        <CallView onLeaveClick={() => setShowLeaveDialog(true)} overlay={overlay} isHost={isHost} />
+        <CallView room={room} token={connection.token} onLeaveClick={() => setShowLeaveDialog(true)} overlay={overlay} isHost={isHost} />
         <RoomAudioRenderer />
       </LiveKitRoom>
       <LeaveConfirmDialog open={showLeaveDialog} onConfirm={confirmLeave} onCancel={() => setShowLeaveDialog(false)} />
@@ -79,11 +90,64 @@ export default function CallStage({
   );
 }
 
-function CallView({ onLeaveClick, overlay, isHost }: { onLeaveClick: () => void; overlay?: ReactNode; isHost: boolean }) {
+function CallView({
+  room,
+  token,
+  onLeaveClick,
+  overlay,
+  isHost,
+}: {
+  room: string;
+  token: string;
+  onLeaveClick: () => void;
+  overlay?: ReactNode;
+  isHost: boolean;
+}) {
   const { chatMessages, send, isSending } = useChat();
   const [chatOpen, setChatOpen] = useState(false);
 
   const presentation = usePresentation(isHost);
+  const control = useRemoteControl({
+    presenterIdentity: presentation.presenterIdentity,
+    presenterName: presentation.presenterName,
+    iAmPresenting: presentation.iAmPresenting,
+    agentIdentity: presentation.agentIdentity,
+  });
+
+  // Present with Control entry point. Desktop browsers only — gated on
+  // getDisplayMedia as a coarse "this is a desktop" check (the agent itself
+  // captures, but a phone can't run the desktop agent next to it). Read via
+  // useSyncExternalStore so SSR renders false without a hydration mismatch.
+  const canPresentWithControl = useSyncExternalStore(
+    emptySubscribe,
+    () => !!navigator.mediaDevices?.getDisplayMedia,
+    () => false
+  );
+
+  const [launchCode, setLaunchCode] = useState<string | null>(null);
+  const presentWithControl = useCallback(async () => {
+    try {
+      const { code } = await api.controlAgentLink(room, token);
+      setLaunchCode(code);
+      // Hand the one-time code to the agent via deep link. Launched from a
+      // hidden iframe — assigning location.href to an unhandled custom scheme
+      // unloads the page (disconnecting the call!); an iframe contains the
+      // failure. The dialog stays up as the no-handler fallback either way.
+      const frame = document.createElement("iframe");
+      frame.style.display = "none";
+      frame.src = `huddle://present?code=${encodeURIComponent(code)}&api=${encodeURIComponent(API_URL)}`;
+      document.body.appendChild(frame);
+      setTimeout(() => frame.remove(), 3000);
+    } catch {
+      setLaunchCode(null);
+    }
+  }, [room, token]);
+
+  // The agent joined and its share is up — the launch dialog has done its
+  // job. Render-time adjustment, same pattern as the unread counter below.
+  if (launchCode !== null && presentation.agentIdentity && presentation.iAmPresenting) {
+    setLaunchCode(null);
+  }
 
   const [unread, setUnread] = useState(0);
   const [prev, setPrev] = useState({
@@ -102,7 +166,9 @@ function CallView({ onLeaveClick, overlay, isHost }: { onLeaveClick: () => void;
 
   return (
     <>
-      <VideoGrid />
+      <VideoGrid
+        presentationOverlay={control.controlling ? <RemoteControlSurface sendInput={control.sendInput} sendClipboard={control.sendClipboard} /> : undefined}
+      />
       <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} messages={chatMessages} onSend={send} isSending={isSending} />
       <ControlBar
         onLeave={onLeaveClick}
@@ -112,9 +178,22 @@ function CallView({ onLeaveClick, overlay, isHost }: { onLeaveClick: () => void;
         iAmPresenting={presentation.iAmPresenting}
         someoneElsePresenting={presentation.someoneElsePresenting}
         onShareClick={presentation.handleShareClick}
+        onPresentWithControl={canPresentWithControl ? presentWithControl : undefined}
         hasOutgoingRequest={!!presentation.outgoing}
       />
-      <div className="pointer-events-none absolute inset-x-0 top-14 z-30 flex justify-center">
+      <div className="pointer-events-none absolute inset-x-0 top-2 z-30 flex justify-center">
+        <RemoteControlBanner
+          iAmControllablePresenter={control.iAmControllablePresenter}
+          controller={control.controller}
+          controlling={control.controlling}
+          canRequest={control.controllable && !presentation.iAmPresenting && !control.controlling && !control.outgoingRequest && !control.incomingOffer}
+          onRequest={control.requestControl}
+          onRevoke={control.revoke}
+          onRelease={control.release}
+          onOffer={control.offerControl}
+        />
+      </div>
+      <div className="pointer-events-none absolute inset-x-0 top-14 z-30 flex flex-col items-center gap-2">
         <PresentationToast
           outgoing={presentation.outgoing}
           incoming={presentation.incoming}
@@ -124,7 +203,21 @@ function CallView({ onLeaveClick, overlay, isHost }: { onLeaveClick: () => void;
           onDecline={presentation.declinePresentation}
           onDismissOutcome={presentation.dismissOutcome}
         />
+        <RemoteControlToast
+          incomingRequest={control.incomingRequest}
+          incomingOffer={control.incomingOffer}
+          outgoingRequest={control.outgoingRequest}
+          outgoingOffer={control.outgoingOffer}
+          outcome={control.outcome}
+          onGrant={control.grantRequest}
+          onDeclineRequest={control.declineRequest}
+          onAcceptOffer={control.acceptOffer}
+          onDeclineOffer={control.declineOffer}
+          onCancelRequest={control.cancelRequest}
+          onDismissOutcome={control.dismissOutcome}
+        />
       </div>
+      <AgentLaunchDialog code={launchCode} onCancel={() => setLaunchCode(null)} />
       <ConnectionStatus />
       {overlay}
     </>

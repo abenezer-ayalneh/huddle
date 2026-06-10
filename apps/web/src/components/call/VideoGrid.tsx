@@ -3,9 +3,10 @@
 import { useSpeakingParticipants, useTracks } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import { useMemo } from "react";
+import { isAgentIdentity } from "@/lib/controlProtocol";
 import VideoTile from "./VideoTile";
 
-export default function VideoGrid() {
+export default function VideoGrid({ presentationOverlay }: { presentationOverlay?: React.ReactNode }) {
   const tracks = useTracks(
     [
       { source: Track.Source.Camera, withPlaceholder: true },
@@ -18,10 +19,12 @@ export default function VideoGrid() {
   const activeIdentity = speaking[0]?.identity;
 
   const screenTrack = useMemo(() => tracks.find((t) => t.source === Track.Source.ScreenShare) ?? null, [tracks]);
-  const cameraTracks = useMemo(() => tracks.filter((t) => t.source === Track.Source.Camera), [tracks]);
+  // Control Agents are plumbing, not people: their screen share renders like
+  // anyone's, but they must never get a (placeholder) camera tile.
+  const cameraTracks = useMemo(() => tracks.filter((t) => t.source === Track.Source.Camera && !isAgentIdentity(t.participant.identity)), [tracks]);
 
   if (screenTrack) {
-    return <PresentationLayout screenTrack={screenTrack} cameraTracks={cameraTracks} activeIdentity={activeIdentity} />;
+    return <PresentationLayout screenTrack={screenTrack} cameraTracks={cameraTracks} activeIdentity={activeIdentity} overlay={presentationOverlay} />;
   }
 
   return <EqualGrid cameraTracks={cameraTracks} activeIdentity={activeIdentity} />;
@@ -61,10 +64,14 @@ function PresentationLayout({
   screenTrack,
   cameraTracks,
   activeIdentity,
+  overlay,
 }: {
   screenTrack: ReturnType<typeof useTracks>[number];
   cameraTracks: ReturnType<typeof useTracks>;
   activeIdentity: string | undefined;
+  // Remote-control input capture mounts over the presented video; it finds
+  // the <video> through this shared positioning context.
+  overlay?: React.ReactNode;
 }) {
   return (
     <div className="absolute inset-0 flex flex-col p-3 pb-24 sm:flex-row sm:p-4 sm:pb-28">
@@ -72,8 +79,9 @@ function PresentationLayout({
           object-contain video never overflows and sits centered when
           letterboxed on any viewport shape. */}
       <div className="flex min-h-0 flex-1 items-center justify-center sm:min-w-0">
-        <div className="h-full w-full max-h-full max-w-full">
+        <div className="relative h-full w-full max-h-full max-w-full">
           <VideoTile trackRef={screenTrack} active={false} />
+          {overlay}
         </div>
       </div>
 

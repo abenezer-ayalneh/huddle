@@ -30,25 +30,16 @@ export default function RoomClient({ room }: { room: string }) {
   useEffect(() => {
     if (sessionPending) return;
 
-    const cached = loadHostSession(room);
-    if (cached) {
-      setHost(cached);
-      setHostChecked(true);
-      return;
-    }
-
-    if (!session) {
-      setHostChecked(true);
-      return;
-    }
-
-    // No sessionStorage entry but the user is signed in — try to reclaim
-    // ownership via the host-token endpoint. Succeeds only for the room's owner.
     let cancelled = false;
-    api
-      .hostJoin(room)
-      .then((result) => {
-        if (cancelled) return;
+    const resolveHost = async () => {
+      const cached = loadHostSession(room);
+      if (cached) return cached;
+      if (!session) return null;
+
+      // No sessionStorage entry but the user is signed in — try to reclaim
+      // ownership via the host-token endpoint. Succeeds only for the room's owner.
+      try {
+        const result = await api.hostJoin(room);
         const hostSession = {
           token: result.token,
           hostKey: result.hostKey,
@@ -57,14 +48,18 @@ export default function RoomClient({ room }: { room: string }) {
           name: session.user.name,
         };
         saveHostSession(room, hostSession);
-        setHost(hostSession);
-      })
-      .catch(() => {
+        return hostSession;
+      } catch {
         // 401/403/network — not the owner or not authenticated; fall through to guest.
-      })
-      .finally(() => {
-        if (!cancelled) setHostChecked(true);
-      });
+        return null;
+      }
+    };
+
+    resolveHost().then((hostSession) => {
+      if (cancelled) return;
+      if (hostSession) setHost(hostSession);
+      setHostChecked(true);
+    });
     return () => {
       cancelled = true;
     };
@@ -102,6 +97,7 @@ export default function RoomClient({ room }: { room: string }) {
   // Host session present → host.
   return (
     <CallStage
+      room={room}
       connection={{ token: host.token, livekitUrl: host.livekitUrl }}
       displayName={host.name}
       onLeave={leave}

@@ -2,7 +2,9 @@
 
 import { useTrackToggle } from "@livekit/components-react";
 import { Track } from "livekit-client";
-import { Mic, MicOff, Video, VideoOff, MonitorUp, MonitorOff, MessageSquare, PhoneOff, type LucideIcon } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, MonitorUp, MonitorOff, MessageSquare, MousePointer2, PhoneOff, ChevronUp, type LucideIcon } from "lucide-react";
+import { useState } from "react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import DeviceMenu, { type DeviceSection } from "./DeviceMenu";
 
 export default function ControlBar({
@@ -13,6 +15,7 @@ export default function ControlBar({
   iAmPresenting,
   someoneElsePresenting,
   onShareClick,
+  onPresentWithControl,
   hasOutgoingRequest,
 }: {
   onLeave: () => void;
@@ -22,6 +25,9 @@ export default function ControlBar({
   iAmPresenting: boolean;
   someoneElsePresenting: boolean;
   onShareClick: () => void;
+  // Present with Control (docs/adr/0010): undefined hides the share menu —
+  // the caller gates it to desktop browsers when nobody is presenting yet.
+  onPresentWithControl?: () => void;
   hasOutgoingRequest: boolean;
 }) {
   const mic = useTrackToggle({ source: Track.Source.Microphone });
@@ -71,13 +77,18 @@ export default function ControlBar({
 
         <span className="mx-1 h-7 w-px bg-white/10" />
 
-        <ControlButton
-          icon={iAmPresenting ? MonitorOff : MonitorUp}
-          label={shareLabel}
-          active={iAmPresenting}
-          disabled={hasOutgoingRequest}
-          onClick={onShareClick}
-        />
+        <div className="flex items-center gap-0.5">
+          <ControlButton
+            icon={iAmPresenting ? MonitorOff : MonitorUp}
+            label={shareLabel}
+            active={iAmPresenting}
+            disabled={hasOutgoingRequest}
+            onClick={onShareClick}
+          />
+          {onPresentWithControl && !iAmPresenting && !someoneElsePresenting && (
+            <ShareMenu onPresent={onShareClick} onPresentWithControl={onPresentWithControl} />
+          )}
+        </div>
         <ControlButton icon={MessageSquare} label={chatOpen ? "Hide chat" : "Show chat"} active={chatOpen} badge={unreadChat} onClick={onToggleChat} />
 
         <span className="mx-1 h-7 w-px bg-white/10" />
@@ -85,6 +96,49 @@ export default function ControlBar({
         <ControlButton icon={PhoneOff} label="Leave call" leave onClick={onLeave} />
       </div>
     </div>
+  );
+}
+
+// Share-time choice (docs/adr/0010): plain Present (browser picker, any
+// surface, never controllable) vs Present with Control (the desktop agent
+// shares one whole monitor and can hand input to a participant).
+function ShareMenu({ onPresent, onPresentWithControl }: { onPresent: () => void; onPresentWithControl: () => void }) {
+  const [open, setOpen] = useState(false);
+
+  const item = (onClick: () => void, icon: LucideIcon, title: string, hint: string) => {
+    const Icon = icon;
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setOpen(false);
+          onClick();
+        }}
+        className="flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60"
+      >
+        <Icon className="mt-0.5 h-4 w-4 shrink-0 text-cyan" />
+        <span className="min-w-0">
+          <span className="block text-sm font-medium text-white/90">{title}</span>
+          <span className="block text-xs text-white/50">{hint}</span>
+        </span>
+      </button>
+    );
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        title="More ways to present"
+        aria-label="More ways to present"
+        className="flex h-8 w-5 items-center justify-center rounded-full bg-white/8 text-white/70 ring-1 ring-white/10 transition-all hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 sm:h-9 sm:w-6 [&>svg]:h-3.5 [&>svg]:w-3.5"
+      >
+        <ChevronUp />
+      </PopoverTrigger>
+      <PopoverContent side="top" sideOffset={14} className="glass-strong w-72 gap-1 rounded-xl p-1.5">
+        {item(onPresent, MonitorUp, "Present screen", "Share a tab, window, or screen — view only")}
+        {item(onPresentWithControl, MousePointer2, "Present with control", "Share a monitor via the desktop agent; participants can take the mouse")}
+      </PopoverContent>
+    </Popover>
   );
 }
 
