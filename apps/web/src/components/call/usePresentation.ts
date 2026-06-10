@@ -3,7 +3,8 @@
 import { useLocalParticipant, useRoomContext, useTracks } from "@livekit/components-react";
 import { RoomEvent, Track, type RemoteParticipant } from "livekit-client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { PRESENT_TOPIC, decode, sendPresentMessage, type PresentMessage } from "@/lib/presentProtocol";
+import { isAgentIdentity, presenterIdentityFor, sendControlMessage } from "@/lib/controlProtocol";
+import { PRESENT_TOPIC, decode, sendPresentMessage } from "@/lib/presentProtocol";
 
 export type OutgoingRequest = {
   presenterIdentity: string;
@@ -31,14 +32,22 @@ export function usePresentation(isHost: boolean) {
   const screenTracks = useTracks([{ source: Track.Source.ScreenShare, withPlaceholder: false }], { onlySubscribed: false });
 
   const presenterTrack = screenTracks[0] ?? null;
-  const presenterIdentity = presenterTrack?.participant.identity ?? null;
-  const presenterName = presenterTrack?.participant.name || presenterTrack?.participant.identity || null;
+  // A controllable presentation is published by the presenter's Control Agent
+  // (identity `agent:<presenter>`), not their browser. The person remains the
+  // Presenter — resolve the agent identity back to the human everywhere, so
+  // the present:* protocol keeps targeting browsers, not agents.
+  const publisherIdentity = presenterTrack?.participant.identity ?? null;
+  const agentIdentity = publisherIdentity !== null && isAgentIdentity(publisherIdentity) ? publisherIdentity : null;
+  const presenterIdentity = publisherIdentity !== null ? presenterIdentityFor(publisherIdentity) : null;
+  const presenterName = presenterTrack?.participant.name || presenterIdentity;
   const iAmPresenting = presenterIdentity === localParticipant.identity;
   const someoneElsePresenting = presenterIdentity !== null && !iAmPresenting;
 
   const [outgoing, setOutgoing] = useState<OutgoingRequest | null>(null);
   const [incoming, setIncoming] = useState<IncomingRequest | null>(null);
   const [outcome, setOutcome] = useState<PresentationOutcome | null>(null);
+  const [autoStartTick, setAutoStartTick] = useState(0);
+  const autoStartConsumedRef = useRef(0);
   const outgoingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const outcomeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingStartShare = useRef(false);
@@ -66,17 +75,32 @@ export function usePresentation(isHost: boolean) {
   }, [localParticipant]);
 
   const stopMyShare = useCallback(async () => {
+    // An agent-published share isn't a browser track — tell the agent to stop.
+    if (agentIdentity && presenterIdentityFor(agentIdentity) === localParticipant.identity) {
+      await sendControlMessage(localParticipant, [agentIdentity], { v: 1, type: "control:stop-present" });
+      return;
+    }
     await localParticipant.setScreenShareEnabled(false);
-  }, [localParticipant]);
+  }, [localParticipant, agentIdentity]);
 
   // When presenter disappears while we have a pending outgoing request,
-  // auto-resolve: start our share.
+  // auto-resolve: drop the request and start our share. The request is cleared
+  // as a render-time adjustment (converges: `outgoing` goes null), and the tick
+  // hands the side effects (timer cleanup + share start) to the effect below.
+  if (outgoing && !someoneElsePresenting) {
+    setOutgoing(null);
+    setAutoStartTick(autoStartTick + 1);
+  }
+
   useEffect(() => {
-    if (outgoing && !someoneElsePresenting) {
-      clearOutgoing();
-      startMyShare();
+    if (autoStartTick === autoStartConsumedRef.current) return;
+    autoStartConsumedRef.current = autoStartTick;
+    if (outgoingTimerRef.current) {
+      clearTimeout(outgoingTimerRef.current);
+      outgoingTimerRef.current = null;
     }
-  }, [outgoing, someoneElsePresenting, startMyShare]);
+    startMyShare();
+  }, [autoStartTick, startMyShare]);
 
   // After a yield/force-take is received and the presenter's track goes away,
   // we need to start our share. We track this via pendingStartShare ref.
@@ -232,6 +256,8 @@ export function usePresentation(isHost: boolean) {
   return {
     presenterIdentity,
     presenterName,
+    // Non-null when the current share is agent-published (controllable).
+    agentIdentity,
     iAmPresenting,
     someoneElsePresenting,
     outgoing,
