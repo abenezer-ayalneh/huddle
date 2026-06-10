@@ -2,7 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { loadHostSession, clearHostSession } from "@/lib/hostSession";
+import { api } from "@/lib/api";
+import { useSession } from "@/lib/auth-client";
+import { loadHostSession, saveHostSession, clearHostSession } from "@/lib/hostSession";
 import CallStage from "./CallStage";
 import GuestGate from "./GuestGate";
 import HostPanel from "./HostPanel";
@@ -15,6 +17,7 @@ import { Centered } from "./ui";
 // role out of the URL means a shared link is just the Room Code.
 export default function RoomClient({ room }: { room: string }) {
   const router = useRouter();
+  const { data: session, isPending: sessionPending } = useSession();
   const [error, setError] = useState<string | null>(null);
 
   const leave = useCallback(() => {
@@ -22,19 +25,50 @@ export default function RoomClient({ room }: { room: string }) {
     router.push("/");
   }, [room, router]);
 
-  // Host session is read once on mount (sessionStorage isn't available during
-  // SSR, and reading it client-side avoids a hydration mismatch). Its presence
-  // is what makes someone the host; absence makes them a guest.
   const [host, setHost] = useState<ReturnType<typeof loadHostSession>>(null);
   const [hostChecked, setHostChecked] = useState(false);
   useEffect(() => {
-    // Client-only: sessionStorage isn't available during SSR, so the host
-    // session can only be read after mount. The setState-in-effect here is
-    // intentional (one-shot hydration of a client-only value), not a render loop.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setHost(loadHostSession(room));
-    setHostChecked(true);
-  }, [room]);
+    if (sessionPending) return;
+
+    const cached = loadHostSession(room);
+    if (cached) {
+      setHost(cached);
+      setHostChecked(true);
+      return;
+    }
+
+    if (!session) {
+      setHostChecked(true);
+      return;
+    }
+
+    // No sessionStorage entry but the user is signed in — try to reclaim
+    // ownership via the host-token endpoint. Succeeds only for the room's owner.
+    let cancelled = false;
+    api
+      .hostJoin(room)
+      .then((result) => {
+        if (cancelled) return;
+        const hostSession = {
+          token: result.token,
+          hostKey: result.hostKey,
+          identity: result.identity,
+          livekitUrl: result.livekitUrl,
+          name: session.user.name,
+        };
+        saveHostSession(room, hostSession);
+        setHost(hostSession);
+      })
+      .catch(() => {
+        // 401/403/network — not the owner or not authenticated; fall through to guest.
+      })
+      .finally(() => {
+        if (!cancelled) setHostChecked(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [room, session, sessionPending]);
 
   if (error) {
     return (
