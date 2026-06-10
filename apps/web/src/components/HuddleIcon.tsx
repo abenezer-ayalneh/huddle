@@ -17,13 +17,7 @@ export default function HuddleIcon(props: SVGProps<SVGSVGElement>) {
   ];
 
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 64 64"
-      fill="none"
-      aria-label="Huddle"
-      {...props}
-    >
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" aria-label="Huddle" {...props}>
       {dots.map((d, i) => (
         <circle key={i} cx={d.x} cy={d.y} r={dotR} fill={d.fill} />
       ))}

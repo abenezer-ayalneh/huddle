@@ -77,10 +77,7 @@ class ApiError extends Error {
   }
 }
 
-async function request<T>(
-  path: string,
-  init?: RequestInit & { hostKey?: string }
-): Promise<T> {
+async function request<T>(path: string, init?: RequestInit & { hostKey?: string }): Promise<T> {
   const { hostKey, headers, ...rest } = init ?? {};
   const res = await fetch(`${API_URL}${path}`, {
     // Send the BetterAuth session cookie on cross-origin API calls (the auth
@@ -120,8 +117,7 @@ export const api = {
     }),
 
   // Public info shown to a guest landing on a room link.
-  getPublicRoom: (room: string) =>
-    request<PublicRoom>(`/rooms/${encodeURIComponent(room)}`),
+  getPublicRoom: (room: string) => request<PublicRoom>(`/rooms/${encodeURIComponent(room)}`),
 
   knock: (room: string, name: string) =>
     request<{ knockId: string }>(`/rooms/${encodeURIComponent(room)}/knock`, {
@@ -129,34 +125,17 @@ export const api = {
       body: JSON.stringify({ name }),
     }),
 
-  knockStatus: (room: string, knockId: string) =>
-    request<KnockStatusResult>(
-      `/rooms/${encodeURIComponent(room)}/knock/${knockId}`
-    ),
+  knockStatus: (room: string, knockId: string) => request<KnockStatusResult>(`/rooms/${encodeURIComponent(room)}/knock/${knockId}`),
 
-  cancelKnock: (room: string, knockId: string) =>
-    request<{ ok: true }>(
-      `/rooms/${encodeURIComponent(room)}/knock/${knockId}`,
-      { method: "DELETE" }
-    ),
+  cancelKnock: (room: string, knockId: string) => request<{ ok: true }>(`/rooms/${encodeURIComponent(room)}/knock/${knockId}`, { method: "DELETE" }),
 
-  listKnocks: (room: string, hostKey: string) =>
-    request<{ knocks: PendingKnock[] }>(
-      `/rooms/${encodeURIComponent(room)}/knocks`,
-      { hostKey }
-    ),
+  listKnocks: (room: string, hostKey: string) => request<{ knocks: PendingKnock[] }>(`/rooms/${encodeURIComponent(room)}/knocks`, { hostKey }),
 
   admit: (room: string, knockId: string, hostKey: string) =>
-    request<{ status: string }>(
-      `/rooms/${encodeURIComponent(room)}/knocks/${knockId}/admit`,
-      { method: "POST", hostKey }
-    ),
+    request<{ status: string }>(`/rooms/${encodeURIComponent(room)}/knocks/${knockId}/admit`, { method: "POST", hostKey }),
 
   deny: (room: string, knockId: string, hostKey: string) =>
-    request<{ status: string }>(
-      `/rooms/${encodeURIComponent(room)}/knocks/${knockId}/deny`,
-      { method: "POST", hostKey }
-    ),
+    request<{ status: string }>(`/rooms/${encodeURIComponent(room)}/knocks/${knockId}/deny`, { method: "POST", hostKey }),
 
   mute: (room: string, identity: string, muted: boolean, hostKey: string) =>
     request<{ ok: true }>(`/rooms/${encodeURIComponent(room)}/mute`, {
@@ -167,21 +146,14 @@ export const api = {
 
   // Toggle Mute on Entry (host-only). Returns the new state.
   setMuteOnEntry: (room: string, muted: boolean, hostKey: string) =>
-    request<{ muteOnEntry: boolean }>(
-      `/rooms/${encodeURIComponent(room)}/mute-on-entry`,
-      { method: "POST", body: JSON.stringify({ muted }), hostKey }
-    ),
+    request<{ muteOnEntry: boolean }>(`/rooms/${encodeURIComponent(room)}/mute-on-entry`, { method: "POST", body: JSON.stringify({ muted }), hostKey }),
 
   removeParticipant: (room: string, identity: string, hostKey: string) =>
-    request<{ ok: true }>(
-      `/rooms/${encodeURIComponent(room)}/participants/${encodeURIComponent(identity)}`,
-      { method: "DELETE", hostKey }
-    ),
+    request<{ ok: true }>(`/rooms/${encodeURIComponent(room)}/participants/${encodeURIComponent(identity)}`, { method: "DELETE", hostKey }),
 
   // All of the signed-in host's recordings across their rooms (session-authed).
   // Backs the lobby /recordings page; each item carries its Room Code + hostKey.
-  listMyRecordings: () =>
-    request<{ recordings: MyRecording[] }>("/recordings/mine"),
+  listMyRecordings: () => request<{ recordings: MyRecording[] }>("/recordings/mine"),
 
   // --- Recording (host-only) ---
   startRecording: (room: string, hostKey: string) =>
@@ -190,31 +162,19 @@ export const api = {
       hostKey,
     }),
 
-  listRecordings: (room: string, hostKey: string) =>
-    request<{ recordings: RecordingSummary[] }>(
-      `/rooms/${encodeURIComponent(room)}/recordings`,
-      { hostKey }
-    ),
+  listRecordings: (room: string, hostKey: string) => request<{ recordings: RecordingSummary[] }>(`/rooms/${encodeURIComponent(room)}/recordings`, { hostKey }),
 
   stopRecording: (room: string, id: string, hostKey: string) =>
-    request<RecordingSummary>(
-      `/rooms/${encodeURIComponent(room)}/recordings/${id}/stop`,
-      { method: "POST", hostKey }
-    ),
+    request<RecordingSummary>(`/rooms/${encodeURIComponent(room)}/recordings/${id}/stop`, { method: "POST", hostKey }),
 
   // The download is host-authorized (x-host-key), so it can't be a plain link —
   // fetch it as a blob and let the caller trigger a save.
-  downloadRecording: async (
-    room: string,
-    id: string,
-    hostKey: string
-  ): Promise<Blob> => {
-    const res = await fetch(
-      `${API_URL}/rooms/${encodeURIComponent(room)}/recordings/${id}/download`,
-      { credentials: "include", headers: { "x-host-key": hostKey } }
-    );
-    if (!res.ok)
-      throw new ApiError(res.status, `Download failed (${res.status})`);
+  downloadRecording: async (room: string, id: string, hostKey: string): Promise<Blob> => {
+    const res = await fetch(`${API_URL}/rooms/${encodeURIComponent(room)}/recordings/${id}/download`, {
+      credentials: "include",
+      headers: { "x-host-key": hostKey },
+    });
+    if (!res.ok) throw new ApiError(res.status, `Download failed (${res.status})`);
     return res.blob();
   },
 };

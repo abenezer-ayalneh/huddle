@@ -1,31 +1,18 @@
 "use client";
 
-import {
-  VideoTrack,
-  isTrackReference,
-  type TrackReferenceOrPlaceholder,
-} from "@livekit/components-react";
+import { VideoTrack, isTrackReference, type TrackReferenceOrPlaceholder } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import { MicOff, MonitorUp } from "lucide-react";
 import { useParticipantMedia } from "./useParticipantMedia";
 
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2)
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   const word = parts[0] || "";
-  return word.length >= 2
-    ? word.slice(0, 2).toUpperCase()
-    : word.toUpperCase() || "?";
+  return word.length >= 2 ? word.slice(0, 2).toUpperCase() : word.toUpperCase() || "?";
 }
 
-export default function VideoTile({
-  trackRef,
-  active,
-}: {
-  trackRef: TrackReferenceOrPlaceholder;
-  active: boolean;
-}) {
+export default function VideoTile({ trackRef, active }: { trackRef: TrackReferenceOrPlaceholder; active: boolean }) {
   const participant = trackRef.participant;
   const { cameraOn, micOn } = useParticipantMedia(participant);
 
@@ -38,16 +25,8 @@ export default function VideoTile({
 
   return (
     <div className="relative h-full w-full min-h-0 min-w-0">
-      <div
-        className={`cyber-clip h-full w-full transition-shadow ${
-          active ? "cyber-frame-active" : "cyber-frame"
-        }`}
-      >
-        <div
-          className={`cyber-clip relative h-full w-full overflow-hidden bg-[oklch(0.12_0.02_280)] ${
-            active ? "scanlines" : ""
-          }`}
-        >
+      <div className={`cyber-clip h-full w-full transition-shadow ${active ? "cyber-frame-active" : "cyber-frame"}`}>
+        <div className={`cyber-clip relative h-full w-full overflow-hidden bg-[oklch(0.12_0.02_280)] ${active ? "scanlines" : ""}`}>
           {showVideo ? (
             <VideoTrack
               trackRef={trackRef}
@@ -55,9 +34,7 @@ export default function VideoTile({
               // against the dark tile) rather than cover, which would crop it.
               // Cameras still cover so faces fill the tile; only the local
               // camera is mirrored.
-              className={`h-full w-full ${
-                isScreenShare ? "object-contain" : "object-cover"
-              } ${isLocal && !isScreenShare ? "-scale-x-100" : ""}`}
+              className={`h-full w-full ${isScreenShare ? "object-contain" : "object-cover"} ${isLocal && !isScreenShare ? "-scale-x-100" : ""}`}
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[oklch(0.18_0.03_300)] to-[oklch(0.13_0.02_270)]">
@@ -82,9 +59,7 @@ export default function VideoTile({
           {/* Name pill + status. */}
           <div className="pointer-events-none absolute bottom-2 left-2 flex max-w-[calc(100%-1rem)] items-center gap-1.5 rounded-md bg-black/55 px-2 py-1 backdrop-blur">
             {!micOn && <MicOff className="h-3.5 w-3.5 shrink-0 text-magenta" />}
-            {isScreenShare && (
-              <MonitorUp className="h-3.5 w-3.5 shrink-0 text-cyan" />
-            )}
+            {isScreenShare && <MonitorUp className="h-3.5 w-3.5 shrink-0 text-cyan" />}
             <span className="truncate text-xs font-medium text-white/90">
               {label}
               {isLocal && !isScreenShare ? " (You)" : ""}

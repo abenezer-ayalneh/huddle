@@ -19,18 +19,8 @@ type Connection = { token: string; livekitUrl: string };
 //                  unmounted, so the camera/mic stream is released while idle.
 //   4. admitted  — re-acquire the chosen devices and hand off to <CallStage>,
 //                  which skips its own PreJoin because we pass the choices in.
-export default function GuestGate({
-  room,
-  onLeave,
-  onError,
-}: {
-  room: string;
-  onLeave: () => void;
-  onError: (message: string) => void;
-}) {
-  const [phase, setPhase] = useState<
-    "precheck" | "check" | "knocking" | "waiting" | "denied"
-  >("precheck");
+export default function GuestGate({ room, onLeave, onError }: { room: string; onLeave: () => void; onError: (message: string) => void }) {
+  const [phase, setPhase] = useState<"precheck" | "check" | "knocking" | "waiting" | "denied">("precheck");
   const [choices, setChoices] = useState<LocalUserChoices | null>(null);
   const [knockId, setKnockId] = useState<string | null>(null);
   const [connection, setConnection] = useState<Connection | null>(null);
@@ -136,26 +126,15 @@ export default function GuestGate({
   // its own PreJoin because we hand it the choices made before the knock.
   if (connection && choices) {
     return (
-      <CallStage
-        connection={connection}
-        displayName={choices.username}
-        initialChoices={choices}
-        startMuted={startMuted}
-        onLeave={onLeave}
-        onError={onError}
-      />
+      <CallStage connection={connection} displayName={choices.username} initialChoices={choices} startMuted={startMuted} onLeave={onLeave} onError={onError} />
     );
   }
 
   if (phase === "denied") {
     return (
       <Centered>
-        <p className="font-display text-lg text-magenta text-glow-magenta">
-          Entry declined
-        </p>
-        <p className="text-sm text-white/60">
-          The host declined your request to join.
-        </p>
+        <p className="font-display text-lg text-magenta text-glow-magenta">Entry declined</p>
+        <p className="text-sm text-white/60">The host declined your request to join.</p>
         <button
           onClick={onLeave}
           className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-white/90 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50"
@@ -175,9 +154,7 @@ export default function GuestGate({
         onSubmit={submitCheck}
         // The Device Check is informational: a denied or missing camera/mic must
         // not block the knock, so device errors are logged, not surfaced.
-        onError={(e) =>
-          console.warn("Device Check error (continuing):", e.message)
-        }
+        onError={(e) => console.warn("Device Check error (continuing):", e.message)}
         heading="Join meeting"
         subheading={`Check your camera and mic, then ask to join “${room}”.`}
         submitLabel="Ask to join"
@@ -192,9 +169,7 @@ export default function GuestGate({
       {phase === "waiting" ? (
         <WaitingRoom room={room} onCancel={cancel} />
       ) : (
-        <p className="text-white/60">
-          {phase === "precheck" ? "Loading…" : "Requesting to join…"}
-        </p>
+        <p className="text-white/60">{phase === "precheck" ? "Loading…" : "Requesting to join…"}</p>
       )}
     </Centered>
   );
@@ -202,13 +177,7 @@ export default function GuestGate({
 
 // Pulsing ring while waiting for the host. Two offset rings (magenta + cyan)
 // expand outward from a glowing core.
-function WaitingRoom({
-  room,
-  onCancel,
-}: {
-  room: string;
-  onCancel: () => void;
-}) {
+function WaitingRoom({ room, onCancel }: { room: string; onCancel: () => void }) {
   return (
     <div className="flex flex-col items-center gap-8">
       <div className="relative flex h-32 w-32 items-center justify-center">
@@ -221,8 +190,7 @@ function WaitingRoom({
       <div className="space-y-1.5 text-center">
         <p className="font-display text-lg text-white">Waiting for the host…</p>
         <p className="text-sm text-white/55">
-          You&apos;ll join <span className="font-mono text-cyan">{room}</span>{" "}
-          the moment you&apos;re let in.
+          You&apos;ll join <span className="font-mono text-cyan">{room}</span> the moment you&apos;re let in.
         </p>
       </div>
 

@@ -26,30 +26,11 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
   label: string;
 };
 
-const IconButton = forwardRef<HTMLButtonElement, Props>(
-  (
-    {
-      icon: Icon,
-      variant = "ghost",
-      size = "md",
-      label,
-      className = "",
-      ...rest
-    },
-    ref
-  ) => (
-    <button
-      ref={ref}
-      type="button"
-      title={label}
-      aria-label={label}
-      className={`${base} ${sizes[size]} ${variants[variant]} ${className}`}
-      {...rest}
-    >
-      <Icon />
-    </button>
-  )
-);
+const IconButton = forwardRef<HTMLButtonElement, Props>(({ icon: Icon, variant = "ghost", size = "md", label, className = "", ...rest }, ref) => (
+  <button ref={ref} type="button" title={label} aria-label={label} className={`${base} ${sizes[size]} ${variants[variant]} ${className}`} {...rest}>
+    <Icon />
+  </button>
+));
 
 IconButton.displayName = "IconButton";
 export default IconButton;

@@ -1,11 +1,7 @@
 "use client";
 
 import { Check, Loader2, X } from "lucide-react";
-import type {
-  IncomingRequest,
-  OutgoingRequest,
-  PresentationOutcome,
-} from "./usePresentation";
+import type { IncomingRequest, OutgoingRequest, PresentationOutcome } from "./usePresentation";
 
 export default function PresentationToast({
   outgoing,
@@ -28,8 +24,7 @@ export default function PresentationToast({
     return (
       <Toast>
         <span className="text-sm text-white/90">
-          <strong className="text-cyan">{incoming.requesterName}</strong> wants
-          to present
+          <strong className="text-cyan">{incoming.requesterName}</strong> wants to present
         </span>
         <div className="flex gap-2">
           <ToastButton onClick={onYield} variant="accept">
@@ -48,9 +43,7 @@ export default function PresentationToast({
       <Toast>
         <span className="flex items-center gap-2 text-sm text-white/90">
           <Loader2 className="h-4 w-4 animate-spin text-cyan" />
-          Waiting for{" "}
-          <strong className="text-cyan">{outgoing.presenterName}</strong> to
-          respond…
+          Waiting for <strong className="text-cyan">{outgoing.presenterName}</strong> to respond…
         </span>
         <ToastButton onClick={onCancel} variant="decline">
           Cancel
@@ -83,13 +76,7 @@ function outcomeText(o: PresentationOutcome): string {
   }
 }
 
-function Toast({
-  children,
-  onClick,
-}: {
-  children: React.ReactNode;
-  onClick?: () => void;
-}) {
+function Toast({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
   return (
     <div
       role="status"
@@ -101,19 +88,9 @@ function Toast({
   );
 }
 
-function ToastButton({
-  children,
-  onClick,
-  variant,
-}: {
-  children: React.ReactNode;
-  onClick: () => void;
-  variant: "accept" | "decline";
-}) {
+function ToastButton({ children, onClick, variant }: { children: React.ReactNode; onClick: () => void; variant: "accept" | "decline" }) {
   const tone =
-    variant === "accept"
-      ? "bg-cyan/15 text-cyan ring-1 ring-cyan/40 hover:bg-cyan/25"
-      : "bg-white/8 text-white/70 ring-1 ring-white/10 hover:bg-white/15";
+    variant === "accept" ? "bg-cyan/15 text-cyan ring-1 ring-cyan/40 hover:bg-cyan/25" : "bg-white/8 text-white/70 ring-1 ring-white/10 hover:bg-white/15";
 
   return (
     <button

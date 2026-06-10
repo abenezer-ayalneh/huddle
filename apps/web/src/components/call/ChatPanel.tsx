@@ -49,9 +49,7 @@ export default function ChatPanel({
   return (
     <aside className="glass-strong absolute inset-y-0 left-0 z-30 flex w-80 max-w-[85vw] flex-col border-r border-white/10 shadow-[8px_0_50px_oklch(0_0_0/0.5)] animate-in slide-in-from-left duration-200">
       <header className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-        <span className="font-display text-base font-semibold tracking-wide text-white">
-          Chat
-        </span>
+        <span className="font-display text-base font-semibold tracking-wide text-white">Chat</span>
         <button
           type="button"
           aria-label="Hide chat"
@@ -63,10 +61,7 @@ export default function ChatPanel({
         </button>
       </header>
 
-      <div
-        ref={listRef}
-        className="flex-1 space-y-3 overflow-y-auto px-5 py-4 text-sm"
-      >
+      <div ref={listRef} className="flex-1 space-y-3 overflow-y-auto px-5 py-4 text-sm">
         {messages.length === 0 ? (
           <p className="text-white/45">No messages yet. Say hello 👋</p>
         ) : (
@@ -74,10 +69,7 @@ export default function ChatPanel({
             const mine = m.from?.isLocal ?? false;
             const who = m.from?.name || m.from?.identity || "Guest";
             return (
-              <div
-                key={`${m.timestamp}-${m.from?.identity ?? ""}`}
-                className={`flex flex-col ${mine ? "items-end" : "items-start"}`}
-              >
+              <div key={`${m.timestamp}-${m.from?.identity ?? ""}`} className={`flex flex-col ${mine ? "items-end" : "items-start"}`}>
                 <span className="mb-0.5 px-1 text-[11px] text-white/45">
                   {mine ? "You" : who} ·{" "}
                   {new Date(m.timestamp).toLocaleTimeString([], {
@@ -87,9 +79,7 @@ export default function ChatPanel({
                 </span>
                 <span
                   className={`max-w-[85%] break-words rounded-2xl px-3 py-2 ${
-                    mine
-                      ? "rounded-br-sm bg-magenta/20 text-white ring-1 ring-magenta/40"
-                      : "rounded-bl-sm bg-white/8 text-white/90 ring-1 ring-white/10"
+                    mine ? "rounded-br-sm bg-magenta/20 text-white ring-1 ring-magenta/40" : "rounded-bl-sm bg-white/8 text-white/90 ring-1 ring-white/10"
                   }`}
                 >
                   {m.message}

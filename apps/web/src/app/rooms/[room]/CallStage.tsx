@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  LiveKitRoom,
-  RoomAudioRenderer,
-  useChat,
-  type LocalUserChoices,
-} from "@livekit/components-react";
+import { LiveKitRoom, RoomAudioRenderer, useChat, type LocalUserChoices } from "@livekit/components-react";
 import { useCallback, useState, type ReactNode } from "react";
 import ChatPanel from "@/components/call/ChatPanel";
 import ConnectionStatus from "@/components/call/ConnectionStatus";
@@ -38,9 +33,7 @@ export default function CallStage({
   startMuted?: boolean;
   isHost?: boolean;
 }) {
-  const [choices, setChoices] = useState<LocalUserChoices | null>(
-    initialChoices ?? null
-  );
+  const [choices, setChoices] = useState<LocalUserChoices | null>(initialChoices ?? null);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
 
   const confirmLeave = useCallback(() => {
@@ -57,11 +50,7 @@ export default function CallStage({
           audioEnabled: true,
         }}
         onSubmit={setChoices}
-        onError={(e) =>
-          onError(
-            `Couldn't access your camera or microphone: ${e.message}. Check browser permissions and try again.`
-          )
-        }
+        onError={(e) => onError(`Couldn't access your camera or microphone: ${e.message}. Check browser permissions and try again.`)}
         heading="Ready to join?"
         subheading="Check your camera and mic before you go live."
         submitLabel="Join call"
@@ -75,44 +64,22 @@ export default function CallStage({
         token={connection.token}
         serverUrl={connection.livekitUrl}
         connect
-        video={
-          choices.videoEnabled ? { deviceId: choices.videoDeviceId } : false
-        }
-        audio={
-          startMuted || !choices.audioEnabled
-            ? false
-            : { deviceId: choices.audioDeviceId }
-        }
+        video={choices.videoEnabled ? { deviceId: choices.videoDeviceId } : false}
+        audio={startMuted || !choices.audioEnabled ? false : { deviceId: choices.audioDeviceId }}
         onDisconnected={onLeave}
         onError={(e) => onError(`Lost connection to the call: ${e.message}`)}
         style={{ height: "100dvh" }}
         className="bg-dotgrid"
       >
-        <CallView
-          onLeaveClick={() => setShowLeaveDialog(true)}
-          overlay={overlay}
-          isHost={isHost}
-        />
+        <CallView onLeaveClick={() => setShowLeaveDialog(true)} overlay={overlay} isHost={isHost} />
         <RoomAudioRenderer />
       </LiveKitRoom>
-      <LeaveConfirmDialog
-        open={showLeaveDialog}
-        onConfirm={confirmLeave}
-        onCancel={() => setShowLeaveDialog(false)}
-      />
+      <LeaveConfirmDialog open={showLeaveDialog} onConfirm={confirmLeave} onCancel={() => setShowLeaveDialog(false)} />
     </main>
   );
 }
 
-function CallView({
-  onLeaveClick,
-  overlay,
-  isHost,
-}: {
-  onLeaveClick: () => void;
-  overlay?: ReactNode;
-  isHost: boolean;
-}) {
+function CallView({ onLeaveClick, overlay, isHost }: { onLeaveClick: () => void; overlay?: ReactNode; isHost: boolean }) {
   const { chatMessages, send, isSending } = useChat();
   const [chatOpen, setChatOpen] = useState(false);
 
@@ -136,13 +103,7 @@ function CallView({
   return (
     <>
       <VideoGrid />
-      <ChatPanel
-        open={chatOpen}
-        onClose={() => setChatOpen(false)}
-        messages={chatMessages}
-        onSend={send}
-        isSending={isSending}
-      />
+      <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} messages={chatMessages} onSend={send} isSending={isSending} />
       <ControlBar
         onLeave={onLeaveClick}
         chatOpen={chatOpen}

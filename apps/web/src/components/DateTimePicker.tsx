@@ -2,11 +2,7 @@
 
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const TIME_SLOTS = Array.from({ length: 96 }, (_, i) => {
   const h = Math.floor(i / 4);
@@ -49,9 +45,7 @@ export default function DateTimePicker({
 }) {
   const [open, setOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | undefined>(undefined);
-  const [selectedTime, setSelectedTime] = useState(() =>
-    roundToNextQuarter(new Date())
-  );
+  const [selectedTime, setSelectedTime] = useState(() => roundToNextQuarter(new Date()));
 
   const summary = useMemo(() => {
     if (!selectedDay) return null;
@@ -84,21 +78,13 @@ export default function DateTimePicker({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         disabled={disabled}
-        className={
-          triggerClassName ??
-          "inline-flex items-center justify-center gap-2 rounded-md border border-input px-3 py-2 text-sm font-medium"
-        }
+        className={triggerClassName ?? "inline-flex items-center justify-center gap-2 rounded-md border border-input px-3 py-2 text-sm font-medium"}
       >
         {children ?? "Pick a date & time"}
       </PopoverTrigger>
 
       <PopoverContent className="w-auto p-0" align="start">
-        <Calendar
-          mode="single"
-          selected={selectedDay}
-          onSelect={setSelectedDay}
-          disabled={{ before: today }}
-        />
+        <Calendar mode="single" selected={selectedDay} onSelect={setSelectedDay} disabled={{ before: today }} />
 
         <div className="border-t border-border px-3 py-3">
           <div className="flex items-center gap-2">
@@ -121,18 +107,12 @@ export default function DateTimePicker({
           {summary ? (
             <>
               <span className="text-sm text-muted-foreground">{summary}</span>
-              <button
-                type="button"
-                onClick={handleClear}
-                className="text-xs text-destructive hover:underline"
-              >
+              <button type="button" onClick={handleClear} className="text-xs text-destructive hover:underline">
                 Clear
               </button>
             </>
           ) : (
-            <span className="text-sm text-muted-foreground">
-              Pick a date above
-            </span>
+            <span className="text-sm text-muted-foreground">Pick a date above</span>
           )}
         </div>
 

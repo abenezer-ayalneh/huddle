@@ -149,17 +149,8 @@ input[type="button"] {
 .bg-dotgrid {
   background-color: var(--background);
   background-image:
-    radial-gradient(
-      circle at 50% 0%,
-      oklch(0.66 0.27 350 / 0.12),
-      transparent 55%
-    ),
-    radial-gradient(
-      circle at 100% 100%,
-      oklch(0.82 0.15 200 / 0.1),
-      transparent 50%
-    ),
-    radial-gradient(oklch(0.92 0.05 320 / 0.09) 1px, transparent 1.6px);
+    radial-gradient(circle at 50% 0%, oklch(0.66 0.27 350 / 0.12), transparent 55%),
+    radial-gradient(circle at 100% 100%, oklch(0.82 0.15 200 / 0.1), transparent 50%), radial-gradient(oklch(0.92 0.05 320 / 0.09) 1px, transparent 1.6px);
   background-size:
     100% 100%,
     100% 100%,
@@ -212,32 +203,16 @@ input[type="button"] {
    The inner element (same clip) holds the video so the edge reads as a thin
    bezel that follows the cut. */
 .cyber-clip {
-  clip-path: polygon(
-    16px 0,
-    100% 0,
-    100% calc(100% - 16px),
-    calc(100% - 16px) 100%,
-    0 100%,
-    0 16px
-  );
+  clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
 }
 .cyber-frame {
   position: relative;
   padding: 1.5px;
-  background: linear-gradient(
-    135deg,
-    oklch(0.66 0.27 350 / 0.5),
-    oklch(0.82 0.15 200 / 0.45)
-  );
+  background: linear-gradient(135deg, oklch(0.66 0.27 350 / 0.5), oklch(0.82 0.15 200 / 0.45));
 }
 .cyber-frame-active {
   padding: 2px;
-  background: conic-gradient(
-    from var(--cyber-angle, 0deg),
-    var(--magenta),
-    var(--cyan),
-    var(--magenta)
-  );
+  background: conic-gradient(from var(--cyber-angle, 0deg), var(--magenta), var(--cyan), var(--magenta));
   box-shadow:
     0 0 22px oklch(0.66 0.27 350 / 0.45),
     0 0 50px oklch(0.82 0.15 200 / 0.25);
@@ -261,13 +236,7 @@ input[type="button"] {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: repeating-linear-gradient(
-    to bottom,
-    transparent 0,
-    transparent 2px,
-    oklch(0 0 0 / 0.12) 3px,
-    transparent 4px
-  );
+  background: repeating-linear-gradient(to bottom, transparent 0, transparent 2px, oklch(0 0 0 / 0.12) 3px, transparent 4px);
   mix-blend-mode: overlay;
 }
 
@@ -319,12 +288,7 @@ input[type="button"] {
   position: absolute;
   inset: -2px;
   border-radius: inherit;
-  background: conic-gradient(
-    from var(--knock-angle),
-    transparent 55%,
-    var(--magenta) 80%,
-    var(--cyan) 100%
-  );
+  background: conic-gradient(from var(--knock-angle), transparent 55%, var(--magenta) 80%, var(--cyan) 100%);
   animation: knock-border-spin 3s linear infinite;
   pointer-events: none;
   z-index: -1;

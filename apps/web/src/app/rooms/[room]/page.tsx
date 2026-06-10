@@ -4,11 +4,7 @@ import RoomClient from "./RoomClient";
 // to the client connector. The URL carries nothing but the Room Code — role
 // (host vs guest) and the host's name come from the host session in
 // sessionStorage, so a shared link is always clean.
-export default async function RoomPage({
-  params,
-}: {
-  params: Promise<{ room: string }>;
-}) {
+export default async function RoomPage({ params }: { params: Promise<{ room: string }> }) {
   const { room } = await params;
 
   return <RoomClient room={decodeURIComponent(room)} />;

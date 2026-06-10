@@ -23,11 +23,7 @@ export function decode(data: Uint8Array): PresentMessage | null {
   }
 }
 
-export function sendPresentMessage(
-  localParticipant: LocalParticipant,
-  target: string,
-  msg: PresentMessage
-): Promise<void> {
+export function sendPresentMessage(localParticipant: LocalParticipant, target: string, msg: PresentMessage): Promise<void> {
   return localParticipant.publishData(encode(msg), {
     reliable: true,
     topic: PRESENT_TOPIC,

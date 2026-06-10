@@ -5,22 +5,12 @@ import { useCallback, useEffect, useState } from "react";
 import { api, type RecordingSummary } from "@/lib/api";
 import IconButton from "@/components/IconButton";
 
-export default function RecordingControls({
-  room,
-  hostKey,
-  compact = false,
-}: {
-  room: string;
-  hostKey: string;
-  compact?: boolean;
-}) {
+export default function RecordingControls({ room, hostKey, compact = false }: { room: string; hostKey: string; compact?: boolean }) {
   const [recordings, setRecordings] = useState<RecordingSummary[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const active = recordings.find(
-    (r) => r.status === "starting" || r.status === "active"
-  );
+  const active = recordings.find((r) => r.status === "starting" || r.status === "active");
 
   const refresh = useCallback(async () => {
     try {
@@ -122,10 +112,7 @@ export default function RecordingControls({
       {recordings.length > 0 && (
         <ul className="space-y-1.5">
           {recordings.map((r) => (
-            <li
-              key={r.id}
-              className="flex items-center justify-between gap-2 text-xs"
-            >
+            <li key={r.id} className="flex items-center justify-between gap-2 text-xs">
               <span className="min-w-0 truncate">
                 <span className="text-white/80">{formatTime(r.startedAt)}</span>
                 <span className="ml-2 text-white/40">{labelFor(r)}</span>
@@ -146,9 +133,7 @@ export default function RecordingControls({
         </ul>
       )}
 
-      {!compact && recordings.length === 0 && (
-        <p className="text-xs text-white/40">No recordings yet.</p>
-      )}
+      {!compact && recordings.length === 0 && <p className="text-xs text-white/40">No recordings yet.</p>}
     </div>
   );
 }

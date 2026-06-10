@@ -17,45 +17,21 @@ export default function VideoGrid() {
   const speaking = useSpeakingParticipants();
   const activeIdentity = speaking[0]?.identity;
 
-  const screenTrack = useMemo(
-    () => tracks.find((t) => t.source === Track.Source.ScreenShare) ?? null,
-    [tracks]
-  );
-  const cameraTracks = useMemo(
-    () => tracks.filter((t) => t.source === Track.Source.Camera),
-    [tracks]
-  );
+  const screenTrack = useMemo(() => tracks.find((t) => t.source === Track.Source.ScreenShare) ?? null, [tracks]);
+  const cameraTracks = useMemo(() => tracks.filter((t) => t.source === Track.Source.Camera), [tracks]);
 
   if (screenTrack) {
-    return (
-      <PresentationLayout
-        screenTrack={screenTrack}
-        cameraTracks={cameraTracks}
-        activeIdentity={activeIdentity}
-      />
-    );
+    return <PresentationLayout screenTrack={screenTrack} cameraTracks={cameraTracks} activeIdentity={activeIdentity} />;
   }
 
-  return (
-    <EqualGrid cameraTracks={cameraTracks} activeIdentity={activeIdentity} />
-  );
+  return <EqualGrid cameraTracks={cameraTracks} activeIdentity={activeIdentity} />;
 }
 
-function trackKey(
-  trackRef: (typeof useTracks extends (...a: never[]) => infer R
-    ? R
-    : never)[number]
-) {
+function trackKey(trackRef: (typeof useTracks extends (...a: never[]) => infer R ? R : never)[number]) {
   return `${trackRef.participant.identity}:${trackRef.source}:${trackRef.publication?.trackSid ?? "placeholder"}`;
 }
 
-function EqualGrid({
-  cameraTracks,
-  activeIdentity,
-}: {
-  cameraTracks: ReturnType<typeof useTracks>;
-  activeIdentity: string | undefined;
-}) {
+function EqualGrid({ cameraTracks, activeIdentity }: { cameraTracks: ReturnType<typeof useTracks>; activeIdentity: string | undefined }) {
   const cols = useMemo(() => {
     const n = cameraTracks.length || 1;
     if (n <= 1) return 1;
@@ -74,14 +50,7 @@ function EqualGrid({
         }}
       >
         {cameraTracks.map((trackRef) => (
-          <VideoTile
-            key={trackKey(trackRef)}
-            trackRef={trackRef}
-            active={
-              trackRef.participant.identity === activeIdentity &&
-              cameraTracks.length > 1
-            }
-          />
+          <VideoTile key={trackKey(trackRef)} trackRef={trackRef} active={trackRef.participant.identity === activeIdentity && cameraTracks.length > 1} />
         ))}
       </div>
     </div>
@@ -113,17 +82,8 @@ function PresentationLayout({
       {cameraTracks.length > 0 && (
         <div className="mt-3 flex max-h-[5.5rem] shrink-0 gap-3 overflow-x-auto sm:ml-4 sm:mt-0 sm:max-h-none sm:w-56 sm:flex-col sm:overflow-x-visible sm:overflow-y-auto">
           {cameraTracks.map((trackRef) => (
-            <div
-              key={trackKey(trackRef)}
-              className="aspect-video h-[5.5rem] flex-shrink-0 sm:h-auto sm:w-full"
-            >
-              <VideoTile
-                trackRef={trackRef}
-                active={
-                  trackRef.participant.identity === activeIdentity &&
-                  cameraTracks.length > 1
-                }
-              />
+            <div key={trackKey(trackRef)} className="aspect-video h-[5.5rem] flex-shrink-0 sm:h-auto sm:w-full">
+              <VideoTile trackRef={trackRef} active={trackRef.participant.identity === activeIdentity && cameraTracks.length > 1} />
             </div>
           ))}
         </div>

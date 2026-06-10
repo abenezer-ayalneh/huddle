@@ -2,17 +2,7 @@
 
 import { useTrackToggle } from "@livekit/components-react";
 import { Track } from "livekit-client";
-import {
-  Mic,
-  MicOff,
-  Video,
-  VideoOff,
-  MonitorUp,
-  MonitorOff,
-  MessageSquare,
-  PhoneOff,
-  type LucideIcon,
-} from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, MonitorUp, MonitorOff, MessageSquare, PhoneOff, type LucideIcon } from "lucide-react";
 
 export default function ControlBar({
   onLeave,
@@ -36,11 +26,7 @@ export default function ControlBar({
   const mic = useTrackToggle({ source: Track.Source.Microphone });
   const cam = useTrackToggle({ source: Track.Source.Camera });
 
-  const shareLabel = iAmPresenting
-    ? "Stop presenting"
-    : someoneElsePresenting
-      ? "Ask to present"
-      : "Share screen";
+  const shareLabel = iAmPresenting ? "Stop presenting" : someoneElsePresenting ? "Ask to present" : "Share screen";
 
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex justify-center p-4 sm:p-6">
@@ -71,22 +57,11 @@ export default function ControlBar({
           disabled={hasOutgoingRequest}
           onClick={onShareClick}
         />
-        <ControlButton
-          icon={MessageSquare}
-          label={chatOpen ? "Hide chat" : "Show chat"}
-          active={chatOpen}
-          badge={unreadChat}
-          onClick={onToggleChat}
-        />
+        <ControlButton icon={MessageSquare} label={chatOpen ? "Hide chat" : "Show chat"} active={chatOpen} badge={unreadChat} onClick={onToggleChat} />
 
         <span className="mx-1 h-7 w-px bg-white/10" />
 
-        <ControlButton
-          icon={PhoneOff}
-          label="Leave call"
-          leave
-          onClick={onLeave}
-        />
+        <ControlButton icon={PhoneOff} label="Leave call" leave onClick={onLeave} />
       </div>
     </div>
   );

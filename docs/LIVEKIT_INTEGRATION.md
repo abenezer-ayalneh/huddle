@@ -52,11 +52,7 @@ never the secret.
 import { AccessToken } from "livekit-server-sdk";
 
 async function createToken(room: string, identity: string, name?: string) {
-  const at = new AccessToken(
-    process.env.LIVEKIT_API_KEY,
-    process.env.LIVEKIT_API_SECRET,
-    { identity, name, ttl: "1h" }
-  );
+  const at = new AccessToken(process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET, { identity, name, ttl: "1h" });
   at.addGrant({
     roomJoin: true,
     room,
@@ -78,12 +74,7 @@ Expose it as `POST /token` returning `{ token, livekitUrl }`. See
 import { LiveKitRoom, VideoConference } from "@livekit/components-react";
 import "@livekit/components-styles";
 
-<LiveKitRoom
-  token={token}
-  serverUrl={livekitUrl}
-  connect
-  data-lk-theme="default"
->
+<LiveKitRoom token={token} serverUrl={livekitUrl} connect data-lk-theme="default">
   <VideoConference />
 </LiveKitRoom>;
 ```

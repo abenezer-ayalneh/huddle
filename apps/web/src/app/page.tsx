@@ -19,10 +19,7 @@ export default function Lobby() {
       {isPending ? (
         <p className="text-white/60">Loading…</p>
       ) : session ? (
-        <HostDashboard
-          userName={session.user.name}
-          onSignOut={() => signOut()}
-        />
+        <HostDashboard userName={session.user.name} onSignOut={() => signOut()} />
       ) : (
         <SignIn />
       )}
@@ -66,15 +63,11 @@ function HeroCopy() {
         <span className="text-magenta text-glow-magenta">reimagined.</span>
       </h1>
       <p className="mx-auto max-w-md text-lg text-white/65 lg:mx-0">
-        Self-hosted, real-time video for teams who want control. Guests join
-        with just a link — no account, no installs.
+        Self-hosted, real-time video for teams who want control. Guests join with just a link — no account, no installs.
       </p>
       <div className="flex flex-wrap justify-center gap-2.5 lg:justify-start">
         {["Self-hosted", "Knock-to-join", "Record & download"].map((t) => (
-          <span
-            key={t}
-            className="rounded-full border border-white/12 bg-white/5 px-3.5 py-1.5 text-sm text-white/75 backdrop-blur"
-          >
+          <span key={t} className="rounded-full border border-white/12 bg-white/5 px-3.5 py-1.5 text-sm text-white/75 backdrop-blur">
             {t}
           </span>
         ))}
@@ -88,8 +81,7 @@ const inputClass =
   "w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2.5 text-white outline-none transition-colors placeholder:text-white/40 focus:border-cyan/60 focus:ring-2 focus:ring-cyan/30";
 
 function SignIn() {
-  const callbackURL =
-    typeof window !== "undefined" ? window.location.origin : undefined;
+  const callbackURL = typeof window !== "undefined" ? window.location.origin : undefined;
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -97,11 +89,7 @@ function SignIn() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const canSubmit =
-    email.trim() &&
-    password.length >= 8 &&
-    (mode === "signin" || name.trim()) &&
-    !busy;
+  const canSubmit = email.trim() && password.length >= 8 && (mode === "signin" || name.trim()) && !busy;
 
   async function submit() {
     if (!canSubmit) return;
@@ -117,25 +105,16 @@ function SignIn() {
         : await signIn.email({ email: email.trim(), password });
     setBusy(false);
     if (result.error) {
-      setError(
-        result.error.message ??
-          (mode === "signup"
-            ? "Couldn't create that account."
-            : "Wrong email or password.")
-      );
+      setError(result.error.message ?? (mode === "signup" ? "Couldn't create that account." : "Wrong email or password."));
     }
   }
 
   return (
     <div className="space-y-5">
       <div className="space-y-1">
-        <h2 className="font-display text-2xl font-semibold text-white">
-          {mode === "signup" ? "Create your account" : "Welcome back"}
-        </h2>
+        <h2 className="font-display text-2xl font-semibold text-white">{mode === "signup" ? "Create your account" : "Welcome back"}</h2>
         <p className="text-sm text-white/55">
-          {mode === "signup"
-            ? "Create an account to host or schedule a meeting."
-            : "Sign in to host or schedule a meeting."}
+          {mode === "signup" ? "Create an account to host or schedule a meeting." : "Sign in to host or schedule a meeting."}
         </p>
       </div>
 
@@ -147,22 +126,9 @@ function SignIn() {
         className="space-y-3"
       >
         {mode === "signup" && (
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Display name"
-            autoComplete="name"
-            className={inputClass}
-          />
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Display name" autoComplete="name" className={inputClass} />
         )}
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email"
-          autoComplete="email"
-          className={inputClass}
-        />
+        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" autoComplete="email" className={inputClass} />
         <input
           type="password"
           value={password}
@@ -191,9 +157,7 @@ function SignIn() {
         }}
         className="text-sm text-white/55 underline-offset-2 transition-colors hover:text-cyan hover:underline"
       >
-        {mode === "signin"
-          ? "Need an account? Create one"
-          : "Already have an account? Sign in"}
+        {mode === "signin" ? "Need an account? Create one" : "Already have an account? Sign in"}
       </button>
 
       <div className="border-t border-white/10 pt-4">
@@ -206,21 +170,12 @@ function SignIn() {
         </button>
       </div>
 
-      <p className="text-xs text-white/45">
-        Have a meeting link? Just open it — you don&apos;t need an account to
-        join.
-      </p>
+      <p className="text-xs text-white/45">Have a meeting link? Just open it — you don&apos;t need an account to join.</p>
     </div>
   );
 }
 
-function HostDashboard({
-  userName,
-  onSignOut,
-}: {
-  userName: string;
-  onSignOut: () => void;
-}) {
+function HostDashboard({ userName, onSignOut }: { userName: string; onSignOut: () => void }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -257,11 +212,7 @@ function HostDashboard({
       enterAsHost(await api.createRoom());
     } catch (e) {
       setBusy(false);
-      setError(
-        e instanceof ApiError && e.status === 401
-          ? "Your session expired — sign in again."
-          : "Couldn't create the meeting. Is the API running?"
-      );
+      setError(e instanceof ApiError && e.status === 401 ? "Your session expired — sign in again." : "Couldn't create the meeting. Is the API running?");
     }
   }
 
@@ -273,11 +224,7 @@ function HostDashboard({
       await api.createRoom({ scheduledStart: iso });
       refresh();
     } catch (e) {
-      setError(
-        e instanceof ApiError && e.status === 401
-          ? "Your session expired — sign in again."
-          : "Couldn't create the meeting. Is the API running?"
-      );
+      setError(e instanceof ApiError && e.status === 401 ? "Your session expired — sign in again." : "Couldn't create the meeting. Is the API running?");
     } finally {
       setBusy(false);
     }
@@ -295,17 +242,10 @@ function HostDashboard({
     <div className="space-y-6">
       <header className="flex items-center justify-between">
         <div>
-          <h2 className="font-display text-2xl font-semibold text-white">
-            Dashboard
-          </h2>
+          <h2 className="font-display text-2xl font-semibold text-white">Dashboard</h2>
           <p className="text-sm text-white/55">Signed in as {userName}</p>
         </div>
-        <IconButton
-          icon={LogOut}
-          label="Sign out"
-          className="text-white/70 hover:bg-white/15 hover:text-white"
-          onClick={onSignOut}
-        />
+        <IconButton icon={LogOut} label="Sign out" className="text-white/70 hover:bg-white/15 hover:text-white" onClick={onSignOut} />
       </header>
 
       {error && <p className="text-sm text-magenta">{error}</p>}
@@ -333,28 +273,17 @@ function HostDashboard({
 
       <MeetingList rooms={rooms} onStart={startRoom} />
 
-      <Link
-        href="/recordings"
-        className="block text-sm text-white/55 underline-offset-2 transition-colors hover:text-cyan hover:underline"
-      >
+      <Link href="/recordings" className="block text-sm text-white/55 underline-offset-2 transition-colors hover:text-cyan hover:underline">
         View past recordings →
       </Link>
     </div>
   );
 }
 
-function MeetingList({
-  rooms,
-  onStart,
-}: {
-  rooms: RoomSummary[] | null;
-  onStart: (slug: string) => void;
-}) {
+function MeetingList({ rooms, onStart }: { rooms: RoomSummary[] | null; onStart: (slug: string) => void }) {
   if (rooms === null) return null;
   if (rooms.length === 0) {
-    return (
-      <p className="text-sm text-white/45">No upcoming scheduled meetings.</p>
-    );
+    return <p className="text-sm text-white/45">No upcoming scheduled meetings.</p>;
   }
   return (
     <div className="space-y-2">
@@ -371,18 +300,9 @@ function MeetingList({
   );
 }
 
-function MeetingRow({
-  room,
-  onStart,
-}: {
-  room: RoomSummary;
-  onStart: () => void;
-}) {
+function MeetingRow({ room, onStart }: { room: RoomSummary; onStart: () => void }) {
   const [copied, setCopied] = useState(false);
-  const link =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/rooms/${encodeURIComponent(room.room)}`
-      : "";
+  const link = typeof window !== "undefined" ? `${window.location.origin}/rooms/${encodeURIComponent(room.room)}` : "";
 
   async function copy() {
     try {
@@ -398,11 +318,7 @@ function MeetingRow({
     <li className="py-3">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate font-medium text-white/90">
-            {room.scheduledStart
-              ? new Date(room.scheduledStart).toLocaleString()
-              : "Anytime"}
-          </p>
+          <p className="truncate font-medium text-white/90">{room.scheduledStart ? new Date(room.scheduledStart).toLocaleString() : "Anytime"}</p>
           <p className="font-mono text-xs text-cyan/80">{room.room}</p>
         </div>
         <div className="flex shrink-0 gap-1">
@@ -412,12 +328,7 @@ function MeetingRow({
             className="text-white/70 hover:bg-white/15 hover:text-white"
             onClick={copy}
           />
-          <IconButton
-            icon={Play}
-            label="Start meeting"
-            className="bg-cyan text-black hover:brightness-110"
-            onClick={onStart}
-          />
+          <IconButton icon={Play} label="Start meeting" className="bg-cyan text-black hover:brightness-110" onClick={onStart} />
         </div>
       </div>
     </li>

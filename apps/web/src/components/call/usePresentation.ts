@@ -1,18 +1,9 @@
 "use client";
 
-import {
-  useLocalParticipant,
-  useRoomContext,
-  useTracks,
-} from "@livekit/components-react";
+import { useLocalParticipant, useRoomContext, useTracks } from "@livekit/components-react";
 import { RoomEvent, Track, type RemoteParticipant } from "livekit-client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  PRESENT_TOPIC,
-  decode,
-  sendPresentMessage,
-  type PresentMessage,
-} from "@/lib/presentProtocol";
+import { PRESENT_TOPIC, decode, sendPresentMessage, type PresentMessage } from "@/lib/presentProtocol";
 
 export type OutgoingRequest = {
   presenterIdentity: string;
@@ -37,17 +28,11 @@ export function usePresentation(isHost: boolean) {
   const room = useRoomContext();
   const { localParticipant } = useLocalParticipant();
 
-  const screenTracks = useTracks(
-    [{ source: Track.Source.ScreenShare, withPlaceholder: false }],
-    { onlySubscribed: false }
-  );
+  const screenTracks = useTracks([{ source: Track.Source.ScreenShare, withPlaceholder: false }], { onlySubscribed: false });
 
   const presenterTrack = screenTracks[0] ?? null;
   const presenterIdentity = presenterTrack?.participant.identity ?? null;
-  const presenterName =
-    presenterTrack?.participant.name ||
-    presenterTrack?.participant.identity ||
-    null;
+  const presenterName = presenterTrack?.participant.name || presenterTrack?.participant.identity || null;
   const iAmPresenting = presenterIdentity === localParticipant.identity;
   const someoneElsePresenting = presenterIdentity !== null && !iAmPresenting;
 
@@ -61,10 +46,7 @@ export function usePresentation(isHost: boolean) {
   function showOutcome(o: PresentationOutcome) {
     setOutcome(o);
     if (outcomeTimerRef.current) clearTimeout(outcomeTimerRef.current);
-    outcomeTimerRef.current = setTimeout(
-      () => setOutcome(null),
-      OUTCOME_DISPLAY_MS
-    );
+    outcomeTimerRef.current = setTimeout(() => setOutcome(null), OUTCOME_DISPLAY_MS);
   }
 
   function clearOutgoing() {
@@ -107,12 +89,7 @@ export function usePresentation(isHost: boolean) {
 
   // Listen for incoming data messages on our topic.
   useEffect(() => {
-    function handleData(
-      payload: Uint8Array,
-      participant?: RemoteParticipant,
-      _kind?: unknown,
-      topic?: string
-    ) {
+    function handleData(payload: Uint8Array, participant?: RemoteParticipant, _kind?: unknown, topic?: string) {
       if (topic !== PRESENT_TOPIC || !participant) return;
       const msg = decode(payload);
       if (!msg) return;
@@ -242,15 +219,7 @@ export function usePresentation(isHost: boolean) {
     } else {
       await requestPresentation();
     }
-  }, [
-    iAmPresenting,
-    someoneElsePresenting,
-    isHost,
-    stopMyShare,
-    startMyShare,
-    forceTake,
-    requestPresentation,
-  ]);
+  }, [iAmPresenting, someoneElsePresenting, isHost, stopMyShare, startMyShare, forceTake, requestPresentation]);
 
   // Cleanup timers on unmount.
   useEffect(() => {

@@ -1,24 +1,8 @@
 "use client";
 
 import { useRemoteParticipants, useRoomInfo } from "@livekit/components-react";
-import {
-  Check,
-  Copy,
-  ShieldCheck,
-  UserCheck,
-  UserMinus,
-  UserX,
-  VolumeX,
-  X,
-} from "lucide-react";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { Check, Copy, ShieldCheck, UserCheck, UserMinus, UserX, VolumeX, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { api, type PendingKnock } from "@/lib/api";
 import IconButton from "@/components/IconButton";
 import RecordingControls from "./RecordingControls";
@@ -42,21 +26,13 @@ function playDing() {
   }
 }
 
-export default function HostPanel({
-  room,
-  hostKey,
-}: {
-  room: string;
-  hostKey: string;
-}) {
+export default function HostPanel({ room, hostKey }: { room: string; hostKey: string }) {
   const participants = useRemoteParticipants();
   const { metadata } = useRoomInfo();
   const muteOnEntry = useMemo(() => {
     if (!metadata) return false;
     try {
-      return (
-        (JSON.parse(metadata) as { muteOnEntry?: unknown }).muteOnEntry === true
-      );
+      return (JSON.parse(metadata) as { muteOnEntry?: unknown }).muteOnEntry === true;
     } catch {
       return false;
     }
@@ -82,10 +58,7 @@ export default function HostPanel({
   const [busy, setBusy] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const inviteLink =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/rooms/${encodeURIComponent(room)}`
-      : "";
+  const inviteLink = typeof window !== "undefined" ? `${window.location.origin}/rooms/${encodeURIComponent(room)}` : "";
 
   const copyInvite = useCallback(async () => {
     try {
@@ -115,20 +88,17 @@ export default function HostPanel({
     };
   }, [room, hostKey]);
 
-  const withBusy = useCallback(
-    async (key: string, fn: () => Promise<unknown>) => {
-      setBusy(key);
-      try {
-        await fn();
-      } catch {
-        // Surface nothing intrusive; the periodic poll / participant list
-        // will reconcile state on the next update.
-      } finally {
-        setBusy(null);
-      }
-    },
-    []
-  );
+  const withBusy = useCallback(async (key: string, fn: () => Promise<unknown>) => {
+    setBusy(key);
+    try {
+      await fn();
+    } catch {
+      // Surface nothing intrusive; the periodic poll / participant list
+      // will reconcile state on the next update.
+    } finally {
+      setBusy(null);
+    }
+  }, []);
 
   const admit = (k: PendingKnock) =>
     withBusy(`admit-${k.knockId}`, async () => {
@@ -142,18 +112,11 @@ export default function HostPanel({
       setKnocks((prev) => prev.filter((p) => p.knockId !== k.knockId));
     });
 
-  const mute = (identity: string) =>
-    withBusy(`mute-${identity}`, () => api.mute(room, identity, true, hostKey));
+  const mute = (identity: string) => withBusy(`mute-${identity}`, () => api.mute(room, identity, true, hostKey));
 
-  const remove = (identity: string) =>
-    withBusy(`remove-${identity}`, () =>
-      api.removeParticipant(room, identity, hostKey)
-    );
+  const remove = (identity: string) => withBusy(`remove-${identity}`, () => api.removeParticipant(room, identity, hostKey));
 
-  const toggleMuteOnEntry = () =>
-    withBusy("mute-on-entry", () =>
-      api.setMuteOnEntry(room, !muteOnEntry, hostKey)
-    );
+  const toggleMuteOnEntry = () => withBusy("mute-on-entry", () => api.setMuteOnEntry(room, !muteOnEntry, hostKey));
 
   if (!open) {
     return (
@@ -170,9 +133,7 @@ export default function HostPanel({
           <ShieldCheck className="h-5 w-5 text-cyan" />
           Host
           {knocks.length > 0 && (
-            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-magenta px-1 text-xs font-semibold text-white">
-              {knocks.length}
-            </span>
+            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-magenta px-1 text-xs font-semibold text-white">{knocks.length}</span>
           )}
         </button>
       </div>
@@ -198,16 +159,8 @@ export default function HostPanel({
       <div className="flex-1 space-y-6 overflow-y-auto px-5 py-5 text-sm">
         <Section title="Invite">
           <div className="flex items-center gap-2">
-            <code className="min-w-0 flex-1 truncate rounded-md border border-white/10 bg-white/5 px-2.5 py-1.5 font-mono text-xs text-cyan">
-              {room}
-            </code>
-            <IconButton
-              icon={copied ? Check : Copy}
-              label={copied ? "Copied!" : "Copy invite link"}
-              variant="subtle"
-              size="sm"
-              onClick={copyInvite}
-            />
+            <code className="min-w-0 flex-1 truncate rounded-md border border-white/10 bg-white/5 px-2.5 py-1.5 font-mono text-xs text-cyan">{room}</code>
+            <IconButton icon={copied ? Check : Copy} label={copied ? "Copied!" : "Copy invite link"} variant="subtle" size="sm" onClick={copyInvite} />
           </div>
         </Section>
 
@@ -215,19 +168,13 @@ export default function HostPanel({
           <RecordingControls room={room} hostKey={hostKey} />
         </Section>
 
-        <Section
-          title="Waiting room"
-          badge={knocks.length > 0 ? knocks.length : undefined}
-        >
+        <Section title="Waiting room" badge={knocks.length > 0 ? knocks.length : undefined}>
           {knocks.length === 0 ? (
             <p className="text-white/45">No one waiting.</p>
           ) : (
             <ul className="space-y-2">
               {knocks.map((k) => (
-                <li
-                  key={k.knockId}
-                  className="flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2"
-                >
+                <li key={k.knockId} className="flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2">
                   <span className="truncate text-white/90">{k.name}</span>
                   <span className="flex shrink-0 gap-1">
                     <IconButton
@@ -259,9 +206,7 @@ export default function HostPanel({
             disabled={busy === "mute-on-entry"}
             aria-pressed={muteOnEntry}
             className={`mb-3 w-full rounded-lg px-3 py-2 text-xs font-medium tracking-wide transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50 disabled:opacity-50 ${
-              muteOnEntry
-                ? "neon-magenta bg-magenta text-white hover:brightness-110"
-                : "bg-white/10 text-white/90 hover:bg-white/20"
+              muteOnEntry ? "neon-magenta bg-magenta text-white hover:brightness-110" : "bg-white/10 text-white/90 hover:bg-white/20"
             }`}
           >
             {muteOnEntry ? "Muted on entry — allow unmuting" : "Mute all"}
@@ -271,13 +216,8 @@ export default function HostPanel({
           ) : (
             <ul className="space-y-2">
               {participants.map((p) => (
-                <li
-                  key={p.identity}
-                  className="flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2"
-                >
-                  <span className="truncate text-white/90">
-                    {p.name || p.identity}
-                  </span>
+                <li key={p.identity} className="flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+                  <span className="truncate text-white/90">{p.name || p.identity}</span>
                   <span className="flex shrink-0 gap-1">
                     <IconButton
                       icon={VolumeX}
@@ -307,24 +247,14 @@ export default function HostPanel({
 }
 
 // Section with a neon left-accent header and an optional count badge.
-function Section({
-  title,
-  badge,
-  children,
-}: {
-  title: string;
-  badge?: number;
-  children: ReactNode;
-}) {
+function Section({ title, badge, children }: { title: string; badge?: number; children: ReactNode }) {
   return (
     <section>
       <h3 className="mb-2.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/55">
         <span className="h-3 w-0.5 rounded-full bg-gradient-to-b from-magenta to-cyan" />
         {title}
         {badge !== undefined && (
-          <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-magenta px-1 text-[10px] font-semibold text-white">
-            {badge}
-          </span>
+          <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-magenta px-1 text-[10px] font-semibold text-white">{badge}</span>
         )}
       </h3>
       {children}

@@ -2,13 +2,7 @@
 
 import type { LocalUserChoices } from "@livekit/components-react";
 import { ChevronDown, Mic, MicOff, Video, VideoOff } from "lucide-react";
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 type Defaults = {
   username?: string;
@@ -40,12 +34,8 @@ export default function PreJoinScreen({
   children?: ReactNode;
 }) {
   const [username, setUsername] = useState(defaults.username ?? "");
-  const [videoEnabled, setVideoEnabled] = useState(
-    defaults.videoEnabled ?? true
-  );
-  const [audioEnabled, setAudioEnabled] = useState(
-    defaults.audioEnabled ?? true
-  );
+  const [videoEnabled, setVideoEnabled] = useState(defaults.videoEnabled ?? true);
+  const [audioEnabled, setAudioEnabled] = useState(defaults.audioEnabled ?? true);
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
   const [videoDeviceId, setVideoDeviceId] = useState("");
@@ -166,29 +156,14 @@ export default function PreJoinScreen({
       videoDeviceId,
       audioDeviceId,
     });
-  }, [
-    canJoin,
-    stopStream,
-    onSubmit,
-    username,
-    videoEnabled,
-    audioEnabled,
-    videoDeviceId,
-    audioDeviceId,
-  ]);
+  }, [canJoin, stopStream, onSubmit, username, videoEnabled, audioEnabled, videoDeviceId, audioDeviceId]);
 
   return (
     <main className="bg-dotgrid relative flex flex-1 items-center justify-center overflow-hidden">
       {/* Full-screen preview / placeholder. */}
       <div className="absolute inset-0">
         {videoEnabled ? (
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className="h-full w-full -scale-x-100 object-cover opacity-90"
-          />
+          <video ref={videoRef} autoPlay playsInline muted className="h-full w-full -scale-x-100 object-cover opacity-90" />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
             <VideoOff className="h-16 w-16 text-white/15" />
@@ -205,9 +180,7 @@ export default function PreJoinScreen({
       {/* Floating control cluster. */}
       <div className="glass-strong relative z-10 m-4 w-full max-w-md rounded-2xl p-6 shadow-[0_8px_60px_oklch(0_0_0/0.6)]">
         <div className="space-y-1 text-center">
-          <h1 className="font-display text-2xl font-semibold text-white">
-            {heading}
-          </h1>
+          <h1 className="font-display text-2xl font-semibold text-white">{heading}</h1>
           {subheading && <p className="text-sm text-white/60">{subheading}</p>}
         </div>
 
@@ -231,29 +204,11 @@ export default function PreJoinScreen({
               label={audioEnabled ? "Mic on" : "Mic off"}
               onClick={() => setAudioEnabled((v) => !v)}
             />
-            <ToggleButton
-              on={videoEnabled}
-              onIcon={Video}
-              offIcon={VideoOff}
-              label={videoEnabled ? "Camera on" : "Camera off"}
-              onClick={toggleVideo}
-            />
+            <ToggleButton on={videoEnabled} onIcon={Video} offIcon={VideoOff} label={videoEnabled ? "Camera on" : "Camera off"} onClick={toggleVideo} />
           </div>
 
-          <DeviceSelect
-            icon={Video}
-            value={videoDeviceId}
-            devices={videoDevices}
-            fallbackLabel="Camera"
-            onChange={changeCamera}
-          />
-          <DeviceSelect
-            icon={Mic}
-            value={audioDeviceId}
-            devices={audioDevices}
-            fallbackLabel="Microphone"
-            onChange={setAudioDeviceId}
-          />
+          <DeviceSelect icon={Video} value={videoDeviceId} devices={videoDevices} fallbackLabel="Camera" onChange={changeCamera} />
+          <DeviceSelect icon={Mic} value={audioDeviceId} devices={audioDevices} fallbackLabel="Microphone" onChange={setAudioDeviceId} />
 
           {note && <p className="text-xs text-magenta">{note}</p>}
 
@@ -303,9 +258,7 @@ function ToggleButton({
       title={label}
       aria-label={label}
       className={`flex h-12 w-12 items-center justify-center rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 [&>svg]:h-5 [&>svg]:w-5 ${
-        on
-          ? "bg-cyan/15 text-cyan ring-1 ring-cyan/40 hover:bg-cyan/25"
-          : "bg-magenta/15 text-magenta ring-1 ring-magenta/40 hover:bg-magenta/25"
+        on ? "bg-cyan/15 text-cyan ring-1 ring-cyan/40 hover:bg-cyan/25" : "bg-magenta/15 text-magenta ring-1 ring-magenta/40 hover:bg-magenta/25"
       }`}
     >
       <Icon />
