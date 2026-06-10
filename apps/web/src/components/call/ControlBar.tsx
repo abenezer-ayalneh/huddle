@@ -3,6 +3,7 @@
 import { useTrackToggle } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import { Mic, MicOff, Video, VideoOff, MonitorUp, MonitorOff, MessageSquare, PhoneOff, type LucideIcon } from "lucide-react";
+import DeviceMenu, { type DeviceSection } from "./DeviceMenu";
 
 export default function ControlBar({
   onLeave,
@@ -28,25 +29,45 @@ export default function ControlBar({
 
   const shareLabel = iAmPresenting ? "Stop presenting" : someoneElsePresenting ? "Ask to present" : "Share screen";
 
+  // Switch Device semantics: a pick always puts the device into use, so the
+  // track turns on after switching (an unmute / camera-on gesture).
+  const ensureOn = (t: { enabled: boolean; pending: boolean; toggle: () => Promise<unknown> }) => {
+    if (!t.enabled && !t.pending) void t.toggle();
+  };
+
+  // Speaker selection needs setSinkId; hide the section where unsupported
+  // (e.g. Safari). Evaluated only on the client — the popover renders nothing
+  // until opened, so SSR markup is unaffected.
+  const micSections: DeviceSection[] = [
+    { kind: "audioinput", label: "Microphone" },
+    ...(typeof HTMLMediaElement !== "undefined" && "setSinkId" in HTMLMediaElement.prototype ? [{ kind: "audiooutput", label: "Speaker" } as const] : []),
+  ];
+
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex justify-center p-4 sm:p-6">
       <div className="glass-strong pointer-events-auto flex items-center gap-2 rounded-full px-3 py-2 shadow-[0_8px_40px_oklch(0_0_0/0.5)] sm:gap-3 sm:px-4">
-        <ControlButton
-          icon={mic.enabled ? Mic : MicOff}
-          label={mic.enabled ? "Mute microphone" : "Unmute microphone"}
-          active={mic.enabled}
-          danger={!mic.enabled}
-          disabled={mic.pending}
-          onClick={() => mic.toggle()}
-        />
-        <ControlButton
-          icon={cam.enabled ? Video : VideoOff}
-          label={cam.enabled ? "Turn camera off" : "Turn camera on"}
-          active={cam.enabled}
-          danger={!cam.enabled}
-          disabled={cam.pending}
-          onClick={() => cam.toggle()}
-        />
+        <div className="flex items-center gap-0.5">
+          <ControlButton
+            icon={mic.enabled ? Mic : MicOff}
+            label={mic.enabled ? "Mute microphone" : "Unmute microphone"}
+            active={mic.enabled}
+            danger={!mic.enabled}
+            disabled={mic.pending}
+            onClick={() => mic.toggle()}
+          />
+          <DeviceMenu label="Switch microphone or speaker" sections={micSections} onPick={(kind) => kind === "audioinput" && ensureOn(mic)} />
+        </div>
+        <div className="flex items-center gap-0.5">
+          <ControlButton
+            icon={cam.enabled ? Video : VideoOff}
+            label={cam.enabled ? "Turn camera off" : "Turn camera on"}
+            active={cam.enabled}
+            danger={!cam.enabled}
+            disabled={cam.pending}
+            onClick={() => cam.toggle()}
+          />
+          <DeviceMenu label="Switch camera" sections={[{ kind: "videoinput", label: "Camera" }]} onPick={() => ensureOn(cam)} />
+        </div>
 
         <span className="mx-1 h-7 w-px bg-white/10" />
 

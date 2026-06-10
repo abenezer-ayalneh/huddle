@@ -3,6 +3,7 @@
 import type { LocalUserChoices } from "@livekit/components-react";
 import { ChevronDown, Mic, MicOff, Video, VideoOff } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { loadDevicePreferences, saveDevicePreference } from "@/lib/devicePreferences";
 
 type Defaults = {
   username?: string;
@@ -56,14 +57,16 @@ export default function PreJoinScreen({
     if (videoRef.current) videoRef.current.srcObject = stream;
   }, []);
 
-  const loadDevices = useCallback(async () => {
+  const loadDevices = useCallback(async (preferredAudioId?: string) => {
     try {
       const all = await navigator.mediaDevices.enumerateDevices();
       const audio = all.filter((d) => d.kind === "audioinput");
       setVideoDevices(all.filter((d) => d.kind === "videoinput"));
       setAudioDevices(audio);
-      // Default the mic to the first input once labels are available.
-      setAudioDeviceId((prev) => prev || audio[0]?.deviceId || "");
+      // Default the mic to the remembered Device Preference when still
+      // plugged in, else the first input, once labels are available.
+      const preferred = preferredAudioId && audio.some((d) => d.deviceId === preferredAudioId) ? preferredAudioId : undefined;
+      setAudioDeviceId((prev) => prev || preferred || audio[0]?.deviceId || "");
     } catch {
       /* enumeration can fail before permission; ignore */
     }
@@ -93,13 +96,15 @@ export default function PreJoinScreen({
   );
 
   // Mount: request both tracks once to unlock device labels, keep video for the
-  // preview, immediately release the mic (no self-monitoring here).
+  // preview, immediately release the mic (no self-monitoring here). The Device
+  // Preference picks the camera (`ideal` falls back silently if unplugged).
   useEffect(() => {
     let cancelled = false;
+    const prefs = loadDevicePreferences();
     (async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
+          video: prefs.videoinput ? { deviceId: { ideal: prefs.videoinput } } : true,
           audio: true,
         });
         stream.getAudioTracks().forEach((t) => t.stop());
@@ -110,13 +115,13 @@ export default function PreJoinScreen({
         attach(stream);
         const settings = stream.getVideoTracks()[0]?.getSettings();
         if (settings?.deviceId) setVideoDeviceId(settings.deviceId);
-        await loadDevices();
+        await loadDevices(prefs.audioinput);
       } catch (e) {
         if (cancelled) return;
         setVideoEnabled(false);
         setNote("Camera/mic unavailable — you can still join without them.");
         onError?.(e as Error);
-        await loadDevices();
+        await loadDevices(prefs.audioinput);
       }
     })();
     return () => {
@@ -139,10 +144,16 @@ export default function PreJoinScreen({
   const changeCamera = useCallback(
     (id: string) => {
       setVideoDeviceId(id);
+      saveDevicePreference("videoinput", id);
       if (videoEnabled) void acquireVideo(id);
     },
     [videoEnabled, acquireVideo]
   );
+
+  const changeMic = useCallback((id: string) => {
+    setAudioDeviceId(id);
+    saveDevicePreference("audioinput", id);
+  }, []);
 
   const canJoin = !requireName || username.trim().length > 0;
 
@@ -208,7 +219,7 @@ export default function PreJoinScreen({
           </div>
 
           <DeviceSelect icon={Video} value={videoDeviceId} devices={videoDevices} fallbackLabel="Camera" onChange={changeCamera} />
-          <DeviceSelect icon={Mic} value={audioDeviceId} devices={audioDevices} fallbackLabel="Microphone" onChange={setAudioDeviceId} />
+          <DeviceSelect icon={Mic} value={audioDeviceId} devices={audioDevices} fallbackLabel="Microphone" onChange={changeMic} />
 
           {note && <p className="text-xs text-magenta">{note}</p>}
 

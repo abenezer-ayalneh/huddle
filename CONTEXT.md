@@ -73,9 +73,27 @@ the knock and gates it — the guest must get through the Device Check and press
 join button before the knock is sent. For a host it runs before connecting to the
 call. The participant's selections (which camera/mic, and whether each is on) are
 carried forward into the call. Passing the Device Check is the guest's act of
-"agreeing" to the camera/voice setup; there is no separate consent step.
+"agreeing" to the camera/voice setup; there is no separate consent step. Its
+pickers are pre-filled from, and save back to, the Device Preference.
 _Avoid_: Pre-join (the LiveKit component name — fine in code, but "Device Check"
 is the domain term), camera test, AV check, permission prompt
+
+### Devices
+
+**Switch Device**:
+Picking a camera, microphone, or speaker from the in-call pickers attached to
+the control bar's mic and camera buttons. A pick always puts the device into
+use immediately: choosing any listed device — including the one already active —
+turns that track on (the picker doubles as an unmute / camera-on gesture). A
+pick also updates the Device Preference.
+_Avoid_: Change input, device settings
+
+**Device Preference**:
+The remembered last-used camera, microphone, and speaker on a participant's
+browser. Written whenever a participant picks a device — in the Device Check or
+by switching mid-call — and read to pre-select devices next time. If a
+remembered device is absent (unplugged), the browser default is used silently.
+_Avoid_: Saved devices, default devices
 
 ### Presenting
 
