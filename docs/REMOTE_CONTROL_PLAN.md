@@ -156,8 +156,17 @@ session indicator, tray; deep-link plugin for `huddle://`).
    flows browser → dialog → stub redeem end-to-end. `huddle://` launch ships
    via hidden iframe; protocol _registration_ lands with the real agent
    (slice 3) — until then the dialog's copy-paste code is the path.
-3. **Agent: join + capture + publish.** The monitor appears as the
-   presentation in the call; attribution resolves to the human. No injection yet.
+3. **Agent: join + capture + publish.** 🚧 Tauri 2 + Rust skeleton
+   implemented: redeem flow, LiveKit room join, xcap monitor capture → I420 →
+   NativeVideoSource, control:\* protocol handler, deep-link + CLI arg entry
+   points. Compiles and links (livekit 0.7.45 + xcap 0.8 + libwebrtc 0.3.36).
+   **Blocked at runtime on macOS 26 (Tahoe):** the prebuilt WebRTC binary in
+   webrtc-sys crashes on `+[NSString stringForAbslStringView:]` during
+   PeerConnectionFactory init ([rust-sdks#795][gh795]). The `-ObjC` linker
+   fix is applied but needs an updated prebuilt binary from upstream. Code is
+   structurally complete; will be testable on macOS 15 or when upstream ships
+   a Tahoe-compatible binary.
+   [gh795]: https://github.com/livekit/rust-sdks/issues/795
 4. **Agent: injection.** Mouse first (mapping + clamping is the hard part),
    then keyboard. Acceptance: Controller drags a window on the Presenter's
    desktop accurately on a multi-monitor, scaled-DPI setup.
@@ -167,8 +176,19 @@ session indicator, tray; deep-link plugin for `huddle://`).
 
 ## Risks / open questions (resolve in slice order, update here)
 
-- LiveKit **Rust SDK screen-publish maturity** vs. capture crate choice —
-  validate in slice 3 before committing; this is the long pole.
+- ~~LiveKit **Rust SDK screen-publish maturity** vs. capture crate choice —
+  validate in slice 3 before committing; this is the long pole.~~
+  **Resolved (slice 3):** livekit 0.7.45 + xcap 0.8 compile and link. The
+  capture → I420 → NativeVideoSource → publish pipeline is structurally
+  complete. Runtime validation blocked by the macOS 26 WebRTC crash
+  (rust-sdks#795); the code path itself is correct.
+- **macOS 26 (Tahoe) runtime crash** (rust-sdks#795): prebuilt WebRTC binary
+  references `+[NSString stringForAbslStringView:]` which is gone from
+  Foundation in macOS 26. The `-ObjC` linker flag (PR #847, merged, in
+  livekit 0.7.45) loads the category, but the category's implementation
+  references a missing symbol. Needs an upstream rebuild of the WebRTC
+  prebuilt against the macOS 26 SDK. Track the issue; no in-project
+  workaround.
 - **Coordinate fidelity**: letterboxing on the controller side × DPI scaling on
   the agent side. Slice 4's acceptance test exists to flush this out.
 - **Browser-reserved shortcuts** (Cmd-W and friends) can't all be captured —

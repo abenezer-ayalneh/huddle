@@ -1,0 +1,25 @@
+[package]
+name = "huddle-agent"
+version = "0.1.0"
+edition = "2024"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-deep-link = "2"
+tauri-plugin-single-instance = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+livekit = { version = "0.7", features = ["native-tls"] }
+xcap = "0.8"
+image = "0.25"
+reqwest = { version = "0.12", features = ["json", "native-tls"], default-features = false }
+url = "2"
+log = "0.4"
+env_logger = "0.11"
+
+[features]
+custom-protocol = ["tauri/custom-protocol"]
