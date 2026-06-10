@@ -1,0 +1,14 @@
+{
+  "name": "Huddle — Self-hosted, real-time video for teams who want control",
+  "short_name": "Huddle",
+  "description": "Self-hosted, real-time video for teams who want control",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#090A13",
+  "theme_color": "#FE12A9FF",
+  "icons": [
+    { "src": "/icon-192.png", "type": "image/png", "sizes": "192x192" },
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "512x512" },
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "any maskable" }
+  ]
+}
