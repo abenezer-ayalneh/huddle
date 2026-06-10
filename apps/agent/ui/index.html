@@ -108,8 +108,7 @@
       .status.active {
         color: #34d399;
       }
-      #setup,
-      #sharing {
+      .screen {
         display: none;
       }
       #sharing {
@@ -133,10 +132,97 @@
           opacity: 0.5;
         }
       }
+      .perm-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: #1c1e26;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        width: 100%;
+        max-width: 360px;
+      }
+      .perm-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        flex-shrink: 0;
+      }
+      .perm-icon.granted {
+        background: #064e3b;
+        color: #34d399;
+      }
+      .perm-icon.missing {
+        background: #451a03;
+        color: #fb923c;
+      }
+      .perm-info {
+        flex: 1;
+      }
+      .perm-name {
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .perm-desc {
+        font-size: 12px;
+        color: #a1a1aa;
+        margin-top: 2px;
+      }
+      .perm-action {
+        padding: 6px 12px;
+        border-radius: 6px;
+        border: none;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        background: #0891b2;
+        color: #fff;
+      }
+      .perm-action:hover {
+        background: #06b6d4;
+      }
+      .perm-action.done {
+        background: #064e3b;
+        color: #34d399;
+        cursor: default;
+      }
     </style>
   </head>
   <body>
-    <div id="setup">
+    <div id="permissions" class="screen">
+      <h1>Permissions Required</h1>
+      <p class="subtitle">Huddle Agent needs these permissions to share and control your screen</p>
+
+      <div class="perm-row" id="perm-screen">
+        <div class="perm-icon missing" id="perm-screen-icon">&#9724;</div>
+        <div class="perm-info">
+          <div class="perm-name">Screen Recording</div>
+          <div class="perm-desc">Required to capture and share your monitor</div>
+        </div>
+        <button class="perm-action" id="btn-perm-screen">Open Settings</button>
+      </div>
+
+      <div class="perm-row" id="perm-access">
+        <div class="perm-icon missing" id="perm-access-icon">&#9995;</div>
+        <div class="perm-info">
+          <div class="perm-name">Accessibility</div>
+          <div class="perm-desc">Required for remote mouse and keyboard control</div>
+        </div>
+        <button class="perm-action" id="btn-perm-access">Open Settings</button>
+      </div>
+
+      <div class="actions">
+        <button class="btn-cancel" id="btn-perm-cancel">Cancel</button>
+        <button class="btn-confirm" id="btn-perm-continue" disabled>Continue</button>
+      </div>
+    </div>
+
+    <div id="setup" class="screen">
       <h1>Present with Control</h1>
       <p class="subtitle">Share your screen and let a participant control your machine</p>
 
@@ -158,7 +244,7 @@
       <p class="status" id="status"></p>
     </div>
 
-    <div id="sharing">
+    <div id="sharing" class="screen">
       <p><span class="sharing-indicator"></span> Sharing your screen</p>
       <p class="subtitle" id="sharing-room"></p>
       <button class="btn-cancel" id="btn-stop" style="margin-top: 16px">Stop sharing</button>
@@ -168,6 +254,7 @@
       const { invoke } = window.__TAURI__.core;
       const { listen } = window.__TAURI__.event;
 
+      const permissionsEl = document.getElementById("permissions");
       const setupEl = document.getElementById("setup");
       const sharingEl = document.getElementById("sharing");
       const monitorSelect = document.getElementById("monitor-select");
@@ -175,16 +262,68 @@
       const confirmBtn = document.getElementById("btn-confirm");
       const roomNameEl = document.getElementById("room-name");
       const sharingRoomEl = document.getElementById("sharing-room");
+      const permContinueBtn = document.getElementById("btn-perm-continue");
+
+      function showScreen(id) {
+        document.querySelectorAll(".screen").forEach((el) => (el.style.display = "none"));
+        document.getElementById(id).style.display = "block";
+      }
 
       function setStatus(msg, cls) {
         statusEl.textContent = msg;
         statusEl.className = "status " + (cls || "");
       }
 
-      async function init() {
-        setupEl.style.display = "block";
+      function updatePermUI(perms) {
+        const screenIcon = document.getElementById("perm-screen-icon");
+        const accessIcon = document.getElementById("perm-access-icon");
+        const screenBtn = document.getElementById("btn-perm-screen");
+        const accessBtn = document.getElementById("btn-perm-access");
 
-        // Populate monitors
+        if (perms.screenRecording) {
+          screenIcon.className = "perm-icon granted";
+          screenIcon.innerHTML = "&#10003;";
+          screenBtn.textContent = "Granted";
+          screenBtn.className = "perm-action done";
+        }
+        if (perms.accessibility) {
+          accessIcon.className = "perm-icon granted";
+          accessIcon.innerHTML = "&#10003;";
+          accessBtn.textContent = "Granted";
+          accessBtn.className = "perm-action done";
+        }
+
+        permContinueBtn.disabled = !(perms.screenRecording && perms.accessibility);
+      }
+
+      let permCheckInterval;
+
+      async function checkAndShowPermissions() {
+        try {
+          const perms = await invoke("check_permissions");
+          updatePermUI(perms);
+          if (perms.screenRecording && perms.accessibility) {
+            clearInterval(permCheckInterval);
+            return true;
+          }
+          return false;
+        } catch {
+          return true;
+        }
+      }
+
+      async function init() {
+        const allGranted = await checkAndShowPermissions();
+        if (!allGranted) {
+          showScreen("permissions");
+          permCheckInterval = setInterval(checkAndShowPermissions, 2000);
+        } else {
+          showSetup();
+        }
+      }
+
+      async function showSetup() {
+        showScreen("setup");
         try {
           const monitors = await invoke("list_monitors");
           monitorSelect.innerHTML = "";
@@ -199,7 +338,6 @@
           setStatus("Failed to list monitors: " + e, "error");
         }
 
-        // Show room info if we have it
         try {
           const info = await invoke("get_session_info");
           if (info) {
@@ -207,6 +345,20 @@
           }
         } catch {}
       }
+
+      document.getElementById("btn-perm-screen").addEventListener("click", () => {
+        invoke("open_screen_recording_settings");
+      });
+      document.getElementById("btn-perm-access").addEventListener("click", () => {
+        invoke("open_accessibility_settings");
+      });
+      document.getElementById("btn-perm-cancel").addEventListener("click", () => {
+        invoke("cancel_session");
+      });
+      permContinueBtn.addEventListener("click", () => {
+        clearInterval(permCheckInterval);
+        showSetup();
+      });
 
       confirmBtn.addEventListener("click", async () => {
         confirmBtn.disabled = true;
@@ -227,7 +379,6 @@
         await invoke("stop_sharing");
       });
 
-      // Backend events
       listen("session-ready", (e) => {
         roomNameEl.textContent = e.payload.room;
         confirmBtn.disabled = false;
@@ -235,14 +386,12 @@
       });
 
       listen("sharing-started", (e) => {
-        setupEl.style.display = "none";
-        sharingEl.style.display = "block";
+        showScreen("sharing");
         sharingRoomEl.textContent = "Room: " + (e.payload.room || "");
       });
 
       listen("sharing-stopped", () => {
-        sharingEl.style.display = "none";
-        setupEl.style.display = "block";
+        showScreen("setup");
         confirmBtn.disabled = false;
         setStatus("Sharing ended", "");
       });

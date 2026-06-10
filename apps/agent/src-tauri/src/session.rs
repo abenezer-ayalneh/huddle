@@ -9,6 +9,8 @@ use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use tokio::sync::{mpsc, watch};
 
+use crate::clipboard::ClipboardWatcher;
+use crate::input::{Injector, InputEvent, MonitorGeometry};
 use crate::redeem::RedeemResponse;
 
 const CONTROL_TOPIC: &str = "huddle:control";
@@ -75,13 +77,44 @@ impl Session {
         let presenter = redeemed.presenter_identity.clone();
         let room_name = redeemed.room.clone();
 
+        #[cfg(target_os = "macos")]
+        let scale_factor = {
+            use std::process::Command;
+            let output = Command::new("system_profiler")
+                .args(["SPDisplaysDataType", "-json"])
+                .output()
+                .ok()
+                .and_then(|o| String::from_utf8(o.stdout).ok())
+                .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok());
+
+            output
+                .and_then(|v| {
+                    v["SPDisplaysDataType"]
+                        .as_array()?
+                        .iter()
+                        .flat_map(|gpu| gpu["spdisplays_ndrvs"].as_array())
+                        .flatten()
+                        .find(|d| {
+                            d["_spdisplays_resolution"].as_str().map_or(false, |r| {
+                                r.contains("Retina") || r.contains("@2x")
+                            })
+                        })
+                        .map(|_| 2.0f64)
+                })
+                .unwrap_or(1.0)
+        };
+
+        #[cfg(not(target_os = "macos"))]
+        let scale_factor = 1.0f64;
+
+        let monitor_x = monitor.x().unwrap_or(0);
+        let monitor_y = monitor.y().unwrap_or(0);
+
         info!(
-            "starting session: room={room_name}, presenter={presenter}, monitor={mon_name}({width}x{height})"
+            "starting session: room={room_name}, presenter={presenter}, monitor={mon_name}({width}x{height}), scale={scale_factor}, origin=({monitor_x},{monitor_y})"
         );
 
-        // Connect to the LiveKit room.
-        let mut room_opts = RoomOptions::default();
-        room_opts.auto_subscribe = false;
+        let room_opts = RoomOptions::default();
         let (room, mut room_events) = Room::connect(
             &redeemed.livekit_url,
             &redeemed.token,
@@ -93,10 +126,9 @@ impl Session {
         let room = Arc::new(room);
         info!("connected to room {room_name}");
 
-        // Create a video source sized to the monitor and publish it as screen share.
         let source = NativeVideoSource::new(
             VideoResolution { width, height },
-            true, // is_screencast
+            true,
         );
 
         let track =
@@ -114,11 +146,8 @@ impl Session {
             room: room_name.clone(),
         });
 
-        // Shutdown signal.
         let (shutdown_tx, shutdown_rx) = watch::channel(false);
 
-        // Spawn capture loop — grabs frames from the monitor, converts to I420,
-        // and feeds them to the LiveKit video source.
         let capture_handle = {
             let shutdown_rx = shutdown_rx.clone();
             let source = source.clone();
@@ -153,19 +182,57 @@ impl Session {
             })
         };
 
-        // Spawn room event handler — protocol messages + lifecycle.
+        let geometry = MonitorGeometry {
+            x: monitor_x,
+            y: monitor_y,
+            width,
+            height,
+            scale: scale_factor,
+        };
+
+        let (input_tx, input_rx) = mpsc::unbounded_channel::<InputEvent>();
+        let _injector_handle = std::thread::Builder::new()
+            .name("input-injector".into())
+            .spawn(move || {
+                input_injector_thread(geometry, input_rx);
+            })
+            .map_err(|e| format!("failed to spawn injector thread: {e}"))?;
+
+        let (clipboard_change_tx, clipboard_change_rx) = mpsc::unbounded_channel::<String>();
+        let mut clipboard_watcher = ClipboardWatcher::start(clipboard_change_tx)
+            .map_err(|e| format!("clipboard: {e}"))?;
+
         let room_handle = {
-            let _room = room.clone();
+            let room_for_handler = room.clone();
             let mut shutdown_rx = shutdown_rx.clone();
             let event_tx = event_tx.clone();
             let presenter = presenter.clone();
             tokio::spawn(async move {
                 let mut controller_id: Option<String> = None;
+                let mut clipboard_change_rx = clipboard_change_rx;
 
                 loop {
                     tokio::select! {
                         _ = shutdown_rx.changed() => {
                             if *shutdown_rx.borrow() { break; }
+                        }
+                        Some(text) = clipboard_change_rx.recv() => {
+                            if controller_id.is_some() {
+                                let msg = serde_json::json!({
+                                    "v": CONTROL_VERSION,
+                                    "type": "control:clipboard",
+                                    "text": text,
+                                });
+                                let payload = serde_json::to_vec(&msg).unwrap();
+                                if let Err(e) = room_for_handler.local_participant().publish_data(DataPacket {
+                                    payload,
+                                    reliable: true,
+                                    topic: Some(CONTROL_TOPIC.into()),
+                                    destination_identities: Vec::new(),
+                                }).await {
+                                    warn!("failed to send clipboard: {e}");
+                                }
+                            }
                         }
                         event = room_events.recv() => {
                             let Some(event) = event else { break };
@@ -214,6 +281,7 @@ impl Session {
                                                 continue;
                                             }
                                             info!("presenter stopped the share");
+                                            drop(controller_id);
                                             let _ = event_tx.send(SessionEvent::Stopped);
                                             return;
                                         }
@@ -232,11 +300,14 @@ impl Session {
                                                 warn!("rejected input from non-controller {sender}");
                                                 continue;
                                             }
-                                            // Slice 3: log only, no injection yet.
-                                            if let Some(event) = msg.extra.get("event") {
-                                                let kind = event.get("kind").and_then(|v| v.as_str()).unwrap_or("?");
-                                                if kind != "move" {
-                                                    info!("input: {kind} (injection not implemented yet)");
+                                            if let Some(event_val) = msg.extra.get("event") {
+                                                match serde_json::from_value::<InputEvent>(event_val.clone()) {
+                                                    Ok(input_event) => {
+                                                        let _ = input_tx.send(input_event);
+                                                    }
+                                                    Err(e) => {
+                                                        warn!("failed to parse input event: {e}");
+                                                    }
                                                 }
                                             }
                                         }
@@ -248,9 +319,10 @@ impl Session {
                                             }
                                             let text = msg.extra.get("text")
                                                 .and_then(|v| v.as_str())
-                                                .unwrap_or_default();
-                                            info!("clipboard from controller: {}", &text[..text.len().min(80)]);
-                                            // Slice 5: clipboard sync not implemented yet.
+                                                .unwrap_or_default()
+                                                .to_string();
+                                            info!("clipboard from controller: {}B", text.len());
+                                            clipboard_watcher.set_text(text);
                                         }
                                         other => {
                                             info!("(ignored {other} from {sender})");
@@ -260,17 +332,19 @@ impl Session {
                                 RoomEvent::ParticipantDisconnected(participant) => {
                                     let identity = participant.identity().to_string();
                                     if identity == presenter {
-                                        info!("presenter left the room");
+                                        info!("presenter left the room — stopping");
+                                        drop(controller_id);
                                         let _ = event_tx.send(SessionEvent::Stopped);
                                         return;
                                     }
                                     if controller_id.as_deref() == Some(&identity) {
-                                        info!("controller {identity} disconnected");
+                                        info!("controller {identity} disconnected — revoking");
                                         controller_id = None;
                                     }
                                 }
                                 RoomEvent::Disconnected { reason } => {
                                     info!("disconnected from room: {reason:?}");
+                                    drop(controller_id);
                                     let _ = event_tx.send(SessionEvent::Stopped);
                                     return;
                                 }
@@ -279,6 +353,7 @@ impl Session {
                         }
                     }
                 }
+                clipboard_watcher.stop();
                 info!("room event loop ended");
             })
         };
@@ -305,6 +380,24 @@ impl Session {
 pub enum SessionEvent {
     SharingStarted { room: String },
     Stopped,
+}
+
+fn input_injector_thread(
+    geometry: MonitorGeometry,
+    mut rx: mpsc::UnboundedReceiver<InputEvent>,
+) {
+    let mut injector = match Injector::new(geometry) {
+        Ok(i) => i,
+        Err(e) => {
+            warn!("input injector unavailable: {e}");
+            return;
+        }
+    };
+
+    while let Some(event) = rx.blocking_recv() {
+        injector.inject(&event);
+    }
+    info!("input injector thread ended");
 }
 
 fn write_i420_from_rgba(rgba: &[u8], width: u32, height: u32, buffer: &mut I420Buffer) {

@@ -8,12 +8,16 @@
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod clipboard;
+mod input;
+mod permissions;
 mod redeem;
 mod session;
 
 use std::sync::Mutex;
 
 use log::info;
+use permissions::PermissionStatus;
 use redeem::RedeemResponse;
 use session::{MonitorInfo, Session, SessionEvent};
 use tauri::{AppHandle, Emitter, Manager};
@@ -92,6 +96,21 @@ async fn stop_sharing(state: tauri::State<'_, AppState>) -> Result<(), String> {
         s.stop().await;
     }
     Ok(())
+}
+
+#[tauri::command]
+fn check_permissions() -> PermissionStatus {
+    permissions::check_permissions()
+}
+
+#[tauri::command]
+fn open_screen_recording_settings() {
+    permissions::open_screen_recording_settings();
+}
+
+#[tauri::command]
+fn open_accessibility_settings() {
+    permissions::open_accessibility_settings();
 }
 
 #[tauri::command]
@@ -183,6 +202,9 @@ fn main() {
             start_sharing,
             stop_sharing,
             cancel_session,
+            check_permissions,
+            open_screen_recording_settings,
+            open_accessibility_settings,
         ])
         .setup(|app| {
             // Deep link handler (macOS: events come to the running instance).

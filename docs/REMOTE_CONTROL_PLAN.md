@@ -167,12 +167,27 @@ session indicator, tray; deep-link plugin for `huddle://`).
    structurally complete; will be testable on macOS 15 or when upstream ships
    a Tahoe-compatible binary.
    [gh795]: https://github.com/livekit/rust-sdks/issues/795
-4. **Agent: injection.** Mouse first (mapping + clamping is the hard part),
-   then keyboard. Acceptance: Controller drags a window on the Presenter's
-   desktop accurately on a multi-monitor, scaled-DPI setup.
-5. **Clipboard + teardown edges.** Sync both ways; kill control on every
-   lifecycle edge listed above.
-6. **Packaging.** Installers, signing/notarization, permission onboarding.
+4. **Agent: injection.** ✅ `enigo` 0.3 for mouse/keyboard. Normalized
+   [0,1] coordinates from `control:input` mapped to monitor pixel coords
+   using monitor origin (x,y), dimensions, and DPI scale factor. Mouse
+   move/down/up/scroll and full keyboard (Unicode keys, modifiers, F-keys,
+   nav keys). Dedicated injector thread receives events via channel from
+   the protocol handler. Scroll magnitude scaled ×3 for usable feel.
+5. **Clipboard + teardown edges.** ✅ `arboard` 3 for bidirectional
+   clipboard sync (text-only v1). Polling watcher (500ms) on a dedicated
+   thread detects local changes and sends `control:clipboard` to the
+   controller. Incoming clipboard from controller written to local
+   clipboard. Teardown: `controller_id` cleared on revoke, release,
+   stop-present, presenter disconnect, controller disconnect, and room
+   disconnect — input injection and clipboard sync are gated on
+   `controller_id.is_some()`.
+6. **Packaging.** ✅ macOS TCC permission onboarding: `permissions.rs`
+   checks Screen Recording (test capture) and Accessibility (osascript
+   probe). UI shows a permission gate screen with "Open Settings" buttons
+   before the setup screen. `Info.plist` with `NSScreenCaptureUsageDescription`
+   and `NSAccessibilityUsageDescription`. `Entitlements.plist` disabling
+   App Sandbox (required for screen capture and input injection).
+   Windows/Linux: permissions reported as granted (no TCC equivalent).
 
 ## Risks / open questions (resolve in slice order, update here)
 
