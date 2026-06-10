@@ -20,6 +20,14 @@ export class FakeRedis {
     return Promise.resolve(keys.map((k) => this.strings.get(k) ?? null));
   }
 
+  // Atomic read-and-delete (Redis ≥6.2) — what makes agent pairing codes
+  // single-use.
+  getdel(key: string): Promise<string | null> {
+    const value = this.strings.get(key) ?? null;
+    this.strings.delete(key);
+    return Promise.resolve(value);
+  }
+
   sadd(key: string, ...members: string[]): Promise<number> {
     const set = this.sets.get(key) ?? new Set<string>();
     let added = 0;

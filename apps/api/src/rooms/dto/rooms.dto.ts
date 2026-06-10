@@ -37,3 +37,12 @@ export class MuteOnEntryDto {
   @IsBoolean()
   muted!: boolean;
 }
+
+export class RedeemAgentCodeDto {
+  // One-time Control Agent pairing code (8 chars of base64url today; bounds
+  // are loose so the format can evolve without a contract change).
+  @IsString()
+  @MinLength(4)
+  @MaxLength(64)
+  code!: string;
+}

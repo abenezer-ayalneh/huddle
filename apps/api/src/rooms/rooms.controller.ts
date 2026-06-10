@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthGuard, SessionUser, type AuthUser } from '../auth/auth.guard';
+import { ControlAgentService } from './control-agent.service';
 import {
   CreateRoomDto,
   KnockDto,
@@ -19,6 +20,11 @@ import {
   MuteOnEntryDto,
 } from './dto/rooms.dto';
 import { HostGuard } from './host.guard';
+import {
+  Participant,
+  ParticipantGuard,
+  type CallParticipant,
+} from './participant.guard';
 import { RecordingsService } from './recordings.service';
 import { RoomsService } from './rooms.service';
 
@@ -27,6 +33,7 @@ export class RoomsController {
   constructor(
     private readonly rooms: RoomsService,
     private readonly recordings: RecordingsService,
+    private readonly controlAgent: ControlAgentService,
   ) {}
 
   // --- Signed-in host: create / list / rejoin (BetterAuth session) ---
@@ -70,6 +77,19 @@ export class RoomsController {
   @Delete(':room/knock/:knockId')
   cancelKnock(@Param('room') room: string, @Param('knockId') knockId: string) {
     return this.rooms.cancelKnock(room, knockId);
+  }
+
+  // --- Present with Control (docs/adr/0010) ---
+  // Any in-call participant (proven by their own LiveKit token via
+  // x-participant-token) mints a one-time pairing code for their Control
+  // Agent. The agent redeems it at POST /control-agent/redeem.
+  @UseGuards(ParticipantGuard)
+  @Post(':room/control-agent-link')
+  controlAgentLink(
+    @Param('room') room: string,
+    @Participant() participant: CallParticipant,
+  ) {
+    return this.controlAgent.createLink(room, participant);
   }
 
   // --- Host-only endpoints (x-host-key) ---
