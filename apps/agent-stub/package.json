@@ -1,0 +1,14 @@
+{
+  "name": "@huddle/agent-stub",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Throwaway stand-in for the Control Agent: joins a room like the real desktop agent, publishes a synthetic screen share, and logs/echoes control:* messages. Proves the browser side end-to-end before any Rust exists (slice 1, docs/REMOTE_CONTROL_PLAN.md). Delete when the real agent lands.",
+  "scripts": {
+    "start": "node index.mjs"
+  },
+  "dependencies": {
+    "@livekit/rtc-node": "^0.13.29",
+    "livekit-server-sdk": "^2.15.4"
+  }
+}
