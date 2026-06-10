@@ -158,6 +158,28 @@ never unmutes anyone. The state is stored in the LiveKit room metadata.
 
 Remove (kick) a participant. Header `x-host-key`. **Response 200:** `{ "ok": true }`.
 
+### POST /rooms/:room/control-agent-link _(participant)_ — Phase 10
+
+Mint a one-time pairing code for the Control Agent (Present with Control,
+docs/adr/0010). Authorized by the caller's **own LiveKit join token** in the
+`x-participant-token` header — holding a valid token for this room is the
+authority (anyone in the call may present, so anyone may pair an agent).
+
+**Response 200:** `{ "code": "qYjO1Wx-", "expiresInSeconds": 60 }` — the code
+travels via the `huddle://present?code=…&api=…` deep link (or copy-paste).
+**401** if the token is missing, invalid, expired, or for another room.
+
+### POST /control-agent/redeem — Phase 10
+
+The desktop agent exchanges its pairing code for a scoped LiveKit token. The
+code is the bearer: single-use (atomic GETDEL), 60s TTL.
+
+**Request:** `{ "code": "qYjO1Wx-" }`
+**Response 200:** `{ "token", "livekitUrl", "room", "presenterIdentity",
+"presenterName" }` — the token is for identity `agent:<presenterIdentity>`,
+may publish only screen-share sources + data, cannot subscribe, ttl 2m.
+**404** for an unknown, expired, or already-redeemed code.
+
 ### POST /rooms/:room/recordings _(host)_
 
 Start a room-composite recording. Header `x-host-key`. One active recording per

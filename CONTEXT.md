@@ -118,6 +118,60 @@ flow entirely — a host can force-take the presentation at any time, stopping t
 current share immediately.
 _Avoid_: Request to share, take over request
 
+### Remote control
+
+**Remote Control**:
+A consent-gated session in which one participant (the Controller) operates the
+Presenter's machine — mouse, keyboard, and clipboard (both directions) — while
+the Presenter is presenting with control. Exists only inside a Present with
+Control; ends automatically when the presentation stops. Only the Presenter can
+start one (by granting a request or offering); there is **no host bypass** —
+unlike Ask to Present, the host cannot force-take someone's machine.
+_Avoid_: Screen control, remote access, takeover, remote desktop
+
+**Present with Control**:
+The share-time action that starts a controllable presentation: the Presenter's
+Control Agent (not the browser) captures and publishes a whole monitor. Chosen
+explicitly when the share starts — a plain Present can never become controllable
+mid-flight, and a Present with Control shares exactly one monitor, never a
+window. It counts as presenting: the single-presenter rule spans both kinds.
+Desktop only (mobile browsers cannot present at all).
+_Avoid_: Controllable share, agent share, control mode
+
+**Controller**:
+The participant currently operating the Presenter's machine in a Remote Control
+session. Exactly one at a time. Becomes Controller when the Presenter grants
+their request or offers them control; stops being one on Revoke, Release, or
+when the presentation ends. Any participant may be a Controller from a plain
+browser — no install needed on the controlling side.
+_Avoid_: Driver, operator, remote user
+
+**Control Agent**:
+The desktop application on the Presenter's machine that makes Remote Control
+possible: it joins the room invisibly as the Presenter's agent, publishes the
+monitor, receives the Controller's input over data messages, and injects it
+into the OS. It is the enforcement point — it only accepts input from the one
+granted Controller, and it is the only component that ever touches the machine.
+Launched per-presentation via a deep link from the in-call browser session;
+holds no standing credentials. The person remains the Presenter; the agent is
+plumbing, never shown as a participant.
+_Avoid_: Daemon, helper, client, companion app
+
+**Request / Offer Control**:
+The two ways a Remote Control session starts. Request Control: a viewer asks
+the Presenter (times out like Ask to Present). Offer Control: the Presenter
+hands control to a chosen participant unprompted. Both resolve by the receiving
+side's Grant/Accept or Decline.
+_Avoid_: Take control, ask to drive
+
+**Revoke / Release**:
+The two ways a Remote Control session ends early. Revoke: the Presenter ends
+the Controller's session, instantly, at any moment, no confirmation. Release:
+the Controller voluntarily gives control back. Either way the presentation
+itself continues.
+_Avoid_: Kick (that's removing a participant from the call), stop share (that
+ends the presentation, which also ends control, but is a different act)
+
 ### In-call host controls
 
 **Mute on Entry**:
