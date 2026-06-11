@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, api } from "@/lib/api";
 import PreJoinScreen from "@/components/call/PreJoinScreen";
 import CallStage from "./CallStage";
+import LoadingSpinner from "@/components/LoadingSpinner";
 import { Centered } from "./ui";
 
 type Connection = { token: string; livekitUrl: string };
@@ -176,8 +177,10 @@ export default function GuestGate({ room, onLeave, onError }: { room: string; on
     <Centered>
       {phase === "waiting" ? (
         <WaitingRoom room={room} onCancel={cancel} />
+      ) : phase === "precheck" ? (
+        <LoadingSpinner className="mx-auto size-12" />
       ) : (
-        <p className="text-white/60">{phase === "precheck" ? "Loading…" : "Requesting to join…"}</p>
+        <p className="text-white/60">Requesting to join…</p>
       )}
     </Centered>
   );

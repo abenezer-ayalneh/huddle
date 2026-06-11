@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, type MyRecording } from "@/lib/api";
 import { useSession } from "@/lib/auth-client";
 import IconButton from "@/components/IconButton";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 // Cross-room recordings view. Since the lobby list is pared to upcoming
 // scheduled meetings, this is the only place to reach recordings of past and
@@ -54,11 +55,11 @@ export default function RecordingsPage() {
         </header>
 
         {isPending ? (
-          <p className="text-sm text-white/55">Loading…</p>
+          <LoadingSpinner className="mx-auto size-10" />
         ) : !session ? (
           <p className="text-sm text-white/55">Sign in to view your recordings.</p>
         ) : recordings === null ? (
-          <p className="text-sm text-white/55">Loading…</p>
+          <LoadingSpinner className="mx-auto size-10" />
         ) : recordings.length === 0 ? (
           <p className="text-sm text-white/45">No recordings yet.</p>
         ) : (

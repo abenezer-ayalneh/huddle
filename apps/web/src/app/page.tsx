@@ -10,6 +10,7 @@ import { saveHostSession } from "@/lib/hostSession";
 import DateTimePicker from "@/components/DateTimePicker";
 import IconButton from "@/components/IconButton";
 import HuddleIcon from "@/components/HuddleIcon";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 export default function Lobby() {
   const { data: session, isPending } = useSession();
@@ -17,7 +18,7 @@ export default function Lobby() {
   return (
     <Shell>
       {isPending ? (
-        <p className="text-white/60">Loading…</p>
+        <LoadingSpinner className="mx-auto size-12" />
       ) : session ? (
         <HostDashboard userName={session.user.name} onSignOut={() => signOut()} />
       ) : (

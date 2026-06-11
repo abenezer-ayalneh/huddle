@@ -8,6 +8,7 @@ import { loadHostSession, saveHostSession, clearHostSession } from "@/lib/hostSe
 import CallStage from "./CallStage";
 import GuestGate from "./GuestGate";
 import HostPanel from "./HostPanel";
+import LoadingSpinner from "@/components/LoadingSpinner";
 import { Centered } from "./ui";
 
 // Role router for a managed room (Phase 6). Role is derived from the host
@@ -83,7 +84,7 @@ export default function RoomClient({ room }: { room: string }) {
   if (!hostChecked) {
     return (
       <Centered>
-        <p className="text-white/60">Loading…</p>
+        <LoadingSpinner className="mx-auto size-12" />
       </Centered>
     );
   }
