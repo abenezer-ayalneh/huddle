@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useTrackToggle } from "@livekit/components-react";
-import { Track } from "livekit-client";
-import { Mic, MicOff, Video, VideoOff, MonitorUp, MonitorOff, MessageSquare, MousePointer2, PhoneOff, ChevronUp, type LucideIcon } from "lucide-react";
-import { useState } from "react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import DeviceMenu, { type DeviceSection } from "./DeviceMenu";
+import { useTrackToggle } from '@livekit/components-react';
+import { Track } from 'livekit-client';
+import { Mic, MicOff, Video, VideoOff, MonitorUp, MonitorOff, MessageSquare, MousePointer2, PhoneOff, ChevronUp, type LucideIcon } from 'lucide-react';
+import { useState } from 'react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import DeviceMenu, { type DeviceSection } from './DeviceMenu';
 
 export default function ControlBar({
   onLeave,
@@ -33,7 +33,7 @@ export default function ControlBar({
   const mic = useTrackToggle({ source: Track.Source.Microphone });
   const cam = useTrackToggle({ source: Track.Source.Camera });
 
-  const shareLabel = iAmPresenting ? "Stop presenting" : someoneElsePresenting ? "Ask to present" : "Share screen";
+  const shareLabel = iAmPresenting ? 'Stop presenting' : someoneElsePresenting ? 'Ask to present' : 'Share screen';
 
   // Switch Device semantics: a pick always puts the device into use, so the
   // track turns on after switching (an unmute / camera-on gesture).
@@ -45,8 +45,8 @@ export default function ControlBar({
   // (e.g. Safari). Evaluated only on the client — the popover renders nothing
   // until opened, so SSR markup is unaffected.
   const micSections: DeviceSection[] = [
-    { kind: "audioinput", label: "Microphone" },
-    ...(typeof HTMLMediaElement !== "undefined" && "setSinkId" in HTMLMediaElement.prototype ? [{ kind: "audiooutput", label: "Speaker" } as const] : []),
+    { kind: 'audioinput', label: 'Microphone' },
+    ...(typeof HTMLMediaElement !== 'undefined' && 'setSinkId' in HTMLMediaElement.prototype ? [{ kind: 'audiooutput', label: 'Speaker' } as const] : []),
   ];
 
   return (
@@ -55,24 +55,24 @@ export default function ControlBar({
         <div className="flex items-center gap-0.5">
           <ControlButton
             icon={mic.enabled ? Mic : MicOff}
-            label={mic.enabled ? "Mute microphone" : "Unmute microphone"}
+            label={mic.enabled ? 'Mute microphone' : 'Unmute microphone'}
             active={mic.enabled}
             danger={!mic.enabled}
             disabled={mic.pending}
             onClick={() => mic.toggle()}
           />
-          <DeviceMenu label="Switch microphone or speaker" sections={micSections} onPick={(kind) => kind === "audioinput" && ensureOn(mic)} />
+          <DeviceMenu label="Switch microphone or speaker" sections={micSections} onPick={(kind) => kind === 'audioinput' && ensureOn(mic)} />
         </div>
         <div className="flex items-center gap-0.5">
           <ControlButton
             icon={cam.enabled ? Video : VideoOff}
-            label={cam.enabled ? "Turn camera off" : "Turn camera on"}
+            label={cam.enabled ? 'Turn camera off' : 'Turn camera on'}
             active={cam.enabled}
             danger={!cam.enabled}
             disabled={cam.pending}
             onClick={() => cam.toggle()}
           />
-          <DeviceMenu label="Switch camera" sections={[{ kind: "videoinput", label: "Camera" }]} onPick={() => ensureOn(cam)} />
+          <DeviceMenu label="Switch camera" sections={[{ kind: 'videoinput', label: 'Camera' }]} onPick={() => ensureOn(cam)} />
         </div>
 
         <span className="mx-1 h-7 w-px bg-white/10" />
@@ -89,7 +89,7 @@ export default function ControlBar({
             <ShareMenu onPresent={onShareClick} onPresentWithControl={onPresentWithControl} />
           )}
         </div>
-        <ControlButton icon={MessageSquare} label={chatOpen ? "Hide chat" : "Show chat"} active={chatOpen} badge={unreadChat} onClick={onToggleChat} />
+        <ControlButton icon={MessageSquare} label={chatOpen ? 'Hide chat' : 'Show chat'} active={chatOpen} badge={unreadChat} onClick={onToggleChat} />
 
         <span className="mx-1 h-7 w-px bg-white/10" />
 
@@ -143,8 +143,8 @@ function ShareMenu({ onPresent }: { onPresent: () => void; onPresentWithControl:
         <ChevronUp />
       </PopoverTrigger>
       <PopoverContent side="top" sideOffset={14} className="glass-strong w-72 gap-1 rounded-xl p-1.5">
-        {item(onPresent, MonitorUp, "Present screen", "Share a tab, window, or screen — view only")}
-        {item(() => {}, MousePointer2, "Present with control", "Share a monitor via the desktop agent; participants can take the mouse", true)}
+        {item(onPresent, MonitorUp, 'Present screen', 'Share a tab, window, or screen — view only')}
+        {item(() => {}, MousePointer2, 'Present with control', 'Share a monitor via the desktop agent; participants can take the mouse', true)}
       </PopoverContent>
     </Popover>
   );
@@ -170,12 +170,12 @@ function ControlButton({
   onClick?: () => void;
 }) {
   const tone = leave
-    ? "bg-magenta text-white hover:brightness-110 neon-magenta"
+    ? 'bg-magenta text-white hover:brightness-110 neon-magenta'
     : danger
-      ? "bg-magenta/15 text-magenta ring-1 ring-magenta/40 hover:bg-magenta/25"
+      ? 'bg-magenta/15 text-magenta ring-1 ring-magenta/40 hover:bg-magenta/25'
       : active
-        ? "bg-cyan/15 text-cyan ring-1 ring-cyan/40 hover:bg-cyan/25"
-        : "bg-white/8 text-white/80 ring-1 ring-white/10 hover:bg-white/15";
+        ? 'bg-cyan/15 text-cyan ring-1 ring-cyan/40 hover:bg-cyan/25'
+        : 'bg-white/8 text-white/80 ring-1 ring-white/10 hover:bg-white/15';
 
   return (
     <button

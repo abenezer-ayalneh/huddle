@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useLocalParticipant, useRoomContext } from "@livekit/components-react";
-import { RoomEvent, type RemoteParticipant } from "livekit-client";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { CONTROL_TOPIC, agentIdentityFor, decodeControl, sendControlMessage, type ControlInputEvent } from "@/lib/controlProtocol";
+import { useLocalParticipant, useRoomContext } from '@livekit/components-react';
+import { RoomEvent, type RemoteParticipant } from 'livekit-client';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { CONTROL_TOPIC, agentIdentityFor, decodeControl, sendControlMessage, type ControlInputEvent } from '@/lib/controlProtocol';
 
 // Remote Control session state machine (docs/adr/0010). Mirrors the
 // usePresentation patterns: data messages on a topic, initiator-side timeouts,
@@ -15,12 +15,12 @@ export type ControlOffer = { presenterIdentity: string; presenterName: string };
 export type Controlling = { presenterIdentity: string; presenterName: string; agentIdentity: string };
 
 export type ControlOutcome =
-  | { kind: "request-declined"; name: string }
-  | { kind: "request-timed-out"; name: string }
-  | { kind: "offer-declined"; name: string }
-  | { kind: "offer-timed-out"; name: string }
-  | { kind: "revoked"; name: string }
-  | { kind: "released"; name: string };
+  | { kind: 'request-declined'; name: string }
+  | { kind: 'request-timed-out'; name: string }
+  | { kind: 'offer-declined'; name: string }
+  | { kind: 'offer-timed-out'; name: string }
+  | { kind: 'revoked'; name: string }
+  | { kind: 'released'; name: string };
 
 const REQUEST_TIMEOUT_MS = 30_000;
 const OUTCOME_DISPLAY_MS = 4_000;
@@ -86,17 +86,17 @@ export function useRemoteControl({
     async (target: ControlRequest) => {
       if (!agentIdentity) return;
       if (controller && controller.requesterId !== target.requesterId) {
-        await sendControlMessage(localParticipant, [controller.requesterId], { v: 1, type: "control:revoke" });
+        await sendControlMessage(localParticipant, [controller.requesterId], { v: 1, type: 'control:revoke' });
       }
       await sendControlMessage(localParticipant, [agentIdentity, target.requesterId], {
         v: 1,
-        type: "control:grant",
+        type: 'control:grant',
         controllerId: target.requesterId,
         controllerName: target.requesterName,
       });
       setController(target);
     },
-    [agentIdentity, controller, localParticipant]
+    [agentIdentity, controller, localParticipant],
   );
 
   // Listen for incoming control messages.
@@ -108,33 +108,33 @@ export function useRemoteControl({
       const sender = participant.identity;
 
       switch (msg.type) {
-        case "control:request":
+        case 'control:request':
           if (iAmControllablePresenter) {
             setIncomingRequest({ requesterId: msg.requesterId, requesterName: msg.requesterName });
           }
           break;
 
-        case "control:offer":
+        case 'control:offer':
           // Only the current Presenter may offer, and only for a controllable share.
           if (controllable && !iAmPresenting && sender === presenterIdentity) {
             setIncomingOffer({ presenterIdentity: sender, presenterName: presenterName || sender });
           }
           break;
 
-        case "control:accept":
+        case 'control:accept':
           if (outgoingOffer && sender === outgoingOffer.requesterId) {
             clearOutgoingOffer();
             void doGrant(outgoingOffer);
           }
           break;
 
-        case "control:decline":
+        case 'control:decline':
           if (outgoingRequest && sender === outgoingRequest.presenterIdentity) {
-            showOutcome({ kind: "request-declined", name: outgoingRequest.presenterName });
+            showOutcome({ kind: 'request-declined', name: outgoingRequest.presenterName });
             clearOutgoingRequest();
           }
           if (outgoingOffer && sender === outgoingOffer.requesterId) {
-            showOutcome({ kind: "offer-declined", name: outgoingOffer.requesterName });
+            showOutcome({ kind: 'offer-declined', name: outgoingOffer.requesterName });
             clearOutgoingOffer();
           }
           if (iAmControllablePresenter && incomingRequest && sender === incomingRequest.requesterId) {
@@ -143,7 +143,7 @@ export function useRemoteControl({
           }
           break;
 
-        case "control:grant":
+        case 'control:grant':
           // Only the Presenter's grant naming me makes me the Controller.
           if (sender === presenterIdentity && msg.controllerId === localParticipant.identity) {
             clearOutgoingRequest();
@@ -156,21 +156,21 @@ export function useRemoteControl({
           }
           break;
 
-        case "control:revoke":
+        case 'control:revoke':
           if (controlling && sender === controlling.presenterIdentity) {
-            showOutcome({ kind: "revoked", name: controlling.presenterName });
+            showOutcome({ kind: 'revoked', name: controlling.presenterName });
             setControlling(null);
           }
           break;
 
-        case "control:release":
+        case 'control:release':
           if (controller && sender === controller.requesterId) {
-            showOutcome({ kind: "released", name: controller.requesterName });
+            showOutcome({ kind: 'released', name: controller.requesterName });
             setController(null);
           }
           break;
 
-        case "control:clipboard":
+        case 'control:clipboard':
           // Agent → controller leg of the session clipboard sync. Best-effort:
           // the write fails silently if the document lost focus or permission.
           if (controlling && sender === controlling.agentIdentity) {
@@ -250,14 +250,14 @@ export function useRemoteControl({
     if (!controllable || iAmPresenting || !presenterIdentity || controlling) return;
     await sendControlMessage(localParticipant, [presenterIdentity], {
       v: 1,
-      type: "control:request",
+      type: 'control:request',
       requesterId: localParticipant.identity,
       requesterName: localParticipant.name || localParticipant.identity,
     });
     setOutgoingRequest({ presenterIdentity, presenterName: presenterName || presenterIdentity });
     requestTimerRef.current = setTimeout(() => {
       setOutgoingRequest((prev) => {
-        if (prev) showOutcome({ kind: "request-timed-out", name: prev.presenterName });
+        if (prev) showOutcome({ kind: 'request-timed-out', name: prev.presenterName });
         return null;
       });
       requestTimerRef.current = null;
@@ -267,27 +267,27 @@ export function useRemoteControl({
   const cancelRequest = useCallback(async () => {
     if (outgoingRequest) {
       // Tell the presenter so their prompt clears too.
-      await sendControlMessage(localParticipant, [outgoingRequest.presenterIdentity], { v: 1, type: "control:decline" });
+      await sendControlMessage(localParticipant, [outgoingRequest.presenterIdentity], { v: 1, type: 'control:decline' });
     }
     clearOutgoingRequest();
   }, [outgoingRequest, localParticipant]);
 
   const acceptOffer = useCallback(async () => {
     if (!incomingOffer) return;
-    await sendControlMessage(localParticipant, [incomingOffer.presenterIdentity], { v: 1, type: "control:accept" });
+    await sendControlMessage(localParticipant, [incomingOffer.presenterIdentity], { v: 1, type: 'control:accept' });
     setIncomingOffer(null);
     // The grant follows from the presenter; nothing to show until it lands.
   }, [incomingOffer, localParticipant]);
 
   const declineOffer = useCallback(async () => {
     if (!incomingOffer) return;
-    await sendControlMessage(localParticipant, [incomingOffer.presenterIdentity], { v: 1, type: "control:decline" });
+    await sendControlMessage(localParticipant, [incomingOffer.presenterIdentity], { v: 1, type: 'control:decline' });
     setIncomingOffer(null);
   }, [incomingOffer, localParticipant]);
 
   const release = useCallback(async () => {
     if (!controlling) return;
-    await sendControlMessage(localParticipant, [controlling.agentIdentity, controlling.presenterIdentity], { v: 1, type: "control:release" });
+    await sendControlMessage(localParticipant, [controlling.agentIdentity, controlling.presenterIdentity], { v: 1, type: 'control:release' });
     setControlling(null);
   }, [controlling, localParticipant]);
 
@@ -301,29 +301,29 @@ export function useRemoteControl({
 
   const declineRequest = useCallback(async () => {
     if (!incomingRequest) return;
-    await sendControlMessage(localParticipant, [incomingRequest.requesterId], { v: 1, type: "control:decline" });
+    await sendControlMessage(localParticipant, [incomingRequest.requesterId], { v: 1, type: 'control:decline' });
     setIncomingRequest(null);
   }, [incomingRequest, localParticipant]);
 
   const offerControl = useCallback(
     async (targetId: string, targetName: string) => {
       if (!iAmControllablePresenter) return;
-      await sendControlMessage(localParticipant, [targetId], { v: 1, type: "control:offer" });
+      await sendControlMessage(localParticipant, [targetId], { v: 1, type: 'control:offer' });
       setOutgoingOffer({ requesterId: targetId, requesterName: targetName });
       offerTimerRef.current = setTimeout(() => {
         setOutgoingOffer((prev) => {
-          if (prev) showOutcome({ kind: "offer-timed-out", name: prev.requesterName });
+          if (prev) showOutcome({ kind: 'offer-timed-out', name: prev.requesterName });
           return null;
         });
         offerTimerRef.current = null;
       }, REQUEST_TIMEOUT_MS);
     },
-    [iAmControllablePresenter, localParticipant]
+    [iAmControllablePresenter, localParticipant],
   );
 
   const revoke = useCallback(async () => {
     if (!controller || !agentIdentity) return;
-    await sendControlMessage(localParticipant, [agentIdentity, controller.requesterId], { v: 1, type: "control:revoke" });
+    await sendControlMessage(localParticipant, [agentIdentity, controller.requesterId], { v: 1, type: 'control:revoke' });
     setController(null);
   }, [controller, agentIdentity, localParticipant]);
 
@@ -332,17 +332,17 @@ export function useRemoteControl({
   const sendInput = useCallback(
     (event: ControlInputEvent) => {
       if (!controlling) return;
-      void sendControlMessage(localParticipant, [controlling.agentIdentity], { v: 1, type: "control:input", event });
+      void sendControlMessage(localParticipant, [controlling.agentIdentity], { v: 1, type: 'control:input', event });
     },
-    [controlling, localParticipant]
+    [controlling, localParticipant],
   );
 
   const sendClipboard = useCallback(
     (text: string) => {
       if (!controlling) return;
-      void sendControlMessage(localParticipant, [controlling.agentIdentity], { v: 1, type: "control:clipboard", text });
+      void sendControlMessage(localParticipant, [controlling.agentIdentity], { v: 1, type: 'control:clipboard', text });
     },
-    [controlling, localParticipant]
+    [controlling, localParticipant],
   );
 
   // Cleanup timers on unmount.

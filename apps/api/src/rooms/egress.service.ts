@@ -1,11 +1,6 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  EgressClient,
-  EncodedFileOutput,
-  EncodedFileType,
-  S3Upload,
-} from 'livekit-server-sdk';
+import { EgressClient, EncodedFileOutput, EncodedFileType, S3Upload } from 'livekit-server-sdk';
 import { StorageService } from './storage.service';
 
 // Wraps the LiveKit Egress server SDK to record the composited room to MP4 and
@@ -36,19 +31,12 @@ export class EgressService {
   }
 
   private get client(): EgressClient {
-    return (this._client ??= new EgressClient(
-      this.httpUrl,
-      this.apiKey,
-      this.apiSecret,
-    ));
+    return (this._client ??= new EgressClient(this.httpUrl, this.apiKey, this.apiSecret));
   }
 
   // Start a room-composite recording. The bucket must already exist (the caller
   // ensures it). Returns the egress id + the object key the file will land at.
-  async startRoomComposite(
-    slug: string,
-    objectKey: string,
-  ): Promise<{ egressId: string }> {
+  async startRoomComposite(slug: string, objectKey: string): Promise<{ egressId: string }> {
     const output = new EncodedFileOutput({
       fileType: EncodedFileType.MP4,
       filepath: objectKey,

@@ -22,10 +22,7 @@ export const REDIS_CLIENT = 'REDIS_CLIENT';
         // REDIS_URL wins if set (prod compose); otherwise fall back to the
         // existing REDIS_HOST/REDIS_PORT convention from .env.example.
         const url =
-          config.get<string>('REDIS_URL') ??
-          `redis://${config.get<string>('REDIS_HOST') ?? 'localhost'}:${
-            config.get<string>('REDIS_PORT') ?? '6379'
-          }`;
+          config.get<string>('REDIS_URL') ?? `redis://${config.get<string>('REDIS_HOST') ?? 'localhost'}:${config.get<string>('REDIS_PORT') ?? '6379'}`;
         return new Redis(url, {
           // Don't crash the process on a transient Redis blip; ioredis retries.
           maxRetriesPerRequest: 3,

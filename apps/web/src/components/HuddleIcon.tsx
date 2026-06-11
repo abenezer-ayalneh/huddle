@@ -1,8 +1,8 @@
-import { type SVGProps } from "react";
+import { type SVGProps } from 'react';
 
 export default function HuddleIcon(props: SVGProps<SVGSVGElement>) {
-  const magenta = "#d946a8";
-  const cyan = "#5ce0d6";
+  const magenta = '#d946a8';
+  const cyan = '#5ce0d6';
 
   // 4 dots on a ring, radius 28 from center (64×64 viewBox)
   const r = 28;

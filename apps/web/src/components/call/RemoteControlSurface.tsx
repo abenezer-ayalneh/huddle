@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef } from "react";
-import type { ControlInputEvent, KeyModifier, MouseButton } from "@/lib/controlProtocol";
+import { useCallback, useEffect, useRef } from 'react';
+import type { ControlInputEvent, KeyModifier, MouseButton } from '@/lib/controlProtocol';
 
 // Input-capture overlay rendered over the presented video while I'm the
 // Controller. Translates local pointer/keyboard activity into control:input
@@ -15,7 +15,7 @@ import type { ControlInputEvent, KeyModifier, MouseButton } from "@/lib/controlP
 // the key is held). Paste-through: Cmd/Ctrl+V first ships the local clipboard
 // so the remote paste has the controller's content.
 
-const BUTTONS: Record<number, MouseButton> = { 0: "left", 1: "middle", 2: "right" };
+const BUTTONS: Record<number, MouseButton> = { 0: 'left', 1: 'middle', 2: 'right' };
 
 export default function RemoteControlSurface({
   sendInput,
@@ -34,7 +34,7 @@ export default function RemoteControlSurface({
   // Map a client point to normalized video-content coordinates. While
   // dragging, clamp instead of dropping so edge-drags reach the remote edges.
   const toNorm = useCallback((clientX: number, clientY: number, clamp: boolean): { x: number; y: number } | null => {
-    const video = ref.current?.parentElement?.querySelector("video");
+    const video = ref.current?.parentElement?.querySelector('video');
     if (!video) return null;
     const rect = video.getBoundingClientRect();
     const vw = video.videoWidth;
@@ -59,11 +59,11 @@ export default function RemoteControlSurface({
   const flushFrame = useCallback(() => {
     rafId.current = null;
     if (pendingMove.current) {
-      sendInput({ kind: "move", ...pendingMove.current });
+      sendInput({ kind: 'move', ...pendingMove.current });
       pendingMove.current = null;
     }
     if (pendingScroll.current) {
-      sendInput({ kind: "scroll", ...pendingScroll.current });
+      sendInput({ kind: 'scroll', ...pendingScroll.current });
       pendingScroll.current = null;
     }
   }, [sendInput]);
@@ -79,7 +79,7 @@ export default function RemoteControlSurface({
       pendingMove.current = p;
       scheduleFlush();
     },
-    [toNorm, scheduleFlush]
+    [toNorm, scheduleFlush],
   );
 
   const handlePointerDown = useCallback(
@@ -90,9 +90,9 @@ export default function RemoteControlSurface({
       e.preventDefault();
       dragging.current = true;
       e.currentTarget.setPointerCapture(e.pointerId);
-      sendInput({ kind: "down", ...p, button });
+      sendInput({ kind: 'down', ...p, button });
     },
-    [toNorm, sendInput]
+    [toNorm, sendInput],
   );
 
   const handlePointerUp = useCallback(
@@ -101,9 +101,9 @@ export default function RemoteControlSurface({
       const p = toNorm(e.clientX, e.clientY, true);
       dragging.current = false;
       if (!button || !p) return;
-      sendInput({ kind: "up", ...p, button });
+      sendInput({ kind: 'up', ...p, button });
     },
-    [toNorm, sendInput]
+    [toNorm, sendInput],
   );
 
   // Wheel needs a non-passive native listener to swallow local scrolling.
@@ -122,18 +122,18 @@ export default function RemoteControlSurface({
       };
       scheduleFlush();
     }
-    el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
   }, [toNorm, scheduleFlush]);
 
   // Keyboard goes to the remote machine while the surface is mounted.
   useEffect(() => {
     function modifiers(e: KeyboardEvent): KeyModifier[] {
       const mods: KeyModifier[] = [];
-      if (e.shiftKey) mods.push("shift");
-      if (e.ctrlKey) mods.push("ctrl");
-      if (e.altKey) mods.push("alt");
-      if (e.metaKey) mods.push("meta");
+      if (e.shiftKey) mods.push('shift');
+      if (e.ctrlKey) mods.push('ctrl');
+      if (e.altKey) mods.push('alt');
+      if (e.metaKey) mods.push('meta');
       return mods;
     }
 
@@ -145,8 +145,8 @@ export default function RemoteControlSurface({
       // Paste-through: ship the local clipboard first, so the remote paste
       // pastes the controller's content (controller → controlled only here;
       // the agent pushes the other direction).
-      const sendKey = () => sendInput({ kind: "key", action: "down", key: e.key, code: e.code, modifiers: modifiers(e) });
-      if ((e.metaKey || e.ctrlKey) && e.code === "KeyV" && navigator.clipboard?.readText) {
+      const sendKey = () => sendInput({ kind: 'key', action: 'down', key: e.key, code: e.code, modifiers: modifiers(e) });
+      if ((e.metaKey || e.ctrlKey) && e.code === 'KeyV' && navigator.clipboard?.readText) {
         navigator.clipboard
           .readText()
           .then((text) => sendClipboard(text))
@@ -160,25 +160,25 @@ export default function RemoteControlSurface({
     function onKeyUp(e: KeyboardEvent) {
       e.preventDefault();
       pressedKeys.current.delete(e.code);
-      sendInput({ kind: "key", action: "up", key: e.key, code: e.code, modifiers: modifiers(e) });
+      sendInput({ kind: 'key', action: 'up', key: e.key, code: e.code, modifiers: modifiers(e) });
     }
 
     // If the controller tabs away mid-press, lift every held key so the
     // remote machine isn't left with a stuck modifier.
     function onBlur() {
       for (const { key, code } of pressedKeys.current.values()) {
-        sendInput({ kind: "key", action: "up", key, code, modifiers: [] });
+        sendInput({ kind: 'key', action: 'up', key, code, modifiers: [] });
       }
       pressedKeys.current.clear();
     }
 
-    window.addEventListener("keydown", onKeyDown, true);
-    window.addEventListener("keyup", onKeyUp, true);
-    window.addEventListener("blur", onBlur);
+    window.addEventListener('keydown', onKeyDown, true);
+    window.addEventListener('keyup', onKeyUp, true);
+    window.addEventListener('blur', onBlur);
     return () => {
-      window.removeEventListener("keydown", onKeyDown, true);
-      window.removeEventListener("keyup", onKeyUp, true);
-      window.removeEventListener("blur", onBlur);
+      window.removeEventListener('keydown', onKeyDown, true);
+      window.removeEventListener('keyup', onKeyUp, true);
+      window.removeEventListener('blur', onBlur);
       onBlur(); // unmount = session over; don't leave keys held remotely
     };
   }, [sendInput, sendClipboard]);

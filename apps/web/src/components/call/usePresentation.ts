@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useLocalParticipant, useRoomContext, useTracks } from "@livekit/components-react";
-import { RoomEvent, Track, type RemoteParticipant } from "livekit-client";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { isAgentIdentity, presenterIdentityFor, sendControlMessage } from "@/lib/controlProtocol";
-import { PRESENT_TOPIC, decode, sendPresentMessage } from "@/lib/presentProtocol";
+import { useLocalParticipant, useRoomContext, useTracks } from '@livekit/components-react';
+import { RoomEvent, Track, type RemoteParticipant } from 'livekit-client';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { isAgentIdentity, presenterIdentityFor, sendControlMessage } from '@/lib/controlProtocol';
+import { PRESENT_TOPIC, decode, sendPresentMessage } from '@/lib/presentProtocol';
 
 export type OutgoingRequest = {
   presenterIdentity: string;
@@ -17,10 +17,10 @@ export type IncomingRequest = {
 };
 
 export type PresentationOutcome =
-  | { kind: "declined"; name: string }
-  | { kind: "timed-out"; name: string }
-  | { kind: "yielded"; name: string }
-  | { kind: "force-taken" };
+  | { kind: 'declined'; name: string }
+  | { kind: 'timed-out'; name: string }
+  | { kind: 'yielded'; name: string }
+  | { kind: 'force-taken' };
 
 const REQUEST_TIMEOUT_MS = 30_000;
 const OUTCOME_DISPLAY_MS = 4_000;
@@ -77,7 +77,7 @@ export function usePresentation(isHost: boolean) {
   const stopMyShare = useCallback(async () => {
     // An agent-published share isn't a browser track — tell the agent to stop.
     if (agentIdentity && presenterIdentityFor(agentIdentity) === localParticipant.identity) {
-      await sendControlMessage(localParticipant, [agentIdentity], { v: 1, type: "control:stop-present" });
+      await sendControlMessage(localParticipant, [agentIdentity], { v: 1, type: 'control:stop-present' });
       return;
     }
     await localParticipant.setScreenShareEnabled(false);
@@ -119,7 +119,7 @@ export function usePresentation(isHost: boolean) {
       if (!msg) return;
 
       switch (msg.type) {
-        case "present:request":
+        case 'present:request':
           if (iAmPresenting) {
             setIncoming({
               requesterId: msg.requesterId,
@@ -128,31 +128,31 @@ export function usePresentation(isHost: boolean) {
           }
           break;
 
-        case "present:yield":
+        case 'present:yield':
           if (outgoing) {
             clearOutgoing();
             showOutcome({
-              kind: "yielded",
+              kind: 'yielded',
               name: outgoing.presenterName,
             });
             pendingStartShare.current = true;
           }
           break;
 
-        case "present:decline":
+        case 'present:decline':
           if (outgoing) {
             showOutcome({
-              kind: "declined",
+              kind: 'declined',
               name: outgoing.presenterName,
             });
             clearOutgoing();
           }
           break;
 
-        case "present:force-take":
+        case 'present:force-take':
           if (iAmPresenting) {
             stopMyShare();
-            showOutcome({ kind: "force-taken" });
+            showOutcome({ kind: 'force-taken' });
             setIncoming(null);
           }
           break;
@@ -183,7 +183,7 @@ export function usePresentation(isHost: boolean) {
     if (!presenterIdentity || iAmPresenting) return;
 
     await sendPresentMessage(localParticipant, presenterIdentity, {
-      type: "present:request",
+      type: 'present:request',
       requesterId: localParticipant.identity,
       requesterName: localParticipant.name || localParticipant.identity,
     });
@@ -196,7 +196,7 @@ export function usePresentation(isHost: boolean) {
     outgoingTimerRef.current = setTimeout(() => {
       setOutgoing((prev) => {
         if (prev) {
-          showOutcome({ kind: "timed-out", name: prev.presenterName });
+          showOutcome({ kind: 'timed-out', name: prev.presenterName });
         }
         return null;
       });
@@ -211,7 +211,7 @@ export function usePresentation(isHost: boolean) {
   const yieldPresentation = useCallback(async () => {
     if (!incoming) return;
     await sendPresentMessage(localParticipant, incoming.requesterId, {
-      type: "present:yield",
+      type: 'present:yield',
     });
     setIncoming(null);
     await stopMyShare();
@@ -220,7 +220,7 @@ export function usePresentation(isHost: boolean) {
   const declinePresentation = useCallback(async () => {
     if (!incoming) return;
     await sendPresentMessage(localParticipant, incoming.requesterId, {
-      type: "present:decline",
+      type: 'present:decline',
     });
     setIncoming(null);
   }, [incoming, localParticipant]);
@@ -228,7 +228,7 @@ export function usePresentation(isHost: boolean) {
   const forceTake = useCallback(async () => {
     if (!presenterIdentity || !isHost) return;
     await sendPresentMessage(localParticipant, presenterIdentity, {
-      type: "present:force-take",
+      type: 'present:force-take',
     });
     pendingStartShare.current = true;
   }, [presenterIdentity, isHost, localParticipant]);

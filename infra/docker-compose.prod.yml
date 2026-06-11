@@ -15,8 +15,8 @@ services:
     image: caddy:2-alpine
     restart: always
     ports:
-      - "80:80"
-      - "443:443"
+      - '80:80'
+      - '443:443'
     environment:
       ACME_EMAIL: ${ACME_EMAIL}
       APP_DOMAIN: ${APP_DOMAIN}
@@ -46,15 +46,15 @@ services:
       NODE_ENV: production
       # Container-internal listen port (NOT the published host port). Next reads
       # PORT; the ports mapping below uses the same value so they can't drift.
-      PORT: "${WEB_PORT:-3000}"
-      HOSTNAME: "0.0.0.0" # Next standalone must bind all interfaces (not just localhost)
+      PORT: '${WEB_PORT:-3000}'
+      HOSTNAME: '0.0.0.0' # Next standalone must bind all interfaces (not just localhost)
     # Published on localhost so a HOST-installed reverse proxy (e.g. a global
     # Caddy) can reach it. Harmless when the containerized `caddy` service is used
     # instead (it reaches `web` by service name). Never bound to a public iface.
     # ${WEB_HOST_PORT} is the host port Caddy proxies to (default 3001); the
     # container side is the app's internal ${WEB_PORT} (default 3000).
     ports:
-      - "127.0.0.1:${WEB_HOST_PORT:-3001}:${WEB_PORT:-3000}"
+      - '127.0.0.1:${WEB_HOST_PORT:-3001}:${WEB_PORT:-3000}'
     depends_on:
       - api
 
@@ -77,7 +77,7 @@ services:
     # container side is the app's internal ${API_PORT} (default 3001) — the same
     # API_PORT the NestJS app binds (from .env.prod), so the two stay in sync.
     ports:
-      - "127.0.0.1:${API_HOST_PORT:-3002}:${API_PORT:-3001}"
+      - '127.0.0.1:${API_HOST_PORT:-3002}:${API_PORT:-3001}'
     depends_on:
       postgres:
         condition: service_healthy
@@ -96,8 +96,8 @@ services:
       - ./livekit.prod.yaml:/etc/livekit.yaml:ro
       - ./turn-certs:/etc/livekit/turn:ro # provision cert.pem/key.pem here
     ports:
-      - "3478:3478/udp" # TURN/UDP
-      - "5349:5349" # TURN/TLS
+      - '3478:3478/udp' # TURN/UDP
+      - '5349:5349' # TURN/TLS
 
   egress:
     restart: always

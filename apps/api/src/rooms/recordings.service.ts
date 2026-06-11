@@ -1,9 +1,4 @@
-import {
-  ConflictException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { EgressInfo } from 'livekit-server-sdk';
 import { EgressStatus } from 'livekit-server-sdk';
 import type { Readable } from 'node:stream';
@@ -85,9 +80,7 @@ export class RecordingsService {
   // Every recording across all rooms a signed-in host owns. Each carries its Room
   // Code and host key so the lobby's /recordings view can download via the
   // existing host-key endpoint (the owner is entitled to their own host keys).
-  async listMine(
-    hostUserId: string,
-  ): Promise<{ recordings: MyRecordingSummary[] }> {
+  async listMine(hostUserId: string): Promise<{ recordings: MyRecordingSummary[] }> {
     const rows = await this.recordings.listByHostUser(hostUserId);
     return {
       recordings: rows.map((r) => ({
@@ -99,10 +92,7 @@ export class RecordingsService {
   }
 
   // Stream a finished recording back to the host for download.
-  async download(
-    slug: string,
-    recordingId: string,
-  ): Promise<{ body: Readable; size?: number; filename: string }> {
+  async download(slug: string, recordingId: string): Promise<{ body: Readable; size?: number; filename: string }> {
     const { rec } = await this.requireRecording(slug, recordingId);
     if (rec.status !== 'completed') {
       throw new ConflictException('Recording is not ready yet');
@@ -118,15 +108,12 @@ export class RecordingsService {
 
     const status = this.mapStatus(info.status);
     const file = info.fileResults?.[0];
-    const ended =
-      status === 'completed' || status === 'failed' || status === 'aborted';
+    const ended = status === 'completed' || status === 'failed' || status === 'aborted';
 
     await this.recordings.updateByEgressId(info.egressId, {
       status,
       ...(file?.size != null ? { sizeBytes: file.size } : {}),
-      ...(file?.duration != null
-        ? { durationMs: Math.round(Number(file.duration) / 1_000_000) }
-        : {}),
+      ...(file?.duration != null ? { durationMs: Math.round(Number(file.duration) / 1_000_000) } : {}),
       ...(info.error ? { error: info.error } : {}),
       ...(ended ? { endedAt: new Date() } : {}),
     });

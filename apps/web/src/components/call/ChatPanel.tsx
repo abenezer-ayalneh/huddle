@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import type { ReceivedChatMessage } from "@livekit/components-react";
-import { Send, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import type { ReceivedChatMessage } from '@livekit/components-react';
+import { Send, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 // Custom in-call chat (replaces the chat panel that shipped inside LiveKit's
 // <VideoConference>). Messages ride the room data channel; history is in-memory
@@ -22,7 +22,7 @@ export default function ChatPanel({
   onSend: (text: string) => Promise<unknown>;
   isSending: boolean;
 }) {
-  const [draft, setDraft] = useState("");
+  const [draft, setDraft] = useState('');
   const listRef = useRef<HTMLDivElement>(null);
 
   // Keep the newest message in view as they arrive / on open.
@@ -37,7 +37,7 @@ export default function ChatPanel({
   const submit = async () => {
     const text = draft.trim();
     if (!text || isSending) return;
-    setDraft("");
+    setDraft('');
     try {
       await onSend(text);
     } catch {
@@ -67,19 +67,19 @@ export default function ChatPanel({
         ) : (
           messages.map((m) => {
             const mine = m.from?.isLocal ?? false;
-            const who = m.from?.name || m.from?.identity || "Guest";
+            const who = m.from?.name || m.from?.identity || 'Guest';
             return (
-              <div key={`${m.timestamp}-${m.from?.identity ?? ""}`} className={`flex flex-col ${mine ? "items-end" : "items-start"}`}>
+              <div key={`${m.timestamp}-${m.from?.identity ?? ''}`} className={`flex flex-col ${mine ? 'items-end' : 'items-start'}`}>
                 <span className="mb-0.5 px-1 text-[11px] text-white/45">
-                  {mine ? "You" : who} ·{" "}
+                  {mine ? 'You' : who} ·{' '}
                   {new Date(m.timestamp).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
+                    hour: '2-digit',
+                    minute: '2-digit',
                   })}
                 </span>
                 <span
                   className={`max-w-[85%] break-words rounded-2xl px-3 py-2 ${
-                    mine ? "rounded-br-sm bg-magenta/20 text-white ring-1 ring-magenta/40" : "rounded-bl-sm bg-white/8 text-white/90 ring-1 ring-white/10"
+                    mine ? 'rounded-br-sm bg-magenta/20 text-white ring-1 ring-magenta/40' : 'rounded-bl-sm bg-white/8 text-white/90 ring-1 ring-white/10'
                   }`}
                 >
                   {m.message}

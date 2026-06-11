@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import type { LocalUserChoices } from "@livekit/components-react";
-import { ChevronDown, Mic, MicOff, Video, VideoOff } from "lucide-react";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { loadDevicePreferences, saveDevicePreference } from "@/lib/devicePreferences";
+import type { LocalUserChoices } from '@livekit/components-react';
+import { ChevronDown, Mic, MicOff, Video, VideoOff } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { loadDevicePreferences, saveDevicePreference } from '@/lib/devicePreferences';
 
 type Defaults = {
   username?: string;
@@ -20,7 +20,7 @@ export default function PreJoinScreen({
   onSubmit,
   onError,
   submitLabel,
-  heading = "Ready to join?",
+  heading = 'Ready to join?',
   subheading,
   requireName = false,
   children,
@@ -34,13 +34,13 @@ export default function PreJoinScreen({
   requireName?: boolean;
   children?: ReactNode;
 }) {
-  const [username, setUsername] = useState(defaults.username ?? "");
+  const [username, setUsername] = useState(defaults.username ?? '');
   const [videoEnabled, setVideoEnabled] = useState(defaults.videoEnabled ?? true);
   const [audioEnabled, setAudioEnabled] = useState(defaults.audioEnabled ?? true);
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
-  const [videoDeviceId, setVideoDeviceId] = useState("");
-  const [audioDeviceId, setAudioDeviceId] = useState("");
+  const [videoDeviceId, setVideoDeviceId] = useState('');
+  const [audioDeviceId, setAudioDeviceId] = useState('');
   const [note, setNote] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -60,13 +60,13 @@ export default function PreJoinScreen({
   const loadDevices = useCallback(async (preferredAudioId?: string) => {
     try {
       const all = await navigator.mediaDevices.enumerateDevices();
-      const audio = all.filter((d) => d.kind === "audioinput");
-      setVideoDevices(all.filter((d) => d.kind === "videoinput"));
+      const audio = all.filter((d) => d.kind === 'audioinput');
+      setVideoDevices(all.filter((d) => d.kind === 'videoinput'));
       setAudioDevices(audio);
       // Default the mic to the remembered Device Preference when still
       // plugged in, else the first input, once labels are available.
       const preferred = preferredAudioId && audio.some((d) => d.deviceId === preferredAudioId) ? preferredAudioId : undefined;
-      setAudioDeviceId((prev) => prev || preferred || audio[0]?.deviceId || "");
+      setAudioDeviceId((prev) => prev || preferred || audio[0]?.deviceId || '');
     } catch {
       /* enumeration can fail before permission; ignore */
     }
@@ -88,11 +88,11 @@ export default function PreJoinScreen({
         setNote(null);
       } catch (e) {
         setVideoEnabled(false);
-        setNote("Camera unavailable — you can still join without video.");
+        setNote('Camera unavailable — you can still join without video.');
         onError?.(e as Error);
       }
     },
-    [stopStream, attach, onError]
+    [stopStream, attach, onError],
   );
 
   // Mount: request both tracks once to unlock device labels, keep video for the
@@ -119,7 +119,7 @@ export default function PreJoinScreen({
       } catch (e) {
         if (cancelled) return;
         setVideoEnabled(false);
-        setNote("Camera/mic unavailable — you can still join without them.");
+        setNote('Camera/mic unavailable — you can still join without them.');
         onError?.(e as Error);
         await loadDevices(prefs.audioinput);
       }
@@ -144,15 +144,15 @@ export default function PreJoinScreen({
   const changeCamera = useCallback(
     (id: string) => {
       setVideoDeviceId(id);
-      saveDevicePreference("videoinput", id);
+      saveDevicePreference('videoinput', id);
       if (videoEnabled) void acquireVideo(id);
     },
-    [videoEnabled, acquireVideo]
+    [videoEnabled, acquireVideo],
   );
 
   const changeMic = useCallback((id: string) => {
     setAudioDeviceId(id);
-    saveDevicePreference("audioinput", id);
+    saveDevicePreference('audioinput', id);
   }, []);
 
   const canJoin = !requireName || username.trim().length > 0;
@@ -200,7 +200,7 @@ export default function PreJoinScreen({
             <input
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && submit()}
+              onKeyDown={(e) => e.key === 'Enter' && submit()}
               placeholder="Your name"
               autoFocus
               className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2.5 text-white outline-none transition-colors placeholder:text-white/40 focus:border-cyan/60 focus:ring-2 focus:ring-cyan/30"
@@ -212,10 +212,10 @@ export default function PreJoinScreen({
               on={audioEnabled}
               onIcon={Mic}
               offIcon={MicOff}
-              label={audioEnabled ? "Mic on" : "Mic off"}
+              label={audioEnabled ? 'Mic on' : 'Mic off'}
               onClick={() => setAudioEnabled((v) => !v)}
             />
-            <ToggleButton on={videoEnabled} onIcon={Video} offIcon={VideoOff} label={videoEnabled ? "Camera on" : "Camera off"} onClick={toggleVideo} />
+            <ToggleButton on={videoEnabled} onIcon={Video} offIcon={VideoOff} label={videoEnabled ? 'Camera on' : 'Camera off'} onClick={toggleVideo} />
           </div>
 
           <DeviceSelect icon={Video} value={videoDeviceId} devices={videoDevices} fallbackLabel="Camera" onChange={changeCamera} />
@@ -269,7 +269,7 @@ function ToggleButton({
       title={label}
       aria-label={label}
       className={`flex h-12 w-12 items-center justify-center rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 [&>svg]:h-5 [&>svg]:w-5 ${
-        on ? "bg-cyan/15 text-cyan ring-1 ring-cyan/40 hover:bg-cyan/25" : "bg-magenta/15 text-magenta ring-1 ring-magenta/40 hover:bg-magenta/25"
+        on ? 'bg-cyan/15 text-cyan ring-1 ring-cyan/40 hover:bg-cyan/25' : 'bg-magenta/15 text-magenta ring-1 ring-magenta/40 hover:bg-magenta/25'
       }`}
     >
       <Icon />

@@ -1,6 +1,6 @@
-@import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -12,7 +12,7 @@
   --font-sans: var(--font-rajdhani);
   --font-display: var(--font-exo2);
   --font-heading: var(--font-exo2);
-  --font-mono: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, monospace;
+  --font-mono: ui-monospace, 'SF Mono', 'SFMono-Regular', Menlo, monospace;
 
   /* Brand neon accents. */
   --color-magenta: var(--magenta);
@@ -57,16 +57,16 @@
 }
 
 button,
-[role="button"],
+[role='button'],
 a,
 summary,
 select,
 label[for],
-input[type="checkbox"],
-input[type="radio"],
-input[type="submit"],
-input[type="reset"],
-input[type="button"] {
+input[type='checkbox'],
+input[type='radio'],
+input[type='submit'],
+input[type='reset'],
+input[type='button'] {
   cursor: pointer;
 }
 
@@ -220,7 +220,7 @@ input[type="button"] {
 }
 
 @property --cyber-angle {
-  syntax: "<angle>";
+  syntax: '<angle>';
   initial-value: 0deg;
   inherits: false;
 }
@@ -232,7 +232,7 @@ input[type="button"] {
 
 /* Scanline overlay — reserved for the active speaker's tile only. */
 .scanlines::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -246,7 +246,7 @@ input[type="button"] {
 }
 .pulse-ring::before,
 .pulse-ring::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   border-radius: 9999px;
@@ -275,7 +275,7 @@ input[type="button"] {
   }
 }
 @property --knock-angle {
-  syntax: "<angle>";
+  syntax: '<angle>';
   initial-value: 0deg;
   inherits: false;
 }
@@ -284,7 +284,7 @@ input[type="button"] {
   isolation: isolate;
 }
 .knock-border-spin::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: -2px;
   border-radius: inherit;
@@ -294,7 +294,7 @@ input[type="button"] {
   z-index: -1;
 }
 .knock-border-spin::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;

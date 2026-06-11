@@ -1,30 +1,10 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Header,
-  Param,
-  Post,
-  Res,
-  StreamableFile,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Header, Param, Post, Res, StreamableFile, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthGuard, SessionUser, type AuthUser } from '../auth/auth.guard';
 import { ControlAgentService } from './control-agent.service';
-import {
-  CreateRoomDto,
-  KnockDto,
-  MuteDto,
-  MuteOnEntryDto,
-} from './dto/rooms.dto';
+import { CreateRoomDto, KnockDto, MuteDto, MuteOnEntryDto } from './dto/rooms.dto';
 import { HostGuard } from './host.guard';
-import {
-  Participant,
-  ParticipantGuard,
-  type CallParticipant,
-} from './participant.guard';
+import { Participant, ParticipantGuard, type CallParticipant } from './participant.guard';
 import { RecordingsService } from './recordings.service';
 import { RoomsService } from './rooms.service';
 
@@ -85,10 +65,7 @@ export class RoomsController {
   // Agent. The agent redeems it at POST /control-agent/redeem.
   @UseGuards(ParticipantGuard)
   @Post(':room/control-agent-link')
-  controlAgentLink(
-    @Param('room') room: string,
-    @Participant() participant: CallParticipant,
-  ) {
+  controlAgentLink(@Param('room') room: string, @Participant() participant: CallParticipant) {
     return this.controlAgent.createLink(room, participant);
   }
 
@@ -154,11 +131,7 @@ export class RoomsController {
   @UseGuards(HostGuard)
   @Get(':room/recordings/:id/download')
   @Header('Content-Type', 'video/mp4')
-  async downloadRecording(
-    @Param('room') room: string,
-    @Param('id') id: string,
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<StreamableFile> {
+  async downloadRecording(@Param('room') room: string, @Param('id') id: string, @Res({ passthrough: true }) res: Response): Promise<StreamableFile> {
     const { body, size, filename } = await this.recordings.download(room, id);
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     if (size != null) res.setHeader('Content-Length', String(size));

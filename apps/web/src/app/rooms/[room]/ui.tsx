@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactNode } from 'react';
 
 // Full-bleed centered message used by the connecting / waiting / error screens.
 export function Centered({ children }: { children: ReactNode }) {

@@ -1,5 +1,5 @@
-import { type Participant, ParticipantEvent } from "livekit-client";
-import { useEffect, useState } from "react";
+import { type Participant, ParticipantEvent } from 'livekit-client';
+import { useEffect, useState } from 'react';
 
 // Reactive camera/mic enabled state for a participant. The LiveKit track-loop
 // hooks re-render on track add/remove, but mute toggles don't always propagate

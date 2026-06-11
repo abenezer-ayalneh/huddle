@@ -1,10 +1,4 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  Injectable,
-  UnauthorizedException,
-  createParamDecorator,
-} from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException, createParamDecorator } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { IncomingHttpHeaders } from 'node:http';
 import type { Request } from 'express';
@@ -51,9 +45,7 @@ export class AuthGuard implements CanActivate {
 }
 
 // Injects the signed-in user resolved by AuthGuard into a controller handler.
-export const SessionUser = createParamDecorator(
-  (_data: unknown, context: ExecutionContext): AuthUser => {
-    const req = context.switchToHttp().getRequest<RequestWithUser>();
-    return req.user as AuthUser;
-  },
-);
+export const SessionUser = createParamDecorator((_data: unknown, context: ExecutionContext): AuthUser => {
+  const req = context.switchToHttp().getRequest<RequestWithUser>();
+  return req.user as AuthUser;
+});

@@ -11,7 +11,7 @@
         box-sizing: border-box;
       }
       body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         background: #0f1117;
         color: #e4e4e7;
         display: flex;
@@ -254,43 +254,43 @@
       const { invoke } = window.__TAURI__.core;
       const { listen } = window.__TAURI__.event;
 
-      const permissionsEl = document.getElementById("permissions");
-      const setupEl = document.getElementById("setup");
-      const sharingEl = document.getElementById("sharing");
-      const monitorSelect = document.getElementById("monitor-select");
-      const statusEl = document.getElementById("status");
-      const confirmBtn = document.getElementById("btn-confirm");
-      const roomNameEl = document.getElementById("room-name");
-      const sharingRoomEl = document.getElementById("sharing-room");
-      const permContinueBtn = document.getElementById("btn-perm-continue");
+      const permissionsEl = document.getElementById('permissions');
+      const setupEl = document.getElementById('setup');
+      const sharingEl = document.getElementById('sharing');
+      const monitorSelect = document.getElementById('monitor-select');
+      const statusEl = document.getElementById('status');
+      const confirmBtn = document.getElementById('btn-confirm');
+      const roomNameEl = document.getElementById('room-name');
+      const sharingRoomEl = document.getElementById('sharing-room');
+      const permContinueBtn = document.getElementById('btn-perm-continue');
 
       function showScreen(id) {
-        document.querySelectorAll(".screen").forEach((el) => (el.style.display = "none"));
-        document.getElementById(id).style.display = "block";
+        document.querySelectorAll('.screen').forEach((el) => (el.style.display = 'none'));
+        document.getElementById(id).style.display = 'block';
       }
 
       function setStatus(msg, cls) {
         statusEl.textContent = msg;
-        statusEl.className = "status " + (cls || "");
+        statusEl.className = 'status ' + (cls || '');
       }
 
       function updatePermUI(perms) {
-        const screenIcon = document.getElementById("perm-screen-icon");
-        const accessIcon = document.getElementById("perm-access-icon");
-        const screenBtn = document.getElementById("btn-perm-screen");
-        const accessBtn = document.getElementById("btn-perm-access");
+        const screenIcon = document.getElementById('perm-screen-icon');
+        const accessIcon = document.getElementById('perm-access-icon');
+        const screenBtn = document.getElementById('btn-perm-screen');
+        const accessBtn = document.getElementById('btn-perm-access');
 
         if (perms.screenRecording) {
-          screenIcon.className = "perm-icon granted";
-          screenIcon.innerHTML = "&#10003;";
-          screenBtn.textContent = "Granted";
-          screenBtn.className = "perm-action done";
+          screenIcon.className = 'perm-icon granted';
+          screenIcon.innerHTML = '&#10003;';
+          screenBtn.textContent = 'Granted';
+          screenBtn.className = 'perm-action done';
         }
         if (perms.accessibility) {
-          accessIcon.className = "perm-icon granted";
-          accessIcon.innerHTML = "&#10003;";
-          accessBtn.textContent = "Granted";
-          accessBtn.className = "perm-action done";
+          accessIcon.className = 'perm-icon granted';
+          accessIcon.innerHTML = '&#10003;';
+          accessBtn.textContent = 'Granted';
+          accessBtn.className = 'perm-action done';
         }
 
         permContinueBtn.disabled = !(perms.screenRecording && perms.accessibility);
@@ -300,7 +300,7 @@
 
       async function checkAndShowPermissions() {
         try {
-          const perms = await invoke("check_permissions");
+          const perms = await invoke('check_permissions');
           updatePermUI(perms);
           if (perms.screenRecording && perms.accessibility) {
             clearInterval(permCheckInterval);
@@ -315,7 +315,7 @@
       async function init() {
         const allGranted = await checkAndShowPermissions();
         if (!allGranted) {
-          showScreen("permissions");
+          showScreen('permissions');
           permCheckInterval = setInterval(checkAndShowPermissions, 2000);
         } else {
           showSetup();
@@ -323,81 +323,81 @@
       }
 
       async function showSetup() {
-        showScreen("setup");
+        showScreen('setup');
         try {
-          const monitors = await invoke("list_monitors");
-          monitorSelect.innerHTML = "";
+          const monitors = await invoke('list_monitors');
+          monitorSelect.innerHTML = '';
           for (const m of monitors) {
-            const opt = document.createElement("option");
+            const opt = document.createElement('option');
             opt.value = m.id;
-            opt.textContent = `${m.name} (${m.width}×${m.height})${m.is_primary ? " — Primary" : ""}`;
+            opt.textContent = `${m.name} (${m.width}×${m.height})${m.is_primary ? ' — Primary' : ''}`;
             monitorSelect.appendChild(opt);
           }
           confirmBtn.disabled = monitors.length === 0;
         } catch (e) {
-          setStatus("Failed to list monitors: " + e, "error");
+          setStatus('Failed to list monitors: ' + e, 'error');
         }
 
         try {
-          const info = await invoke("get_session_info");
+          const info = await invoke('get_session_info');
           if (info) {
             roomNameEl.textContent = info.room;
           }
         } catch {}
       }
 
-      document.getElementById("btn-perm-screen").addEventListener("click", () => {
-        invoke("open_screen_recording_settings");
+      document.getElementById('btn-perm-screen').addEventListener('click', () => {
+        invoke('open_screen_recording_settings');
       });
-      document.getElementById("btn-perm-access").addEventListener("click", () => {
-        invoke("open_accessibility_settings");
+      document.getElementById('btn-perm-access').addEventListener('click', () => {
+        invoke('open_accessibility_settings');
       });
-      document.getElementById("btn-perm-cancel").addEventListener("click", () => {
-        invoke("cancel_session");
+      document.getElementById('btn-perm-cancel').addEventListener('click', () => {
+        invoke('cancel_session');
       });
-      permContinueBtn.addEventListener("click", () => {
+      permContinueBtn.addEventListener('click', () => {
         clearInterval(permCheckInterval);
         showSetup();
       });
 
-      confirmBtn.addEventListener("click", async () => {
+      confirmBtn.addEventListener('click', async () => {
         confirmBtn.disabled = true;
-        setStatus("Connecting…");
+        setStatus('Connecting…');
         try {
-          await invoke("start_sharing", { monitorId: parseInt(monitorSelect.value, 10) });
+          await invoke('start_sharing', { monitorId: parseInt(monitorSelect.value, 10) });
         } catch (e) {
-          setStatus("Failed: " + e, "error");
+          setStatus('Failed: ' + e, 'error');
           confirmBtn.disabled = false;
         }
       });
 
-      document.getElementById("btn-cancel").addEventListener("click", async () => {
-        await invoke("cancel_session");
+      document.getElementById('btn-cancel').addEventListener('click', async () => {
+        await invoke('cancel_session');
       });
 
-      document.getElementById("btn-stop").addEventListener("click", async () => {
-        await invoke("stop_sharing");
+      document.getElementById('btn-stop').addEventListener('click', async () => {
+        await invoke('stop_sharing');
       });
 
-      listen("session-ready", (e) => {
+      listen('session-ready', (e) => {
         roomNameEl.textContent = e.payload.room;
         confirmBtn.disabled = false;
-        setStatus("");
+        setStatus('');
       });
 
-      listen("sharing-started", (e) => {
-        showScreen("sharing");
-        sharingRoomEl.textContent = "Room: " + (e.payload.room || "");
+      listen('sharing-started', (e) => {
+        showScreen('sharing');
+        sharingRoomEl.textContent = 'Room: ' + (e.payload.room || '');
       });
 
-      listen("sharing-stopped", () => {
-        showScreen("setup");
+      listen('sharing-stopped', () => {
+        showScreen('setup');
         confirmBtn.disabled = false;
-        setStatus("Sharing ended", "");
+        setStatus('Sharing ended', '');
       });
 
-      listen("session-error", (e) => {
-        setStatus(e.payload.message || "Unknown error", "error");
+      listen('session-error', (e) => {
+        setStatus(e.payload.message || 'Unknown error', 'error');
         confirmBtn.disabled = false;
       });
 

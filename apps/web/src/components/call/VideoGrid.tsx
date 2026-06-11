@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useSpeakingParticipants, useTracks } from "@livekit/components-react";
-import { Track } from "livekit-client";
-import { useMemo } from "react";
-import { isAgentIdentity } from "@/lib/controlProtocol";
-import VideoTile from "./VideoTile";
+import { useSpeakingParticipants, useTracks } from '@livekit/components-react';
+import { Track } from 'livekit-client';
+import { useMemo } from 'react';
+import { isAgentIdentity } from '@/lib/controlProtocol';
+import VideoTile from './VideoTile';
 
 export default function VideoGrid({ presentationOverlay }: { presentationOverlay?: React.ReactNode }) {
   const tracks = useTracks(
@@ -12,7 +12,7 @@ export default function VideoGrid({ presentationOverlay }: { presentationOverlay
       { source: Track.Source.Camera, withPlaceholder: true },
       { source: Track.Source.ScreenShare, withPlaceholder: false },
     ],
-    { onlySubscribed: false }
+    { onlySubscribed: false },
   );
 
   const speaking = useSpeakingParticipants();
@@ -31,7 +31,7 @@ export default function VideoGrid({ presentationOverlay }: { presentationOverlay
 }
 
 function trackKey(trackRef: (typeof useTracks extends (...a: never[]) => infer R ? R : never)[number]) {
-  return `${trackRef.participant.identity}:${trackRef.source}:${trackRef.publication?.trackSid ?? "placeholder"}`;
+  return `${trackRef.participant.identity}:${trackRef.source}:${trackRef.publication?.trackSid ?? 'placeholder'}`;
 }
 
 function EqualGrid({ cameraTracks, activeIdentity }: { cameraTracks: ReturnType<typeof useTracks>; activeIdentity: string | undefined }) {
@@ -49,7 +49,7 @@ function EqualGrid({ cameraTracks, activeIdentity }: { cameraTracks: ReturnType<
         className="grid h-full w-full gap-3 sm:gap-4"
         style={{
           gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-          gridAutoRows: "1fr",
+          gridAutoRows: '1fr',
         }}
       >
         {cameraTracks.map((trackRef) => (

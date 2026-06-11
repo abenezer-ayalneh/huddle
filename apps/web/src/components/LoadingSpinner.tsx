@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { type SVGProps } from "react";
+import { type SVGProps } from 'react';
 
 export default function LoadingSpinner(props: SVGProps<SVGSVGElement>) {
-  const magenta = "#d946a8";
-  const cyan = "#5ce0d6";
+  const magenta = '#d946a8';
+  const cyan = '#5ce0d6';
 
   const c = 32;
   const r = 28;
-  const dur = "2.8s";
-  const keyTimes = "0;0.15;0.3;0.35;0.5;0.65;1";
-  const keySplines = "0.5 0 0.2 1;0.5 0 0.2 1;0 0 1 1;0.5 0 0.2 1;0.5 0 0.2 1;0 0 1 1";
+  const dur = '2.8s';
+  const keyTimes = '0;0.15;0.3;0.35;0.5;0.65;1';
+  const keySplines = '0.5 0 0.2 1;0.5 0 0.2 1;0 0 1 1;0.5 0 0.2 1;0.5 0 0.2 1;0 0 1 1';
 
   const top = { x: c, y: c - r };
   const right = { x: c + r, y: c };

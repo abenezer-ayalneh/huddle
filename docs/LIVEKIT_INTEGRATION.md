@@ -49,10 +49,10 @@ never the secret.
 
 ```ts
 // apps/api — token.service.ts (illustrative)
-import { AccessToken } from "livekit-server-sdk";
+import { AccessToken } from 'livekit-server-sdk';
 
 async function createToken(room: string, identity: string, name?: string) {
-  const at = new AccessToken(process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET, { identity, name, ttl: "1h" });
+  const at = new AccessToken(process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET, { identity, name, ttl: '1h' });
   at.addGrant({
     roomJoin: true,
     room,
@@ -71,8 +71,8 @@ Expose it as `POST /token` returning `{ token, livekitUrl }`. See
 **Option A — prebuilt components (fastest for MVP):**
 
 ```tsx
-import { LiveKitRoom, VideoConference } from "@livekit/components-react";
-import "@livekit/components-styles";
+import { LiveKitRoom, VideoConference } from '@livekit/components-react';
+import '@livekit/components-styles';
 
 <LiveKitRoom token={token} serverUrl={livekitUrl} connect data-lk-theme="default">
   <VideoConference />

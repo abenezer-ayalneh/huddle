@@ -16,12 +16,7 @@ import { StorageService } from './storage.service';
 import { WebhookController } from './webhook.controller';
 
 @Module({
-  controllers: [
-    RoomsController,
-    RecordingsController,
-    ControlAgentController,
-    WebhookController,
-  ],
+  controllers: [RoomsController, RecordingsController, ControlAgentController, WebhookController],
   providers: [
     RoomsService,
     RoomRepository,

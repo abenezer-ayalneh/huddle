@@ -1,14 +1,5 @@
-import {
-  CreateBucketCommand,
-  GetObjectCommand,
-  HeadBucketCommand,
-  S3Client,
-} from '@aws-sdk/client-s3';
-import {
-  Injectable,
-  InternalServerErrorException,
-  Logger,
-} from '@nestjs/common';
+import { CreateBucketCommand, GetObjectCommand, HeadBucketCommand, S3Client } from '@aws-sdk/client-s3';
+import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Readable } from 'node:stream';
 
@@ -41,15 +32,13 @@ export class StorageService {
     this.accessKey = accessKey;
     this.secretKey = secretKey;
     this.region = this.config.get<string>('S3_REGION') ?? 'us-east-1';
-    this.internalEndpoint =
-      this.config.get<string>('S3_ENDPOINT_INTERNAL') ?? 'http://minio:9000';
+    this.internalEndpoint = this.config.get<string>('S3_ENDPOINT_INTERNAL') ?? 'http://minio:9000';
   }
 
   private get client(): S3Client {
     return (this._client ??= new S3Client({
       // Host-facing endpoint; path-style is required for MinIO.
-      endpoint:
-        this.config.get<string>('S3_ENDPOINT') ?? 'http://localhost:9000',
+      endpoint: this.config.get<string>('S3_ENDPOINT') ?? 'http://localhost:9000',
       region: this.region,
       credentials: {
         accessKeyId: this.accessKey,
@@ -77,20 +66,14 @@ export class StorageService {
       this.logger.log(`Created recordings bucket "${this.bucket}"`);
     } catch (err) {
       // A concurrent create or an already-owned bucket is fine.
-      this.logger.warn(
-        `Could not create bucket "${this.bucket}": ${String(err)}`,
-      );
+      this.logger.warn(`Could not create bucket "${this.bucket}": ${String(err)}`);
     }
   }
 
   // Stream an object back for a download. Returns the body plus the size so the
   // route can set Content-Length.
-  async getObject(
-    key: string,
-  ): Promise<{ body: Readable; size?: number; contentType?: string }> {
-    const res = await this.client.send(
-      new GetObjectCommand({ Bucket: this.bucket, Key: key }),
-    );
+  async getObject(key: string): Promise<{ body: Readable; size?: number; contentType?: string }> {
+    const res = await this.client.send(new GetObjectCommand({ Bucket: this.bucket, Key: key }));
     return {
       body: res.Body as Readable,
       size: res.ContentLength,

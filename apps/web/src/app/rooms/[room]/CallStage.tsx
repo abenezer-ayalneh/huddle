@@ -1,22 +1,22 @@
-"use client";
+'use client';
 
-import { LiveKitRoom, RoomAudioRenderer, useChat, type LocalUserChoices } from "@livekit/components-react";
-import { useCallback, useState, useSyncExternalStore, type ReactNode } from "react";
-import AgentLaunchDialog from "@/components/call/AgentLaunchDialog";
-import ChatPanel from "@/components/call/ChatPanel";
-import ConnectionStatus from "@/components/call/ConnectionStatus";
-import ControlBar from "@/components/call/ControlBar";
-import PresentationToast from "@/components/call/PresentationToast";
-import PreJoinScreen from "@/components/call/PreJoinScreen";
-import RemoteControlBanner from "@/components/call/RemoteControlBanner";
-import RemoteControlSurface from "@/components/call/RemoteControlSurface";
-import RemoteControlToast from "@/components/call/RemoteControlToast";
-import VideoGrid from "@/components/call/VideoGrid";
-import { usePresentation } from "@/components/call/usePresentation";
-import { useRemoteControl } from "@/components/call/useRemoteControl";
-import { api, API_URL } from "@/lib/api";
-import LeaveConfirmDialog from "./LeaveConfirmDialog";
-import { Centered } from "./ui";
+import { LiveKitRoom, RoomAudioRenderer, useChat, type LocalUserChoices } from '@livekit/components-react';
+import { useCallback, useState, useSyncExternalStore, type ReactNode } from 'react';
+import AgentLaunchDialog from '@/components/call/AgentLaunchDialog';
+import ChatPanel from '@/components/call/ChatPanel';
+import ConnectionStatus from '@/components/call/ConnectionStatus';
+import ControlBar from '@/components/call/ControlBar';
+import PresentationToast from '@/components/call/PresentationToast';
+import PreJoinScreen from '@/components/call/PreJoinScreen';
+import RemoteControlBanner from '@/components/call/RemoteControlBanner';
+import RemoteControlSurface from '@/components/call/RemoteControlSurface';
+import RemoteControlToast from '@/components/call/RemoteControlToast';
+import VideoGrid from '@/components/call/VideoGrid';
+import { usePresentation } from '@/components/call/usePresentation';
+import { useRemoteControl } from '@/components/call/useRemoteControl';
+import { api, API_URL } from '@/lib/api';
+import LeaveConfirmDialog from './LeaveConfirmDialog';
+import { Centered } from './ui';
 
 type Connection = { token: string; livekitUrl: string };
 
@@ -79,7 +79,7 @@ export default function CallStage({
         audio={startMuted || !choices.audioEnabled ? false : { deviceId: choices.audioDeviceId }}
         onDisconnected={onLeave}
         onError={(e) => onError(`Lost connection to the call: ${e.message}`)}
-        style={{ height: "100dvh" }}
+        style={{ height: '100dvh' }}
         className="bg-dotgrid"
       >
         <CallView room={room} token={connection.token} onLeaveClick={() => setShowLeaveDialog(true)} overlay={overlay} isHost={isHost} />
@@ -121,7 +121,7 @@ function CallView({
   const canPresentWithControl = useSyncExternalStore(
     emptySubscribe,
     () => !!navigator.mediaDevices?.getDisplayMedia,
-    () => false
+    () => false,
   );
 
   const [launchCode, setLaunchCode] = useState<string | null>(null);
@@ -133,8 +133,8 @@ function CallView({
       // hidden iframe — assigning location.href to an unhandled custom scheme
       // unloads the page (disconnecting the call!); an iframe contains the
       // failure. The dialog stays up as the no-handler fallback either way.
-      const frame = document.createElement("iframe");
-      frame.style.display = "none";
+      const frame = document.createElement('iframe');
+      frame.style.display = 'none';
       frame.src = `huddle://present?code=${encodeURIComponent(code)}&api=${encodeURIComponent(API_URL)}`;
       document.body.appendChild(frame);
       setTimeout(() => frame.remove(), 3000);

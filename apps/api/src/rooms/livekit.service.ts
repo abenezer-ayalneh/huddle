@@ -1,12 +1,6 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  AccessToken,
-  RoomServiceClient,
-  TokenVerifier,
-  TrackSource,
-  WebhookReceiver,
-} from 'livekit-server-sdk';
+import { AccessToken, RoomServiceClient, TokenVerifier, TrackSource, WebhookReceiver } from 'livekit-server-sdk';
 
 // The Control Agent joins as `agent:<presenterIdentity>` (docs/adr/0010).
 // Must match AGENT_IDENTITY_PREFIX in apps/web/src/lib/controlProtocol.ts.
@@ -46,11 +40,7 @@ export class LivekitService {
   }
 
   private get svc(): RoomServiceClient {
-    return (this._svc ??= new RoomServiceClient(
-      this.httpUrl,
-      this.apiKey,
-      this.apiSecret,
-    ));
+    return (this._svc ??= new RoomServiceClient(this.httpUrl, this.apiKey, this.apiSecret));
   }
 
   private get webhook(): WebhookReceiver {
@@ -65,9 +55,7 @@ export class LivekitService {
   // claims. Holding a valid, unexpired token for a room *is* the authority for
   // in-call actions like pairing a Control Agent — the same authority that
   // admitted them. Returns null for anything invalid or expired.
-  async verifyParticipantToken(
-    token: string,
-  ): Promise<ParticipantClaims | null> {
+  async verifyParticipantToken(token: string): Promise<ParticipantClaims | null> {
     try {
       const claims = await this.verifier.verify(token);
       if (!claims.sub) return null;
@@ -93,11 +81,7 @@ export class LivekitService {
   // could subscribe to the hidden agent's screen share). "Never shown as a
   // participant" is enforced by the web UI filtering the agent: identity
   // prefix instead.
-  async mintAgentToken(opts: {
-    room: string;
-    presenterIdentity: string;
-    presenterName: string;
-  }): Promise<string> {
+  async mintAgentToken(opts: { room: string; presenterIdentity: string; presenterName: string }): Promise<string> {
     const at = new AccessToken(this.apiKey, this.apiSecret, {
       identity: AGENT_IDENTITY_PREFIX + opts.presenterIdentity,
       name: opts.presenterName,
@@ -111,10 +95,7 @@ export class LivekitService {
       roomJoin: true,
       room: opts.room,
       canPublish: true,
-      canPublishSources: [
-        TrackSource.SCREEN_SHARE,
-        TrackSource.SCREEN_SHARE_AUDIO,
-      ],
+      canPublishSources: [TrackSource.SCREEN_SHARE, TrackSource.SCREEN_SHARE_AUDIO],
       canPublishData: true,
       canSubscribe: false,
     });
@@ -123,12 +104,7 @@ export class LivekitService {
 
   // Mint a join token. `host` adds roomAdmin + a role=host metadata claim so the
   // frontend can show host UI (authority is still enforced server-side).
-  async mintToken(opts: {
-    room: string;
-    identity: string;
-    name: string;
-    host?: boolean;
-  }): Promise<string> {
+  async mintToken(opts: { room: string; identity: string; name: string; host?: boolean }): Promise<string> {
     const at = new AccessToken(this.apiKey, this.apiSecret, {
       identity: opts.identity,
       name: opts.name,
@@ -204,9 +180,7 @@ export class LivekitService {
   private readMuteOnEntry(metadata?: string): boolean {
     if (!metadata) return false;
     try {
-      return (
-        (JSON.parse(metadata) as { muteOnEntry?: unknown }).muteOnEntry === true
-      );
+      return (JSON.parse(metadata) as { muteOnEntry?: unknown }).muteOnEntry === true;
     } catch {
       return false;
     }
@@ -223,20 +197,10 @@ export class LivekitService {
 
   // Force-mute/unmute every microphone track the participant is publishing.
   // No-op if they have no audio track. Returns the number of tracks affected.
-  async setParticipantMuted(
-    room: string,
-    identity: string,
-    muted: boolean,
-  ): Promise<number> {
+  async setParticipantMuted(room: string, identity: string, muted: boolean): Promise<number> {
     const participant = await this.svc.getParticipant(room, identity);
-    const audioTracks = participant.tracks.filter(
-      (t) => t.source === TrackSource.MICROPHONE,
-    );
-    await Promise.all(
-      audioTracks.map((t) =>
-        this.svc.mutePublishedTrack(room, identity, t.sid, muted),
-      ),
-    );
+    const audioTracks = participant.tracks.filter((t) => t.source === TrackSource.MICROPHONE);
+    await Promise.all(audioTracks.map((t) => this.svc.mutePublishedTrack(room, identity, t.sid, muted)));
     return audioTracks.length;
   }
 

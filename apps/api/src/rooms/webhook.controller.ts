@@ -1,11 +1,4 @@
-import {
-  Controller,
-  HttpCode,
-  Logger,
-  Post,
-  Req,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Controller, HttpCode, Logger, Post, Req, UnauthorizedException } from '@nestjs/common';
 import type { RawBodyRequest } from '@nestjs/common';
 import type { Request } from 'express';
 import { LivekitService } from './livekit.service';
@@ -35,9 +28,7 @@ export class WebhookController {
     } catch (err) {
       // Log the reason (not the token) — the usual cause is an empty rawBody,
       // which means the body parser didn't capture this content type.
-      this.logger.warn(
-        `webhook verify failed (rawLen=${raw.length}): ${String(err)}`,
-      );
+      this.logger.warn(`webhook verify failed (rawLen=${raw.length}): ${String(err)}`);
       throw new UnauthorizedException('Invalid webhook signature');
     }
 

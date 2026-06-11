@@ -1,4 +1,4 @@
-import RoomClient from "./RoomClient";
+import RoomClient from './RoomClient';
 
 // Server component: unwrap the async route params (Next 16) and hand the room
 // to the client connector. The URL carries nothing but the Room Code — role

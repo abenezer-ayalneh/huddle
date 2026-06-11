@@ -3,7 +3,7 @@ name: Deploy
 # Runs only after the CI workflow completes on main. Gated on CI success below.
 on:
   workflow_run:
-    workflows: ["CI"]
+    workflows: ['CI']
     types: [completed]
     branches: [main]
   workflow_dispatch: {} # allow manual "Run workflow" from the Actions tab

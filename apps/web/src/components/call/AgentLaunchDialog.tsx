@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { Check, Copy } from "lucide-react";
-import { useState } from "react";
+import { Check, Copy } from 'lucide-react';
+import { useState } from 'react';
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -10,7 +10,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from '@/components/ui/alert-dialog';
 
 // Shown after "Present with control" while we wait for the Control Agent to
 // join. The deep link usually launches the agent; the visible code is the

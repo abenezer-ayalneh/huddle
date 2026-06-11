@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import type { LocalUserChoices } from "@livekit/components-react";
-import { ArrowLeft } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ApiError, api } from "@/lib/api";
-import PreJoinScreen from "@/components/call/PreJoinScreen";
-import CallStage from "./CallStage";
-import LoadingSpinner from "@/components/LoadingSpinner";
-import { Centered } from "./ui";
+import type { LocalUserChoices } from '@livekit/components-react';
+import { ArrowLeft } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ApiError, api } from '@/lib/api';
+import PreJoinScreen from '@/components/call/PreJoinScreen';
+import CallStage from './CallStage';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import { Centered } from './ui';
 
 type Connection = { token: string; livekitUrl: string };
 
@@ -21,7 +21,7 @@ type Connection = { token: string; livekitUrl: string };
 //   4. admitted  — re-acquire the chosen devices and hand off to <CallStage>,
 //                  which skips its own PreJoin because we pass the choices in.
 export default function GuestGate({ room, onLeave, onError }: { room: string; onLeave: () => void; onError: (message: string) => void }) {
-  const [phase, setPhase] = useState<"precheck" | "check" | "knocking" | "waiting" | "denied">("precheck");
+  const [phase, setPhase] = useState<'precheck' | 'check' | 'knocking' | 'waiting' | 'denied'>('precheck');
   const [choices, setChoices] = useState<LocalUserChoices | null>(null);
   const [knockId, setKnockId] = useState<string | null>(null);
   const [connection, setConnection] = useState<Connection | null>(null);
@@ -37,7 +37,7 @@ export default function GuestGate({ room, onLeave, onError }: { room: string; on
       .getPublicRoom(room)
       .then(() => {
         if (!active) return;
-        setPhase("check");
+        setPhase('check');
       })
       .catch((e) => {
         if (!active) return;
@@ -61,11 +61,11 @@ export default function GuestGate({ room, onLeave, onError }: { room: string; on
       if (knockedRef.current) return;
       knockedRef.current = true;
       setChoices(userChoices);
-      setPhase("knocking");
+      setPhase('knocking');
       try {
         const res = await api.knock(room, userChoices.username);
         setKnockId(res.knockId);
-        setPhase("waiting");
+        setPhase('waiting');
       } catch (e) {
         knockedRef.current = false;
         if (e instanceof ApiError && e.status === 404) {
@@ -75,7 +75,7 @@ export default function GuestGate({ room, onLeave, onError }: { room: string; on
         }
       }
     },
-    [room, onError]
+    [room, onError],
   );
 
   // Poll the host's decision once we have a knock.
@@ -88,13 +88,13 @@ export default function GuestGate({ room, onLeave, onError }: { room: string; on
       try {
         const res = await api.knockStatus(room, knockId!);
         if (cancelled) return;
-        if (res.status === "admitted" && res.token && res.livekitUrl) {
+        if (res.status === 'admitted' && res.token && res.livekitUrl) {
           setStartMuted(res.muteOnEntry === true);
           setConnection({ token: res.token, livekitUrl: res.livekitUrl });
           return;
         }
-        if (res.status === "denied") {
-          setPhase("denied");
+        if (res.status === 'denied') {
+          setPhase('denied');
           return;
         }
       } catch {
@@ -139,7 +139,7 @@ export default function GuestGate({ room, onLeave, onError }: { room: string; on
     );
   }
 
-  if (phase === "denied") {
+  if (phase === 'denied') {
     return (
       <Centered>
         <p className="font-display text-lg text-magenta text-glow-magenta">Entry declined</p>
@@ -156,14 +156,14 @@ export default function GuestGate({ room, onLeave, onError }: { room: string; on
   }
 
   // Device Check: name + camera/mic preview. The join button sends the knock.
-  if (phase === "check") {
+  if (phase === 'check') {
     return (
       <PreJoinScreen
-        defaults={{ username: "", videoEnabled: true, audioEnabled: true }}
+        defaults={{ username: '', videoEnabled: true, audioEnabled: true }}
         onSubmit={submitCheck}
         // The Device Check is informational: a denied or missing camera/mic must
         // not block the knock, so device errors are logged, not surfaced.
-        onError={(e) => console.warn("Device Check error (continuing):", e.message)}
+        onError={(e) => console.warn('Device Check error (continuing):', e.message)}
         heading="Join meeting"
         subheading={`Check your camera and mic, then ask to join “${room}”.`}
         submitLabel="Ask to join"
@@ -175,9 +175,9 @@ export default function GuestGate({ room, onLeave, onError }: { room: string; on
   // precheck / knocking / waiting
   return (
     <Centered>
-      {phase === "waiting" ? (
+      {phase === 'waiting' ? (
         <WaitingRoom room={room} onCancel={cancel} />
-      ) : phase === "precheck" ? (
+      ) : phase === 'precheck' ? (
         <LoadingSpinner className="mx-auto size-12" />
       ) : (
         <p className="text-white/60">Requesting to join…</p>

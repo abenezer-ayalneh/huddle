@@ -25,10 +25,7 @@ export class RoomRepository {
 
   // Create a room owned by hostUserId with a freshly generated, unique Room Code.
   // Rooms have no title; the slug is always generated (never client-supplied).
-  async create(params: {
-    scheduledStart?: Date | null;
-    hostUserId: string;
-  }): Promise<Room> {
+  async create(params: { scheduledStart?: Date | null; hostUserId: string }): Promise<Room> {
     // Retry on the (astronomically unlikely) unique-constraint collision.
     for (let attempt = 0; attempt < 5; attempt++) {
       try {
@@ -63,10 +60,6 @@ export class RoomRepository {
   }
 
   private isUniqueViolation(err: unknown): boolean {
-    return (
-      typeof err === 'object' &&
-      err !== null &&
-      (err as { code?: string }).code === 'P2002'
-    );
+    return typeof err === 'object' && err !== null && (err as { code?: string }).code === 'P2002';
   }
 }

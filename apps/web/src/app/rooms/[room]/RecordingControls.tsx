@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { Circle, Download, Square } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-import { api, type RecordingSummary } from "@/lib/api";
-import IconButton from "@/components/IconButton";
+import { Circle, Download, Square } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { api, type RecordingSummary } from '@/lib/api';
+import IconButton from '@/components/IconButton';
 
 export default function RecordingControls({ room, hostKey, compact = false }: { room: string; hostKey: string; compact?: boolean }) {
   const [recordings, setRecordings] = useState<RecordingSummary[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const active = recordings.find((r) => r.status === "starting" || r.status === "active");
+  const active = recordings.find((r) => r.status === 'starting' || r.status === 'active');
 
   const refresh = useCallback(async () => {
     try {
@@ -64,7 +64,7 @@ export default function RecordingControls({ room, hostKey, compact = false }: { 
     try {
       const blob = await api.downloadRecording(room, rec.id, hostKey);
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
+      const a = document.createElement('a');
       a.href = url;
       a.download = rec.filename;
       document.body.appendChild(a);
@@ -102,7 +102,7 @@ export default function RecordingControls({ room, hostKey, compact = false }: { 
         {active && (
           <span className="flex items-center gap-1.5 text-xs text-white/60">
             <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
-            {active.status === "starting" ? "Starting…" : "Recording"}
+            {active.status === 'starting' ? 'Starting…' : 'Recording'}
           </span>
         )}
       </div>
@@ -140,16 +140,16 @@ export default function RecordingControls({ room, hostKey, compact = false }: { 
 
 function statusWord(r: RecordingSummary): string {
   switch (r.status) {
-    case "starting":
-      return "Starting…";
-    case "active":
-      return "Recording…";
-    case "failed":
-      return "Failed";
-    case "aborted":
-      return "Aborted";
+    case 'starting':
+      return 'Starting…';
+    case 'active':
+      return 'Recording…';
+    case 'failed':
+      return 'Failed';
+    case 'aborted':
+      return 'Aborted';
     default:
-      return "Processing…";
+      return 'Processing…';
   }
 }
 
@@ -160,14 +160,14 @@ function labelFor(r: RecordingSummary): string {
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
+    hour: '2-digit',
+    minute: '2-digit',
   });
 }
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
-  const units = ["KB", "MB", "GB"];
+  const units = ['KB', 'MB', 'GB'];
   let size = bytes / 1024;
   let i = 0;
   while (size >= 1024 && i < units.length - 1) {

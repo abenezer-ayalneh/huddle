@@ -41,32 +41,22 @@ describe('HostGuard', () => {
   });
 
   it('allows the request with a matching host key', async () => {
-    await expect(
-      guard.canActivate(contextFor('standup', hostKey)),
-    ).resolves.toBe(true);
+    await expect(guard.canActivate(contextFor('standup', hostKey))).resolves.toBe(true);
   });
 
   it('rejects a missing host key', async () => {
-    await expect(guard.canActivate(contextFor('standup'))).rejects.toThrow(
-      UnauthorizedException,
-    );
+    await expect(guard.canActivate(contextFor('standup'))).rejects.toThrow(UnauthorizedException);
   });
 
   it('rejects a wrong host key', async () => {
-    await expect(
-      guard.canActivate(contextFor('standup', 'nope')),
-    ).rejects.toThrow(UnauthorizedException);
+    await expect(guard.canActivate(contextFor('standup', 'nope'))).rejects.toThrow(UnauthorizedException);
   });
 
   it('rejects a valid key used on a different room', async () => {
-    await expect(
-      guard.canActivate(contextFor('other', hostKey)),
-    ).rejects.toThrow(UnauthorizedException);
+    await expect(guard.canActivate(contextFor('other', hostKey))).rejects.toThrow(UnauthorizedException);
   });
 
   it('rejects when the room does not exist', async () => {
-    await expect(
-      guard.canActivate(contextFor('ghost', hostKey)),
-    ).rejects.toThrow(UnauthorizedException);
+    await expect(guard.canActivate(contextFor('ghost', hostKey))).rejects.toThrow(UnauthorizedException);
   });
 });

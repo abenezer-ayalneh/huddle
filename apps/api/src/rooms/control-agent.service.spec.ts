@@ -13,10 +13,7 @@ describe('ControlAgentService', () => {
       mintAgentToken: jest.fn().mockResolvedValue('agent-jwt'),
       livekitUrl: 'ws://livekit:7880',
     };
-    service = new ControlAgentService(
-      new FakeRedis() as unknown as Redis,
-      livekit as unknown as LivekitService,
-    );
+    service = new ControlAgentService(new FakeRedis() as unknown as Redis, livekit as unknown as LivekitService);
   });
 
   it('mints a code that redeems into a scoped agent token', async () => {

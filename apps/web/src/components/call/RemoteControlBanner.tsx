@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useRemoteParticipants } from "@livekit/components-react";
-import { ChevronDown, MousePointer2 } from "lucide-react";
-import { useState } from "react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { isAgentIdentity } from "@/lib/controlProtocol";
-import type { ControlRequest, Controlling } from "./useRemoteControl";
+import { useRemoteParticipants } from '@livekit/components-react';
+import { ChevronDown, MousePointer2 } from 'lucide-react';
+import { useState } from 'react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { isAgentIdentity } from '@/lib/controlProtocol';
+import type { ControlRequest, Controlling } from './useRemoteControl';
 
 // Persistent Remote Control ribbons. While a session is live both sides keep
 // an always-visible indicator: the presenter can Revoke instantly (no
@@ -112,8 +112,8 @@ function OfferPicker({ onOffer }: { onOffer: (targetId: string, targetName: stri
   );
 }
 
-function Ribbon({ children, tone }: { children: React.ReactNode; tone: "cyan" | "magenta" }) {
-  const ring = tone === "magenta" ? "ring-magenta/40" : "ring-cyan/40";
+function Ribbon({ children, tone }: { children: React.ReactNode; tone: 'cyan' | 'magenta' }) {
+  const ring = tone === 'magenta' ? 'ring-magenta/40' : 'ring-cyan/40';
   return (
     <div
       role="status"

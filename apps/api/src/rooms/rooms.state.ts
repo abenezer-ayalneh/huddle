@@ -66,9 +66,7 @@ export class RoomStateService {
     const ids = await this.redis.smembers(this.indexKey(room));
     if (ids.length === 0) return [];
 
-    const raws = await this.redis.mget(
-      ids.map((id) => this.knockKey(room, id)),
-    );
+    const raws = await this.redis.mget(ids.map((id) => this.knockKey(room, id)));
     const pending: Knock[] = [];
     const expired: string[] = [];
     ids.forEach((id, i) => {
@@ -89,11 +87,7 @@ export class RoomStateService {
 
   // Advance a knock (admit/deny) and persist it, refreshing its TTL so an
   // admitted guest can still poll for their token before it expires.
-  async resolveKnock(
-    knock: Knock,
-    status: Exclude<KnockStatus, 'pending'>,
-    grant?: { identity: string; token: string },
-  ): Promise<void> {
+  async resolveKnock(knock: Knock, status: Exclude<KnockStatus, 'pending'>, grant?: { identity: string; token: string }): Promise<void> {
     knock.status = status;
     if (grant) {
       knock.identity = grant.identity;
@@ -119,11 +113,6 @@ export class RoomStateService {
   }
 
   private async writeKnock(knock: Knock): Promise<void> {
-    await this.redis.set(
-      this.knockKey(knock.room, knock.knockId),
-      JSON.stringify(knock),
-      'EX',
-      KNOCK_TTL_SECONDS,
-    );
+    await this.redis.set(this.knockKey(knock.room, knock.knockId), JSON.stringify(knock), 'EX', KNOCK_TTL_SECONDS);
   }
 }

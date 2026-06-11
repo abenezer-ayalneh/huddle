@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Get,
-  Inject,
-  Logger,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+import { Controller, Get, Inject, Logger, ServiceUnavailableException } from '@nestjs/common';
 import type Redis from 'ioredis';
 import { PrismaService } from '../prisma/prisma.service';
 import { REDIS_CLIENT } from '../redis/redis.module';
@@ -32,9 +26,7 @@ export class HealthController {
   @Get('ready')
   async ready(): Promise<{ status: string; checks: Record<string, string> }> {
     const [db, cache] = await Promise.all([
-      this.prisma.$queryRaw`SELECT 1`
-        .then(() => 'ok')
-        .catch((err: unknown) => this.fail('postgres', err)),
+      this.prisma.$queryRaw`SELECT 1`.then(() => 'ok').catch((err: unknown) => this.fail('postgres', err)),
       this.redis
         .ping()
         .then(() => 'ok')

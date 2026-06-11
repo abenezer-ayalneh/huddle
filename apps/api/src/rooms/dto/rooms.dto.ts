@@ -1,11 +1,4 @@
-import {
-  IsBoolean,
-  IsISO8601,
-  IsOptional,
-  IsString,
-  MaxLength,
-  MinLength,
-} from 'class-validator';
+import { IsBoolean, IsISO8601, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class CreateRoomDto {
   // A room has no title and no client-chosen identifier: the server always

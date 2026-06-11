@@ -8,11 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class RecordingRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(params: {
-    egressId: string;
-    roomId: string;
-    objectKey: string;
-  }): Promise<Recording> {
+  create(params: { egressId: string; roomId: string; objectKey: string }): Promise<Recording> {
     return this.prisma.recording.create({
       data: {
         egressId: params.egressId,
@@ -40,9 +36,7 @@ export class RecordingRepository {
 
   // Every recording across all rooms owned by a host, each joined to its room's
   // code (slug) and host key — backs the lobby's cross-room /recordings view.
-  listByHostUser(
-    hostUserId: string,
-  ): Promise<(Recording & { room: { slug: string; hostKey: string } })[]> {
+  listByHostUser(hostUserId: string): Promise<(Recording & { room: { slug: string; hostKey: string } })[]> {
     return this.prisma.recording.findMany({
       where: { room: { hostUserId } },
       orderBy: { startedAt: 'desc' },
@@ -60,17 +54,7 @@ export class RecordingRepository {
 
   updateByEgressId(
     egressId: string,
-    data: Partial<
-      Pick<
-        Recording,
-        | 'status'
-        | 'objectKey'
-        | 'sizeBytes'
-        | 'durationMs'
-        | 'error'
-        | 'endedAt'
-      >
-    >,
+    data: Partial<Pick<Recording, 'status' | 'objectKey' | 'sizeBytes' | 'durationMs' | 'error' | 'endedAt'>>,
   ): Promise<Recording> {
     return this.prisma.recording.update({ where: { egressId }, data });
   }

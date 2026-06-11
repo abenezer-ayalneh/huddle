@@ -39,9 +39,7 @@ describe('RoomStateService', () => {
     expect(await state.getKnock('standup', k.knockId)).toBeUndefined();
     expect(await state.listPendingKnocks('standup')).toHaveLength(0);
     // Idempotent — second call is a no-op, not an error.
-    await expect(
-      state.removeKnock('standup', k.knockId),
-    ).resolves.toBeUndefined();
+    await expect(state.removeKnock('standup', k.knockId)).resolves.toBeUndefined();
   });
 
   it('clearKnocks drops only the named room’s knocks', async () => {

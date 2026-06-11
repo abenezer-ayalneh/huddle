@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { Check, Loader2, MousePointer2, X } from "lucide-react";
-import type { ControlOffer, ControlOutcome, ControlRequest } from "./useRemoteControl";
+import { Check, Loader2, MousePointer2, X } from 'lucide-react';
+import type { ControlOffer, ControlOutcome, ControlRequest } from './useRemoteControl';
 
 // Transient Remote Control prompts, mirroring PresentationToast: incoming
 // request (presenter decides), incoming offer (viewer decides), outgoing
@@ -108,17 +108,17 @@ export default function RemoteControlToast({
 
 function outcomeText(o: ControlOutcome): string {
   switch (o.kind) {
-    case "request-declined":
+    case 'request-declined':
       return `${o.name} declined your control request.`;
-    case "request-timed-out":
+    case 'request-timed-out':
       return `${o.name} didn't respond. Try again later.`;
-    case "offer-declined":
+    case 'offer-declined':
       return `${o.name} declined your control offer.`;
-    case "offer-timed-out":
+    case 'offer-timed-out':
       return `${o.name} didn't respond to your offer.`;
-    case "revoked":
+    case 'revoked':
       return `${o.name} took back control.`;
-    case "released":
+    case 'released':
       return `${o.name} released control.`;
   }
 }
@@ -135,9 +135,9 @@ function Toast({ children, onClick }: { children: React.ReactNode; onClick?: () 
   );
 }
 
-function ToastButton({ children, onClick, variant }: { children: React.ReactNode; onClick: () => void; variant: "accept" | "decline" }) {
+function ToastButton({ children, onClick, variant }: { children: React.ReactNode; onClick: () => void; variant: 'accept' | 'decline' }) {
   const tone =
-    variant === "accept" ? "bg-cyan/15 text-cyan ring-1 ring-cyan/40 hover:bg-cyan/25" : "bg-white/8 text-white/70 ring-1 ring-white/10 hover:bg-white/15";
+    variant === 'accept' ? 'bg-cyan/15 text-cyan ring-1 ring-cyan/40 hover:bg-cyan/25' : 'bg-white/8 text-white/70 ring-1 ring-white/10 hover:bg-white/15';
 
   return (
     <button

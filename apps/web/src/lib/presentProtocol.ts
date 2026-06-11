@@ -1,12 +1,12 @@
-import type { LocalParticipant } from "livekit-client";
+import type { LocalParticipant } from 'livekit-client';
 
-export const PRESENT_TOPIC = "huddle:present";
+export const PRESENT_TOPIC = 'huddle:present';
 
 export type PresentMessage =
-  | { type: "present:request"; requesterId: string; requesterName: string }
-  | { type: "present:yield" }
-  | { type: "present:decline" }
-  | { type: "present:force-take" };
+  | { type: 'present:request'; requesterId: string; requesterName: string }
+  | { type: 'present:yield' }
+  | { type: 'present:decline' }
+  | { type: 'present:force-take' };
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();

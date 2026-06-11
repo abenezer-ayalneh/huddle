@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useConnectionState } from "@livekit/components-react";
-import { ConnectionState } from "livekit-client";
+import { useConnectionState } from '@livekit/components-react';
+import { ConnectionState } from 'livekit-client';
 
 // Replaces LiveKit's ConnectionStateToast. A glass HUD chip, top-center, shown
 // only while the connection is not healthy.
@@ -10,9 +10,9 @@ export default function ConnectionStatus() {
 
   if (state === ConnectionState.Connected) return null;
 
-  const text = state === ConnectionState.Connecting ? "Connecting…" : state === ConnectionState.Reconnecting ? "Reconnecting…" : "Disconnected";
+  const text = state === ConnectionState.Connecting ? 'Connecting…' : state === ConnectionState.Reconnecting ? 'Reconnecting…' : 'Disconnected';
 
-  const dotClass = state === ConnectionState.Reconnecting ? "bg-magenta" : state === ConnectionState.Disconnected ? "bg-destructive" : "bg-cyan";
+  const dotClass = state === ConnectionState.Reconnecting ? 'bg-magenta' : state === ConnectionState.Disconnected ? 'bg-destructive' : 'bg-cyan';
 
   return (
     <div className="pointer-events-none absolute inset-x-0 top-4 z-30 flex justify-center">

@@ -46,9 +46,7 @@ class FakeRecordingRepo {
     return Promise.resolve(rec);
   }
   findByEgressId(egressId: string) {
-    return Promise.resolve(
-      this.rows.find((r) => r.egressId === egressId) ?? null,
-    );
+    return Promise.resolve(this.rows.find((r) => r.egressId === egressId) ?? null);
   }
   findById(id: string) {
     return Promise.resolve(this.rows.find((r) => r.id === id) ?? null);
@@ -57,11 +55,7 @@ class FakeRecordingRepo {
     return Promise.resolve(this.rows.filter((r) => r.roomId === roomId));
   }
   listActiveByRoom(roomId: string) {
-    return Promise.resolve(
-      this.rows.filter(
-        (r) => r.roomId === roomId && ['starting', 'active'].includes(r.status),
-      ),
-    );
+    return Promise.resolve(this.rows.filter((r) => r.roomId === roomId && ['starting', 'active'].includes(r.status)));
   }
   updateByEgressId(egressId: string, data: Partial<Recording>) {
     const rec = this.rows.find((r) => r.egressId === egressId)!;
@@ -89,36 +83,24 @@ describe('RecordingsService', () => {
       ensureBucket: jest.fn().mockResolvedValue(undefined),
       getObject: jest.fn(),
     };
-    service = new RecordingsService(
-      rooms as never,
-      recordings as never,
-      egress as never,
-      storage as never,
-    );
+    service = new RecordingsService(rooms as never, recordings as never, egress as never, storage as never);
   });
 
   it('starts a recording: ensures the bucket and stores the egress job', async () => {
     const summary = await service.start('standup');
     expect(storage.ensureBucket).toHaveBeenCalled();
-    expect(egress.startRoomComposite).toHaveBeenCalledWith(
-      'standup',
-      expect.stringMatching(/^standup\/.*\.mp4$/),
-    );
+    expect(egress.startRoomComposite).toHaveBeenCalledWith('standup', expect.stringMatching(/^standup\/.*\.mp4$/));
     expect(summary.status).toBe('starting');
     expect(recordings.rows).toHaveLength(1);
   });
 
   it('refuses a second concurrent recording', async () => {
     await service.start('standup');
-    await expect(service.start('standup')).rejects.toBeInstanceOf(
-      ConflictException,
-    );
+    await expect(service.start('standup')).rejects.toBeInstanceOf(ConflictException);
   });
 
   it('404s starting a recording for an unknown room', async () => {
-    await expect(service.start('ghost')).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
+    await expect(service.start('ghost')).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('advances status and captures size/duration on egress complete', async () => {
@@ -147,8 +129,6 @@ describe('RecordingsService', () => {
 
   it('refuses to download a recording that is not complete', async () => {
     const { id } = await service.start('standup');
-    await expect(service.download('standup', id)).rejects.toBeInstanceOf(
-      ConflictException,
-    );
+    await expect(service.download('standup', id)).rejects.toBeInstanceOf(ConflictException);
   });
 });

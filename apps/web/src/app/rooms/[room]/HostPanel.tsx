@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { useRemoteParticipants, useRoomInfo } from "@livekit/components-react";
-import { Check, Copy, ShieldCheck, UserCheck, UserMinus, UserX, VolumeX, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { api, type PendingKnock } from "@/lib/api";
-import { isAgentIdentity } from "@/lib/controlProtocol";
-import IconButton from "@/components/IconButton";
-import RecordingControls from "./RecordingControls";
+import { useRemoteParticipants, useRoomInfo } from '@livekit/components-react';
+import { Check, Copy, ShieldCheck, UserCheck, UserMinus, UserX, VolumeX, X } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { api, type PendingKnock } from '@/lib/api';
+import { isAgentIdentity } from '@/lib/controlProtocol';
+import IconButton from '@/components/IconButton';
+import RecordingControls from './RecordingControls';
 
 function playDing() {
   try {
     const ctx = new AudioContext();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.type = "sine";
+    osc.type = 'sine';
     osc.frequency.setValueAtTime(880, ctx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.15);
     gain.gain.setValueAtTime(0.3, ctx.currentTime);
@@ -61,7 +61,7 @@ export default function HostPanel({ room, hostKey }: { room: string; hostKey: st
   const [busy, setBusy] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const inviteLink = typeof window !== "undefined" ? `${window.location.origin}/rooms/${encodeURIComponent(room)}` : "";
+  const inviteLink = typeof window !== 'undefined' ? `${window.location.origin}/rooms/${encodeURIComponent(room)}` : '';
 
   const copyInvite = useCallback(async () => {
     try {
@@ -119,18 +119,18 @@ export default function HostPanel({ room, hostKey }: { room: string; hostKey: st
 
   const remove = (identity: string) => withBusy(`remove-${identity}`, () => api.removeParticipant(room, identity, hostKey));
 
-  const toggleMuteOnEntry = () => withBusy("mute-on-entry", () => api.setMuteOnEntry(room, !muteOnEntry, hostKey));
+  const toggleMuteOnEntry = () => withBusy('mute-on-entry', () => api.setMuteOnEntry(room, !muteOnEntry, hostKey));
 
   if (!open) {
     return (
       <div className="absolute right-4 top-4 z-30">
         <button
           type="button"
-          aria-label={`Host controls${knocks.length ? ` (${knocks.length} waiting)` : ""}`}
-          title={`Host controls${knocks.length ? ` (${knocks.length} waiting)` : ""}`}
+          aria-label={`Host controls${knocks.length ? ` (${knocks.length} waiting)` : ''}`}
+          title={`Host controls${knocks.length ? ` (${knocks.length} waiting)` : ''}`}
           onClick={() => setOpen(true)}
           className={`glass-strong relative flex h-12 items-center gap-2 rounded-full px-4 font-display text-sm font-medium tracking-wide text-white transition-all hover:brightness-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 ${
-            knocks.length ? "knock-border-spin" : ""
+            knocks.length ? 'knock-border-spin' : ''
           }`}
         >
           <ShieldCheck className="h-5 w-5 text-cyan" />
@@ -163,7 +163,7 @@ export default function HostPanel({ room, hostKey }: { room: string; hostKey: st
         <Section title="Invite">
           <div className="flex items-center gap-2">
             <code className="min-w-0 flex-1 truncate rounded-md border border-white/10 bg-white/5 px-2.5 py-1.5 font-mono text-xs text-cyan">{room}</code>
-            <IconButton icon={copied ? Check : Copy} label={copied ? "Copied!" : "Copy invite link"} variant="subtle" size="sm" onClick={copyInvite} />
+            <IconButton icon={copied ? Check : Copy} label={copied ? 'Copied!' : 'Copy invite link'} variant="subtle" size="sm" onClick={copyInvite} />
           </div>
         </Section>
 
@@ -206,13 +206,13 @@ export default function HostPanel({ room, hostKey }: { room: string; hostKey: st
         <Section title="Participants">
           <button
             onClick={toggleMuteOnEntry}
-            disabled={busy === "mute-on-entry"}
+            disabled={busy === 'mute-on-entry'}
             aria-pressed={muteOnEntry}
             className={`mb-3 w-full rounded-lg px-3 py-2 text-xs font-medium tracking-wide transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50 disabled:opacity-50 ${
-              muteOnEntry ? "neon-magenta bg-magenta text-white hover:brightness-110" : "bg-white/10 text-white/90 hover:bg-white/20"
+              muteOnEntry ? 'neon-magenta bg-magenta text-white hover:brightness-110' : 'bg-white/10 text-white/90 hover:bg-white/20'
             }`}
           >
-            {muteOnEntry ? "Muted on entry — allow unmuting" : "Mute all"}
+            {muteOnEntry ? 'Muted on entry — allow unmuting' : 'Mute all'}
           </button>
           {participants.length === 0 ? (
             <p className="text-white/45">No other participants.</p>

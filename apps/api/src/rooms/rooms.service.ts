@@ -1,8 +1,4 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import type { Room } from '@prisma/client';
 import type { AuthUser } from '../auth/auth.guard';
 import { makeIdentity } from './identity';
@@ -48,13 +44,8 @@ export class RoomsService {
 
   // A signed-in host creates a (optionally scheduled) managed room and gets a
   // host token + host key so they can join right away.
-  async createRoom(
-    host: AuthUser,
-    params: { scheduledStart?: string },
-  ): Promise<HostJoinResult> {
-    const scheduledStart = params.scheduledStart
-      ? new Date(params.scheduledStart)
-      : null;
+  async createRoom(host: AuthUser, params: { scheduledStart?: string }): Promise<HostJoinResult> {
+    const scheduledStart = params.scheduledStart ? new Date(params.scheduledStart) : null;
     const room = await this.repo.create({
       scheduledStart,
       hostUserId: host.id,
@@ -160,10 +151,7 @@ export class RoomsService {
   // Toggle Mute on Entry (see docs/adr/0007). Turning it on also force-mutes
   // everyone present (except the host); turning it off never unmutes anyone — it
   // only stops auto-muting future joiners.
-  async setMuteOnEntry(
-    slug: string,
-    muted: boolean,
-  ): Promise<{ muteOnEntry: boolean }> {
+  async setMuteOnEntry(slug: string, muted: boolean): Promise<{ muteOnEntry: boolean }> {
     await this.requireRoom(slug);
     await this.livekit.setMuteOnEntry(slug, muted);
     if (muted) {
@@ -183,10 +171,7 @@ export class RoomsService {
     await this.state.clearKnocks(slug);
   }
 
-  private async mintHostJoin(
-    room: Room,
-    hostName: string,
-  ): Promise<HostJoinResult> {
+  private async mintHostJoin(room: Room, hostName: string): Promise<HostJoinResult> {
     const identity = makeIdentity(hostName);
     await this.livekit.createRoom(room.slug);
     const token = await this.livekit.mintToken({

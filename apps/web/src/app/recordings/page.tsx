@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { Download } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-import { api, type MyRecording } from "@/lib/api";
-import { useSession } from "@/lib/auth-client";
-import IconButton from "@/components/IconButton";
-import LoadingSpinner from "@/components/LoadingSpinner";
+import Link from 'next/link';
+import { Download } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { api, type MyRecording } from '@/lib/api';
+import { useSession } from '@/lib/auth-client';
+import IconButton from '@/components/IconButton';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 // Cross-room recordings view. Since the lobby list is pared to upcoming
 // scheduled meetings, this is the only place to reach recordings of past and
@@ -32,7 +32,7 @@ export default function RecordingsPage() {
     try {
       const blob = await api.downloadRecording(rec.room, rec.id, rec.hostKey);
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
+      const a = document.createElement('a');
       a.href = url;
       a.download = rec.filename;
       document.body.appendChild(a);
@@ -40,7 +40,7 @@ export default function RecordingsPage() {
       a.remove();
       URL.revokeObjectURL(url);
     } catch {
-      setError("Couldn’t download that recording.");
+      setError('Couldn’t download that recording.');
     }
   }, []);
 
@@ -94,24 +94,24 @@ export default function RecordingsPage() {
   );
 }
 
-function statusWord(status: MyRecording["status"]): string {
+function statusWord(status: MyRecording['status']): string {
   switch (status) {
-    case "starting":
-      return "Starting…";
-    case "active":
-      return "Recording…";
-    case "failed":
-      return "Failed";
-    case "aborted":
-      return "Aborted";
+    case 'starting':
+      return 'Starting…';
+    case 'active':
+      return 'Recording…';
+    case 'failed':
+      return 'Failed';
+    case 'aborted':
+      return 'Aborted';
     default:
-      return "Processing…";
+      return 'Processing…';
   }
 }
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
-  const units = ["KB", "MB", "GB"];
+  const units = ['KB', 'MB', 'GB'];
   let size = bytes / 1024;
   let i = 0;
   while (size >= 1024 && i < units.length - 1) {

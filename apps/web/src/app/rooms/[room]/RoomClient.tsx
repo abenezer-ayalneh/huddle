@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
-import { api } from "@/lib/api";
-import { useSession } from "@/lib/auth-client";
-import { loadHostSession, saveHostSession, clearHostSession } from "@/lib/hostSession";
-import CallStage from "./CallStage";
-import GuestGate from "./GuestGate";
-import HostPanel from "./HostPanel";
-import LoadingSpinner from "@/components/LoadingSpinner";
-import { Centered } from "./ui";
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
+import { api } from '@/lib/api';
+import { useSession } from '@/lib/auth-client';
+import { loadHostSession, saveHostSession, clearHostSession } from '@/lib/hostSession';
+import CallStage from './CallStage';
+import GuestGate from './GuestGate';
+import HostPanel from './HostPanel';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import { Centered } from './ui';
 
 // Role router for a managed room (Phase 6). Role is derived from the host
 // session, never the URL: whoever created the room in the lobby has its token +
@@ -23,7 +23,7 @@ export default function RoomClient({ room }: { room: string }) {
 
   const leave = useCallback(() => {
     clearHostSession(room);
-    router.push("/");
+    router.push('/');
   }, [room, router]);
 
   const [host, setHost] = useState<ReturnType<typeof loadHostSession>>(null);

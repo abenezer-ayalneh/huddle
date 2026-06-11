@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { Check, Loader2, X } from "lucide-react";
-import type { IncomingRequest, OutgoingRequest, PresentationOutcome } from "./usePresentation";
+import { Check, Loader2, X } from 'lucide-react';
+import type { IncomingRequest, OutgoingRequest, PresentationOutcome } from './usePresentation';
 
 export default function PresentationToast({
   outgoing,
@@ -65,14 +65,14 @@ export default function PresentationToast({
 
 function outcomeText(o: PresentationOutcome): string {
   switch (o.kind) {
-    case "declined":
+    case 'declined':
       return `${o.name} declined your request.`;
-    case "timed-out":
+    case 'timed-out':
       return `${o.name} didn't respond. Try again later.`;
-    case "yielded":
+    case 'yielded':
       return `${o.name} yielded — you're presenting now.`;
-    case "force-taken":
-      return "The host started presenting.";
+    case 'force-taken':
+      return 'The host started presenting.';
   }
 }
 
@@ -88,9 +88,9 @@ function Toast({ children, onClick }: { children: React.ReactNode; onClick?: () 
   );
 }
 
-function ToastButton({ children, onClick, variant }: { children: React.ReactNode; onClick: () => void; variant: "accept" | "decline" }) {
+function ToastButton({ children, onClick, variant }: { children: React.ReactNode; onClick: () => void; variant: 'accept' | 'decline' }) {
   const tone =
-    variant === "accept" ? "bg-cyan/15 text-cyan ring-1 ring-cyan/40 hover:bg-cyan/25" : "bg-white/8 text-white/70 ring-1 ring-white/10 hover:bg-white/15";
+    variant === 'accept' ? 'bg-cyan/15 text-cyan ring-1 ring-cyan/40 hover:bg-cyan/25' : 'bg-white/8 text-white/70 ring-1 ring-white/10 hover:bg-white/15';
 
   return (
     <button

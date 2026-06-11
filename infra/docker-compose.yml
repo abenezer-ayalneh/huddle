@@ -29,9 +29,9 @@ services:
       # the .env is picked up (the pnpm infra:* scripts do this).
       LIVEKIT_KEYS: ${LIVEKIT_KEYS}
     ports:
-      - "7880:7880" # signaling / API (TCP)
-      - "7881:7881" # WebRTC over TCP (fallback)
-      - "50000-50200:50000-50200/udp" # WebRTC media (RTP/RTCP)
+      - '7880:7880' # signaling / API (TCP)
+      - '7881:7881' # WebRTC over TCP (fallback)
+      - '50000-50200:50000-50200/udp' # WebRTC media (RTP/RTCP)
     volumes:
       - ./livekit.yaml:/etc/livekit.yaml:ro
     depends_on:
@@ -44,7 +44,7 @@ services:
     # published on a public interface. Containers (api, livekit, egress) reach it
     # by service name over the Docker network regardless of this mapping.
     ports:
-      - "127.0.0.1:6379:6379"
+      - '127.0.0.1:6379:6379'
     command: redis-server --save 60 1 --loglevel warning
 
   # LiveKit Egress records the composited room (Phase 8). It connects to the
@@ -59,7 +59,7 @@ services:
     # Egress runs a headless Chrome compositor; the default 64MB /dev/shm is too
     # small and Chrome crashes on launch ("chrome failed to start"). LiveKit's
     # egress docs require a larger shm.
-    shm_size: "1gb"
+    shm_size: '1gb'
     # Config is passed inline (not a committed file) so the API secret stays out
     # of source — docker-compose interpolates ${LIVEKIT_*} from the repo-root
     # .env, the same single-source pattern as LIVEKIT_KEYS. ws_url/redis use the
@@ -78,7 +78,7 @@ services:
     # Guarantees host.docker.internal resolves inside the egress network namespace
     # (used by the egress-netfix sidecar below).
     extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - 'host.docker.internal:host-gateway'
     depends_on:
       - redis
       - livekit
@@ -103,7 +103,7 @@ services:
     # activates the profile for local dev.
     profiles:
       - dev-egress-fix
-    network_mode: "service:egress"
+    network_mode: 'service:egress'
     cap_add:
       - NET_ADMIN
     depends_on:
@@ -138,12 +138,12 @@ services:
     # and you can open the console on localhost:9001. In prod the API container
     # talks to minio:9000 over the Docker network, so this is never public.
     ports:
-      - "127.0.0.1:9000:9000" # S3 API
-      - "127.0.0.1:9001:9001" # web console
+      - '127.0.0.1:9000:9000' # S3 API
+      - '127.0.0.1:9001:9001' # web console
     volumes:
       - huddle-minio:/data
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
+      test: ['CMD', 'mc', 'ready', 'local']
       interval: 5s
       timeout: 3s
       retries: 5
@@ -162,11 +162,11 @@ services:
     # Localhost-only (Prisma CLI on the host connects via localhost). The API
     # container reaches it as postgres:5432 over the Docker network in prod.
     ports:
-      - "127.0.0.1:5432:5432"
+      - '127.0.0.1:5432:5432'
     volumes:
       - huddle-postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-huddle}"]
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-huddle}']
       interval: 5s
       timeout: 3s
       retries: 5

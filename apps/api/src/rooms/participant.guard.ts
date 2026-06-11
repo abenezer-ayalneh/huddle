@@ -1,10 +1,4 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  Injectable,
-  UnauthorizedException,
-  createParamDecorator,
-} from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException, createParamDecorator } from '@nestjs/common';
 import type { Request } from 'express';
 import { LivekitService } from './livekit.service';
 
@@ -46,9 +40,7 @@ export class ParticipantGuard implements CanActivate {
 }
 
 // Injects the participant resolved by ParticipantGuard into a handler.
-export const Participant = createParamDecorator(
-  (_data: unknown, context: ExecutionContext): CallParticipant => {
-    const req = context.switchToHttp().getRequest<RequestWithParticipant>();
-    return req.participant as CallParticipant;
-  },
-);
+export const Participant = createParamDecorator((_data: unknown, context: ExecutionContext): CallParticipant => {
+  const req = context.switchToHttp().getRequest<RequestWithParticipant>();
+  return req.participant as CallParticipant;
+});

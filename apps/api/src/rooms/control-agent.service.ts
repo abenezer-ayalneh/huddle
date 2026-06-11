@@ -44,23 +44,14 @@ export class ControlAgentService {
 
   // Room membership is already proven by ParticipantGuard (the token we
   // verified was signed for this room), so no further checks here.
-  async createLink(
-    room: string,
-    participant: CallParticipant,
-  ): Promise<AgentLinkResult> {
+  async createLink(room: string, participant: CallParticipant): Promise<AgentLinkResult> {
     const code = randomBytes(6).toString('base64url');
     const payload: AgentLinkPayload = {
       room,
       identity: participant.identity,
       name: participant.name,
     };
-    await this.redis.set(
-      this.codeKey(code),
-      JSON.stringify(payload),
-      'EX',
-      CODE_TTL_SECONDS,
-      'NX',
-    );
+    await this.redis.set(this.codeKey(code), JSON.stringify(payload), 'EX', CODE_TTL_SECONDS, 'NX');
     return { code, expiresInSeconds: CODE_TTL_SECONDS };
   }
 

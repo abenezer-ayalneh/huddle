@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Calendar, Check, Copy, LogOut, Play } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-import { ApiError, api, type RoomSummary } from "@/lib/api";
-import { signIn, signUp, signOut, useSession } from "@/lib/auth-client";
-import { saveHostSession } from "@/lib/hostSession";
-import DateTimePicker from "@/components/DateTimePicker";
-import IconButton from "@/components/IconButton";
-import HuddleIcon from "@/components/HuddleIcon";
-import LoadingSpinner from "@/components/LoadingSpinner";
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Calendar, Check, Copy, LogOut, Play } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { ApiError, api, type RoomSummary } from '@/lib/api';
+import { signIn, signUp, signOut, useSession } from '@/lib/auth-client';
+import { saveHostSession } from '@/lib/hostSession';
+import DateTimePicker from '@/components/DateTimePicker';
+import IconButton from '@/components/IconButton';
+import HuddleIcon from '@/components/HuddleIcon';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function Lobby() {
   const { data: session, isPending } = useSession();
@@ -67,7 +67,7 @@ function HeroCopy() {
         Self-hosted, real-time video for teams who want control. Guests join with just a link — no account, no installs.
       </p>
       <div className="flex flex-wrap justify-center gap-2.5 lg:justify-start">
-        {["Self-hosted", "Knock-to-join", "Record & download"].map((t) => (
+        {['Self-hosted', 'Knock-to-join', 'Record & download'].map((t) => (
           <span key={t} className="rounded-full border border-white/12 bg-white/5 px-3.5 py-1.5 text-sm text-white/75 backdrop-blur">
             {t}
           </span>
@@ -79,25 +79,25 @@ function HeroCopy() {
 
 // Shared input styling for the auth form.
 const inputClass =
-  "w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2.5 text-white outline-none transition-colors placeholder:text-white/40 focus:border-cyan/60 focus:ring-2 focus:ring-cyan/30";
+  'w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2.5 text-white outline-none transition-colors placeholder:text-white/40 focus:border-cyan/60 focus:ring-2 focus:ring-cyan/30';
 
 function SignIn() {
-  const callbackURL = typeof window !== "undefined" ? window.location.origin : undefined;
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const callbackURL = typeof window !== 'undefined' ? window.location.origin : undefined;
+  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const canSubmit = email.trim() && password.length >= 8 && (mode === "signin" || name.trim()) && !busy;
+  const canSubmit = email.trim() && password.length >= 8 && (mode === 'signin' || name.trim()) && !busy;
 
   async function submit() {
     if (!canSubmit) return;
     setBusy(true);
     setError(null);
     const result =
-      mode === "signup"
+      mode === 'signup'
         ? await signUp.email({
             name: name.trim(),
             email: email.trim(),
@@ -106,16 +106,16 @@ function SignIn() {
         : await signIn.email({ email: email.trim(), password });
     setBusy(false);
     if (result.error) {
-      setError(result.error.message ?? (mode === "signup" ? "Couldn't create that account." : "Wrong email or password."));
+      setError(result.error.message ?? (mode === 'signup' ? "Couldn't create that account." : 'Wrong email or password.'));
     }
   }
 
   return (
     <div className="space-y-5">
       <div className="space-y-1">
-        <h2 className="font-display text-2xl font-semibold text-white">{mode === "signup" ? "Create your account" : "Welcome back"}</h2>
+        <h2 className="font-display text-2xl font-semibold text-white">{mode === 'signup' ? 'Create your account' : 'Welcome back'}</h2>
         <p className="text-sm text-white/55">
-          {mode === "signup" ? "Create an account to host or schedule a meeting." : "Sign in to host or schedule a meeting."}
+          {mode === 'signup' ? 'Create an account to host or schedule a meeting.' : 'Sign in to host or schedule a meeting.'}
         </p>
       </div>
 
@@ -126,7 +126,7 @@ function SignIn() {
         }}
         className="space-y-3"
       >
-        {mode === "signup" && (
+        {mode === 'signup' && (
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Display name" autoComplete="name" className={inputClass} />
         )}
         <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" autoComplete="email" className={inputClass} />
@@ -135,7 +135,7 @@ function SignIn() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Password (8+ characters)"
-          autoComplete={mode === "signup" ? "new-password" : "current-password"}
+          autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
           className={inputClass}
         />
 
@@ -146,25 +146,25 @@ function SignIn() {
           disabled={!canSubmit}
           className="neon-magenta w-full rounded-lg bg-magenta px-4 py-2.5 font-display font-semibold tracking-wide text-white transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
         >
-          {busy ? "Working…" : mode === "signup" ? "Create account" : "Sign in"}
+          {busy ? 'Working…' : mode === 'signup' ? 'Create account' : 'Sign in'}
         </button>
       </form>
 
       <button
         type="button"
         onClick={() => {
-          setMode(mode === "signin" ? "signup" : "signin");
+          setMode(mode === 'signin' ? 'signup' : 'signin');
           setError(null);
         }}
         className="text-sm text-white/55 underline-offset-2 transition-colors hover:text-cyan hover:underline"
       >
-        {mode === "signin" ? "Need an account? Create one" : "Already have an account? Sign in"}
+        {mode === 'signin' ? 'Need an account? Create one' : 'Already have an account? Sign in'}
       </button>
 
       <div className="border-t border-white/10 pt-4">
         <button
           type="button"
-          onClick={() => signIn.social({ provider: "google", callbackURL })}
+          onClick={() => signIn.social({ provider: 'google', callbackURL })}
           className="w-full rounded-lg border border-white/15 bg-white/5 px-4 py-2.5 font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50"
         >
           Continue with Google
@@ -201,7 +201,7 @@ function HostDashboard({ userName, onSignOut }: { userName: string; onSignOut: (
       });
       router.push(`/rooms/${encodeURIComponent(result.room)}`);
     },
-    [router, userName]
+    [router, userName],
   );
 
   // "Instant" button — create a room and jump straight into the call.
@@ -213,7 +213,7 @@ function HostDashboard({ userName, onSignOut }: { userName: string; onSignOut: (
       enterAsHost(await api.createRoom());
     } catch (e) {
       setBusy(false);
-      setError(e instanceof ApiError && e.status === 401 ? "Your session expired — sign in again." : "Couldn't create the meeting. Is the API running?");
+      setError(e instanceof ApiError && e.status === 401 ? 'Your session expired — sign in again.' : "Couldn't create the meeting. Is the API running?");
     }
   }
 
@@ -225,7 +225,7 @@ function HostDashboard({ userName, onSignOut }: { userName: string; onSignOut: (
       await api.createRoom({ scheduledStart: iso });
       refresh();
     } catch (e) {
-      setError(e instanceof ApiError && e.status === 401 ? "Your session expired — sign in again." : "Couldn't create the meeting. Is the API running?");
+      setError(e instanceof ApiError && e.status === 401 ? 'Your session expired — sign in again.' : "Couldn't create the meeting. Is the API running?");
     } finally {
       setBusy(false);
     }
@@ -303,7 +303,7 @@ function MeetingList({ rooms, onStart }: { rooms: RoomSummary[] | null; onStart:
 
 function MeetingRow({ room, onStart }: { room: RoomSummary; onStart: () => void }) {
   const [copied, setCopied] = useState(false);
-  const link = typeof window !== "undefined" ? `${window.location.origin}/rooms/${encodeURIComponent(room.room)}` : "";
+  const link = typeof window !== 'undefined' ? `${window.location.origin}/rooms/${encodeURIComponent(room.room)}` : '';
 
   async function copy() {
     try {
@@ -319,13 +319,13 @@ function MeetingRow({ room, onStart }: { room: RoomSummary; onStart: () => void 
     <li className="py-3">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate font-medium text-white/90">{room.scheduledStart ? new Date(room.scheduledStart).toLocaleString() : "Anytime"}</p>
+          <p className="truncate font-medium text-white/90">{room.scheduledStart ? new Date(room.scheduledStart).toLocaleString() : 'Anytime'}</p>
           <p className="font-mono text-xs text-cyan/80">{room.room}</p>
         </div>
         <div className="flex shrink-0 gap-1">
           <IconButton
             icon={copied ? Check : Copy}
-            label={copied ? "Copied!" : "Copy meeting link"}
+            label={copied ? 'Copied!' : 'Copy meeting link'}
             className="text-white/70 hover:bg-white/15 hover:text-white"
             onClick={copy}
           />

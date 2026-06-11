@@ -7,12 +7,7 @@ import { ConsoleLogger, LogLevel } from '@nestjs/common';
 // Enabled via LOG_FORMAT=json (set in the prod compose env). See
 // docs/adr/0004-deploy-topology-single-vps.md (observability).
 export class JsonLogger extends ConsoleLogger {
-  protected printMessages(
-    messages: unknown[],
-    context = '',
-    logLevel: LogLevel = 'log',
-    _writeStreamType?: 'stdout' | 'stderr',
-  ): void {
+  protected printMessages(messages: unknown[], context = '', logLevel: LogLevel = 'log', _writeStreamType?: 'stdout' | 'stderr'): void {
     for (const message of messages) {
       const line = JSON.stringify({
         level: logLevel,
@@ -20,8 +15,7 @@ export class JsonLogger extends ConsoleLogger {
         context: context || undefined,
         message: typeof message === 'string' ? message : (message as object),
       });
-      const stream =
-        logLevel === 'error' || logLevel === 'fatal' ? 'stderr' : 'stdout';
+      const stream = logLevel === 'error' || logLevel === 'fatal' ? 'stderr' : 'stdout';
       process[stream].write(line + '\n');
     }
   }
@@ -33,7 +27,5 @@ export class JsonLogger extends ConsoleLogger {
 // ConfigModule — is instantiated. This is the one place ConfigService isn't yet
 // available.
 export function makeLogger(): ConsoleLogger {
-  return process.env.LOG_FORMAT === 'json'
-    ? new JsonLogger()
-    : new ConsoleLogger();
+  return process.env.LOG_FORMAT === 'json' ? new JsonLogger() : new ConsoleLogger();
 }

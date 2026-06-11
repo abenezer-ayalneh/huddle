@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useMediaDeviceSelect } from "@livekit/components-react";
-import { Check, ChevronUp } from "lucide-react";
-import { useState } from "react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { saveDevicePreference, type PreferenceKind } from "@/lib/devicePreferences";
+import { useMediaDeviceSelect } from '@livekit/components-react';
+import { Check, ChevronUp } from 'lucide-react';
+import { useState } from 'react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { saveDevicePreference, type PreferenceKind } from '@/lib/devicePreferences';
 
 // In-call device picker (Switch Device, see CONTEXT.md): a slim chevron
 // attached to a control-bar button opens a popover of devices. Picking any
@@ -75,7 +75,7 @@ function DeviceList({ kind, label, onPicked }: { kind: PreferenceKind; label: st
               onClick={() => void pick(d.deviceId)}
               className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-white/85 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60"
             >
-              <Check className={`h-4 w-4 shrink-0 ${active ? "text-cyan" : "opacity-0"}`} />
+              <Check className={`h-4 w-4 shrink-0 ${active ? 'text-cyan' : 'opacity-0'}`} />
               <span className="truncate">{d.label || `${label} ${i + 1}`}</span>
             </button>
           );

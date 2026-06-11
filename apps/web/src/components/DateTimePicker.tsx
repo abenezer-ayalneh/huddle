@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { useCallback, useMemo, useState, type ReactNode } from "react";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 const TIME_SLOTS = Array.from({ length: 96 }, (_, i) => {
   const h = Math.floor(i / 4);
   const m = (i % 4) * 15;
-  const value = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  const value = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   const date = new Date(2000, 0, 1, h, m);
   const label = date.toLocaleTimeString(undefined, {
-    hour: "numeric",
-    minute: "2-digit",
+    hour: 'numeric',
+    minute: '2-digit',
   });
   return { value, label };
 });
@@ -22,11 +22,11 @@ function roundToNextQuarter(date: Date): string {
   const rounded = new Date(date);
   rounded.setHours(h, m, 0, 0);
   if (rounded <= date) rounded.setMinutes(rounded.getMinutes() + 15);
-  return `${String(rounded.getHours()).padStart(2, "0")}:${String(rounded.getMinutes() % 60).padStart(2, "0")}`;
+  return `${String(rounded.getHours()).padStart(2, '0')}:${String(rounded.getMinutes() % 60).padStart(2, '0')}`;
 }
 
 function mergeDayTime(day: Date, time: string): string {
-  const [h, m] = time.split(":").map(Number);
+  const [h, m] = time.split(':').map(Number);
   const merged = new Date(day);
   merged.setHours(h, m, 0, 0);
   return merged.toISOString();
@@ -51,10 +51,10 @@ export default function DateTimePicker({
     if (!selectedDay) return null;
     const dt = new Date(mergeDayTime(selectedDay, selectedTime));
     return dt.toLocaleString(undefined, {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
     });
   }, [selectedDay, selectedTime]);
 
@@ -78,9 +78,9 @@ export default function DateTimePicker({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         disabled={disabled}
-        className={triggerClassName ?? "inline-flex items-center justify-center gap-2 rounded-md border border-input px-3 py-2 text-sm font-medium"}
+        className={triggerClassName ?? 'inline-flex items-center justify-center gap-2 rounded-md border border-input px-3 py-2 text-sm font-medium'}
       >
-        {children ?? "Pick a date & time"}
+        {children ?? 'Pick a date & time'}
       </PopoverTrigger>
 
       <PopoverContent className="w-auto p-0" align="start">

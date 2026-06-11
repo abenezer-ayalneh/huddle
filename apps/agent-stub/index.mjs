@@ -12,14 +12,14 @@
 // Usage (hand-minted, no API needed — reads LIVEKIT_* from env or root .env):
 //   node index.mjs --room <slug> --identity <presenterIdentity> [--name <display name>]
 
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { LocalVideoTrack, Room, RoomEvent, TrackPublishOptions, TrackSource, VideoBufferType, VideoFrame, VideoSource } from "@livekit/rtc-node";
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { LocalVideoTrack, Room, RoomEvent, TrackPublishOptions, TrackSource, VideoBufferType, VideoFrame, VideoSource } from '@livekit/rtc-node';
 
-const CONTROL_TOPIC = "huddle:control";
+const CONTROL_TOPIC = 'huddle:control';
 const CONTROL_VERSION = 1;
-const AGENT_PREFIX = "agent:";
+const AGENT_PREFIX = 'agent:';
 const WIDTH = 1280;
 const HEIGHT = 720;
 const FPS = 10;
@@ -30,7 +30,7 @@ function parseArgs(argv) {
   const args = {};
   for (let i = 2; i < argv.length; i++) {
     const key = argv[i];
-    if (key.startsWith("--")) args[key.slice(2)] = argv[i + 1] ?? "";
+    if (key.startsWith('--')) args[key.slice(2)] = argv[i + 1] ?? '';
   }
   return args;
 }
@@ -39,10 +39,10 @@ function parseArgs(argv) {
 // exporting anything (mirrors how docker compose is fed).
 function loadRootEnv() {
   try {
-    const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
-    for (const line of readFileSync(join(root, ".env"), "utf8").split("\n")) {
+    const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+    for (const line of readFileSync(join(root, '.env'), 'utf8').split('\n')) {
       const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
-      if (m && process.env[m[1]] === undefined) process.env[m[1]] = m[2].replace(/^["']|["']$/g, "");
+      if (m && process.env[m[1]] === undefined) process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
     }
   } catch {
     // no .env — env vars must already be set
@@ -51,10 +51,10 @@ function loadRootEnv() {
 
 async function resolveConnection(args) {
   if (args.code) {
-    const api = args.api || "http://localhost:3001";
+    const api = args.api || 'http://localhost:3001';
     const res = await fetch(`${api}/control-agent/redeem`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code: args.code }),
     });
     if (!res.ok) throw new Error(`redeem failed: ${res.status} ${await res.text()}`);
@@ -64,16 +64,16 @@ async function resolveConnection(args) {
 
   if (args.room && args.identity) {
     loadRootEnv();
-    const { AccessToken, TrackSource: ServerTrackSource } = await import("livekit-server-sdk");
+    const { AccessToken, TrackSource: ServerTrackSource } = await import('livekit-server-sdk');
     const key = process.env.LIVEKIT_API_KEY;
     const secret = process.env.LIVEKIT_API_SECRET;
-    const url = process.env.LIVEKIT_URL || "ws://localhost:7880";
-    if (!key || !secret) throw new Error("LIVEKIT_API_KEY / LIVEKIT_API_SECRET not set");
+    const url = process.env.LIVEKIT_URL || 'ws://localhost:7880';
+    if (!key || !secret) throw new Error('LIVEKIT_API_KEY / LIVEKIT_API_SECRET not set');
     const at = new AccessToken(key, secret, {
       identity: AGENT_PREFIX + args.identity,
       name: args.name || args.identity,
-      ttl: "10m",
-      metadata: JSON.stringify({ role: "agent", presenter: args.identity }),
+      ttl: '10m',
+      metadata: JSON.stringify({ role: 'agent', presenter: args.identity }),
     });
     // Not hidden: LiveKit suppresses a hidden participant's tracks too — the
     // UI hides agents by identity prefix instead (see LivekitService).
@@ -88,7 +88,7 @@ async function resolveConnection(args) {
     return { token: await at.toJwt(), url, presenter: args.identity };
   }
 
-  throw new Error("usage: --code <code> [--api url]  |  --room <slug> --identity <presenter> [--name <n>]");
+  throw new Error('usage: --code <code> [--api url]  |  --room <slug> --identity <presenter> [--name <n>]');
 }
 
 // --- Synthetic "screen" -----------------------------------------------------
@@ -130,7 +130,7 @@ async function main() {
 
   // Publish the fake screen.
   const source = new VideoSource(WIDTH, HEIGHT);
-  const track = LocalVideoTrack.createVideoTrack("screen", source);
+  const track = LocalVideoTrack.createVideoTrack('screen', source);
   const publishOptions = new TrackPublishOptions({ source: TrackSource.SOURCE_SCREENSHARE });
   await room.localParticipant.publishTrack(track, publishOptions);
   log(`publishing synthetic ${WIDTH}x${HEIGHT}@${FPS} screen-share track`);
@@ -180,7 +180,7 @@ async function main() {
 
     switch (msg.type) {
       // Only my own presenter's browser may steer the session.
-      case "control:grant":
+      case 'control:grant':
         if (sender !== presenter) return log(`REJECTED grant from non-presenter ${sender}`);
         controllerId = msg.controllerId;
         log(`GRANT: ${msg.controllerName} (${controllerId}) now controls`);
@@ -188,32 +188,32 @@ async function main() {
         // agent watches the OS clipboard) — exercises agent→controller sync.
         setTimeout(() => {
           if (controllerId) {
-            void send([controllerId], { type: "control:clipboard", text: "hello from the stub agent's clipboard" });
+            void send([controllerId], { type: 'control:clipboard', text: "hello from the stub agent's clipboard" });
           }
         }, 2000);
         break;
 
-      case "control:revoke":
+      case 'control:revoke':
         if (sender !== presenter) return log(`REJECTED revoke from non-presenter ${sender}`);
         log(`REVOKE: ${controllerId} no longer controls`);
         controllerId = null;
         break;
 
-      case "control:stop-present":
+      case 'control:stop-present':
         if (sender !== presenter) return log(`REJECTED stop-present from non-presenter ${sender}`);
-        void shutdown("presenter stopped the share");
+        void shutdown('presenter stopped the share');
         break;
 
-      case "control:release":
+      case 'control:release':
         if (sender !== controllerId) return log(`REJECTED release from non-controller ${sender}`);
         log(`RELEASE: ${controllerId} gave control back`);
         controllerId = null;
         break;
 
-      case "control:input": {
+      case 'control:input': {
         if (sender !== controllerId) return log(`REJECTED input from non-controller ${sender}`);
         const e = msg.event;
-        if (e.kind === "move") {
+        if (e.kind === 'move') {
           // The real agent injects every move; logging each would flood.
           moveCount++;
           const now = Date.now();
@@ -222,9 +222,9 @@ async function main() {
             moveCount = 0;
             lastMoveLog = now;
           }
-        } else if (e.kind === "key") {
-          log(`input: key ${e.action} ${e.key} [${e.code}] mods=${e.modifiers.join("+") || "none"}`);
-        } else if (e.kind === "scroll") {
+        } else if (e.kind === 'key') {
+          log(`input: key ${e.action} ${e.key} [${e.code}] mods=${e.modifiers.join('+') || 'none'}`);
+        } else if (e.kind === 'scroll') {
           log(`input: scroll (${e.dx.toFixed(0)}, ${e.dy.toFixed(0)}) at (${e.x.toFixed(3)}, ${e.y.toFixed(3)})`);
         } else {
           log(`input: ${e.kind} ${e.button} at (${e.x.toFixed(3)}, ${e.y.toFixed(3)})`);
@@ -232,11 +232,11 @@ async function main() {
         break;
       }
 
-      case "control:clipboard":
+      case 'control:clipboard':
         if (sender !== controllerId) return log(`REJECTED clipboard from non-controller ${sender}`);
         log(`clipboard from controller: ${JSON.stringify(msg.text).slice(0, 80)}`);
         // Echo back so the controller-side write path is observable too.
-        void send([sender], { type: "control:clipboard", text: `[stub echo] ${msg.text}` });
+        void send([sender], { type: 'control:clipboard', text: `[stub echo] ${msg.text}` });
         break;
 
       default:
@@ -246,7 +246,7 @@ async function main() {
 
   room.on(RoomEvent.ParticipantDisconnected, (participant) => {
     if (participant.identity === presenter) {
-      void shutdown("presenter left the room");
+      void shutdown('presenter left the room');
     }
     if (participant.identity === controllerId) {
       log(`controller ${controllerId} disconnected — control ends`);
@@ -255,16 +255,16 @@ async function main() {
   });
 
   room.on(RoomEvent.Disconnected, () => {
-    log("disconnected from room");
+    log('disconnected from room');
     clearInterval(frameTimer);
     process.exit(0);
   });
 
-  process.on("SIGINT", () => void shutdown("SIGINT"));
-  log("ready — waiting for control messages");
+  process.on('SIGINT', () => void shutdown('SIGINT'));
+  log('ready — waiting for control messages');
 }
 
 main().catch((err) => {
-  console.error("stub agent failed:", err);
+  console.error('stub agent failed:', err);
   process.exit(1);
 });
