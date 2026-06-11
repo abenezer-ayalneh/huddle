@@ -102,23 +102,31 @@ export default function ControlBar({
 // Share-time choice (docs/adr/0010): plain Present (browser picker, any
 // surface, never controllable) vs Present with Control (the desktop agent
 // shares one whole monitor and can hand input to a participant).
-function ShareMenu({ onPresent, onPresentWithControl }: { onPresent: () => void; onPresentWithControl: () => void }) {
+// Present with Control is disabled pending the agent runtime fix
+// (rust-sdks#795) and the manual two-window verification.
+function ShareMenu({ onPresent }: { onPresent: () => void; onPresentWithControl: () => void }) {
   const [open, setOpen] = useState(false);
 
-  const item = (onClick: () => void, icon: LucideIcon, title: string, hint: string) => {
+  const item = (onClick: () => void, icon: LucideIcon, title: string, hint: string, disabled = false) => {
     const Icon = icon;
     return (
       <button
         type="button"
+        disabled={disabled}
         onClick={() => {
           setOpen(false);
           onClick();
         }}
-        className="flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60"
+        className="flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
       >
         <Icon className="mt-0.5 h-4 w-4 shrink-0 text-cyan" />
         <span className="min-w-0">
-          <span className="block text-sm font-medium text-white/90">{title}</span>
+          <span className="flex items-center gap-2 text-sm font-medium text-white/90">
+            {title}
+            {disabled && (
+              <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/60">Coming soon</span>
+            )}
+          </span>
           <span className="block text-xs text-white/50">{hint}</span>
         </span>
       </button>
@@ -136,7 +144,7 @@ function ShareMenu({ onPresent, onPresentWithControl }: { onPresent: () => void;
       </PopoverTrigger>
       <PopoverContent side="top" sideOffset={14} className="glass-strong w-72 gap-1 rounded-xl p-1.5">
         {item(onPresent, MonitorUp, "Present screen", "Share a tab, window, or screen — view only")}
-        {item(onPresentWithControl, MousePointer2, "Present with control", "Share a monitor via the desktop agent; participants can take the mouse")}
+        {item(() => {}, MousePointer2, "Present with control", "Share a monitor via the desktop agent; participants can take the mouse", true)}
       </PopoverContent>
     </Popover>
   );
