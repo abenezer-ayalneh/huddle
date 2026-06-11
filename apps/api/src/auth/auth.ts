@@ -54,7 +54,7 @@ async function build(config: ConfigService): Promise<Auth> {
     // accepted on cross-origin auth calls.
     trustedOrigins: [webOrigin],
     // Local email + password is the primary login; Google is optional.
-    emailAndPassword: { enabled: true },
+    emailAndPassword: { enabled: true, requireEmailVerification: true },
     socialProviders,
   });
 }
