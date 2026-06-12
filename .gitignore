@@ -39,3 +39,6 @@ coverage/
 # LiveKit / infra runtime data
 infra/data/
 *.log
+
+# Graphify knowledge graph (regenerable)
+graphify-out/
