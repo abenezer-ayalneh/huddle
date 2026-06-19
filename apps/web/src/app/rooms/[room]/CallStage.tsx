@@ -5,6 +5,7 @@ import { useCallback, useState, useSyncExternalStore, type ReactNode } from 'rea
 import AgentLaunchDialog from '@/components/call/AgentLaunchDialog';
 import ChatPanel from '@/components/call/ChatPanel';
 import ConnectionStatus from '@/components/call/ConnectionStatus';
+import CallTimer from '@/components/call/CallTimer';
 import ControlBar from '@/components/call/ControlBar';
 import PresentationToast from '@/components/call/PresentationToast';
 import PreJoinScreen from '@/components/call/PreJoinScreen';
@@ -218,6 +219,7 @@ function CallView({
         />
       </div>
       <AgentLaunchDialog code={launchCode} onCancel={() => setLaunchCode(null)} />
+      <CallTimer />
       <ConnectionStatus />
       {overlay}
     </>

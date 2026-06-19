@@ -177,6 +177,21 @@ export class LivekitService {
     return muted;
   }
 
+  async stampStartedAt(room: string): Promise<void> {
+    const [info] = await this.svc.listRooms([room]);
+    let meta: Record<string, unknown> = {};
+    if (info?.metadata) {
+      try {
+        meta = JSON.parse(info.metadata) as Record<string, unknown>;
+      } catch {
+        meta = {};
+      }
+    }
+    if (meta.startedAt) return;
+    meta.startedAt = Date.now();
+    await this.svc.updateRoomMetadata(room, JSON.stringify(meta));
+  }
+
   private readMuteOnEntry(metadata?: string): boolean {
     if (!metadata) return false;
     try {

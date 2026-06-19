@@ -32,6 +32,10 @@ export class WebhookController {
       throw new UnauthorizedException('Invalid webhook signature');
     }
 
+    if (event.event === 'participant_joined' && event.room?.name) {
+      await this.livekit.stampStartedAt(event.room.name);
+    }
+
     if (event.event === 'room_finished' && event.room?.name) {
       await this.rooms.onRoomFinished(event.room.name);
     }
