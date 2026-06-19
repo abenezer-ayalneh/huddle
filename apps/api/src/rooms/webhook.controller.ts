@@ -36,6 +36,10 @@ export class WebhookController {
       await this.livekit.stampStartedAt(event.room.name);
     }
 
+    if (event.event === 'participant_left' && event.room?.name && event.room.numParticipants === 0) {
+      await this.livekit.clearStartedAt(event.room.name);
+    }
+
     if (event.event === 'room_finished' && event.room?.name) {
       await this.rooms.onRoomFinished(event.room.name);
     }

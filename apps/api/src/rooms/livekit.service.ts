@@ -192,6 +192,20 @@ export class LivekitService {
     await this.svc.updateRoomMetadata(room, JSON.stringify(meta));
   }
 
+  async clearStartedAt(room: string): Promise<void> {
+    const [info] = await this.svc.listRooms([room]);
+    if (!info?.metadata) return;
+    let meta: Record<string, unknown> = {};
+    try {
+      meta = JSON.parse(info.metadata) as Record<string, unknown>;
+    } catch {
+      return;
+    }
+    if (!meta.startedAt) return;
+    delete meta.startedAt;
+    await this.svc.updateRoomMetadata(room, JSON.stringify(meta));
+  }
+
   private readMuteOnEntry(metadata?: string): boolean {
     if (!metadata) return false;
     try {
