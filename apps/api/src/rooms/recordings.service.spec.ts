@@ -1,7 +1,8 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import type { Recording, Room } from '@prisma/client';
 import { EgressStatus, type EgressInfo } from 'livekit-server-sdk';
 import type { EgressService } from './egress.service';
+import type { LivekitService } from './livekit.service';
 import { RecordingsService } from './recordings.service';
 import type { StorageService } from './storage.service';
 
@@ -29,13 +30,14 @@ class FakeRoomRepo {
 class FakeRecordingRepo {
   rows: Recording[] = [];
   seq = 0;
-  create(p: { egressId: string; roomId: string; objectKey: string }) {
+  create(p: { egressId: string; roomId: string; objectKey: string; startedByIdentity?: string | null }) {
     const rec = {
       id: `rec-${++this.seq}`,
       egressId: p.egressId,
       roomId: p.roomId,
       status: 'starting',
       objectKey: p.objectKey,
+      startedByIdentity: p.startedByIdentity ?? null,
       sizeBytes: null,
       durationMs: null,
       error: null,
@@ -69,6 +71,7 @@ describe('RecordingsService', () => {
   let recordings: FakeRecordingRepo;
   let egress: jest.Mocked<Pick<EgressService, 'startRoomComposite' | 'stop'>>;
   let storage: jest.Mocked<Pick<StorageService, 'ensureBucket' | 'getObject'>>;
+  let livekit: jest.Mocked<Pick<LivekitService, 'setRecordingActive'>>;
   let service: RecordingsService;
 
   beforeEach(() => {
@@ -83,7 +86,8 @@ describe('RecordingsService', () => {
       ensureBucket: jest.fn().mockResolvedValue(undefined),
       getObject: jest.fn(),
     };
-    service = new RecordingsService(rooms as never, recordings as never, egress as never, storage as never);
+    livekit = { setRecordingActive: jest.fn().mockResolvedValue(undefined) };
+    service = new RecordingsService(rooms as never, recordings as never, egress as never, storage as never, livekit as never);
   });
 
   it('starts a recording: ensures the bucket and stores the egress job', async () => {
@@ -130,5 +134,37 @@ describe('RecordingsService', () => {
   it('refuses to download a recording that is not complete', async () => {
     const { id } = await service.start('standup');
     await expect(service.download('standup', id)).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('lights the Recording Indicator when a recording starts', async () => {
+    await service.start('standup');
+    expect(livekit.setRecordingActive).toHaveBeenCalledWith('standup', true);
+  });
+
+  it('clears the Recording Indicator when the recording ends', async () => {
+    await service.start('standup');
+    await service.handleEgressEvent({
+      egressId: 'eg-1',
+      roomName: 'standup',
+      status: EgressStatus.EGRESS_COMPLETE,
+      fileResults: [{ size: 1n, duration: 1n }],
+    } as unknown as EgressInfo);
+    expect(livekit.setRecordingActive).toHaveBeenLastCalledWith('standup', false);
+  });
+
+  it('host approval starts the recording immediately, attributed to the requester', async () => {
+    const summary = await service.startForParticipant('standup', 'guest-1');
+    expect(egress.startRoomComposite).toHaveBeenCalled();
+    expect(summary.status).toBe('starting');
+    expect(recordings.rows[0].startedByIdentity).toBe('guest-1');
+  });
+
+  it('a participant can stop only the recording they started', async () => {
+    await service.startForParticipant('standup', 'guest-1');
+    await expect(service.stopAsParticipant('standup', { identity: 'guest-2', name: 'Bo' })).rejects.toBeInstanceOf(ForbiddenException);
+
+    const stopped = await service.stopAsParticipant('standup', { identity: 'guest-1', name: 'Ada' });
+    expect(egress.stop).toHaveBeenCalledWith('eg-1');
+    expect(stopped.id).toBe(recordings.rows[0].id);
   });
 });

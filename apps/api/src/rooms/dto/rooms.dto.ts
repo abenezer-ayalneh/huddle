@@ -31,6 +31,15 @@ export class MuteOnEntryDto {
   muted!: boolean;
 }
 
+export class ApproveRecordingDto {
+  // LiveKit identity of the participant whose Request to Record the host is
+  // approving (docs/adr/0011).
+  @IsString()
+  @MinLength(1)
+  @MaxLength(128)
+  identity!: string;
+}
+
 export class RedeemAgentCodeDto {
   // One-time Control Agent pairing code (8 chars of base64url today; bounds
   // are loose so the format can evolve without a contract change).

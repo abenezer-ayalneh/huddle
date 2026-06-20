@@ -8,12 +8,13 @@ import { PrismaService } from '../prisma/prisma.service';
 export class RecordingRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(params: { egressId: string; roomId: string; objectKey: string }): Promise<Recording> {
+  create(params: { egressId: string; roomId: string; objectKey: string; startedByIdentity?: string | null }): Promise<Recording> {
     return this.prisma.recording.create({
       data: {
         egressId: params.egressId,
         roomId: params.roomId,
         objectKey: params.objectKey,
+        startedByIdentity: params.startedByIdentity ?? null,
         status: 'starting',
       },
     });

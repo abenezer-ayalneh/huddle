@@ -108,6 +108,10 @@ model Recording {
   status     String    @default("starting")
   // Path within the bucket; known at start time from the egress request.
   objectKey  String
+  // LiveKit identity of the non-host participant who started this recording via
+  // an approved Request to Record (docs/adr/0011). Null when the host started it
+  // directly. Authorizes that participant to stop the recording they began.
+  startedByIdentity String?
   sizeBytes  BigInt?
   durationMs Int?
   error      String?

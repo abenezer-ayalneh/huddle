@@ -26,14 +26,16 @@ _Avoid_: Booking, event
 
 **Host**:
 The signed-in account that created a managed room and controls admission, mute,
-kick, and recording. Authority is enforced server-side via the room's `hostKey`,
-never trusted from the client.
+kick, and recording. The host records freely (no approval needed) and is the
+approver for everyone else's Request to Record. Authority is enforced
+server-side via the room's `hostKey`, never trusted from the client.
 _Avoid_: Owner (owner is the persistence concept — the account that holds the room
 record; usually the same person, but not a live-call role), moderator, admin
 
 **Guest**:
 A participant who arrives via a shared link and must knock to enter. Has no
-host key and no admin powers.
+host key and no admin powers — but, like any non-host participant, may send a
+Request to Record that the host approves.
 _Avoid_: Attendee, viewer, visitor
 
 **Room Code**:
@@ -184,3 +186,39 @@ LiveKit room's metadata, so it propagates to every client in real time.
 _Avoid_: Mute all (implies a one-shot bulk action, hiding the persistent,
 mute-on-join behaviour), room mute (ambiguous — sounds like muting the room's
 output), hard mute / lockdown (this never revokes the right to speak)
+
+### Recording
+
+**Recording**:
+The single composited capture of a managed room — the same grid + mixed audio a
+participant sees — produced as one MP4 per session by LiveKit Egress. There is
+at most one active Recording per room at a time. The resulting file always
+belongs to the room (the host's account) and is only ever downloaded by the
+host, regardless of who started it.
+_Avoid_: Capture, session record, tape
+
+**Request to Record**:
+A non-host participant's in-call request for permission to record. Any
+participant except the host may send one (Guests included); the host never needs
+to — they record freely. Sent to the host over LiveKit data messages, like Ask
+to Present, and auto-declined after 30 seconds if the host does not respond. The
+host's responses are **Approve / Deny**.
+_Avoid_: Ask to record, recording request, record permission
+
+**Approve / Deny**:
+The host's decision on a Request to Record. Approve **starts the recording
+immediately**, attributed to the requester so that either they or the host can
+stop it; once it stops, a new Request to Record is needed to record again. Deny
+ends the request with nothing started. Approval is a host-key-authorized action
+on the server (the host key is never shared); attribution lets the requester's
+participant token authorize their stop.
+_Avoid_: Accept/reject, admit/deny (admit is the knock decision), grant/revoke
+
+**Recording Indicator**:
+The room-wide signal that a Recording is active, shown to **every** participant
+regardless of who started it. Driven by a flag in the LiveKit room's metadata
+(the same real-time propagation as Mute on Entry), so it appears and clears for
+all clients at once. Its purpose is consent: no one is recorded without an
+on-screen signal.
+_Avoid_: Rec light, recording badge (fine in UI copy, but "Recording Indicator"
+is the domain term)

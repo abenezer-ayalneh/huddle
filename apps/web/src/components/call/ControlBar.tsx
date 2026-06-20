@@ -2,7 +2,22 @@
 
 import { useTrackToggle } from '@livekit/components-react';
 import { Track } from 'livekit-client';
-import { Mic, MicOff, Video, VideoOff, MonitorUp, MonitorOff, MessageSquare, MousePointer2, PhoneOff, ChevronUp, type LucideIcon } from 'lucide-react';
+import {
+  Circle,
+  Loader2,
+  Mic,
+  MicOff,
+  Video,
+  VideoOff,
+  MonitorUp,
+  MonitorOff,
+  MessageSquare,
+  MousePointer2,
+  PhoneOff,
+  Square,
+  ChevronUp,
+  type LucideIcon,
+} from 'lucide-react';
 import { useState } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import DeviceMenu, { type DeviceSection } from './DeviceMenu';
@@ -17,6 +32,9 @@ export default function ControlBar({
   onShareClick,
   onPresentWithControl,
   hasOutgoingRequest,
+  recordMode,
+  onRecordClick,
+  recordBusy = false,
 }: {
   onLeave: () => void;
   chatOpen: boolean;
@@ -29,6 +47,12 @@ export default function ControlBar({
   // the caller gates it to desktop browsers when nobody is presenting yet.
   onPresentWithControl?: () => void;
   hasOutgoingRequest: boolean;
+  // Request to Record (docs/adr/0011): the non-host's record affordance. The
+  // host records from the Host panel instead, so this is hidden (mode
+  // undefined) for the host and when someone else is already recording.
+  recordMode?: 'request' | 'pending' | 'recording';
+  onRecordClick?: () => void;
+  recordBusy?: boolean;
 }) {
   const mic = useTrackToggle({ source: Track.Source.Microphone });
   const cam = useTrackToggle({ source: Track.Source.Camera });
@@ -91,6 +115,8 @@ export default function ControlBar({
         </div>
         <ControlButton icon={MessageSquare} label={chatOpen ? 'Hide chat' : 'Show chat'} active={chatOpen} badge={unreadChat} onClick={onToggleChat} />
 
+        {recordMode && onRecordClick && <RecordButton mode={recordMode} busy={recordBusy} onClick={onRecordClick} />}
+
         <span className="mx-1 h-7 w-px bg-white/10" />
 
         <ControlButton icon={PhoneOff} label="Leave call" leave onClick={onLeave} />
@@ -147,6 +173,44 @@ function ShareMenu({ onPresent }: { onPresent: () => void; onPresentWithControl:
         {item(() => {}, MousePointer2, 'Present with control', 'Share a monitor via the desktop agent; participants can take the mouse', true)}
       </PopoverContent>
     </Popover>
+  );
+}
+
+// The non-host record affordance (docs/adr/0011). One button that walks the
+// request lifecycle: ask → wait for approval → stop (approval starts it).
+function RecordButton({ mode, busy, onClick }: { mode: 'request' | 'pending' | 'recording'; busy: boolean; onClick: () => void }) {
+  if (mode === 'pending') {
+    return (
+      <button
+        type="button"
+        title="Waiting for the host to approve"
+        aria-label="Waiting for the host to approve recording. Cancel request"
+        onClick={onClick}
+        className="relative flex h-11 w-11 items-center justify-center rounded-full bg-white/8 text-white/70 ring-1 ring-white/10 transition-all hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 sm:h-12 sm:w-12 [&>svg]:h-5 [&>svg]:w-5"
+      >
+        <Loader2 className="animate-spin" />
+      </button>
+    );
+  }
+
+  const recording = mode === 'recording';
+  const label = recording ? 'Stop recording' : 'Request to record';
+  const Icon = recording ? Square : Circle;
+
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      aria-pressed={recording}
+      disabled={busy}
+      onClick={onClick}
+      className={`relative flex h-11 w-11 items-center justify-center rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-35 sm:h-12 sm:w-12 [&>svg]:h-5 [&>svg]:w-5 ${
+        recording ? 'bg-red-500 text-white hover:bg-red-400' : 'bg-white/8 text-white/80 ring-1 ring-white/10 hover:bg-white/15'
+      }`}
+    >
+      <Icon />
+    </button>
   );
 }
 

@@ -105,6 +105,7 @@ export default function RoomClient({ room }: { room: string }) {
       onError={setError}
       overlay={<HostPanel room={room} hostKey={host.hostKey} />}
       isHost
+      hostKey={host.hostKey}
     />
   );
 }

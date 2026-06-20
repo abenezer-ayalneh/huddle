@@ -38,6 +38,12 @@ failures almost always mean it was given the host endpoint.
 
 ## Who can record: host-only, manual
 
+> **Amended by [ADR-0011](0011-request-to-record-host-approve.md).** Recording is
+> no longer host-only to _start_: any non-host participant may send a Request to
+> Record that the host approves, unlocking a single recording for that requester.
+> The rest of this section still holds — recordings are host-owned, host-
+> downloaded, and one-active-per-room.
+
 Recording is started/stopped by the **host**, authorized by the per-room
 `x-host-key` (the same authority as admit/mute/remove — `HostGuard`), not the
 BetterAuth session. Guests cannot record. There's one active recording per room

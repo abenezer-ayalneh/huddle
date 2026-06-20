@@ -9,11 +9,14 @@ import CallTimer from '@/components/call/CallTimer';
 import ControlBar from '@/components/call/ControlBar';
 import PresentationToast from '@/components/call/PresentationToast';
 import PreJoinScreen from '@/components/call/PreJoinScreen';
+import RecordingIndicator from '@/components/call/RecordingIndicator';
+import RecordingToast from '@/components/call/RecordingToast';
 import RemoteControlBanner from '@/components/call/RemoteControlBanner';
 import RemoteControlSurface from '@/components/call/RemoteControlSurface';
 import RemoteControlToast from '@/components/call/RemoteControlToast';
 import VideoGrid from '@/components/call/VideoGrid';
 import { usePresentation } from '@/components/call/usePresentation';
+import { useRecording } from '@/components/call/useRecording';
 import { useRemoteControl } from '@/components/call/useRemoteControl';
 import { api, API_URL } from '@/lib/api';
 import LeaveConfirmDialog from './LeaveConfirmDialog';
@@ -34,6 +37,7 @@ export default function CallStage({
   initialChoices,
   startMuted = false,
   isHost = false,
+  hostKey,
 }: {
   room: string;
   connection: Connection;
@@ -44,6 +48,8 @@ export default function CallStage({
   initialChoices?: LocalUserChoices;
   startMuted?: boolean;
   isHost?: boolean;
+  // Present only for the host; lets them approve a Request to Record.
+  hostKey?: string;
 }) {
   const [choices, setChoices] = useState<LocalUserChoices | null>(initialChoices ?? null);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
@@ -83,7 +89,7 @@ export default function CallStage({
         style={{ height: '100dvh' }}
         className="bg-dotgrid"
       >
-        <CallView room={room} token={connection.token} onLeaveClick={() => setShowLeaveDialog(true)} overlay={overlay} isHost={isHost} />
+        <CallView room={room} token={connection.token} onLeaveClick={() => setShowLeaveDialog(true)} overlay={overlay} isHost={isHost} hostKey={hostKey} />
         <RoomAudioRenderer />
       </LiveKitRoom>
       <LeaveConfirmDialog open={showLeaveDialog} onConfirm={confirmLeave} onCancel={() => setShowLeaveDialog(false)} />
@@ -97,17 +103,36 @@ function CallView({
   onLeaveClick,
   overlay,
   isHost,
+  hostKey,
 }: {
   room: string;
   token: string;
   onLeaveClick: () => void;
   overlay?: ReactNode;
   isHost: boolean;
+  hostKey?: string;
 }) {
   const { chatMessages, send, isSending } = useChat();
   const [chatOpen, setChatOpen] = useState(false);
 
   const presentation = usePresentation(isHost);
+  const recording = useRecording({ room, token, isHost, hostKey });
+
+  // The non-host record affordance walks request → wait → stop (approval starts
+  // the recording immediately). The host records from the Host panel, and nobody
+  // but the active recorder gets a stop button, so the control-bar button is
+  // hidden in those cases (the room-wide RecordingIndicator still shows state).
+  const recordMode: 'request' | 'pending' | 'recording' | undefined = isHost
+    ? undefined
+    : recording.iAmRecorder
+      ? 'recording'
+      : recording.recordingActive
+        ? undefined
+        : recording.phase === 'pending'
+          ? 'pending'
+          : 'request';
+
+  const onRecordClick = recordMode === 'recording' ? recording.stopRecording : recordMode === 'pending' ? recording.cancelRequest : recording.requestToRecord;
   const control = useRemoteControl({
     presenterIdentity: presentation.presenterIdentity,
     presenterName: presentation.presenterName,
@@ -181,6 +206,9 @@ function CallView({
         onShareClick={presentation.handleShareClick}
         onPresentWithControl={canPresentWithControl ? presentWithControl : undefined}
         hasOutgoingRequest={!!presentation.outgoing}
+        recordMode={recordMode}
+        onRecordClick={recordMode ? onRecordClick : undefined}
+        recordBusy={recording.busy}
       />
       <div className="pointer-events-none absolute inset-x-0 top-2 z-30 flex justify-center">
         <RemoteControlBanner
@@ -195,6 +223,16 @@ function CallView({
         />
       </div>
       <div className="pointer-events-none absolute inset-x-0 top-14 z-30 flex flex-col items-center gap-2">
+        <RecordingIndicator active={recording.recordingActive} />
+        <RecordingToast
+          incoming={recording.incoming}
+          pending={recording.phase === 'pending'}
+          outcome={recording.outcome}
+          onApprove={recording.approve}
+          onDeny={recording.deny}
+          onCancel={recording.cancelRequest}
+          onDismissOutcome={recording.dismissOutcome}
+        />
         <PresentationToast
           outgoing={presentation.outgoing}
           incoming={presentation.incoming}

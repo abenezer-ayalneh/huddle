@@ -204,6 +204,32 @@ attachment`). Header `x-host-key` → so the browser fetches it as a blob, not a
 plain link. **409** if the recording isn't `completed` yet. The file is proxied
 from MinIO through the API; bucket credentials never reach the browser.
 
+### Request to Record _(docs/adr/0011)_
+
+Any non-host participant may ask to drive the room recording; the host approves.
+The request/approve/deny prompts travel over LiveKit data messages (topic
+`huddle:record`); these three endpoints are the server-side authority.
+
+#### POST /rooms/:room/recordings/approve _(host)_
+
+Approve a participant's Request to Record. Header `x-host-key`. Body
+`{ "identity" }` — the LiveKit identity to attribute. **Approval starts the
+recording immediately** (under the host's authority), attributed to that
+identity. One active recording per room → **409** if one is already running.
+**Response 200:** a `RecordingSummary` with `status: "starting"`. The file is
+still host-owned and host-downloaded; the participant only triggered it. (Deny
+needs no call — it is purely the client-side `record:deny` data message.)
+
+#### POST /rooms/:room/recordings/stop-by-participant _(participant)_
+
+Stop the active recording **you** started. Header `x-participant-token`.
+Authorized by the recording's `startedByIdentity`, not a grant (→ **403** if you
+didn't start the active recording). **Response 200:** the updated
+`RecordingSummary`. The host can always stop any recording via the host-key stop.
+
+While a recording is active the room metadata carries `recording: true` (the
+**Recording Indicator**), so every client shows the recording state in real time.
+
 ### GET /recordings/mine _(session)_
 
 List **all** recordings across every room the signed-in host owns, newest first

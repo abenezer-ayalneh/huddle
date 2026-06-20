@@ -1,8 +1,10 @@
-import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { EgressInfo } from 'livekit-server-sdk';
 import { EgressStatus } from 'livekit-server-sdk';
 import type { Readable } from 'node:stream';
 import { EgressService } from './egress.service';
+import { LivekitService } from './livekit.service';
+import type { CallParticipant } from './participant.guard';
 import { RecordingRepository } from './recordings.repo';
 import { RoomRepository } from './rooms.repo';
 import { StorageService } from './storage.service';
@@ -36,10 +38,23 @@ export class RecordingsService {
     private readonly recordings: RecordingRepository,
     private readonly egress: EgressService,
     private readonly storage: StorageService,
+    private readonly livekit: LivekitService,
   ) {}
 
   // Host starts a room-composite recording. One active recording per room.
   async start(slug: string): Promise<RecordingSummary> {
+    return this.startRecording(slug, null);
+  }
+
+  // The host approves a participant's Request to Record (docs/adr/0011), which
+  // starts the recording immediately, attributed to that participant so they
+  // can later stop it. Host-key authorized via the controller — there is no
+  // standing grant; approval *is* the start.
+  async startForParticipant(slug: string, identity: string): Promise<RecordingSummary> {
+    return this.startRecording(slug, identity);
+  }
+
+  private async startRecording(slug: string, startedByIdentity: string | null): Promise<RecordingSummary> {
     const room = await this.requireRoom(slug);
     const active = await this.recordings.listActiveByRoom(room.id);
     if (active.length > 0) {
@@ -53,7 +68,11 @@ export class RecordingsService {
       egressId,
       roomId: room.id,
       objectKey,
+      startedByIdentity,
     });
+    // Light up the room-wide Recording Indicator immediately; the egress webhook
+    // will clear it when the recording actually ends.
+    await this.setIndicator(slug, true);
     return this.toSummary(rec);
   }
 
@@ -69,6 +88,19 @@ export class RecordingsService {
     }
     const fresh = await this.recordings.findByEgressId(rec.egressId);
     return this.toSummary(fresh ?? rec);
+  }
+
+  // A non-host participant stops the active recording they started. Authority
+  // comes from the recording's `startedByIdentity`, not a grant (the grant was
+  // spent at start). The host's own stop goes through the host-key `stop` above.
+  async stopAsParticipant(slug: string, participant: CallParticipant): Promise<RecordingSummary> {
+    const room = await this.requireRoom(slug);
+    const active = await this.recordings.listActiveByRoom(room.id);
+    const mine = active.find((r) => r.startedByIdentity === participant.identity);
+    if (!mine) {
+      throw new ForbiddenException('You have no active recording to stop');
+    }
+    return this.stop(slug, mine.id);
   }
 
   async list(slug: string): Promise<{ recordings: RecordingSummary[] }> {
@@ -117,6 +149,27 @@ export class RecordingsService {
       ...(info.error ? { error: info.error } : {}),
       ...(ended ? { endedAt: new Date() } : {}),
     });
+
+    // Keep the room-wide Recording Indicator in sync. On end, only clear it once
+    // no recording is still running (defensive — there is one at a time today).
+    if (info.roomName) {
+      if (ended) {
+        const stillActive = await this.recordings.listActiveByRoom(rec.roomId);
+        if (stillActive.length === 0) await this.setIndicator(info.roomName, false);
+      } else {
+        await this.setIndicator(info.roomName, true);
+      }
+    }
+  }
+
+  // Best-effort: a failed metadata write must not fail the recording action or
+  // the webhook. The indicator is a convenience signal, not the source of truth.
+  private async setIndicator(slug: string, active: boolean): Promise<void> {
+    try {
+      await this.livekit.setRecordingActive(slug, active);
+    } catch (err) {
+      this.logger.warn(`setRecordingActive(${slug}, ${active}) failed: ${String(err)}`);
+    }
   }
 
   private mapStatus(status: EgressStatus): string {

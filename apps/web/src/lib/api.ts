@@ -176,6 +176,24 @@ export const api = {
   stopRecording: (room: string, id: string, hostKey: string) =>
     request<RecordingSummary>(`/rooms/${encodeURIComponent(room)}/recordings/${id}/stop`, { method: 'POST', hostKey }),
 
+  // --- Request to Record (docs/adr/0011) ---
+  // Host approves a participant's Request to Record: approval starts the
+  // recording immediately, attributed to that identity. Deny needs no API call.
+  approveRecording: (room: string, identity: string, hostKey: string) =>
+    request<RecordingSummary>(`/rooms/${encodeURIComponent(room)}/recordings/approve`, {
+      method: 'POST',
+      body: JSON.stringify({ identity }),
+      hostKey,
+    }),
+
+  // The requester stops the recording they were approved for, authorized by
+  // their own LiveKit token (x-participant-token).
+  stopRecordingAsParticipant: (room: string, participantToken: string) =>
+    request<RecordingSummary>(`/rooms/${encodeURIComponent(room)}/recordings/stop-by-participant`, {
+      method: 'POST',
+      headers: { 'x-participant-token': participantToken },
+    }),
+
   // The download is host-authorized (x-host-key), so it can't be a plain link —
   // fetch it as a blob and let the caller trigger a save.
   downloadRecording: async (room: string, id: string, hostKey: string): Promise<Blob> => {

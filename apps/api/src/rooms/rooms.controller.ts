@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Header, Param, Post, Res, StreamableFile
 import type { Response } from 'express';
 import { AuthGuard, SessionUser, type AuthUser } from '../auth/auth.guard';
 import { ControlAgentService } from './control-agent.service';
-import { CreateRoomDto, KnockDto, MuteDto, MuteOnEntryDto } from './dto/rooms.dto';
+import { ApproveRecordingDto, CreateRoomDto, KnockDto, MuteDto, MuteOnEntryDto } from './dto/rooms.dto';
 import { HostGuard } from './host.guard';
 import { Participant, ParticipantGuard, type CallParticipant } from './participant.guard';
 import { RecordingsService } from './recordings.service';
@@ -69,6 +69,16 @@ export class RoomsController {
     return this.controlAgent.createLink(room, participant);
   }
 
+  // --- Request to Record (docs/adr/0011) ---
+  // The requester stops the recording they were approved for, authorized by
+  // their own LiveKit token (x-participant-token) matched against the
+  // recording's starter. The host can always stop via the host-key route below.
+  @UseGuards(ParticipantGuard)
+  @Post(':room/recordings/stop-by-participant')
+  stopRecordingAsParticipant(@Param('room') room: string, @Participant() participant: CallParticipant) {
+    return this.recordings.stopAsParticipant(room, participant);
+  }
+
   // --- Host-only endpoints (x-host-key) ---
   @UseGuards(HostGuard)
   @Get(':room/knocks')
@@ -111,6 +121,15 @@ export class RoomsController {
   @Post(':room/recordings')
   startRecording(@Param('room') room: string) {
     return this.recordings.start(room);
+  }
+
+  // Host approves a participant's Request to Record (docs/adr/0011): approval
+  // starts the recording immediately, attributed to that participant so they can
+  // stop it. Deny is purely a client-side data message — nothing to persist.
+  @UseGuards(HostGuard)
+  @Post(':room/recordings/approve')
+  approveRecording(@Param('room') room: string, @Body() dto: ApproveRecordingDto) {
+    return this.recordings.startForParticipant(room, dto.identity);
   }
 
   @UseGuards(HostGuard)

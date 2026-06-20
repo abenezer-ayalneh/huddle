@@ -177,6 +177,26 @@ export class LivekitService {
     return muted;
   }
 
+  // --- Recording Indicator (see docs/adr/0011) --------------------------
+  // A room-wide "a recording is active" flag, kept in the room metadata so
+  // LiveKit pushes it to every client in real time — the same mechanism as
+  // Mute on Entry. Its purpose is consent: no one is recorded without an
+  // on-screen signal, regardless of who started the recording.
+  async setRecordingActive(room: string, active: boolean): Promise<void> {
+    const [info] = await this.svc.listRooms([room]);
+    let meta: Record<string, unknown> = {};
+    if (info?.metadata) {
+      try {
+        meta = JSON.parse(info.metadata) as Record<string, unknown>;
+      } catch {
+        meta = {};
+      }
+    }
+    if ((meta.recording === true) === active) return;
+    meta.recording = active;
+    await this.svc.updateRoomMetadata(room, JSON.stringify(meta));
+  }
+
   async stampStartedAt(room: string): Promise<void> {
     const [info] = await this.svc.listRooms([room]);
     let meta: Record<string, unknown> = {};
