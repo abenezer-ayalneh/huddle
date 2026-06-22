@@ -115,10 +115,11 @@ _Avoid_: You're-muted popup, mute nudge, unmute prompt, talk-while-muted toast
 A modifier-key binding for an in-call control that mirrors a control-bar button:
 the audio shortcut toggles the microphone, the video shortcut toggles the camera.
 The modifier maps per-platform — Cmd (⌘) on macOS, Ctrl on Windows/Linux — so the
-audio shortcut is ⌘D / Ctrl+D and the video shortcut is ⌘E / Ctrl+E. The bindings
-take over those key combos from the browser while active (otherwise ⌘D bookmarks
-the page). Active on the Device Check screen and during the call; suspended while
-the participant is a Controller, when keystrokes belong to the controlled machine.
+audio shortcut is ⌘D / Ctrl+D and the video shortcut is ⌘E / Ctrl+E. The binding
+claims those combos for the call ahead of the browser's own defaults and any
+browser extension (the same way Meet/Zoom do). Active on the Device Check screen
+and during the call; suspended while the participant is a Controller, when
+keystrokes belong to the controlled machine.
 _Avoid_: Hotkey, accelerator, keybinding
 
 **Push to Talk**:

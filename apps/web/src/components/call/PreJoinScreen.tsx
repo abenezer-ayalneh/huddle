@@ -4,6 +4,7 @@ import type { LocalUserChoices } from '@livekit/components-react';
 import { ChevronDown, Mic, MicOff, Video, VideoOff } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { loadDevicePreferences, saveDevicePreference } from '@/lib/devicePreferences';
+import { useCallShortcuts, useModifierKeyLabel } from './useCallShortcuts';
 
 type Defaults = {
   username?: string;
@@ -155,6 +156,15 @@ export default function PreJoinScreen({
     saveDevicePreference('audioinput', id);
   }, []);
 
+  // Keyboard Shortcuts (docs/adr/0013): Cmd/Ctrl+D / +E toggle mic & camera on
+  // the Device Check too. No push-to-talk here — there is nothing to talk into
+  // before joining.
+  const mod = useModifierKeyLabel();
+  useCallShortcuts({
+    onToggleAudio: () => setAudioEnabled((v) => !v),
+    onToggleCamera: toggleVideo,
+  });
+
   const canJoin = !requireName || username.trim().length > 0;
 
   const submit = useCallback(() => {
@@ -212,10 +222,16 @@ export default function PreJoinScreen({
               on={audioEnabled}
               onIcon={Mic}
               offIcon={MicOff}
-              label={audioEnabled ? 'Mic on' : 'Mic off'}
+              label={`${audioEnabled ? 'Mic on' : 'Mic off'} (${mod}D)`}
               onClick={() => setAudioEnabled((v) => !v)}
             />
-            <ToggleButton on={videoEnabled} onIcon={Video} offIcon={VideoOff} label={videoEnabled ? 'Camera on' : 'Camera off'} onClick={toggleVideo} />
+            <ToggleButton
+              on={videoEnabled}
+              onIcon={Video}
+              offIcon={VideoOff}
+              label={`${videoEnabled ? 'Camera on' : 'Camera off'} (${mod}E)`}
+              onClick={toggleVideo}
+            />
           </div>
 
           <DeviceSelect icon={Video} value={videoDeviceId} devices={videoDevices} fallbackLabel="Camera" onChange={changeCamera} />

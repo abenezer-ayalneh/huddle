@@ -194,6 +194,8 @@ function CallView({
     <>
       <VideoGrid
         presentationOverlay={control.controlling ? <RemoteControlSurface sendInput={control.sendInput} sendClipboard={control.sendClipboard} /> : undefined}
+        iAmPresenting={presentation.iAmPresenting}
+        onStopPresenting={presentation.handleShareClick}
       />
       <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} messages={chatMessages} onSend={send} isSending={isSending} />
       <ControlBar
@@ -209,6 +211,7 @@ function CallView({
         recordMode={recordMode}
         onRecordClick={recordMode ? onRecordClick : undefined}
         recordBusy={recording.busy}
+        suspendShortcuts={!!control.controlling}
       />
       <div className="pointer-events-none absolute inset-x-0 top-2 z-30 flex justify-center">
         <RemoteControlBanner

@@ -1,6 +1,6 @@
 'use client';
 
-import { useTrackToggle } from '@livekit/components-react';
+import { useRoomContext, useTrackToggle } from '@livekit/components-react';
 import { Track } from 'livekit-client';
 import {
   Circle,
@@ -21,6 +21,8 @@ import {
 import { useState } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import DeviceMenu, { type DeviceSection } from './DeviceMenu';
+import { useMuteReminder } from './useMuteReminder';
+import { useCallShortcuts, useModifierKeyLabel } from './useCallShortcuts';
 
 export default function ControlBar({
   onLeave,
@@ -35,6 +37,7 @@ export default function ControlBar({
   recordMode,
   onRecordClick,
   recordBusy = false,
+  suspendShortcuts = false,
 }: {
   onLeave: () => void;
   chatOpen: boolean;
@@ -53,9 +56,37 @@ export default function ControlBar({
   recordMode?: 'request' | 'pending' | 'recording';
   onRecordClick?: () => void;
   recordBusy?: boolean;
+  // Keyboard Shortcuts (docs/adr/0013): true while controlling a remote machine,
+  // when keystrokes belong to that machine, not the call.
+  suspendShortcuts?: boolean;
 }) {
   const mic = useTrackToggle({ source: Track.Source.Microphone });
   const cam = useTrackToggle({ source: Track.Source.Camera });
+
+  // Mute Reminder (docs/adr/0012): nudge the user when they talk while muted.
+  // Listens to the active mic only while muted; reads the chosen device so we
+  // analyse the same input the call uses.
+  const room = useRoomContext();
+  const showMuteReminder = useMuteReminder(!mic.enabled, room.getActiveDevice('audioinput'));
+
+  // Keyboard Shortcuts + Push to Talk (docs/adr/0013): Cmd/Ctrl+D and +E mirror
+  // the mic/camera buttons; hold Space talks while muted. Push to talk drives
+  // the mic with an explicit on/off so a quick tap still ends muted.
+  const mod = useModifierKeyLabel();
+  useCallShortcuts({
+    onToggleAudio: () => {
+      if (!mic.pending) void mic.toggle();
+    },
+    onToggleCamera: () => {
+      if (!cam.pending) void cam.toggle();
+    },
+    suspended: suspendShortcuts,
+    pushToTalk: {
+      micEnabled: mic.enabled,
+      micPending: mic.pending,
+      setMic: (on) => void mic.toggle(on),
+    },
+  });
 
   const shareLabel = iAmPresenting ? 'Stop presenting' : someoneElsePresenting ? 'Ask to present' : 'Share screen';
 
@@ -76,10 +107,11 @@ export default function ControlBar({
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex justify-center p-4 sm:p-6">
       <div className="glass-strong pointer-events-auto flex items-center gap-2 rounded-full px-3 py-2 shadow-[0_8px_40px_oklch(0_0_0/0.5)] sm:gap-3 sm:px-4">
-        <div className="flex items-center gap-0.5">
+        <div className="relative flex items-center gap-0.5">
+          {showMuteReminder && <MuteReminderBubble />}
           <ControlButton
             icon={mic.enabled ? Mic : MicOff}
-            label={mic.enabled ? 'Mute microphone' : 'Unmute microphone'}
+            label={mic.enabled ? `Mute microphone (${mod}D)` : `Unmute microphone (${mod}D) · Hold Space to talk`}
             active={mic.enabled}
             danger={!mic.enabled}
             disabled={mic.pending}
@@ -90,7 +122,7 @@ export default function ControlBar({
         <div className="flex items-center gap-0.5">
           <ControlButton
             icon={cam.enabled ? Video : VideoOff}
-            label={cam.enabled ? 'Turn camera off' : 'Turn camera on'}
+            label={cam.enabled ? `Turn camera off (${mod}E)` : `Turn camera on (${mod}E)`}
             active={cam.enabled}
             danger={!cam.enabled}
             disabled={cam.pending}
@@ -211,6 +243,24 @@ function RecordButton({ mode, busy, onClick }: { mode: 'request' | 'pending' | '
     >
       <Icon />
     </button>
+  );
+}
+
+// The Mute Reminder popup (docs/adr/0012). A non-interactive bubble pointing
+// down at the mic button; advisory only — the mic button below it does the
+// unmuting. Anchored to the mic group's relative wrapper.
+function MuteReminderBubble() {
+  return (
+    <div
+      role="status"
+      className="pointer-events-none absolute bottom-full left-1/2 mb-3 -translate-x-1/2 animate-in fade-in slide-in-from-bottom-1 duration-200"
+    >
+      <div className="glass-strong relative whitespace-nowrap rounded-xl px-3 py-1.5 text-xs font-medium text-white/90 shadow-[0_8px_30px_oklch(0_0_0/0.5)]">
+        Trying to speak? Your mic is off
+        {/* caret: a rotated square sharing the bubble's border + fill */}
+        <span className="glass-strong absolute left-1/2 top-full h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-[2px]" />
+      </div>
+    </div>
   );
 }
 
