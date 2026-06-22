@@ -97,6 +97,75 @@ by switching mid-call — and read to pre-select devices next time. If a
 remembered device is absent (unplugged), the browser default is used silently.
 _Avoid_: Saved devices, default devices
 
+### Mute feedback
+
+**Mute Reminder**:
+A transient, advisory notice shown from the local participant's own microphone
+button when they talk while their microphone is off — telling them they are not
+being heard. Local-only: it never changes mute state, and it appears whatever the
+reason the mic is off (self-mute or Mute on Entry). Detecting speech while
+muted means the microphone keeps capturing locally while muted, so the OS
+mic-in-use indicator stays lit; the reminder is the in-app counterpart to that
+signal.
+_Avoid_: You're-muted popup, mute nudge, unmute prompt, talk-while-muted toast
+
+### Keyboard control
+
+**Keyboard Shortcut**:
+A modifier-key binding for an in-call control that mirrors a control-bar button:
+the audio shortcut toggles the microphone, the video shortcut toggles the camera.
+The modifier maps per-platform — Cmd (⌘) on macOS, Ctrl on Windows/Linux — so the
+audio shortcut is ⌘D / Ctrl+D and the video shortcut is ⌘E / Ctrl+E. The bindings
+take over those key combos from the browser while active (otherwise ⌘D bookmarks
+the page). Active on the Device Check screen and during the call; suspended while
+the participant is a Controller, when keystrokes belong to the controlled machine.
+_Avoid_: Hotkey, accelerator, keybinding
+
+**Push to Talk**:
+A hold-to-talk gesture: while a muted participant holds the spacebar, their
+microphone is turned on for the duration of the hold and returns to off on
+release. It acts only when the participant is muted — when already live, holding
+the spacebar does nothing. In-call only: there is nothing to talk into before
+joining, so it is inert on the Device Check screen. The microphone button shows
+its live state for the duration; there is no separate indicator. Like the
+Keyboard Shortcuts, it is suspended during a Remote Control session, and it never
+fires while typing in a text field (chat, name).
+_Avoid_: PTT (fine in code), walkie-talkie mode, hold to unmute, hold to speak
+
+### Video layout
+
+**Equal Grid**:
+The default call layout when no one is presenting and nothing is pinned: every
+remote participant in an equal-sized tile. The local participant is **not** an
+ordinary tile here — they appear only as the floating Self-view. Alone in the
+room, the local camera fills the stage instead.
+_Avoid_: Gallery, tile view, speaker grid
+
+**Self-view**:
+The local participant's own camera feed as shown back to themselves. In the Equal
+Grid it is a small window that floats over the stage and can be dragged between
+the stage's corners (snapping to the nearest on release); the local participant
+never appears as an ordinary grid tile. It surfaces only once at least one other
+participant is present. In any **focused layout** (a presentation or a Pin) the
+Self-view stops floating and docks into the thumbnail strip alongside everyone
+else. It is always shown while the camera is on — there is no hide control. Its
+corner and visibility are session-only (a rejoin resets it to the default
+corner).
+_Avoid_: PiP / picture-in-picture (fine in code), self-mirror, local tile,
+floating thumbnail
+
+**Pin**:
+A local-only focus action: a participant promotes one other participant to fill
+the main stage while the rest — and the Self-view — drop to a thumbnail strip
+(the same one-big-plus-strip shape a presentation uses). A Pin changes only the
+pinning participant's own view; it is never broadcast to others and needs no host
+authority. At most one participant is pinned at a time. A Pin lasts for the call
+only and clears automatically if the pinned participant leaves. A presentation
+outranks a Pin: while someone presents, the presented screen owns the stage and
+the Pin is suspended, then restored when the presentation ends.
+_Avoid_: Spotlight (that would force the same focus onto everyone's screen — a
+different, deliberately un-built feature), focus, lock, feature
+
 ### Presenting
 
 **Present**:
@@ -110,6 +179,18 @@ The participant currently sharing their screen. While someone is presenting, the
 call layout switches from the equal grid to a split view: the presented content
 fills the main area and participant thumbnails move to a sidebar.
 _Avoid_: Sharer, broadcaster
+
+**Presenter Placeholder**:
+What the Presenter themselves sees in the main stage instead of their own
+presented content: a static "You're presenting" card (with a Stop button) over a
+dimmed/blurred backdrop. The Presenter is never shown their own live screen feed —
+it is not rendered for them at all. This is what defeats the **infinite-mirror**
+effect (the Droste tunnel that appears when the presented surface contains the
+call window): because the captured pixels of the Presenter's stage are a static
+card rather than a live feed, the recursion never forms in the stream everyone
+else receives. Applies to both a plain Present and a Present with Control. The
+Presenter still sees their own camera thumbnail in the sidebar.
+_Avoid_: Self-view (that is the camera thumbnail, a different thing), self-mirror
 
 **Ask to Present**:
 When a participant wants to present while someone else already is, they send a

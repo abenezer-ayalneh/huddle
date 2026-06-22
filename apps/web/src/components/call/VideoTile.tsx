@@ -2,7 +2,7 @@
 
 import { VideoTrack, isTrackReference, type TrackReferenceOrPlaceholder } from '@livekit/components-react';
 import { Track } from 'livekit-client';
-import { MicOff, MonitorUp } from 'lucide-react';
+import { MicOff, MonitorUp, Pin, PinOff } from 'lucide-react';
 import { useParticipantMedia } from './useParticipantMedia';
 
 function getInitials(name: string): string {
@@ -12,7 +12,19 @@ function getInitials(name: string): string {
   return word.length >= 2 ? word.slice(0, 2).toUpperCase() : word.toUpperCase() || '?';
 }
 
-export default function VideoTile({ trackRef, active }: { trackRef: TrackReferenceOrPlaceholder; active: boolean }) {
+export default function VideoTile({
+  trackRef,
+  active,
+  pinned,
+  onTogglePin,
+}: {
+  trackRef: TrackReferenceOrPlaceholder;
+  active: boolean;
+  // Pin affordance — omitted (undefined) means no pin button is rendered
+  // (the floating Self-view and the presentation strip pass nothing).
+  pinned?: boolean;
+  onTogglePin?: () => void;
+}) {
   const participant = trackRef.participant;
   const { cameraOn, micOn } = useParticipantMedia(participant);
 
@@ -24,17 +36,18 @@ export default function VideoTile({ trackRef, active }: { trackRef: TrackReferen
   const initials = getInitials(label);
 
   return (
-    <div className="relative h-full w-full min-h-0 min-w-0">
+    <div className="group relative h-full w-full min-h-0 min-w-0">
       <div className={`cyber-clip h-full w-full transition-shadow ${active ? 'cyber-frame-active' : 'cyber-frame'}`}>
         <div className={`cyber-clip relative h-full w-full overflow-hidden bg-[oklch(0.12_0.02_280)] ${active ? 'scanlines' : ''}`}>
           {showVideo ? (
             <VideoTrack
               trackRef={trackRef}
-              // Screen shares must show the whole frame — contain (letterboxed
-              // against the dark tile) rather than cover, which would crop it.
-              // Cameras still cover so faces fill the tile; only the local
-              // camera is mirrored.
-              className={`h-full w-full ${isScreenShare ? 'object-contain' : 'object-cover'} ${isLocal && !isScreenShare ? '-scale-x-100' : ''}`}
+              // Both screen shares and cameras use contain (letterboxed against
+              // the dark tile) rather than cover: a screen must show its whole
+              // frame, and a camera must always show the full face on every
+              // viewport shape rather than cropping it (ADR-0014). Only the
+              // local camera is mirrored.
+              className={`h-full w-full object-contain ${isLocal && !isScreenShare ? '-scale-x-100' : ''}`}
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[oklch(0.18_0.03_300)] to-[oklch(0.13_0.02_270)]">
@@ -46,6 +59,20 @@ export default function VideoTile({ trackRef, active }: { trackRef: TrackReferen
                 {initials}
               </div>
             </div>
+          )}
+
+          {/* Pin toggle — top-left so it clears the active-speaker HUD
+              (top-right) and the name pill (bottom-left). Hidden until hover on
+              pointer devices; always shown on touch (no hover to reveal it). */}
+          {onTogglePin && (
+            <button
+              type="button"
+              onClick={onTogglePin}
+              aria-label={pinned ? `Unpin ${label}` : `Pin ${label}`}
+              className="absolute left-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/55 text-white/90 opacity-0 backdrop-blur transition hover:bg-black/75 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
+            >
+              {pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+            </button>
           )}
 
           {/* HUD readout — active speaker only. */}

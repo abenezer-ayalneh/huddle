@@ -2,11 +2,24 @@
 
 import { useSpeakingParticipants, useTracks } from '@livekit/components-react';
 import { Track } from 'livekit-client';
-import { useMemo } from 'react';
+import { MonitorOff, MonitorUp, PinOff } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { isAgentIdentity } from '@/lib/controlProtocol';
+import FocusLayout, { trackKey } from './FocusLayout';
+import SelfView, { type Corner } from './SelfView';
 import VideoTile from './VideoTile';
 
-export default function VideoGrid({ presentationOverlay }: { presentationOverlay?: React.ReactNode }) {
+export default function VideoGrid({
+  presentationOverlay,
+  iAmPresenting = false,
+  onStopPresenting,
+}: {
+  presentationOverlay?: React.ReactNode;
+  // When the local participant is the Presenter, we must never render their own
+  // presented track back to them — see PresenterPlaceholder below.
+  iAmPresenting?: boolean;
+  onStopPresenting?: () => void;
+}) {
   const tracks = useTracks(
     [
       { source: Track.Source.Camera, withPlaceholder: true },
@@ -23,18 +36,104 @@ export default function VideoGrid({ presentationOverlay }: { presentationOverlay
   // anyone's, but they must never get a (placeholder) camera tile.
   const cameraTracks = useMemo(() => tracks.filter((t) => t.source === Track.Source.Camera && !isAgentIdentity(t.participant.identity)), [tracks]);
 
-  if (screenTrack) {
-    return <PresentationLayout screenTrack={screenTrack} cameraTracks={cameraTracks} activeIdentity={activeIdentity} overlay={presentationOverlay} />;
+  // The local camera leaves the grid: with others present it floats as the
+  // Self-view; the rest are the remote tiles that fill the grid.
+  const localTrack = useMemo(() => cameraTracks.find((t) => t.participant.isLocal) ?? null, [cameraTracks]);
+  const remoteTracks = useMemo(() => cameraTracks.filter((t) => !t.participant.isLocal), [cameraTracks]);
+
+  // Local view-state — never synced, never lifted. Lives here so it survives a
+  // presentation starting and stopping (this component stays mounted).
+  const [pinnedIdentity, setPinnedIdentity] = useState<string | null>(null);
+  const [selfCorner, setSelfCorner] = useState<Corner>('bl');
+
+  const pinnedTrack = remoteTracks.find((t) => t.participant.identity === pinnedIdentity) ?? null;
+  // The pinned participant left — drop the stale pin at render time (the same
+  // pattern CallView uses for its launchCode / unread counters).
+  if (pinnedIdentity !== null && !pinnedTrack) {
+    setPinnedIdentity(null);
   }
 
-  return <EqualGrid cameraTracks={cameraTracks} activeIdentity={activeIdentity} />;
+  const togglePin = (identity: string) => setPinnedIdentity((cur) => (cur === identity ? null : identity));
+
+  // A presentation owns the stage — it preempts the Pin, which is restored when
+  // the share ends.
+  if (screenTrack) {
+    return (
+      <FocusLayout
+        main={
+          iAmPresenting ? (
+            // The Presenter is never shown their own live feed. Rendering it
+            // would be captured and re-broadcast, producing the infinite-mirror
+            // (Droste) tunnel when the shared surface contains the call. A
+            // *static* card breaks the recursion in the captured stream — a
+            // blurred *live* feed would not. See CONTEXT.md "Presenter
+            // Placeholder".
+            <PresenterPlaceholder onStop={onStopPresenting} />
+          ) : (
+            <>
+              <VideoTile trackRef={screenTrack} active={false} />
+              {/* Remote-control input capture mounts over the presented video;
+                  it finds the <video> through this shared positioning context. */}
+              {presentationOverlay}
+            </>
+          )
+        }
+        stripTracks={cameraTracks}
+        activeIdentity={activeIdentity}
+      />
+    );
+  }
+
+  // A pinned tile focuses the same one-big-plus-strip shape a presentation uses.
+  // Strip = everyone but the pinned participant: the other remotes plus the
+  // local self-view, docked rather than floating.
+  if (pinnedTrack) {
+    const stripTracks = [...remoteTracks.filter((t) => t !== pinnedTrack), ...(localTrack ? [localTrack] : [])];
+    return (
+      <FocusLayout
+        main={
+          <>
+            <VideoTile trackRef={pinnedTrack} active={pinnedTrack.participant.identity === activeIdentity} />
+            <button
+              type="button"
+              onClick={() => setPinnedIdentity(null)}
+              className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-black/55 px-3 py-1.5 text-xs font-medium text-white/90 backdrop-blur transition hover:bg-black/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60"
+            >
+              <PinOff className="h-3.5 w-3.5" />
+              Unpin
+            </button>
+          </>
+        }
+        stripTracks={stripTracks}
+        activeIdentity={activeIdentity}
+        onTogglePin={togglePin}
+      />
+    );
+  }
+
+  // Alone — the local camera just fills the stage as the only tile.
+  if (remoteTracks.length === 0) {
+    return <EqualGrid cameraTracks={localTrack ? [localTrack] : []} activeIdentity={activeIdentity} />;
+  }
+
+  // Others present — equal grid of the remotes, local camera floating.
+  return (
+    <>
+      <EqualGrid cameraTracks={remoteTracks} activeIdentity={activeIdentity} onTogglePin={togglePin} />
+      {localTrack && <SelfView trackRef={localTrack} corner={selfCorner} onCornerChange={setSelfCorner} />}
+    </>
+  );
 }
 
-function trackKey(trackRef: (typeof useTracks extends (...a: never[]) => infer R ? R : never)[number]) {
-  return `${trackRef.participant.identity}:${trackRef.source}:${trackRef.publication?.trackSid ?? 'placeholder'}`;
-}
-
-function EqualGrid({ cameraTracks, activeIdentity }: { cameraTracks: ReturnType<typeof useTracks>; activeIdentity: string | undefined }) {
+function EqualGrid({
+  cameraTracks,
+  activeIdentity,
+  onTogglePin,
+}: {
+  cameraTracks: ReturnType<typeof useTracks>;
+  activeIdentity: string | undefined;
+  onTogglePin?: (identity: string) => void;
+}) {
   const cols = useMemo(() => {
     const n = cameraTracks.length || 1;
     if (n <= 1) return 1;
@@ -53,49 +152,50 @@ function EqualGrid({ cameraTracks, activeIdentity }: { cameraTracks: ReturnType<
         }}
       >
         {cameraTracks.map((trackRef) => (
-          <VideoTile key={trackKey(trackRef)} trackRef={trackRef} active={trackRef.participant.identity === activeIdentity && cameraTracks.length > 1} />
+          <VideoTile
+            key={trackKey(trackRef)}
+            trackRef={trackRef}
+            active={trackRef.participant.identity === activeIdentity && cameraTracks.length > 1}
+            onTogglePin={onTogglePin && !trackRef.participant.isLocal ? () => onTogglePin(trackRef.participant.identity) : undefined}
+          />
         ))}
       </div>
     </div>
   );
 }
 
-function PresentationLayout({
-  screenTrack,
-  cameraTracks,
-  activeIdentity,
-  overlay,
-}: {
-  screenTrack: ReturnType<typeof useTracks>[number];
-  cameraTracks: ReturnType<typeof useTracks>;
-  activeIdentity: string | undefined;
-  // Remote-control input capture mounts over the presented video; it finds
-  // the <video> through this shared positioning context.
-  overlay?: React.ReactNode;
-}) {
+// What the Presenter sees in place of their own presented content: a static,
+// frosted-glass card — never a live <VideoTrack>. The backdrop is purely
+// decorative (fixed gradient + blurred neon blobs), so the screen capture of
+// this region is a constant image and the mirror recursion never forms.
+function PresenterPlaceholder({ onStop }: { onStop?: () => void }) {
   return (
-    <div className="absolute inset-0 flex flex-col p-3 pb-24 sm:flex-row sm:p-4 sm:pb-28">
-      {/* Main presentation area — centers the tile both axes so the
-          object-contain video never overflows and sits centered when
-          letterboxed on any viewport shape. */}
-      <div className="flex min-h-0 flex-1 items-center justify-center sm:min-w-0">
-        <div className="relative h-full w-full max-h-full max-w-full">
-          <VideoTile trackRef={screenTrack} active={false} />
-          {overlay}
+    <div className="cyber-clip relative h-full w-full overflow-hidden bg-[oklch(0.12_0.02_280)]">
+      <div className="absolute inset-0 bg-gradient-to-br from-[oklch(0.2_0.05_320)] to-[oklch(0.13_0.03_265)]" />
+      <div className="pointer-events-none absolute -left-16 top-1/4 h-64 w-64 rounded-full bg-magenta/20 blur-3xl" />
+      <div className="pointer-events-none absolute -right-12 bottom-1/4 h-72 w-72 rounded-full bg-cyan/15 blur-3xl" />
+
+      <div className="absolute inset-0 flex items-center justify-center p-6">
+        <div className="glass-strong flex max-w-sm flex-col items-center gap-4 rounded-2xl px-8 py-7 text-center">
+          <div className="neon-cyan flex aspect-square w-16 items-center justify-center rounded-full bg-cyan/15 ring-1 ring-cyan/40">
+            <MonitorUp className="h-7 w-7 text-cyan" />
+          </div>
+          <div className="space-y-1">
+            <p className="font-display text-lg font-semibold text-white/90">You&apos;re presenting to everyone</p>
+            <p className="text-sm text-white/55">Your screen is live for the room. We hide it here so you don&apos;t see an endless mirror.</p>
+          </div>
+          {onStop && (
+            <button
+              type="button"
+              onClick={onStop}
+              className="neon-magenta mt-1 inline-flex items-center gap-2 rounded-full bg-magenta px-4 py-2 text-sm font-medium text-white transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-magenta/60"
+            >
+              <MonitorOff className="h-4 w-4" />
+              Stop presenting
+            </button>
+          )}
         </div>
       </div>
-
-      {/* Sidebar: mobile = horizontal filmstrip capped at 5.5rem,
-          desktop = right column, scrollable. */}
-      {cameraTracks.length > 0 && (
-        <div className="mt-3 flex max-h-[5.5rem] shrink-0 gap-3 overflow-x-auto sm:ml-4 sm:mt-0 sm:max-h-none sm:w-56 sm:flex-col sm:overflow-x-visible sm:overflow-y-auto">
-          {cameraTracks.map((trackRef) => (
-            <div key={trackKey(trackRef)} className="aspect-video h-[5.5rem] flex-shrink-0 sm:h-auto sm:w-full">
-              <VideoTile trackRef={trackRef} active={trackRef.participant.identity === activeIdentity && cameraTracks.length > 1} />
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
