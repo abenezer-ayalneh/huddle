@@ -19,8 +19,9 @@ const rajdhani = Rajdhani({
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://huddle.abenezer-ayalneh.dev';
 const siteName = 'Huddle';
-const siteTitle = 'Huddle — Self-hosted, real-time video for teams who want control';
-const siteDescription = 'Self-hosted, real-time video for teams who want control';
+const siteTitle = 'Huddle — Self-hosted video conferencing on LiveKit';
+const siteDescription =
+  'Huddle is a self-hosted, browser-based video conferencing app built on LiveKit. Hosts schedule or start instant meetings; guests join from a shared link through a waiting room — no account, no installs. Screen share, in-call chat, recording, and host controls included.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -36,13 +37,34 @@ export const metadata: Metadata = {
     apple: '/apple-touch-icon.png',
   },
   title: {
-    default: siteName,
+    // Use the full positioning string by default so the lobby and OG previews
+    // show "Huddle — Self-hosted video conferencing…" rather than the bare
+    // brand. Child routes still override via the %s template.
+    default: siteTitle,
     template: '%s | Huddle',
   },
   description: siteDescription,
-  keywords: ['Call', 'Video', 'Video Call', 'Huddle', 'Meeting', 'Conference Call', 'Abenezer Ayalneh'],
+  applicationName: siteName,
+  category: 'communication',
+  alternates: {
+    canonical: '/',
+  },
+  keywords: [
+    'Huddle',
+    'self-hosted video conferencing',
+    'open source video conferencing',
+    'LiveKit',
+    'WebRTC video calls',
+    'browser video meeting',
+    'video meeting without account',
+    'self-hosted Google Meet alternative',
+    'screen sharing',
+    'meeting recording',
+    'video call app',
+  ],
   authors: [{ name: 'Abenezer Ayalneh', url: 'https://abenezer-ayalneh.dev' }],
   creator: 'Abenezer Ayalneh',
+  publisher: 'Abenezer Ayalneh',
   openGraph: {
     type: 'website',
     locale: 'en_US',
@@ -55,7 +77,7 @@ export const metadata: Metadata = {
         url: '/opengraph-image.png',
         width: 1200,
         height: 630,
-        alt: siteName,
+        alt: 'Huddle — Self-hosted video conferencing',
       },
     ],
   },

@@ -1,0 +1,64 @@
+# Huddle
+
+> Huddle is a self-hosted, browser-based video conferencing app built on a self-hosted LiveKit WebRTC SFU. Hosts create or schedule meetings; guests join from a shared link through a knock-to-join waiting room — no account, no installs.
+
+Huddle is a Google Meet-style product designed for teams who want control over their video infrastructure. It runs entirely on infrastructure you own (a single VPS works) and is feature-complete: calls, screen share, in-call chat, host controls, scheduling, and recording.
+
+## Key facts
+
+- **Author / Maintainer:** Abenezer Ayalneh (https://abenezer-ayalneh.dev)
+- **Live demo:** https://huddle.abenezer-ayalneh.dev
+- **License model:** Self-hosted; you run the stack yourself.
+- **Status:** Feature-complete through Phases 0–9 of the project roadmap.
+
+## What Huddle does
+
+- **Real-time video meetings** in the browser, powered by LiveKit (open-source WebRTC SFU).
+- **Instant or scheduled meetings.** Hosts can start a meeting with one click or schedule it for later; scheduled meetings get stable, shareable links.
+- **Guest joins by link.** Guests open the meeting URL, pick a display name, and knock to enter the waiting room. They do not need an account.
+- **Knock-to-join waiting room.** Hosts admit or deny each guest before they enter the call.
+- **Host controls.** Hosts can mute, remove, or admit participants. Host authority is enforced server-side via a per-room host key, not a client claim.
+- **Screen share and in-call chat.** Built on the prebuilt LiveKit React components.
+- **Recording.** Host-toggled room-composite recording via LiveKit Egress, written to self-hosted MinIO (S3-compatible) and downloaded back through the host-authorized API.
+- **Email/password and Google sign-in** for hosts, via BetterAuth.
+
+## Stack
+
+- **Frontend:** Next.js (App Router, TypeScript, Tailwind) + `@livekit/components-react`
+- **Backend:** NestJS (TypeScript) — token minting, room management, auth, recording orchestration
+- **Media server:** Self-hosted LiveKit + LiveKit Egress (recording)
+- **Data:** PostgreSQL (Prisma) for accounts and rooms; Redis for LiveKit state and knock state
+- **Storage:** MinIO (S3-compatible) for recordings
+- **Auth:** BetterAuth, mounted at `/api/auth/*`
+- **Edge (prod):** Caddy with automatic HTTPS/WSS; embedded TURN
+- **Deployment:** Docker Compose (dev + prod overrides), designed to fit on a single VPS
+
+## Security model
+
+- The browser never receives the LiveKit API secret. The NestJS backend mints a short-lived JWT access token per participant; the browser uses that token to connect directly to the LiveKit server over WebRTC.
+- Identity, room name, and grants are decided server-side and never trusted from the client.
+- Host authority on per-call actions (admit, mute, remove, record) is gated by a per-room host key issued at room creation.
+
+## Project structure
+
+- `apps/web` — Next.js frontend
+- `apps/api` — NestJS backend (tokens, rooms, auth, recording, webhooks)
+- `infra/` — Docker Compose stacks (dev + prod), LiveKit and Caddy config
+- `docs/` — design docs, ADRs, roadmap
+
+## Pages
+
+- `/` — Lobby. Hosts sign in to start instant or scheduled meetings; guests with a link don't need this page.
+- `/rooms/{room}` — A meeting room. Private; not indexed.
+- `/recordings` — Host's recordings dashboard. Session-gated; not indexed.
+
+## What Huddle is not
+
+- Not a SaaS — there is no hosted multi-tenant version you sign up for.
+- Not a Zoom/Meet replacement at enterprise scale — the deploy target is a single VPS for teams who want their own video infrastructure.
+- Not a mobile-native app — it runs in any modern browser (desktop or mobile web).
+
+## Contact
+
+- Project author website: https://abenezer-ayalneh.dev
+- Live deployment: https://huddle.abenezer-ayalneh.dev
