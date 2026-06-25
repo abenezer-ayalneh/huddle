@@ -2,6 +2,7 @@ import { CanActivate, ExecutionContext, Injectable, UnauthorizedException, creat
 import { ConfigService } from '@nestjs/config';
 import type { IncomingHttpHeaders } from 'node:http';
 import type { Request } from 'express';
+import { FaultCode, faultBody } from '../common/faults';
 import { getAuth } from './auth';
 
 export interface AuthUser {
@@ -37,7 +38,7 @@ export class AuthGuard implements CanActivate {
       headers: toHeaders(req.headers),
     });
     if (!session) {
-      throw new UnauthorizedException('Sign in required');
+      throw new UnauthorizedException(faultBody(FaultCode.SESSION_EXPIRED, 'Sign in required'));
     }
     req.user = session.user;
     return true;
@@ -48,4 +49,35 @@ export class AuthGuard implements CanActivate {
 export const SessionUser = createParamDecorator((_data: unknown, context: ExecutionContext): AuthUser => {
   const req = context.switchToHttp().getRequest<RequestWithUser>();
   return req.user as AuthUser;
+});
+
+// Like AuthGuard but never rejects: it attaches the user when a valid session is
+// present and otherwise lets the request through anonymously. Use it on public
+// routes that want to recognise a signed-in caller without forcing sign-in — e.g.
+// the knock route, where a signed-in guest's name comes from their session but an
+// anonymous guest must still be able to knock (docs/adr/0016).
+@Injectable()
+export class OptionalAuthGuard implements CanActivate {
+  constructor(private readonly config: ConfigService) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const req = context.switchToHttp().getRequest<RequestWithUser>();
+    try {
+      const auth = await getAuth(this.config);
+      const session = await auth.api.getSession({
+        headers: toHeaders(req.headers),
+      });
+      if (session) req.user = session.user;
+    } catch {
+      // Anonymous proceeds — a failed session lookup must not block a public route.
+    }
+    return true;
+  }
+}
+
+// Injects the optionally-resolved user (or null) for a route guarded by
+// OptionalAuthGuard.
+export const OptionalSessionUser = createParamDecorator((_data: unknown, context: ExecutionContext): AuthUser | null => {
+  const req = context.switchToHttp().getRequest<RequestWithUser>();
+  return req.user ?? null;
 });

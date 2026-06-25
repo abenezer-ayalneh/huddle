@@ -1,5 +1,6 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import type { Room } from '@prisma/client';
+import { FaultCode, faultBody } from '../common/faults';
 import type { AuthUser } from '../auth/auth.guard';
 import { makeIdentity } from './identity';
 import { LivekitService } from './livekit.service';
@@ -58,7 +59,7 @@ export class RoomsService {
   async hostJoin(slug: string, host: AuthUser): Promise<HostJoinResult> {
     const room = await this.requireRoom(slug);
     if (room.hostUserId !== host.id) {
-      throw new ForbiddenException('You are not the host of this room');
+      throw new ForbiddenException(faultBody(FaultCode.NOT_HOST, 'You are not the host of this room'));
     }
     return this.mintHostJoin(room, host.name);
   }
@@ -81,10 +82,16 @@ export class RoomsService {
     };
   }
 
-  // Guest knocks; must be a known managed room.
-  async knock(slug: string, guestName: string): Promise<{ knockId: string }> {
+  // Guest knocks; must be a known managed room. The name is resolved upstream:
+  // a signed-in guest's comes from their session, an anonymous guest's from the
+  // request body (docs/adr/0016). Either way a non-empty name is required here.
+  async knock(slug: string, guestName: string | undefined): Promise<{ knockId: string }> {
     await this.requireRoom(slug);
-    const knock = await this.state.addKnock(slug, guestName);
+    const name = guestName?.trim();
+    if (!name) {
+      throw new BadRequestException(faultBody(FaultCode.NAME_REQUIRED, 'A display name is required to knock.'));
+    }
+    const knock = await this.state.addKnock(slug, name);
     return { knockId: knock.knockId };
   }
 
@@ -203,14 +210,14 @@ export class RoomsService {
   private async requireRoom(slug: string): Promise<Room> {
     const room = await this.repo.findBySlug(slug);
     if (!room) {
-      throw new NotFoundException('No such room — ask the host to create it');
+      throw new NotFoundException(faultBody(FaultCode.ROOM_NOT_FOUND, 'No such room — ask the host to create it'));
     }
     return room;
   }
 
   private async requireKnock(slug: string, knockId: string): Promise<Knock> {
     const knock = await this.state.getKnock(slug, knockId);
-    if (!knock) throw new NotFoundException('Unknown or expired knock');
+    if (!knock) throw new NotFoundException(faultBody(FaultCode.KNOCK_NOT_FOUND, 'Unknown or expired knock'));
     return knock;
   }
 }

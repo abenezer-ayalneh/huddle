@@ -20,7 +20,21 @@ type Connection = { token: string; livekitUrl: string };
 //                  unmounted, so the camera/mic stream is released while idle.
 //   4. admitted  — re-acquire the chosen devices and hand off to <CallStage>,
 //                  which skips its own PreJoin because we pass the choices in.
-export default function GuestGate({ room, onLeave, onError }: { room: string; onLeave: () => void; onError: (message: string) => void }) {
+export default function GuestGate({
+  room,
+  signedInName,
+  onLeave,
+  onError,
+}: {
+  room: string;
+  // The signed-in guest's account name, or null for an anonymous guest. When
+  // present, the Device Check skips the name field and carries this name into
+  // the knock; the server derives the authoritative name from the session
+  // regardless (docs/adr/0016).
+  signedInName: string | null;
+  onLeave: () => void;
+  onError: (message: string) => void;
+}) {
   const [phase, setPhase] = useState<'precheck' | 'check' | 'knocking' | 'waiting' | 'denied'>('precheck');
   const [choices, setChoices] = useState<LocalUserChoices | null>(null);
   const [knockId, setKnockId] = useState<string | null>(null);
@@ -155,11 +169,13 @@ export default function GuestGate({ room, onLeave, onError }: { room: string; on
     );
   }
 
-  // Device Check: name + camera/mic preview. The join button sends the knock.
+  // Device Check: camera/mic preview, plus a name field only for an anonymous
+  // guest. A signed-in guest's name comes from their account, so it is carried
+  // forward silently and the field is hidden. The join button sends the knock.
   if (phase === 'check') {
     return (
       <PreJoinScreen
-        defaults={{ username: '', videoEnabled: true, audioEnabled: true }}
+        defaults={{ username: signedInName ?? '', videoEnabled: true, audioEnabled: true }}
         onSubmit={submitCheck}
         // The Device Check is informational: a denied or missing camera/mic must
         // not block the knock, so device errors are logged, not surfaced.
@@ -167,7 +183,7 @@ export default function GuestGate({ room, onLeave, onError }: { room: string; on
         heading="Join meeting"
         subheading={`Check your camera and mic, then ask to join “${room}”.`}
         submitLabel="Ask to join"
-        requireName
+        requireName={!signedInName}
       />
     );
   }

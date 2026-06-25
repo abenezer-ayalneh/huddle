@@ -10,10 +10,14 @@ export class CreateRoomDto {
 }
 
 export class KnockDto {
+  // Optional: a signed-in guest's name is derived from their session server-side
+  // and the body name is ignored (docs/adr/0016). An anonymous guest must still
+  // send a name; the service rejects a knock that resolves to none.
+  @IsOptional()
   @IsString()
   @MinLength(1)
   @MaxLength(128)
-  name!: string;
+  name?: string;
 }
 
 export class MuteDto {

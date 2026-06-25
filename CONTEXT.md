@@ -35,7 +35,12 @@ record; usually the same person, but not a live-call role), moderator, admin
 **Guest**:
 A participant who arrives via a shared link and must knock to enter. Has no
 host key and no admin powers — but, like any non-host participant, may send a
-Request to Record that the host approves.
+Request to Record that the host approves. A guest may be **anonymous** or
+**signed-in**: an anonymous guest types a display name during the Device Check,
+while a signed-in guest's name comes from their account and is never typed (the
+server derives it from the session, the same way a host's name does). Signed-in
+status changes only where the name comes from — a signed-in non-owner is still a
+Guest who must knock.
 _Avoid_: Attendee, viewer, visitor
 
 **Room Code**:
@@ -304,3 +309,51 @@ all clients at once. Its purpose is consent: no one is recorded without an
 on-screen signal.
 _Avoid_: Rec light, recording badge (fine in UI copy, but "Recording Indicator"
 is the domain term)
+
+### Errors & faults
+
+**Fault**:
+An _unexpected_ failure — the app could not do what was asked through no choice
+of the user: the API is unreachable, a request 500s, a network drop, the LiveKit
+connection fails, or a component crashes while rendering. Faults are what the
+error-handling strategy targets; they are surfaced through a single, consistent
+mechanism and carry a stable machine-readable code so the client can react
+specifically (re-login, retry, reload). A Fault is never a normal step in any
+flow.
+_Avoid_: Error (too broad — covers domain outcomes too), exception, crash (a
+crash is one _kind_ of Fault), bug
+
+**Domain Outcome**:
+An _expected_ rejection that is part of normal flow even though it travels over
+an HTTP error status: a host **Deny**, an expired **Knock**, "you are not the
+host", "a display name is required". A Domain Outcome is **not** a Fault — it has
+its own tailored UX (e.g. the guest's "denied" screen) and must never appear as
+the generic Fault surface. The two are deliberately kept visually and
+conceptually distinct.
+_Avoid_: Error, validation error, rejection (fine in prose, but the contrast
+that matters is Domain Outcome vs. [[Fault]])
+
+**API Reachability**:
+Whether the web app can reach the **API/auth backend over HTTP** at all — a
+property of the REST + BetterAuth connection, separate from any call. It is
+_unreachable_ when a request rejects at the transport layer (connection refused,
+DNS/CORS failure, offline, timeout) — a [[Fault]] carrying a client-minted `NET_*`
+code, since no server envelope exists. Surfacing splits by origin: a
+**user-initiated** fault (clicked Sign in, Create meeting) raises the Fault toast
+with a recovery action; a **passive/background** fault (the on-focus session
+refetch, polling) raises no toast — only a single quiet, persistent **Server
+Unreachable** indicator that clears when reachability returns. Distinct from
+[[Call Connection]].
+_Avoid_: Offline (implies the user's whole network is down; usually it is
+specifically the API that is unreachable), connection state (that is the call's —
+see [[Call Connection]])
+
+**Call Connection**:
+The LiveKit **media** connection lifecycle during a call — connecting,
+reconnecting, disconnected — owned by the existing in-call connection-state UI.
+LiveKit's automatic _reconnecting_ is a normal transient, **not** a [[Fault]];
+this UI owns the whole lifecycle including a permanent drop. Entirely separate
+from [[API Reachability]] (the HTTP/auth backend), which can fail on the lobby
+with no call in sight.
+_Avoid_: Reachability (that is the API's — see [[API Reachability]]), network
+status

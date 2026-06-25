@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Header, Param, Post, Res, StreamableFile, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
-import { AuthGuard, SessionUser, type AuthUser } from '../auth/auth.guard';
+import { AuthGuard, OptionalAuthGuard, OptionalSessionUser, SessionUser, type AuthUser } from '../auth/auth.guard';
 import { ControlAgentService } from './control-agent.service';
 import { ApproveRecordingDto, CreateRoomDto, KnockDto, MuteDto, MuteOnEntryDto } from './dto/rooms.dto';
 import { HostGuard } from './host.guard';
@@ -43,9 +43,12 @@ export class RoomsController {
   }
 
   // --- Guest waiting-room flow (public; knockId is the bearer) ---
+  // A signed-in guest's name is taken from their session and the body name is
+  // ignored; an anonymous guest's name rides the body (docs/adr/0016).
+  @UseGuards(OptionalAuthGuard)
   @Post(':room/knock')
-  knock(@Param('room') room: string, @Body() dto: KnockDto) {
-    return this.rooms.knock(room, dto.name);
+  knock(@Param('room') room: string, @OptionalSessionUser() user: AuthUser | null, @Body() dto: KnockDto) {
+    return this.rooms.knock(room, user?.name ?? dto.name);
   }
 
   @Get(':room/knock/:knockId')

@@ -8,6 +8,7 @@ import { loadHostSession, saveHostSession, clearHostSession } from '@/lib/hostSe
 import CallStage from './CallStage';
 import GuestGate from './GuestGate';
 import HostPanel from './HostPanel';
+import ErrorBoundary from '@/components/faults/ErrorBoundary';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { Centered } from './ui';
 
@@ -89,10 +90,11 @@ export default function RoomClient({ room }: { room: string }) {
     );
   }
 
-  // No host session → guest. They collect their name as part of the Device
-  // Check inside GuestGate (which also gates the knock), so none is needed here.
+  // No host session → guest. A signed-in guest's name comes from their account
+  // (never typed); an anonymous guest types it during the Device Check inside
+  // GuestGate (docs/adr/0016). The server is the authority either way.
   if (!host) {
-    return <GuestGate room={room} onLeave={leave} onError={setError} />;
+    return <GuestGate room={room} signedInName={session?.user.name ?? null} onLeave={leave} onError={setError} />;
   }
 
   // Host session present → host.
@@ -103,7 +105,11 @@ export default function RoomClient({ room }: { room: string }) {
       displayName={host.name}
       onLeave={leave}
       onError={setError}
-      overlay={<HostPanel room={room} hostKey={host.hostKey} />}
+      overlay={
+        <ErrorBoundary label="Host panel" fallback={null}>
+          <HostPanel room={room} hostKey={host.hostKey} />
+        </ErrorBoundary>
+      }
       isHost
       hostKey={host.hostKey}
     />

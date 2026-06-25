@@ -1,4 +1,4 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import type { Room } from '@prisma/client';
 import type Redis from 'ioredis';
 import type { AuthUser } from '../auth/auth.guard';
@@ -90,6 +90,14 @@ describe('RoomsService', () => {
 
   it('rejects a knock to a non-existent room', async () => {
     await expect(service.knock('ghost', 'Bo')).rejects.toThrow(NotFoundException);
+  });
+
+  it('rejects a knock that resolves to no name', async () => {
+    const { room } = await service.createRoom(ada, {});
+    // An anonymous guest with no body name, or a whitespace-only one — neither a
+    // signed-in name (session) nor a usable body name was supplied (docs/adr/0016).
+    await expect(service.knock(room, undefined)).rejects.toThrow(BadRequestException);
+    await expect(service.knock(room, '   ')).rejects.toThrow(BadRequestException);
   });
 
   it('admits a guest, minting a guest token delivered via poll', async () => {
