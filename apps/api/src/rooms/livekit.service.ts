@@ -103,13 +103,16 @@ export class LivekitService {
   }
 
   // Mint a join token. `host` adds roomAdmin + a role=host metadata claim so the
-  // frontend can show host UI (authority is still enforced server-side).
-  async mintToken(opts: { room: string; identity: string; name: string; host?: boolean }): Promise<string> {
+  // frontend can show host UI (authority is still enforced server-side). The
+  // optional `image` is the participant's Avatar URL (docs/adr/0016): resolved
+  // server-side from the session, carried in metadata so every client can render
+  // it; omitted from the metadata when absent (anonymous guest, no picture).
+  async mintToken(opts: { room: string; identity: string; name: string; host?: boolean; image?: string | null }): Promise<string> {
     const at = new AccessToken(this.apiKey, this.apiSecret, {
       identity: opts.identity,
       name: opts.name,
       ttl: '1h',
-      metadata: JSON.stringify({ role: opts.host ? 'host' : 'guest' }),
+      metadata: JSON.stringify({ role: opts.host ? 'host' : 'guest', avatarUrl: opts.image ?? undefined }),
     });
     at.addGrant({
       roomJoin: true,

@@ -16,6 +16,10 @@ export interface Knock {
   knockId: string;
   room: string;
   name: string;
+  // The guest's Avatar URL, resolved server-side from their session at knock time
+  // (docs/adr/0016). Carried here until admit, when it is minted into the token
+  // metadata. Absent for anonymous guests and accounts without a picture.
+  image?: string | null;
   status: KnockStatus;
   requestedAt: number;
   // Populated once the host admits the guest.
@@ -40,11 +44,12 @@ export class RoomStateService {
     return `huddle:knocks:${room}`;
   }
 
-  async addKnock(room: string, name: string): Promise<Knock> {
+  async addKnock(room: string, name: string, image?: string | null): Promise<Knock> {
     const knock: Knock = {
       knockId: randomUUID(),
       room,
       name,
+      image: image ?? null,
       status: 'pending',
       requestedAt: Date.now(),
     };

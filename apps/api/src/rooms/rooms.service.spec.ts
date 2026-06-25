@@ -115,6 +115,34 @@ describe('RoomsService', () => {
     expect(livekit.mintToken).toHaveBeenCalledTimes(2);
   });
 
+  it("carries a signed-in guest's Avatar from knock into the admit token, and exposes it on the knock list (docs/adr/0016)", async () => {
+    const { room } = await service.createRoom(ada, {});
+    const avatar = 'https://lh3.googleusercontent.com/a/guest.jpg';
+    const { knockId } = await service.knock(room, 'Bo', avatar);
+
+    // Host sees the Avatar beside the pending guest.
+    const { knocks } = await service.listKnocks(room);
+    expect(knocks).toEqual([expect.objectContaining({ knockId, name: 'Bo', image: avatar })]);
+
+    await service.admit(room, knockId);
+    expect(livekit.mintToken).toHaveBeenLastCalledWith(expect.objectContaining({ room, name: 'Bo', image: avatar }));
+  });
+
+  it('an anonymous guest (no Avatar) admits with a null image and no metadata leak', async () => {
+    const { room } = await service.createRoom(ada, {});
+    const { knockId } = await service.knock(room, 'Cy');
+    const { knocks } = await service.listKnocks(room);
+    expect(knocks[0]).toMatchObject({ name: 'Cy', image: null });
+    await service.admit(room, knockId);
+    expect(livekit.mintToken).toHaveBeenLastCalledWith(expect.objectContaining({ name: 'Cy', image: null }));
+  });
+
+  it("mints the host's own Avatar into the host token", async () => {
+    const ida: AuthUser = { id: 'user-ida', name: 'Ida', email: 'ida@x.dev', image: 'https://lh3.googleusercontent.com/a/host.jpg' };
+    await service.createRoom(ida, {});
+    expect(livekit.mintToken).toHaveBeenCalledWith(expect.objectContaining({ host: true, name: 'Ida', image: ida.image }));
+  });
+
   it('denies a guest', async () => {
     const { room } = await service.createRoom(ada, {});
     const { knockId } = await service.knock(room, 'Bo');

@@ -172,6 +172,20 @@ the Pin is suspended, then restored when the presentation ends.
 _Avoid_: Spotlight (that would force the same focus onto everyone's screen — a
 different, deliberately un-built feature), focus, lock, feature
 
+**Avatar**:
+The participant's account profile image, shown in a tile's camera-off placeholder
+in place of the name initials. Sourced **server-side** from the signed-in account
+— the same session that supplies the name (a Host's, or a signed-in [[Guest]]'s) —
+and carried to every client in the participant's LiveKit token metadata, never
+trusted from the browser. For a signed-in guest the image is captured at
+**[[Knock]]** time (alongside the name) and minted into the token at **admit**.
+Falls back to the name initials whenever no image exists (anonymous guests, or
+accounts with no picture) or the image fails to load — a broken Avatar is never a
+[[Fault]]; it degrades silently. Shown only in the camera-off state; when the
+camera is on the video replaces it.
+_Avoid_: Profile picture/photo (fine in prose, but "Avatar" is the domain term),
+gravatar, headshot, initials (the initials are the fallback — a distinct thing)
+
 ### Presenting
 
 **Present**:

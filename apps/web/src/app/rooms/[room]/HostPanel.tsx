@@ -178,7 +178,13 @@ export default function HostPanel({ room, hostKey }: { room: string; hostKey: st
             <ul className="space-y-2">
               {knocks.map((k) => (
                 <li key={k.knockId} className="flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2">
-                  <span className="truncate text-white/90">{k.name}</span>
+                  <span className="flex min-w-0 items-center gap-2">
+                    {k.image && (
+                      // eslint-disable-next-line @next/next/no-img-element -- remote avatar (Google CDN); next/image needs remotePatterns config and gains nothing here
+                      <img src={k.image} alt="" referrerPolicy="no-referrer" className="h-6 w-6 shrink-0 rounded-full object-cover ring-1 ring-white/15" />
+                    )}
+                    <span className="truncate text-white/90">{k.name}</span>
+                  </span>
                   <span className="flex shrink-0 gap-1">
                     <IconButton
                       icon={UserCheck}

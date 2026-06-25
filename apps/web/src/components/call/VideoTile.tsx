@@ -3,6 +3,7 @@
 import { VideoTrack, isTrackReference, type TrackReferenceOrPlaceholder } from '@livekit/components-react';
 import { Track } from 'livekit-client';
 import { MicOff, MonitorUp, Pin, PinOff } from 'lucide-react';
+import { useState } from 'react';
 import { useParticipantMedia } from './useParticipantMedia';
 
 function getInitials(name: string): string {
@@ -10,6 +11,18 @@ function getInitials(name: string): string {
   if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   const word = parts[0] || '';
   return word.length >= 2 ? word.slice(0, 2).toUpperCase() : word.toUpperCase() || '?';
+}
+
+// The Avatar URL is carried in the participant's token metadata (docs/adr/0016),
+// alongside `role`. Absent for anonymous guests and accounts without a picture.
+function getAvatarUrl(metadata?: string): string | undefined {
+  if (!metadata) return undefined;
+  try {
+    const url = (JSON.parse(metadata) as { avatarUrl?: unknown }).avatarUrl;
+    return typeof url === 'string' && url ? url : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export default function VideoTile({
@@ -35,6 +48,14 @@ export default function VideoTile({
   const label = participant.name || participant.identity || 'Guest';
   const initials = getInitials(label);
 
+  // Avatar shown in the camera-off placeholder in place of the initials. A
+  // broken/blocked image is not a Fault — it silently falls back to initials.
+  // We remember which URL failed (not a bare boolean) so a tile reused for a
+  // different participant re-tries the new Avatar without a reset effect.
+  const avatarUrl = getAvatarUrl(participant.metadata);
+  const [failedAvatarUrl, setFailedAvatarUrl] = useState<string | undefined>(undefined);
+  const showAvatar = !!avatarUrl && failedAvatarUrl !== avatarUrl;
+
   return (
     <div className="group relative h-full w-full min-h-0 min-w-0">
       <div className={`cyber-clip h-full w-full transition-shadow ${active ? 'cyber-frame-active' : 'cyber-frame'}`}>
@@ -52,11 +73,22 @@ export default function VideoTile({
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[oklch(0.18_0.03_300)] to-[oklch(0.13_0.02_270)]">
               <div
-                className={`flex aspect-square w-[clamp(2.5rem,18%,5rem)] items-center justify-center rounded-full font-display text-2xl font-semibold text-white/90 ${
+                className={`flex aspect-square w-[clamp(2.5rem,18%,5rem)] items-center justify-center overflow-hidden rounded-full font-display text-2xl font-semibold text-white/90 ${
                   active ? 'neon-magenta' : ''
                 } bg-[oklch(0.66_0.27_350_/_0.18)] ring-1 ring-magenta/40`}
               >
-                {initials}
+                {showAvatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- remote avatar (Google CDN); next/image needs remotePatterns config and gains nothing here
+                  <img
+                    src={avatarUrl}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                    onError={() => setFailedAvatarUrl(avatarUrl)}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  initials
+                )}
               </div>
             </div>
           )}

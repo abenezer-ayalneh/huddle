@@ -51,7 +51,7 @@ export class RoomsService {
       scheduledStart,
       hostUserId: host.id,
     });
-    return this.mintHostJoin(room, host.name);
+    return this.mintHostJoin(room, host);
   }
 
   // Owner rejoins their own room later (e.g. a scheduled meeting). Mints a
@@ -61,7 +61,7 @@ export class RoomsService {
     if (room.hostUserId !== host.id) {
       throw new ForbiddenException(faultBody(FaultCode.NOT_HOST, 'You are not the host of this room'));
     }
-    return this.mintHostJoin(room, host.name);
+    return this.mintHostJoin(room, host);
   }
 
   // Rooms the signed-in user hosts (with host keys, since they own them).
@@ -82,16 +82,19 @@ export class RoomsService {
     };
   }
 
-  // Guest knocks; must be a known managed room. The name is resolved upstream:
-  // a signed-in guest's comes from their session, an anonymous guest's from the
-  // request body (docs/adr/0016). Either way a non-empty name is required here.
-  async knock(slug: string, guestName: string | undefined): Promise<{ knockId: string }> {
+  // Guest knocks; must be a known managed room. The name and Avatar are resolved
+  // upstream: a signed-in guest's come from their session, an anonymous guest's
+  // name from the request body (docs/adr/0016). Either way a non-empty name is
+  // required here. The Avatar is optional and only present for signed-in guests
+  // whose account has an image; it is captured now so admit can mint it into the
+  // token without access to the guest's session.
+  async knock(slug: string, guestName: string | undefined, guestImage?: string | null): Promise<{ knockId: string }> {
     await this.requireRoom(slug);
     const name = guestName?.trim();
     if (!name) {
       throw new BadRequestException(faultBody(FaultCode.NAME_REQUIRED, 'A display name is required to knock.'));
     }
-    const knock = await this.state.addKnock(slug, name);
+    const knock = await this.state.addKnock(slug, name, guestImage);
     return { knockId: knock.knockId };
   }
 
@@ -123,6 +126,7 @@ export class RoomsService {
       knocks: knocks.map((k) => ({
         knockId: k.knockId,
         name: k.name,
+        image: k.image ?? null,
         requestedAt: k.requestedAt,
       })),
     };
@@ -136,6 +140,7 @@ export class RoomsService {
         room: slug,
         identity,
         name: knock.name,
+        image: knock.image,
       });
       await this.state.resolveKnock(knock, 'admitted', { identity, token });
     }
@@ -178,14 +183,15 @@ export class RoomsService {
     await this.state.clearKnocks(slug);
   }
 
-  private async mintHostJoin(room: Room, hostName: string): Promise<HostJoinResult> {
-    const identity = makeIdentity(hostName);
+  private async mintHostJoin(room: Room, host: AuthUser): Promise<HostJoinResult> {
+    const identity = makeIdentity(host.name);
     await this.livekit.createRoom(room.slug);
     const token = await this.livekit.mintToken({
       room: room.slug,
       identity,
-      name: hostName,
+      name: host.name,
       host: true,
+      image: host.image,
     });
     return {
       room: room.slug,

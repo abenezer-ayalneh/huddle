@@ -47,6 +47,9 @@ export type KnockStatusResult = {
 export type PendingKnock = {
   knockId: string;
   name: string;
+  // The guest's Avatar URL when their signed-in account has one (docs/adr/0016);
+  // null for anonymous guests or accounts without a picture.
+  image?: string | null;
   requestedAt: number;
 };
 

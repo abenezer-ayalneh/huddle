@@ -26,6 +26,32 @@ identity, room, and grants are never trusted from the client (see
 [ADR 0001](0001-livekit-secret-single-source.md)), and with how host tokens are
 minted from the session today.
 
+## Extension: the Avatar travels the same path as the name
+
+The display **name** is not the only identity attribute an account carries — a
+signed-in account (notably one created via Google) also has a profile **image**
+(`session.user.image`). The **Avatar** — that image, shown in a tile's camera-off
+placeholder in place of the name initials — follows the **exact same rule** as the
+name: resolved server-side from the session, never trusted from the browser.
+
+Mechanically the image rides one step further than the name. The name becomes the
+LiveKit token's `name` claim; the Avatar URL is added to the token **metadata**
+(next to the existing `role`), because that is the channel every client already
+reads for per-participant data. For a **Host** the image is read from the session
+in the same `mintHostJoin` that already reads the name. For a signed-in **Guest**
+the wrinkle is timing: the guest's join token is minted at **admit**, a
+host-key-authorized call with no access to the guest's session. So — exactly as the
+name is captured at **knock** and carried in the [[Knock]] state until admit — the
+image is captured at knock (from the same `OptionalAuthGuard` session) and stored
+on the knock alongside the name, then minted into the token at admit. The host's
+waiting-room list shows it too. An absent image (anonymous guest, account without a
+picture) or a URL that fails to load simply falls back to the initials; a broken
+Avatar is never a Fault.
+
+No new trust surface is introduced: the body still carries no image, the
+`KnockDto` is unchanged, and the client only ever _reads_ the Avatar back out of
+metadata the server signed.
+
 ## Considered Options
 
 - **Server derives the name from the session (optional auth on knock)** — chosen.
@@ -58,3 +84,9 @@ minted from the session today.
   or the URL changes.
 - The same optional-session pattern is now available for any future knock-adjacent
   endpoint that wants to recognise a signed-in caller without forcing sign-in.
+- The pattern now carries **two** identity attributes, not one: the name (token
+  `name` claim) and the **Avatar** URL (token `metadata`). The [[Knock]] state gains
+  an `image` field captured at knock and minted at admit, mirroring the name. The
+  Avatar renders in the camera-off placeholder of every tile (grid, Self-view,
+  presentation strip) and in the host's waiting-room list, falling back to initials
+  when absent or unloadable.

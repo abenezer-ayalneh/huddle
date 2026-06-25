@@ -43,12 +43,12 @@ export class RoomsController {
   }
 
   // --- Guest waiting-room flow (public; knockId is the bearer) ---
-  // A signed-in guest's name is taken from their session and the body name is
-  // ignored; an anonymous guest's name rides the body (docs/adr/0016).
+  // A signed-in guest's name and Avatar are taken from their session and the body
+  // name is ignored; an anonymous guest's name rides the body (docs/adr/0016).
   @UseGuards(OptionalAuthGuard)
   @Post(':room/knock')
   knock(@Param('room') room: string, @OptionalSessionUser() user: AuthUser | null, @Body() dto: KnockDto) {
-    return this.rooms.knock(room, user?.name ?? dto.name);
+    return this.rooms.knock(room, user?.name ?? dto.name, user?.image);
   }
 
   @Get(':room/knock/:knockId')
