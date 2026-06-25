@@ -87,6 +87,16 @@ function HeroCopy() {
   );
 }
 
+// Map a BetterAuth OAuth error code (delivered as ?error=…) to a friendly line.
+function oauthErrorMessage(code: string): string {
+  switch (code) {
+    case 'account_not_linked':
+      return 'This email already has an unverified account. Check your inbox for the verification link, confirm it, then continue with Google.';
+    default:
+      return "Couldn't sign in with Google. Please try again.";
+  }
+}
+
 // Shared input styling for the auth form.
 const inputClass =
   'w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2.5 text-white outline-none transition-colors placeholder:text-white/40 focus:border-cyan/60 focus:ring-2 focus:ring-cyan/30';
@@ -99,6 +109,16 @@ function SignIn() {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Surface an OAuth failure bounced back via ?error=… (BetterAuth redirects
+  // here when we pass errorCallbackURL). Strip the param afterwards so a refresh
+  // doesn't keep re-showing it.
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get('error');
+    if (!code) return;
+    setError(oauthErrorMessage(code));
+    window.history.replaceState(null, '', window.location.pathname);
+  }, []);
 
   const canSubmit = email.trim() && password.length >= 8 && (mode === 'signin' || name.trim()) && !busy;
 
@@ -181,7 +201,7 @@ function SignIn() {
       <div className="border-t border-white/10 pt-4">
         <button
           type="button"
-          onClick={() => signIn.social({ provider: 'google', callbackURL })}
+          onClick={() => signIn.social({ provider: 'google', callbackURL, errorCallbackURL: callbackURL })}
           className="w-full rounded-lg border border-white/15 bg-white/5 px-4 py-2.5 font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50"
         >
           Continue with Google

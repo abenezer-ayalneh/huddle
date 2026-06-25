@@ -148,8 +148,29 @@ Edit `.env.prod` and set, at minimum:
 - Leave `S3_ENDPOINT` and `S3_ENDPOINT_INTERNAL` both at `http://minio:9000` —
   in prod the API is a container and reaches MinIO by service name (do **not**
   set one to `localhost`; see [ADR-0003](./adr/0003-recording-egress-minio.md)).
+- **SMTP** (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`) —
+  **required in production.** See the next subsection.
 
 `.env.prod` is gitignored — never commit it.
+
+### Email (SMTP) — required for email/password signups
+
+New local accounts must confirm their address before they can sign in, and the
+confirmation link is delivered by email. Set SMTP credentials in `.env.prod`:
+
+```bash
+SMTP_HOST=smtp.your-provider.com   # e.g. Mailgun, SES, Postmark, your own server
+SMTP_PORT=587                      # 587 STARTTLS, or 465 implicit TLS
+SMTP_USER=...
+SMTP_PASS=...
+SMTP_FROM=no-reply@your-domain     # defaults to SMTP_USER if unset
+```
+
+If `SMTP_HOST` is left blank the API only **logs** the verification link to its
+console instead of emailing it — fine for local dev, but in production no one
+receives the link, so email/password signups can never complete. (Google
+sign-in is unaffected — Google verifies the address itself.) Restart `api`
+after changing these.
 
 **Ports (only if 3001/3002 are taken on your box).** The containers publish on
 `127.0.0.1:${WEB_HOST_PORT}` (default `3001`) and `127.0.0.1:${API_HOST_PORT}`
@@ -282,8 +303,10 @@ curl https://huddle-api.abenezer-ayalneh.dev/ready     # 200 + {"postgres":"ok",
 
 Then in a browser:
 
-1. Open `https://huddle.abenezer-ayalneh.dev`, sign up (email + password), create
-   a room.
+1. Open `https://huddle.abenezer-ayalneh.dev`, sign up (email + password), then
+   click the verification link emailed to you (you're signed in automatically
+   once confirmed) and create a room. If no email arrives, check the SMTP config
+   from step 5 and the `api` logs.
 2. From another browser/device, open the room link, enter a name, **knock**.
 3. Admit the guest from the host panel; confirm two-way audio/video.
 4. As host, click **Record**, talk for a few seconds, **Stop**, then download the
