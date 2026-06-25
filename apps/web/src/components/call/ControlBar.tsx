@@ -15,12 +15,10 @@ import {
   MousePointer2,
   PhoneOff,
   Square,
-  ChevronUp,
   type LucideIcon,
 } from 'lucide-react';
-import { useState } from 'react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import DeviceMenu, { type DeviceSection } from './DeviceMenu';
+import { PopoverContent } from '@/components/ui/popover';
+import MergedControlButton, { DeviceMenuContent, type DeviceSection } from './MergedControlButton';
 import { useMuteReminder } from './useMuteReminder';
 import { useCallShortcuts, useModifierKeyLabel } from './useCallShortcuts';
 
@@ -107,33 +105,42 @@ export default function ControlBar({
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex justify-center p-4 sm:p-6">
       <div className="glass-strong pointer-events-auto flex items-center gap-2 rounded-full px-3 py-2 shadow-[0_8px_40px_oklch(0_0_0/0.5)] sm:gap-3 sm:px-4">
-        <div className="relative flex items-center gap-0.5">
+        <div className="relative flex items-center">
           {showMuteReminder && <MuteReminderBubble />}
-          <ControlButton
+          <MergedControlButton
             icon={mic.enabled ? Mic : MicOff}
             label={mic.enabled ? `Mute microphone (${mod}D)` : `Unmute microphone (${mod}D) · Hold Space to talk`}
+            menuLabel="Switch microphone or speaker"
             active={mic.enabled}
             danger={!mic.enabled}
             disabled={mic.pending}
             onClick={() => mic.toggle()}
+            menu={(close) => <DeviceMenuContent sections={micSections} close={close} onPick={(kind) => kind === 'audioinput' && ensureOn(mic)} />}
           />
-          <DeviceMenu label="Switch microphone or speaker" sections={micSections} onPick={(kind) => kind === 'audioinput' && ensureOn(mic)} />
         </div>
-        <div className="flex items-center gap-0.5">
-          <ControlButton
-            icon={cam.enabled ? Video : VideoOff}
-            label={cam.enabled ? `Turn camera off (${mod}E)` : `Turn camera on (${mod}E)`}
-            active={cam.enabled}
-            danger={!cam.enabled}
-            disabled={cam.pending}
-            onClick={() => cam.toggle()}
-          />
-          <DeviceMenu label="Switch camera" sections={[{ kind: 'videoinput', label: 'Camera' }]} onPick={() => ensureOn(cam)} />
-        </div>
+        <MergedControlButton
+          icon={cam.enabled ? Video : VideoOff}
+          label={cam.enabled ? `Turn camera off (${mod}E)` : `Turn camera on (${mod}E)`}
+          menuLabel="Switch camera"
+          active={cam.enabled}
+          danger={!cam.enabled}
+          disabled={cam.pending}
+          onClick={() => cam.toggle()}
+          menu={(close) => <DeviceMenuContent sections={[{ kind: 'videoinput', label: 'Camera' }]} close={close} onPick={() => ensureOn(cam)} />}
+        />
 
         <span className="mx-1 h-7 w-px bg-white/10" />
 
-        <div className="flex items-center gap-0.5">
+        {onPresentWithControl && !iAmPresenting && !someoneElsePresenting ? (
+          <MergedControlButton
+            icon={MonitorUp}
+            label={shareLabel}
+            menuLabel="More ways to present"
+            disabled={hasOutgoingRequest}
+            onClick={onShareClick}
+            menu={(close) => <ShareMenuContent close={close} onPresent={onShareClick} onPresentWithControl={onPresentWithControl} />}
+          />
+        ) : (
           <ControlButton
             icon={iAmPresenting ? MonitorOff : MonitorUp}
             label={shareLabel}
@@ -141,10 +148,7 @@ export default function ControlBar({
             disabled={hasOutgoingRequest}
             onClick={onShareClick}
           />
-          {onPresentWithControl && !iAmPresenting && !someoneElsePresenting && (
-            <ShareMenu onPresent={onShareClick} onPresentWithControl={onPresentWithControl} />
-          )}
-        </div>
+        )}
         <ControlButton icon={MessageSquare} label={chatOpen ? 'Hide chat' : 'Show chat'} active={chatOpen} badge={unreadChat} onClick={onToggleChat} />
 
         {recordMode && onRecordClick && <RecordButton mode={recordMode} busy={recordBusy} onClick={onRecordClick} />}
@@ -162,9 +166,8 @@ export default function ControlBar({
 // shares one whole monitor and can hand input to a participant).
 // Present with Control is disabled pending the agent runtime fix
 // (rust-sdks#795) and the manual two-window verification.
-function ShareMenu({ onPresent }: { onPresent: () => void; onPresentWithControl: () => void }) {
-  const [open, setOpen] = useState(false);
-
+// Rendered as the chevron-menu body of the share MergedControlButton.
+function ShareMenuContent({ onPresent, close }: { onPresent: () => void; onPresentWithControl: () => void; close: () => void }) {
   const item = (onClick: () => void, icon: LucideIcon, title: string, hint: string, disabled = false) => {
     const Icon = icon;
     return (
@@ -172,7 +175,7 @@ function ShareMenu({ onPresent }: { onPresent: () => void; onPresentWithControl:
         type="button"
         disabled={disabled}
         onClick={() => {
-          setOpen(false);
+          close();
           onClick();
         }}
         className="flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
@@ -192,19 +195,10 @@ function ShareMenu({ onPresent }: { onPresent: () => void; onPresentWithControl:
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        title="More ways to present"
-        aria-label="More ways to present"
-        className="flex h-8 w-5 items-center justify-center rounded-full bg-white/8 text-white/70 ring-1 ring-white/10 transition-all hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 sm:h-9 sm:w-6 [&>svg]:h-3.5 [&>svg]:w-3.5"
-      >
-        <ChevronUp />
-      </PopoverTrigger>
-      <PopoverContent side="top" sideOffset={14} className="glass-strong w-72 gap-1 rounded-xl p-1.5">
-        {item(onPresent, MonitorUp, 'Present screen', 'Share a tab, window, or screen — view only')}
-        {item(() => {}, MousePointer2, 'Present with control', 'Share a monitor via the desktop agent; participants can take the mouse', true)}
-      </PopoverContent>
-    </Popover>
+    <PopoverContent side="top" sideOffset={14} className="glass-strong w-72 gap-1 rounded-xl p-1.5">
+      {item(onPresent, MonitorUp, 'Present screen', 'Share a tab, window, or screen — view only')}
+      {item(() => {}, MousePointer2, 'Present with control', 'Share a monitor via the desktop agent; participants can take the mouse', true)}
+    </PopoverContent>
   );
 }
 
@@ -218,7 +212,7 @@ function RecordButton({ mode, busy, onClick }: { mode: 'request' | 'pending' | '
         title="Waiting for the host to approve"
         aria-label="Waiting for the host to approve recording. Cancel request"
         onClick={onClick}
-        className="relative flex h-11 w-11 items-center justify-center rounded-full bg-white/8 text-white/70 ring-1 ring-white/10 transition-all hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 sm:h-12 sm:w-12 [&>svg]:h-5 [&>svg]:w-5"
+        className="relative flex h-8 w-8 items-center justify-center rounded-full bg-white/8 text-white/70 ring-1 ring-white/10 transition-all hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 sm:h-11 sm:w-11 [&>svg]:h-4 [&>svg]:w-4 sm:[&>svg]:h-5 sm:[&>svg]:w-5"
       >
         <Loader2 className="animate-spin" />
       </button>
@@ -237,7 +231,7 @@ function RecordButton({ mode, busy, onClick }: { mode: 'request' | 'pending' | '
       aria-pressed={recording}
       disabled={busy}
       onClick={onClick}
-      className={`relative flex h-11 w-11 items-center justify-center rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-35 sm:h-12 sm:w-12 [&>svg]:h-5 [&>svg]:w-5 ${
+      className={`relative flex h-8 w-8 items-center justify-center rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-35 sm:h-11 sm:w-11 [&>svg]:h-4 [&>svg]:w-4 sm:[&>svg]:h-5 sm:[&>svg]:w-5 ${
         recording ? 'bg-red-500 text-white hover:bg-red-400' : 'bg-white/8 text-white/80 ring-1 ring-white/10 hover:bg-white/15'
       }`}
     >
@@ -299,7 +293,7 @@ function ControlButton({
       aria-pressed={active}
       disabled={disabled}
       onClick={onClick}
-      className={`relative flex h-11 w-11 items-center justify-center rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent sm:h-12 sm:w-12 ${tone} [&>svg]:h-5 [&>svg]:w-5`}
+      className={`relative flex h-8 w-8 items-center justify-center rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent sm:h-11 sm:w-11 ${tone} [&>svg]:h-4 [&>svg]:w-4 sm:[&>svg]:h-5 sm:[&>svg]:w-5`}
     >
       <Icon />
       {badge > 0 && (
