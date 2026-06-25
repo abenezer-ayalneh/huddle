@@ -1,5 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import type { Request } from 'express';
+import { FaultCode, faultBody } from '../common/faults';
 import { RoomRepository } from './rooms.repo';
 
 // Authorizes host-only endpoints: the `x-host-key` header must match the
@@ -18,7 +19,7 @@ export class HostGuard implements CanActivate {
 
     const room = await this.rooms.findBySlug(slug);
     if (!room || !hostKey || room.hostKey !== hostKey) {
-      throw new UnauthorizedException('Not the host of this room');
+      throw new UnauthorizedException(faultBody(FaultCode.NOT_HOST, 'Not the host of this room'));
     }
     return true;
   }

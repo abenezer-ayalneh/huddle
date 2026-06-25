@@ -4,8 +4,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Calendar, Check, Copy, LogOut, Play } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import { ApiError, api, type RoomSummary } from '@/lib/api';
+import { api, isFaultError, type RoomSummary } from '@/lib/api';
 import { signIn, signUp, signOut, useSession } from '@/lib/auth-client';
+import { emitFault } from '@/lib/faults';
 import { saveHostSession } from '@/lib/hostSession';
 import DateTimePicker from '@/components/DateTimePicker';
 import IconButton from '@/components/IconButton';
@@ -26,6 +27,15 @@ export default function Lobby() {
       )}
     </Shell>
   );
+}
+
+// Surface a genuine Fault on the global Fault toast (docs/adr/0019). All API
+// calls reject with a FaultError; anything else gets a generic Fault so the user
+// always sees feedback. Domain Outcomes that deserve inline UX are handled at
+// their own call site, not here.
+function surface(e: unknown): void {
+  if (isFaultError(e)) emitFault(e.fault);
+  else emitFault({ code: 'INTERNAL', message: 'Something went wrong. Please try again.', statusCode: 500 });
 }
 
 // Split hero: a dramatic brand panel on the left, the live auth/dashboard card
@@ -106,7 +116,14 @@ function SignIn() {
         : await signIn.email({ email: email.trim(), password });
     setBusy(false);
     if (result.error) {
-      setError(result.error.message ?? (mode === 'signup' ? "Couldn't create that account." : 'Wrong email or password.'));
+      // A 4xx is a credential/validation Domain Outcome — keep it inline. A
+      // connectivity failure (no/zero status) is a Fault already surfaced on the
+      // toast by the auth wrapper (docs/adr/0019), so don't show a misleading
+      // "wrong password" here.
+      const status = result.error.status ?? 0;
+      if (status >= 400) {
+        setError(result.error.message ?? (mode === 'signup' ? "Couldn't create that account." : 'Wrong email or password.'));
+      }
     }
   }
 
@@ -179,7 +196,6 @@ function SignIn() {
 function HostDashboard({ userName, onSignOut }: { userName: string; onSignOut: () => void }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const [rooms, setRooms] = useState<RoomSummary[] | null>(null);
   const refresh = useCallback(() => {
@@ -208,24 +224,22 @@ function HostDashboard({ userName, onSignOut }: { userName: string; onSignOut: (
   async function handleInstant() {
     if (busy) return;
     setBusy(true);
-    setError(null);
     try {
       enterAsHost(await api.createRoom());
     } catch (e) {
       setBusy(false);
-      setError(e instanceof ApiError && e.status === 401 ? 'Your session expired — sign in again.' : "Couldn't create the meeting. Is the API running?");
+      surface(e);
     }
   }
 
   async function handleSchedule(iso: string) {
     if (!iso || busy) return;
     setBusy(true);
-    setError(null);
     try {
       await api.createRoom({ scheduledStart: iso });
       refresh();
     } catch (e) {
-      setError(e instanceof ApiError && e.status === 401 ? 'Your session expired — sign in again.' : "Couldn't create the meeting. Is the API running?");
+      surface(e);
     } finally {
       setBusy(false);
     }
@@ -234,8 +248,8 @@ function HostDashboard({ userName, onSignOut }: { userName: string; onSignOut: (
   async function startRoom(slug: string) {
     try {
       enterAsHost(await api.hostJoin(slug));
-    } catch {
-      setError("Couldn't start that meeting.");
+    } catch (e) {
+      surface(e);
     }
   }
 
@@ -248,8 +262,6 @@ function HostDashboard({ userName, onSignOut }: { userName: string; onSignOut: (
         </div>
         <IconButton icon={LogOut} label="Sign out" className="text-white/70 hover:bg-white/15 hover:text-white" onClick={onSignOut} />
       </header>
-
-      {error && <p className="text-sm text-magenta">{error}</p>}
 
       <div className="flex gap-3">
         <button

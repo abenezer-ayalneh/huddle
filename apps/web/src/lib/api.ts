@@ -1,5 +1,7 @@
 // Typed client for the NestJS backend (see docs/API_CONTRACT.md).
 // Host-only calls authorize with the per-room hostKey via the x-host-key header.
+import { emitFault } from './faults';
+import { FaultError, httpFetch, isFaultError, readFault } from './http';
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
@@ -68,21 +70,18 @@ export type MyRecording = RecordingSummary & {
   hostKey: string;
 };
 
-class ApiError extends Error {
-  constructor(
-    public status: number,
-    message: string,
-  ) {
-    super(message);
-  }
-}
+// Per-call options. `surfaceFault: true` opts a user-initiated request into the
+// Fault toast (default passive — see docs/adr/0019); `hostKey` adds the host
+// capability header.
+type RequestInitX = RequestInit & { hostKey?: string; surfaceFault?: boolean };
 
-async function request<T>(path: string, init?: RequestInit & { hostKey?: string }): Promise<T> {
-  const { hostKey, headers, ...rest } = init ?? {};
-  const res = await fetch(`${API_URL}${path}`, {
+async function request<T>(path: string, init?: RequestInitX): Promise<T> {
+  const { hostKey, headers, surfaceFault, ...rest } = init ?? {};
+  const res = await httpFetch(`${API_URL}${path}`, {
     // Send the BetterAuth session cookie on cross-origin API calls (the auth
     // routes that need a signed-in host depend on it).
     credentials: 'include',
+    surfaceFault,
     headers: {
       'Content-Type': 'application/json',
       ...(hostKey ? { 'x-host-key': hostKey } : {}),
@@ -91,7 +90,11 @@ async function request<T>(path: string, init?: RequestInit & { hostKey?: string 
     ...rest,
   });
   if (!res.ok) {
-    throw new ApiError(res.status, `Request failed (${res.status})`);
+    // HTTP error → read the server's Fault envelope. Surfacing is opt-in:
+    // user-initiated callers pass surfaceFault (or catch and call emitFault).
+    const fault = await readFault(res);
+    if (surfaceFault) emitFault(fault);
+    throw new FaultError(fault);
   }
   // Some endpoints return no body; guard against empty responses.
   const text = await res.text();
@@ -197,13 +200,15 @@ export const api = {
   // The download is host-authorized (x-host-key), so it can't be a plain link —
   // fetch it as a blob and let the caller trigger a save.
   downloadRecording: async (room: string, id: string, hostKey: string): Promise<Blob> => {
-    const res = await fetch(`${API_URL}/rooms/${encodeURIComponent(room)}/recordings/${id}/download`, {
+    const res = await httpFetch(`${API_URL}/rooms/${encodeURIComponent(room)}/recordings/${id}/download`, {
       credentials: 'include',
       headers: { 'x-host-key': hostKey },
     });
-    if (!res.ok) throw new ApiError(res.status, `Download failed (${res.status})`);
+    if (!res.ok) throw new FaultError(await readFault(res));
     return res.blob();
   },
 };
 
-export { ApiError };
+// Back-compat alias: existing call sites import `ApiError` and read `.status`.
+// FaultError carries `.status` and `.code`, so both keep working.
+export { FaultError, FaultError as ApiError, isFaultError };

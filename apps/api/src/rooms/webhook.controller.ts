@@ -1,6 +1,7 @@
 import { Controller, HttpCode, Logger, Post, Req, UnauthorizedException } from '@nestjs/common';
 import type { RawBodyRequest } from '@nestjs/common';
 import type { Request } from 'express';
+import { FaultCode, faultBody } from '../common/faults';
 import { LivekitService } from './livekit.service';
 import { RecordingsService } from './recordings.service';
 import { RoomsService } from './rooms.service';
@@ -29,7 +30,7 @@ export class WebhookController {
       // Log the reason (not the token) — the usual cause is an empty rawBody,
       // which means the body parser didn't capture this content type.
       this.logger.warn(`webhook verify failed (rawLen=${raw.length}): ${String(err)}`);
-      throw new UnauthorizedException('Invalid webhook signature');
+      throw new UnauthorizedException(faultBody(FaultCode.WEBHOOK_UNVERIFIED, 'Invalid webhook signature'));
     }
 
     if (event.event === 'participant_joined' && event.room?.name) {

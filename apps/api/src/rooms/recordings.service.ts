@@ -2,6 +2,7 @@ import { ConflictException, ForbiddenException, Injectable, Logger, NotFoundExce
 import type { EgressInfo } from 'livekit-server-sdk';
 import { EgressStatus } from 'livekit-server-sdk';
 import type { Readable } from 'node:stream';
+import { FaultCode, faultBody } from '../common/faults';
 import { EgressService } from './egress.service';
 import { LivekitService } from './livekit.service';
 import type { CallParticipant } from './participant.guard';
@@ -58,7 +59,7 @@ export class RecordingsService {
     const room = await this.requireRoom(slug);
     const active = await this.recordings.listActiveByRoom(room.id);
     if (active.length > 0) {
-      throw new ConflictException('A recording is already in progress');
+      throw new ConflictException(faultBody(FaultCode.RECORDING_IN_PROGRESS, 'A recording is already in progress'));
     }
     await this.storage.ensureBucket();
 
@@ -98,7 +99,7 @@ export class RecordingsService {
     const active = await this.recordings.listActiveByRoom(room.id);
     const mine = active.find((r) => r.startedByIdentity === participant.identity);
     if (!mine) {
-      throw new ForbiddenException('You have no active recording to stop');
+      throw new ForbiddenException(faultBody(FaultCode.NOT_RECORDING_OWNER, 'You have no active recording to stop'));
     }
     return this.stop(slug, mine.id);
   }
@@ -127,7 +128,7 @@ export class RecordingsService {
   async download(slug: string, recordingId: string): Promise<{ body: Readable; size?: number; filename: string }> {
     const { rec } = await this.requireRecording(slug, recordingId);
     if (rec.status !== 'completed') {
-      throw new ConflictException('Recording is not ready yet');
+      throw new ConflictException(faultBody(FaultCode.RECORDING_NOT_READY, 'Recording is not ready yet'));
     }
     const { body, size } = await this.storage.getObject(rec.objectKey);
     return { body, size, filename: this.basename(rec.objectKey) };
@@ -190,7 +191,7 @@ export class RecordingsService {
 
   private async requireRoom(slug: string) {
     const room = await this.rooms.findBySlug(slug);
-    if (!room) throw new NotFoundException('No such room');
+    if (!room) throw new NotFoundException(faultBody(FaultCode.ROOM_NOT_FOUND, 'No such room'));
     return room;
   }
 
@@ -198,7 +199,7 @@ export class RecordingsService {
     const room = await this.requireRoom(slug);
     const rec = await this.recordings.findById(recordingId);
     if (!rec || rec.roomId !== room.id) {
-      throw new NotFoundException('No such recording for this room');
+      throw new NotFoundException(faultBody(FaultCode.RECORDING_NOT_FOUND, 'No such recording for this room'));
     }
     return { room, rec };
   }

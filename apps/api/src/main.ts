@@ -5,6 +5,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { json } from 'express';
 import { AppModule } from './app.module';
 import { getAuth } from './auth/auth';
+import { FaultFilter } from './common/fault.filter';
 import { makeLogger } from './logging/json.logger';
 
 async function bootstrap() {
@@ -65,6 +66,11 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  // Shape every error response into the standard Fault envelope
+  // { code, message, statusCode } and log 5xx loudly / 4xx quietly
+  // (docs/adr/0017, docs/API_CONTRACT.md → "Faults & the error envelope").
+  app.useGlobalFilters(new FaultFilter());
 
   const port = config.get<number>('API_PORT') ?? 3001;
   await app.listen(port);

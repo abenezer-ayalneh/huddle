@@ -1,6 +1,7 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
 import type Redis from 'ioredis';
+import { FaultCode, faultBody } from '../common/faults';
 import { REDIS_CLIENT } from '../redis/redis.module';
 import { LivekitService } from './livekit.service';
 import type { CallParticipant } from './participant.guard';
@@ -59,7 +60,7 @@ export class ControlAgentService {
     // GETDEL: the first redeem wins, every later attempt sees nothing.
     const raw = await this.redis.getdel(this.codeKey(code));
     if (!raw) {
-      throw new NotFoundException('Unknown or expired code');
+      throw new NotFoundException(faultBody(FaultCode.PAIRING_CODE_INVALID, 'Unknown or expired code'));
     }
     const { room, identity, name } = JSON.parse(raw) as AgentLinkPayload;
     const token = await this.livekit.mintAgentToken({

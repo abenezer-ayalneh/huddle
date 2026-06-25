@@ -7,6 +7,93 @@ frontend ↔ backend boundary.
 > Only the endpoints needed for the MVP are specified. Add new endpoints here
 > before implementing them.
 
+## Faults & the error envelope
+
+Every error response the API emits — from a single **global exception filter** —
+has one shape:
+
+```json
+{ "code": "SESSION_EXPIRED", "message": "Your session expired — sign in again.", "statusCode": 401 }
+```
+
+- `code` — a stable, machine-readable token the client switches on.
+- `message` — a human-readable fallback (safe to show if `code` is unknown).
+- `statusCode` — mirrors the HTTP status.
+
+The `code` set is **duplicated per side** (no shared package — see
+`docs/adr/0017`); **this table is the source of truth** both copies track. The
+web must treat an **unknown** `code` as a generic **Fault** (never crash, never
+render the raw token).
+
+Two classes share the envelope but get different UX (see `CONTEXT.md` →
+"Errors & faults"):
+
+- **Fault** — unexpected; routed to the generic Fault surface (boundary or the
+  dedup'd Fault toast with a code-driven recovery action).
+- **Domain Outcome** — expected; the same envelope on the wire, but the client
+  routes it by `code` to tailored UX and it **never** shows as a Fault.
+
+### Server-emitted codes
+
+| `code`                  | status  | class          | meaning / origin                                 | recovery action |
+| ----------------------- | ------- | -------------- | ------------------------------------------------ | --------------- |
+| `SESSION_EXPIRED`       | 401     | Fault          | session-gated endpoint, no/expired session       | Sign in         |
+| `UPSTREAM_UNAVAILABLE`  | 502/503 | Fault          | a dependency call failed (LiveKit, MinIO, Redis) | Retry           |
+| `INTERNAL`              | 500     | Fault          | unhandled / misconfigured server error           | Reload          |
+| `VALIDATION`            | 400     | Fault          | `ValidationPipe` rejected the body (client bug)  | (generic)       |
+| `NOT_HOST`              | 401/403 | Domain Outcome | host action without a valid `x-host-key`         | (tailored)      |
+| `NOT_PARTICIPANT`       | 401     | Domain Outcome | missing/invalid `x-participant-token` for room   | (tailored)      |
+| `ROOM_NOT_FOUND`        | 404     | Domain Outcome | unknown room (guest link, host-token)            | (tailored)      |
+| `KNOCK_NOT_FOUND`       | 404     | Domain Outcome | unknown / expired / withdrawn knock              | (tailored)      |
+| `NAME_REQUIRED`         | 400     | Domain Outcome | knock with no display name                       | (inline)        |
+| `RECORDING_IN_PROGRESS` | 409     | Domain Outcome | start/approve while one is already active        | (tailored)      |
+| `NOT_RECORDING_OWNER`   | 403     | Domain Outcome | `stop-by-participant` you didn't start           | (tailored)      |
+| `RECORDING_NOT_READY`   | 409     | Domain Outcome | download before the recording is `completed`     | (tailored)      |
+| `RECORDING_NOT_FOUND`   | 404     | Domain Outcome | unknown recording for the room                   | (tailored)      |
+| `PAIRING_CODE_INVALID`  | 404     | Domain Outcome | unknown / expired Control Agent pairing code     | (tailored)      |
+| `WEBHOOK_UNVERIFIED`    | 401     | —              | bad LiveKit webhook signature (server-to-server) | n/a             |
+
+> A **knock denial** is not in this table: it is a `200` poll returning
+> `status: "denied"`, never an error response.
+>
+> `UPSTREAM_UNAVAILABLE` is **reserved**: dependency misconfiguration currently
+> surfaces as `INTERNAL` (500). Mapping LiveKit/MinIO/Redis call failures to an
+> explicit `UPSTREAM_UNAVAILABLE` is a follow-up (the global filter is the place
+> to do it).
+
+### Client-synthesized faults (no envelope on the wire)
+
+When `fetch` itself rejects — the API is down, connection refused, DNS/CORS
+failure, offline, or a client timeout — **there is no response and no envelope**.
+A **single shared low-level fetch** (used by `lib/api.ts` _and_ configured into
+the BetterAuth client) catches the rejection and mints a synthetic Fault in the
+same shape, so all downstream handling is uniform and no raw `TypeError: Failed
+to fetch` escapes. These codes live only on the client, in a reserved `NET_*`
+namespace, and are **always Faults** — they signal **API Reachability:
+unreachable** (`CONTEXT.md` → "Errors & faults"; ADR 0019):
+
+| `code`            | origin                                                   | recovery action |
+| ----------------- | -------------------------------------------------------- | --------------- |
+| `NET_UNREACHABLE` | `fetch` rejected (`ERR_CONNECTION_REFUSED`, failed/CORS) | Retry           |
+| `NET_TIMEOUT`     | request exceeded the client-side timeout                 | Retry           |
+
+**Surfacing splits by origin** (not by code):
+
+- **User-initiated** (clicked Sign in, Create meeting): the dedup'd **Fault
+  toast** with a code-driven recovery action. Opt in per request
+  (`{ surfaceFault: true }`); the BetterAuth `signIn`/`signUp`/`signOut` wrappers
+  pass it.
+- **Passive/background** (the on-focus `get-session` refetch, polling): **no
+  toast** — only the quiet, persistent **Server Unreachable** indicator that
+  clears when reachability returns. This is the **default** (a forgotten flag
+  degrades to quiet, never spam).
+
+> This is why the log's BetterAuth failures (`/api/auth/get-session` on focus,
+> `/api/auth/sign-in/social` on click) must not be left as uncaught rejections:
+> the session refetch is passive (banner only), the sign-in click is active
+> (toast). On mount, an unreachable `get-session` renders the **signed-out**
+> Lobby plus the banner — never an indefinite spinner.
+
 ## ~~POST /token~~ (removed in Phase 6)
 
 The standalone public token endpoint was removed in Phase 6. It let anyone mint

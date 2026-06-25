@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Exo_2, Rajdhani } from 'next/font/google';
+import FaultLayer from '@/components/faults/FaultLayer';
 import './globals.css';
 
 // Exo 2 — geometric, futuristic display face for headings and brand.
@@ -87,7 +88,12 @@ export default function RootLayout({
     // on a dark base, so `.dark` is applied statically rather than tracking the
     // system preference.
     <html lang="en" className={`dark ${exo2.variable} ${rajdhani.variable} h-full antialiased`}>
-      <body className="bg-dotgrid min-h-full flex flex-col">{children}</body>
+      <body className="bg-dotgrid min-h-full flex flex-col">
+        {children}
+        {/* App-wide Fault surfaces: the quiet reachability banner + the Fault
+            toast, mounted once above every route (docs/adr/0017, 0019). */}
+        <FaultLayer />
+      </body>
     </html>
   );
 }

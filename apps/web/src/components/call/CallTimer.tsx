@@ -15,6 +15,8 @@ function formatElapsed(ms: number): string {
 
 export default function CallTimer() {
   const { metadata } = useRoomInfo();
+  // Seed `now` lazily at mount (an allowed impure initializer) so the first
+  // paint reflects the real current time; the interval keeps it ticking.
   const [now, setNow] = useState(Date.now);
 
   const startedAt = (() => {
@@ -29,7 +31,6 @@ export default function CallTimer() {
 
   useEffect(() => {
     if (startedAt == null) return;
-    setNow(Date.now());
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, [startedAt]);

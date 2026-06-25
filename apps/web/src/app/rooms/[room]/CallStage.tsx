@@ -15,6 +15,7 @@ import RemoteControlBanner from '@/components/call/RemoteControlBanner';
 import RemoteControlSurface from '@/components/call/RemoteControlSurface';
 import RemoteControlToast from '@/components/call/RemoteControlToast';
 import VideoGrid from '@/components/call/VideoGrid';
+import ErrorBoundary from '@/components/faults/ErrorBoundary';
 import { usePresentation } from '@/components/call/usePresentation';
 import { useRecording } from '@/components/call/useRecording';
 import { useRemoteControl } from '@/components/call/useRemoteControl';
@@ -197,7 +198,13 @@ function CallView({
         iAmPresenting={presentation.iAmPresenting}
         onStopPresenting={presentation.handleShareClick}
       />
-      <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} messages={chatMessages} onSend={send} isSending={isSending} />
+      {/* Scoped boundaries (docs/adr/0018): the chat and the data-message-driven
+          overlays are the likely crash sources. A crash in any of them fails to
+          nothing and is logged — it must never unmount <LiveKitRoom> and drop the
+          participant from the call. */}
+      <ErrorBoundary label="Chat" fallback={null}>
+        <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} messages={chatMessages} onSend={send} isSending={isSending} />
+      </ErrorBoundary>
       <ControlBar
         onLeave={onLeaveClick}
         chatOpen={chatOpen}
@@ -213,53 +220,59 @@ function CallView({
         recordBusy={recording.busy}
         suspendShortcuts={!!control.controlling}
       />
-      <div className="pointer-events-none absolute inset-x-0 top-2 z-30 flex justify-center">
-        <RemoteControlBanner
-          iAmControllablePresenter={control.iAmControllablePresenter}
-          controller={control.controller}
-          controlling={control.controlling}
-          canRequest={control.controllable && !presentation.iAmPresenting && !control.controlling && !control.outgoingRequest && !control.incomingOffer}
-          onRequest={control.requestControl}
-          onRevoke={control.revoke}
-          onRelease={control.release}
-          onOffer={control.offerControl}
-        />
-      </div>
-      <div className="pointer-events-none absolute inset-x-0 top-14 z-30 flex flex-col items-center gap-2">
-        <RecordingIndicator active={recording.recordingActive} />
-        <RecordingToast
-          incoming={recording.incoming}
-          pending={recording.phase === 'pending'}
-          outcome={recording.outcome}
-          onApprove={recording.approve}
-          onDeny={recording.deny}
-          onCancel={recording.cancelRequest}
-          onDismissOutcome={recording.dismissOutcome}
-        />
-        <PresentationToast
-          outgoing={presentation.outgoing}
-          incoming={presentation.incoming}
-          outcome={presentation.outcome}
-          onCancel={presentation.cancelRequest}
-          onYield={presentation.yieldPresentation}
-          onDecline={presentation.declinePresentation}
-          onDismissOutcome={presentation.dismissOutcome}
-        />
-        <RemoteControlToast
-          incomingRequest={control.incomingRequest}
-          incomingOffer={control.incomingOffer}
-          outgoingRequest={control.outgoingRequest}
-          outgoingOffer={control.outgoingOffer}
-          outcome={control.outcome}
-          onGrant={control.grantRequest}
-          onDeclineRequest={control.declineRequest}
-          onAcceptOffer={control.acceptOffer}
-          onDeclineOffer={control.declineOffer}
-          onCancelRequest={control.cancelRequest}
-          onDismissOutcome={control.dismissOutcome}
-        />
-      </div>
-      <AgentLaunchDialog code={launchCode} onCancel={() => setLaunchCode(null)} />
+      <ErrorBoundary label="Remote control banner" fallback={null}>
+        <div className="pointer-events-none absolute inset-x-0 top-2 z-30 flex justify-center">
+          <RemoteControlBanner
+            iAmControllablePresenter={control.iAmControllablePresenter}
+            controller={control.controller}
+            controlling={control.controlling}
+            canRequest={control.controllable && !presentation.iAmPresenting && !control.controlling && !control.outgoingRequest && !control.incomingOffer}
+            onRequest={control.requestControl}
+            onRevoke={control.revoke}
+            onRelease={control.release}
+            onOffer={control.offerControl}
+          />
+        </div>
+      </ErrorBoundary>
+      <ErrorBoundary label="Call toasts" fallback={null}>
+        <div className="pointer-events-none absolute inset-x-0 top-14 z-30 flex flex-col items-center gap-2">
+          <RecordingIndicator active={recording.recordingActive} />
+          <RecordingToast
+            incoming={recording.incoming}
+            pending={recording.phase === 'pending'}
+            outcome={recording.outcome}
+            onApprove={recording.approve}
+            onDeny={recording.deny}
+            onCancel={recording.cancelRequest}
+            onDismissOutcome={recording.dismissOutcome}
+          />
+          <PresentationToast
+            outgoing={presentation.outgoing}
+            incoming={presentation.incoming}
+            outcome={presentation.outcome}
+            onCancel={presentation.cancelRequest}
+            onYield={presentation.yieldPresentation}
+            onDecline={presentation.declinePresentation}
+            onDismissOutcome={presentation.dismissOutcome}
+          />
+          <RemoteControlToast
+            incomingRequest={control.incomingRequest}
+            incomingOffer={control.incomingOffer}
+            outgoingRequest={control.outgoingRequest}
+            outgoingOffer={control.outgoingOffer}
+            outcome={control.outcome}
+            onGrant={control.grantRequest}
+            onDeclineRequest={control.declineRequest}
+            onAcceptOffer={control.acceptOffer}
+            onDeclineOffer={control.declineOffer}
+            onCancelRequest={control.cancelRequest}
+            onDismissOutcome={control.dismissOutcome}
+          />
+        </div>
+      </ErrorBoundary>
+      <ErrorBoundary label="Agent launch" fallback={null}>
+        <AgentLaunchDialog code={launchCode} onCancel={() => setLaunchCode(null)} />
+      </ErrorBoundary>
       <CallTimer />
       <ConnectionStatus />
       {overlay}
