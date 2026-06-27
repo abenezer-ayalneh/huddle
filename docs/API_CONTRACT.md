@@ -35,31 +35,34 @@ Two classes share the envelope but get different UX (see `CONTEXT.md` →
 
 ### Server-emitted codes
 
-| `code`                  | status  | class          | meaning / origin                                 | recovery action |
-| ----------------------- | ------- | -------------- | ------------------------------------------------ | --------------- |
-| `SESSION_EXPIRED`       | 401     | Fault          | session-gated endpoint, no/expired session       | Sign in         |
-| `UPSTREAM_UNAVAILABLE`  | 502/503 | Fault          | a dependency call failed (LiveKit, MinIO, Redis) | Retry           |
-| `INTERNAL`              | 500     | Fault          | unhandled / misconfigured server error           | Reload          |
-| `VALIDATION`            | 400     | Fault          | `ValidationPipe` rejected the body (client bug)  | (generic)       |
-| `NOT_HOST`              | 401/403 | Domain Outcome | host action without a valid `x-host-key`         | (tailored)      |
-| `NOT_PARTICIPANT`       | 401     | Domain Outcome | missing/invalid `x-participant-token` for room   | (tailored)      |
-| `ROOM_NOT_FOUND`        | 404     | Domain Outcome | unknown room (guest link, host-token)            | (tailored)      |
-| `KNOCK_NOT_FOUND`       | 404     | Domain Outcome | unknown / expired / withdrawn knock              | (tailored)      |
-| `NAME_REQUIRED`         | 400     | Domain Outcome | knock with no display name                       | (inline)        |
-| `RECORDING_IN_PROGRESS` | 409     | Domain Outcome | start/approve while one is already active        | (tailored)      |
-| `NOT_RECORDING_OWNER`   | 403     | Domain Outcome | `stop-by-participant` you didn't start           | (tailored)      |
-| `RECORDING_NOT_READY`   | 409     | Domain Outcome | download before the recording is `completed`     | (tailored)      |
-| `RECORDING_NOT_FOUND`   | 404     | Domain Outcome | unknown recording for the room                   | (tailored)      |
-| `PAIRING_CODE_INVALID`  | 404     | Domain Outcome | unknown / expired Control Agent pairing code     | (tailored)      |
-| `WEBHOOK_UNVERIFIED`    | 401     | —              | bad LiveKit webhook signature (server-to-server) | n/a             |
+| `code`                   | status  | class          | meaning / origin                                 | recovery action |
+| ------------------------ | ------- | -------------- | ------------------------------------------------ | --------------- |
+| `SESSION_EXPIRED`        | 401     | Fault          | session-gated endpoint, no/expired session       | Sign in         |
+| `UPSTREAM_UNAVAILABLE`   | 502/503 | Fault          | a dependency call failed (LiveKit, MinIO, Redis) | Retry           |
+| `INTERNAL`               | 500     | Fault          | unhandled / misconfigured server error           | Reload          |
+| `VALIDATION`             | 400     | Fault          | `ValidationPipe` rejected the body (client bug)  | (generic)       |
+| `NOT_HOST`               | 401/403 | Domain Outcome | host action without a valid `x-host-key`         | (tailored)      |
+| `NOT_PARTICIPANT`        | 401     | Domain Outcome | missing/invalid `x-participant-token` for room   | (tailored)      |
+| `ROOM_NOT_FOUND`         | 404     | Domain Outcome | unknown room (guest link, host-token)            | (tailored)      |
+| `KNOCK_NOT_FOUND`        | 404     | Domain Outcome | unknown / expired / withdrawn knock              | (tailored)      |
+| `NAME_REQUIRED`          | 400     | Domain Outcome | knock with no display name                       | (inline)        |
+| `RECORDING_IN_PROGRESS`  | 409     | Domain Outcome | start/approve while one is already active        | (tailored)      |
+| `NOT_RECORDING_OWNER`    | 403     | Domain Outcome | `stop-by-participant` you didn't start           | (tailored)      |
+| `RECORDING_NOT_READY`    | 409     | Domain Outcome | download before the recording is `completed`     | (tailored)      |
+| `RECORDING_NOT_FOUND`    | 404     | Domain Outcome | unknown recording for the room                   | (tailored)      |
+| `DOWNLOAD_TOKEN_INVALID` | 401     | Domain Outcome | missing/expired/forged recording download token  | (native)        |
+| `PAIRING_CODE_INVALID`   | 404     | Domain Outcome | unknown / expired Control Agent pairing code     | (tailored)      |
+| `WEBHOOK_UNVERIFIED`     | 401     | —              | bad LiveKit webhook signature (server-to-server) | n/a             |
 
 > A **knock denial** is not in this table: it is a `200` poll returning
 > `status: "denied"`, never an error response.
 >
-> `UPSTREAM_UNAVAILABLE` is **reserved**: dependency misconfiguration currently
-> surfaces as `INTERNAL` (500). Mapping LiveKit/MinIO/Redis call failures to an
-> explicit `UPSTREAM_UNAVAILABLE` is a follow-up (the global filter is the place
-> to do it).
+> `UPSTREAM_UNAVAILABLE` is emitted today by **recording start** (the record and
+> host-approve routes) when the MinIO store is unreachable or rejects the API's
+> S3 credentials — the recording fails fast with a Fault (503) instead of
+> starting and silently ending up `failed`. Mapping the _other_ LiveKit/Redis
+> call failures to it (rather than `INTERNAL` 500) is still a follow-up best done
+> in the global filter.
 
 ### Client-synthesized faults (no envelope on the wire)
 
@@ -272,7 +275,12 @@ may publish only screen-share sources + data, cannot subscribe, ttl 2m.
 Start a room-composite recording. Header `x-host-key`. One active recording per
 room → **409** if one is already running. **Response 200:** a `RecordingSummary`
 (`{ id, status, filename, sizeBytes, durationMs, startedAt, endedAt, error,
-downloadable }`) with `status: "starting"`.
+downloadable, downloadToken }`) with `status: "starting"`.
+
+- `downloadToken` — a short-lived signed token (docs/adr/0022), non-null only
+  once `status: "completed"`. The client builds the download URL from it:
+  `GET /rooms/:room/recordings/:id/download?token=<downloadToken>`. It exists so
+  a finished recording downloads natively (no `x-host-key` header on a `<a download>`).
 
 ### GET /rooms/:room/recordings _(host)_
 
@@ -284,12 +292,15 @@ List this room's recordings, newest first. Header `x-host-key`.
 Stop a running recording. Header `x-host-key`. **Response 200:** the updated
 `RecordingSummary`. The egress webhook finalises status shortly after.
 
-### GET /rooms/:room/recordings/:id/download _(host)_
+### GET /rooms/:room/recordings/:id/download _(signed token)_
 
 Stream the finished MP4 (`Content-Type: video/mp4`, `Content-Disposition:
-attachment`). Header `x-host-key` → so the browser fetches it as a blob, not a
-plain link. **409** if the recording isn't `completed` yet. The file is proxied
-from MinIO through the API; bucket credentials never reach the browser.
+attachment`). Authorized by `?token=<downloadToken>` — the short-lived signed
+token from the recording's summary (docs/adr/0022), **not** the `x-host-key`
+header — so this can be a plain `<a download>` navigation and the browser
+downloads it natively with its own progress UI. **401** (`DOWNLOAD_TOKEN_INVALID`)
+if the token is missing, expired, or forged. The file is proxied from MinIO
+through the API; bucket credentials never reach the browser.
 
 ### Request to Record _(docs/adr/0011)_
 
@@ -324,11 +335,11 @@ List **all** recordings across every room the signed-in host owns, newest first
 upcoming scheduled meetings, so this is the only path to past/instant meetings'
 recordings). Requires a BetterAuth session.
 
-**Response 200:** `{ "recordings": (RecordingSummary & { "room", "hostKey" })[] }`
+**Response 200:** `{ "recordings": (RecordingSummary & { "room" })[] }`
 
-- `room` is the owning Room Code; `hostKey` is included (the owner is entitled to
-  it) so the client can download via `GET /rooms/:room/recordings/:id/download`.
-  **401** if not signed in.
+- `room` is the owning Room Code. The download is authorized by each recording's
+  signed `downloadToken` (docs/adr/0022), so no `hostKey` travels in this
+  response. **401** if not signed in.
 
 ### POST /livekit/webhook
 

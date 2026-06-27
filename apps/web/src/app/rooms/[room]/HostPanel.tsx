@@ -127,6 +127,12 @@ export default function HostPanel({ room, hostKey }: { room: string; hostKey: st
 
   const toggleMuteOnEntry = () => withBusy('mute-on-entry', () => api.setMuteOnEntry(room, !muteOnEntry, hostKey));
 
+  const admitAll = () =>
+    withBusy('admit-all', async () => {
+      await Promise.all(knocks.map((k) => api.admit(room, k.knockId, hostKey)));
+      setKnocks([]);
+    });
+
   if (!open) {
     return (
       <div className="absolute right-4 top-4 z-30">
@@ -219,16 +225,27 @@ export default function HostPanel({ room, hostKey }: { room: string; hostKey: st
         </Section>
 
         <Section title="Participants">
-          <button
-            onClick={toggleMuteOnEntry}
-            disabled={busy === 'mute-on-entry'}
-            aria-pressed={muteOnEntry}
-            className={`mb-3 w-full rounded-lg px-3 py-2 text-xs font-medium tracking-wide transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50 disabled:opacity-50 ${
-              muteOnEntry ? 'neon-magenta bg-magenta text-white hover:brightness-110' : 'bg-white/10 text-white/90 hover:bg-white/20'
-            }`}
-          >
-            {muteOnEntry ? 'Muted on entry — allow unmuting' : 'Mute all'}
-          </button>
+          <div className="mb-3 flex gap-2">
+            <button
+              onClick={toggleMuteOnEntry}
+              disabled={busy === 'mute-on-entry'}
+              aria-pressed={muteOnEntry}
+              className={`flex-1 rounded-lg px-3 py-2 text-xs font-medium tracking-wide transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50 disabled:opacity-50 ${
+                muteOnEntry ? 'neon-magenta bg-magenta text-white hover:brightness-110' : 'bg-white/10 text-white/90 hover:bg-white/20'
+              }`}
+            >
+              {muteOnEntry ? 'Muted on entry — allow unmuting' : 'Mute all'}
+            </button>
+            {knocks.length > 1 && (
+              <button
+                onClick={admitAll}
+                disabled={busy === 'admit-all'}
+                className="flex-1 rounded-lg bg-cyan px-3 py-2 text-xs font-medium tracking-wide text-black transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50 disabled:opacity-50"
+              >
+                Admit all ({knocks.length})
+              </button>
+            )}
+          </div>
           {participants.length === 0 ? (
             <p className="text-white/45">No other participants.</p>
           ) : (

@@ -64,14 +64,36 @@ export type RecordingSummary = {
   endedAt: string | null;
   error: string | null;
   downloadable: boolean;
+  // Absolute, ready-to-use download URL when the recording is `completed`; null
+  // otherwise. Carries a short-lived signed token (docs/adr/0022) so a plain
+  // `<a download>` triggers a native browser download (progress shelf) without
+  // the host-key header. Assembled client-side from the server's downloadToken.
+  downloadUrl: string | null;
 };
 
 // A recording listed across all the host's rooms (lobby /recordings view): adds
-// the owning Room Code and the host key needed to authorize its download.
+// the owning Room Code. The download is authorized by the signed downloadUrl, so
+// no host key travels in this response.
 export type MyRecording = RecordingSummary & {
   room: string;
-  hostKey: string;
 };
+
+// Wire shape: the server sends a downloadToken (not a URL — it doesn't assume its
+// own public origin). The client turns it into an absolute downloadUrl.
+type RecordingWire = Omit<RecordingSummary, 'downloadUrl'> & { downloadToken: string | null };
+type MyRecordingWire = RecordingWire & { room: string };
+
+// Build the public RecordingSummary from the wire shape: swap the signed token
+// for the absolute download URL the browser navigates to (docs/adr/0022).
+function toRecordingSummary(r: RecordingWire, room: string): RecordingSummary {
+  const { downloadToken, ...rest } = r;
+  return {
+    ...rest,
+    downloadUrl: downloadToken
+      ? `${API_URL}/rooms/${encodeURIComponent(room)}/recordings/${encodeURIComponent(r.id)}/download?token=${encodeURIComponent(downloadToken)}`
+      : null,
+  };
+}
 
 // Per-call options. `surfaceFault: true` opts a user-initiated request into the
 // Fault toast (default passive — see docs/adr/0019); `hostKey` adds the host
@@ -167,49 +189,54 @@ export const api = {
     }),
 
   // All of the signed-in host's recordings across their rooms (session-authed).
-  // Backs the lobby /recordings page; each item carries its Room Code + hostKey.
-  listMyRecordings: () => request<{ recordings: MyRecording[] }>('/recordings/mine'),
+  // Backs the lobby /recordings page; each item carries its Room Code and a
+  // signed downloadUrl built client-side from the server's token.
+  listMyRecordings: async (): Promise<{ recordings: MyRecording[] }> => {
+    const { recordings } = await request<{ recordings: MyRecordingWire[] }>('/recordings/mine');
+    return { recordings: recordings.map((r) => ({ ...toRecordingSummary(r, r.room), room: r.room })) };
+  },
 
   // --- Recording (host-only) ---
-  startRecording: (room: string, hostKey: string) =>
-    request<RecordingSummary>(`/rooms/${encodeURIComponent(room)}/recordings`, {
-      method: 'POST',
-      hostKey,
-    }),
+  startRecording: async (room: string, hostKey: string): Promise<RecordingSummary> => {
+    const r = await request<RecordingWire>(`/rooms/${encodeURIComponent(room)}/recordings`, { method: 'POST', hostKey });
+    return toRecordingSummary(r, room);
+  },
 
-  listRecordings: (room: string, hostKey: string) => request<{ recordings: RecordingSummary[] }>(`/rooms/${encodeURIComponent(room)}/recordings`, { hostKey }),
+  listRecordings: async (room: string, hostKey: string): Promise<{ recordings: RecordingSummary[] }> => {
+    const { recordings } = await request<{ recordings: RecordingWire[] }>(`/rooms/${encodeURIComponent(room)}/recordings`, { hostKey });
+    return { recordings: recordings.map((r) => toRecordingSummary(r, room)) };
+  },
 
-  stopRecording: (room: string, id: string, hostKey: string) =>
-    request<RecordingSummary>(`/rooms/${encodeURIComponent(room)}/recordings/${id}/stop`, { method: 'POST', hostKey }),
+  stopRecording: async (room: string, id: string, hostKey: string): Promise<RecordingSummary> => {
+    const r = await request<RecordingWire>(`/rooms/${encodeURIComponent(room)}/recordings/${id}/stop`, { method: 'POST', hostKey });
+    return toRecordingSummary(r, room);
+  },
 
   // --- Request to Record (docs/adr/0011) ---
   // Host approves a participant's Request to Record: approval starts the
   // recording immediately, attributed to that identity. Deny needs no API call.
-  approveRecording: (room: string, identity: string, hostKey: string) =>
-    request<RecordingSummary>(`/rooms/${encodeURIComponent(room)}/recordings/approve`, {
+  approveRecording: async (room: string, identity: string, hostKey: string): Promise<RecordingSummary> => {
+    const r = await request<RecordingWire>(`/rooms/${encodeURIComponent(room)}/recordings/approve`, {
       method: 'POST',
       body: JSON.stringify({ identity }),
       hostKey,
-    }),
+    });
+    return toRecordingSummary(r, room);
+  },
 
   // The requester stops the recording they were approved for, authorized by
   // their own LiveKit token (x-participant-token).
-  stopRecordingAsParticipant: (room: string, participantToken: string) =>
-    request<RecordingSummary>(`/rooms/${encodeURIComponent(room)}/recordings/stop-by-participant`, {
+  stopRecordingAsParticipant: async (room: string, participantToken: string): Promise<RecordingSummary> => {
+    const r = await request<RecordingWire>(`/rooms/${encodeURIComponent(room)}/recordings/stop-by-participant`, {
       method: 'POST',
       headers: { 'x-participant-token': participantToken },
-    }),
-
-  // The download is host-authorized (x-host-key), so it can't be a plain link —
-  // fetch it as a blob and let the caller trigger a save.
-  downloadRecording: async (room: string, id: string, hostKey: string): Promise<Blob> => {
-    const res = await httpFetch(`${API_URL}/rooms/${encodeURIComponent(room)}/recordings/${id}/download`, {
-      credentials: 'include',
-      headers: { 'x-host-key': hostKey },
     });
-    if (!res.ok) throw new FaultError(await readFault(res));
-    return res.blob();
+    return toRecordingSummary(r, room);
   },
+
+  // No downloadRecording(): a finished recording carries a signed downloadUrl in
+  // its summary, rendered as a plain `<a download>` so the browser downloads it
+  // natively with its own progress UI (docs/adr/0022).
 };
 
 // Back-compat alias: existing call sites import `ApiError` and read `.status`.

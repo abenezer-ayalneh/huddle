@@ -19,15 +19,22 @@ const variants: Record<Variant, string> = {
   danger: 'bg-destructive/90 text-white hover:bg-destructive',
 };
 
-type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
-  icon: LucideIcon;
-  variant?: Variant;
-  size?: keyof typeof sizes;
-  label: string;
-};
+// Shared styling so a non-button element (e.g. the IconLink anchor) can look
+// identical to an IconButton without duplicating these class tables.
+export type IconButtonStyle = { variant?: Variant; size?: keyof typeof sizes; className?: string };
 
-const IconButton = forwardRef<HTMLButtonElement, Props>(({ icon: Icon, variant = 'ghost', size = 'md', label, className = '', ...rest }, ref) => (
-  <button ref={ref} type="button" title={label} aria-label={label} className={`${base} ${sizes[size]} ${variants[variant]} ${className}`} {...rest}>
+export function iconButtonClass({ variant = 'ghost', size = 'md', className = '' }: IconButtonStyle = {}): string {
+  return `${base} ${sizes[size]} ${variants[variant]} ${className}`;
+}
+
+type Props = ButtonHTMLAttributes<HTMLButtonElement> &
+  IconButtonStyle & {
+    icon: LucideIcon;
+    label: string;
+  };
+
+const IconButton = forwardRef<HTMLButtonElement, Props>(({ icon: Icon, variant, size, label, className, ...rest }, ref) => (
+  <button ref={ref} type="button" title={label} aria-label={label} className={iconButtonClass({ variant, size, className })} {...rest}>
     <Icon />
   </button>
 ));

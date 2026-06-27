@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ControlAgentController } from './control-agent.controller';
 import { ControlAgentService } from './control-agent.service';
+import { DownloadTokenGuard } from './download-token.guard';
+import { DownloadTokenService } from './download-token.service';
 import { EgressService } from './egress.service';
 import { HostGuard } from './host.guard';
 import { LivekitService } from './livekit.service';
@@ -24,6 +26,8 @@ import { WebhookController } from './webhook.controller';
     LivekitService,
     HostGuard,
     ParticipantGuard,
+    DownloadTokenGuard,
+    DownloadTokenService,
     ControlAgentService,
     RecordingsService,
     RecordingRepository,
