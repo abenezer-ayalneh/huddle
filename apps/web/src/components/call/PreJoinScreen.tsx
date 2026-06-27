@@ -3,7 +3,7 @@
 import type { LocalUserChoices } from '@livekit/components-react';
 import { ChevronDown, Mic, MicOff, Video, VideoOff } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { loadDevicePreferences, saveDevicePreference } from '@/lib/devicePreferences';
+import { loadDevicePreferences, saveDevicePreference, saveDevicePreferences, type DevicePreferences } from '@/lib/devicePreferences';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { useCallShortcuts, useModifierKeyLabel } from './useCallShortcuts';
 
@@ -105,11 +105,14 @@ export default function PreJoinScreen({
   );
 
   // Mount: request both tracks once to unlock device labels, keep video for the
-  // preview, immediately release the mic (no self-monitoring here). The Device
-  // Preference picks the camera (`ideal` falls back silently if unplugged).
+  // preview, immediately release the mic (no self-monitoring here). Load Device
+  // Preference (device IDs and on/off state) to pre-fill the toggles.
   useEffect(() => {
     let cancelled = false;
     const prefs = loadDevicePreferences();
+    // Pre-fill on/off toggles from Device Preference if available, else use defaults.
+    if (prefs.videoEnabled !== undefined) setVideoEnabled(prefs.videoEnabled);
+    if (prefs.audioEnabled !== undefined) setAudioEnabled(prefs.audioEnabled);
     (async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -180,6 +183,8 @@ export default function PreJoinScreen({
     if (!canJoin || submitting) return;
     setSubmitting(true);
     stopStream();
+    // Save the on/off state to Device Preference for the next join.
+    saveDevicePreferences({ audioEnabled, videoEnabled });
     onSubmit({
       username: username.trim(),
       videoEnabled,

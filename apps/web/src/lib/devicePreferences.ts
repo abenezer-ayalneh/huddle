@@ -1,12 +1,15 @@
-// Device Preference (see CONTEXT.md): the remembered last-used camera,
-// microphone and speaker on this browser. Written on every explicit device
-// pick — in the Device Check or by switching mid-call — and read to pre-select
-// devices next time. A remembered device that is absent (unplugged) silently
-// falls back to the browser default at the point of use.
+// Device Preference (see CONTEXT.md): the remembered settings on this browser:
+// which camera, microphone, and speaker were last used, plus whether the
+// microphone and camera should start on or off at the next Device Check.
+// Written at Device Check submission time (when joining). A remembered device
+// that is absent (unplugged) silently falls back to the browser default.
 
 export type PreferenceKind = 'videoinput' | 'audioinput' | 'audiooutput';
 
-export type DevicePreferences = Partial<Record<PreferenceKind, string>>;
+export type DevicePreferences = Partial<Record<PreferenceKind, string>> & {
+  audioEnabled?: boolean;
+  videoEnabled?: boolean;
+};
 
 const STORAGE_KEY = 'huddle:device-preferences';
 
@@ -24,6 +27,15 @@ export function saveDevicePreference(kind: PreferenceKind, deviceId: string) {
   if (typeof window === 'undefined' || !deviceId) return;
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...loadDevicePreferences(), [kind]: deviceId }));
+  } catch {
+    /* storage unavailable (private mode, quota) — the pick just isn't remembered */
+  }
+}
+
+export function saveDevicePreferences(prefs: Partial<DevicePreferences>) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...loadDevicePreferences(), ...prefs }));
   } catch {
     /* storage unavailable (private mode, quota) — the pick just isn't remembered */
   }

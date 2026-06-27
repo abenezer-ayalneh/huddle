@@ -96,11 +96,17 @@ pick also updates the Device Preference.
 _Avoid_: Change input, device settings
 
 **Device Preference**:
-The remembered last-used camera, microphone, and speaker on a participant's
-browser. Written whenever a participant picks a device — in the Device Check or
-by switching mid-call — and read to pre-select devices next time. If a
-remembered device is absent (unplugged), the browser default is used silently.
-_Avoid_: Saved devices, default devices
+The remembered settings for a participant's media on this browser: which camera,
+microphone, and speaker were last used, plus whether the microphone and camera
+should start on or off at the next Device Check. Written when the participant
+submits the Device Check before joining (the camera and microphone on/off toggles),
+and read to pre-fill the Device Check's toggles and device pickers next time.
+Device Preference is a default, not a lock — the participant can always change
+the toggles on the Device Check before joining. If a remembered device is absent
+(unplugged), the browser default is used silently. Note: [[Mute on Entry]]
+(a room-level rule) overrides the saved microphone preference if active.
+_Avoid_: Saved devices, default devices, startup state (use "on/off state" or
+"enabled/disabled state" for the toggle preference)
 
 ### Mute feedback
 
