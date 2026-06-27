@@ -126,9 +126,10 @@ function SignIn() {
         <button
           type="submit"
           disabled={!canSubmit}
-          className="neon-magenta w-full rounded-lg bg-magenta px-4 py-2.5 font-display font-semibold tracking-wide text-white transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+          className="neon-magenta flex items-center justify-center gap-2 w-full rounded-lg bg-magenta px-4 py-2.5 font-display font-semibold tracking-wide text-white transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
         >
-          {busy ? 'Working…' : mode === 'signup' ? 'Create account' : 'Sign in'}
+          {busy && <LoadingSpinner className="h-4 w-4" />}
+          {!busy && (mode === 'signup' ? 'Create account' : 'Sign in')}
         </button>
       </form>
 
@@ -146,10 +147,15 @@ function SignIn() {
       <div className="border-t border-white/10 pt-4">
         <button
           type="button"
-          onClick={() => signIn.social({ provider: 'google', callbackURL, errorCallbackURL: callbackURL })}
-          className="w-full rounded-lg border border-white/15 bg-white/5 px-4 py-2.5 font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50"
+          disabled={busy}
+          onClick={() => {
+            setBusy(true);
+            signIn.social({ provider: 'google', callbackURL, errorCallbackURL: callbackURL });
+          }}
+          className="flex items-center justify-center gap-2 w-full rounded-lg border border-white/15 bg-white/5 px-4 py-2.5 font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Continue with Google
+          {busy && <LoadingSpinner className="h-4 w-4" />}
+          {!busy && 'Continue with Google'}
         </button>
       </div>
 
@@ -235,8 +241,8 @@ function HostDashboard({ userName, onSignOut }: { userName: string; onSignOut: (
           disabled={busy}
           className="neon-magenta flex flex-1 items-center justify-center gap-2 rounded-lg bg-magenta px-4 py-2.5 font-display font-semibold tracking-wide text-white transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
         >
-          <Play className="h-4 w-4" />
-          Instant
+          {busy ? <LoadingSpinner className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+          {!busy && 'Instant'}
         </button>
 
         <DateTimePicker
@@ -280,6 +286,7 @@ function MeetingList({ rooms, onStart }: { rooms: RoomSummary[] | null; onStart:
 
 function MeetingRow({ room, onStart }: { room: RoomSummary; onStart: () => void }) {
   const [copied, setCopied] = useState(false);
+  const [starting, setStarting] = useState(false);
   const link = typeof window !== 'undefined' ? `${window.location.origin}/rooms/${encodeURIComponent(room.room)}` : '';
 
   async function copy() {
@@ -289,6 +296,15 @@ function MeetingRow({ room, onStart }: { room: RoomSummary; onStart: () => void 
       setTimeout(() => setCopied(false), 1500);
     } catch {
       // clipboard may be blocked
+    }
+  }
+
+  async function handleStart() {
+    setStarting(true);
+    try {
+      await Promise.resolve(onStart());
+    } finally {
+      setStarting(false);
     }
   }
 
@@ -305,8 +321,18 @@ function MeetingRow({ room, onStart }: { room: RoomSummary; onStart: () => void 
             label={copied ? 'Copied!' : 'Copy meeting link'}
             className="text-white/70 hover:bg-white/15 hover:text-white"
             onClick={copy}
+            disabled={starting}
           />
-          <IconButton icon={Play} label="Start meeting" className="bg-cyan text-black hover:brightness-110" onClick={onStart} />
+          <button
+            type="button"
+            disabled={starting}
+            onClick={handleStart}
+            className="inline-flex items-center justify-center gap-1.5 h-8 w-8 rounded-md bg-cyan text-black transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current/30 disabled:opacity-50 disabled:pointer-events-none"
+            aria-label="Start meeting"
+            title="Start meeting"
+          >
+            {starting ? <LoadingSpinner className="h-4 w-4" /> : <Play className="h-5 w-5" />}
+          </button>
         </div>
       </div>
     </li>

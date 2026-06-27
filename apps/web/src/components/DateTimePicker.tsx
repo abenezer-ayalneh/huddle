@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 const TIME_SLOTS = Array.from({ length: 96 }, (_, i) => {
   const h = Math.floor(i / 4);
@@ -121,9 +122,10 @@ export default function DateTimePicker({
             type="button"
             disabled={!selectedDay || disabled}
             onClick={handleConfirm}
-            className="w-full rounded-lg bg-magenta px-4 py-2 font-display font-semibold text-sm tracking-wide text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex items-center justify-center gap-2 w-full rounded-lg bg-magenta px-4 py-2 font-display font-semibold text-sm tracking-wide text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            Schedule
+            {disabled && <LoadingSpinner className="h-3.5 w-3.5" />}
+            {!disabled && 'Schedule'}
           </button>
         </div>
       </PopoverContent>

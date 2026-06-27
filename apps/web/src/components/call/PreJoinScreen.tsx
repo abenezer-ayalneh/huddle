@@ -4,6 +4,7 @@ import type { LocalUserChoices } from '@livekit/components-react';
 import { ChevronDown, Mic, MicOff, Video, VideoOff } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { loadDevicePreferences, saveDevicePreference } from '@/lib/devicePreferences';
+import LoadingSpinner from '@/components/LoadingSpinner';
 import { useCallShortcuts, useModifierKeyLabel } from './useCallShortcuts';
 
 type Defaults = {
@@ -43,6 +44,7 @@ export default function PreJoinScreen({
   const [videoDeviceId, setVideoDeviceId] = useState('');
   const [audioDeviceId, setAudioDeviceId] = useState('');
   const [note, setNote] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   // Mirror the preview like a bathroom mirror for a front camera, but show a
   // phone's back ("environment") camera un-flipped. Same rule as the in-call
   // Self-view (useMirrorLocalCamera): mirror unless facingMode is 'environment',
@@ -175,7 +177,8 @@ export default function PreJoinScreen({
   const canJoin = !requireName || username.trim().length > 0;
 
   const submit = useCallback(() => {
-    if (!canJoin) return;
+    if (!canJoin || submitting) return;
+    setSubmitting(true);
     stopStream();
     onSubmit({
       username: username.trim(),
@@ -184,7 +187,7 @@ export default function PreJoinScreen({
       videoDeviceId,
       audioDeviceId,
     });
-  }, [canJoin, stopStream, onSubmit, username, videoEnabled, audioEnabled, videoDeviceId, audioDeviceId]);
+  }, [canJoin, submitting, stopStream, onSubmit, username, videoEnabled, audioEnabled, videoDeviceId, audioDeviceId]);
 
   return (
     <main className="bg-dotgrid relative flex flex-1 items-center justify-center overflow-hidden">
@@ -249,10 +252,11 @@ export default function PreJoinScreen({
           <button
             type="button"
             onClick={submit}
-            disabled={!canJoin}
-            className="neon-magenta mt-1 w-full rounded-lg bg-magenta px-4 py-2.5 font-display font-semibold tracking-wide text-white transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+            disabled={!canJoin || submitting}
+            className="neon-magenta flex items-center justify-center gap-2 mt-1 w-full rounded-lg bg-magenta px-4 py-2.5 font-display font-semibold tracking-wide text-white transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
           >
-            {submitLabel}
+            {submitting && <LoadingSpinner className="h-4 w-4" />}
+            {!submitting && submitLabel}
           </button>
 
           {children}

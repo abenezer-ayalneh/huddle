@@ -196,7 +196,10 @@ export default function GuestGate({
       ) : phase === 'precheck' ? (
         <LoadingSpinner className="mx-auto size-12" />
       ) : (
-        <p className="text-white/60">Requesting to join…</p>
+        <div className="flex flex-col items-center gap-3">
+          <LoadingSpinner className="size-12" />
+          <p className="text-white/60">Requesting to join…</p>
+        </div>
       )}
     </Centered>
   );
