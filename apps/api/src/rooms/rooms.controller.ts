@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Header, Param, Post, Res, StreamableFile
 import type { Response } from 'express';
 import { AuthGuard, OptionalAuthGuard, OptionalSessionUser, SessionUser, type AuthUser } from '../auth/auth.guard';
 import { ControlAgentService } from './control-agent.service';
+import { DownloadTokenGuard } from './download-token.guard';
 import { ApproveRecordingDto, CreateRoomDto, KnockDto, MuteDto, MuteOnEntryDto } from './dto/rooms.dto';
 import { HostGuard } from './host.guard';
 import { Participant, ParticipantGuard, type CallParticipant } from './participant.guard';
@@ -147,10 +148,11 @@ export class RoomsController {
     return this.recordings.stop(room, id);
   }
 
-  // Stream the finished MP4 back to the host. The browser fetches this with the
-  // x-host-key header (so a plain <a download> can't be used — the client turns
-  // the response into a blob). Proxied so bucket creds never reach the browser.
-  @UseGuards(HostGuard)
+  // Stream the finished MP4 back to the host. Authorized by a short-lived signed
+  // `?token=` (docs/adr/0022) instead of the x-host-key header, so this can be a
+  // plain `<a download>` navigation and the browser drives the download natively
+  // (progress shelf). Still proxied, so bucket creds never reach the browser.
+  @UseGuards(DownloadTokenGuard)
   @Get(':room/recordings/:id/download')
   @Header('Content-Type', 'video/mp4')
   async downloadRecording(@Param('room') room: string, @Param('id') id: string, @Res({ passthrough: true }) res: Response): Promise<StreamableFile> {

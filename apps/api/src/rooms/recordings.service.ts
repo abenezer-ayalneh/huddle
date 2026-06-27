@@ -1,8 +1,9 @@
-import { ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, Logger, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import type { EgressInfo } from 'livekit-server-sdk';
 import { EgressStatus } from 'livekit-server-sdk';
 import type { Readable } from 'node:stream';
 import { FaultCode, faultBody } from '../common/faults';
+import { DownloadTokenService } from './download-token.service';
 import { EgressService } from './egress.service';
 import { LivekitService } from './livekit.service';
 import type { CallParticipant } from './participant.guard';
@@ -21,13 +22,17 @@ export interface RecordingSummary {
   error: string | null;
   // True when the file is finished and can be downloaded.
   downloadable: boolean;
+  // Short-lived signed token authorizing a native browser download of this exact
+  // recording (docs/adr/0022); null until the recording is `completed`. The
+  // client builds the download URL from it — no `x-host-key` header needed.
+  downloadToken: string | null;
 }
 
 // A recording listed across rooms (lobby /recordings view): adds the owning Room
-// Code and the host key needed to authorize its download.
+// Code. The download is authorized by the per-recording `downloadToken`, so no
+// host key travels in this response.
 export interface MyRecordingSummary extends RecordingSummary {
   room: string;
-  hostKey: string;
 }
 
 @Injectable()
@@ -40,6 +45,7 @@ export class RecordingsService {
     private readonly egress: EgressService,
     private readonly storage: StorageService,
     private readonly livekit: LivekitService,
+    private readonly downloadTokens: DownloadTokenService,
   ) {}
 
   // Host starts a room-composite recording. One active recording per room.
@@ -61,7 +67,15 @@ export class RecordingsService {
     if (active.length > 0) {
       throw new ConflictException(faultBody(FaultCode.RECORDING_IN_PROGRESS, 'A recording is already in progress'));
     }
-    await this.storage.ensureBucket();
+    // The store must be reachable AND accept our credentials before we ask
+    // egress to record — otherwise egress runs and the upload silently fails,
+    // leaving the recording `failed` with no signal to the host. Fail loudly here.
+    try {
+      await this.storage.ensureBucket();
+    } catch (err) {
+      this.logger.error(`Recording storage unavailable for room "${slug}": ${String(err)}`);
+      throw new ServiceUnavailableException(faultBody(FaultCode.UPSTREAM_UNAVAILABLE, 'Recording storage is unavailable — recording was not started.'));
+    }
 
     const objectKey = `${slug}/${this.timestamp()}.mp4`;
     const { egressId } = await this.egress.startRoomComposite(slug, objectKey);
@@ -74,7 +88,7 @@ export class RecordingsService {
     // Light up the room-wide Recording Indicator immediately; the egress webhook
     // will clear it when the recording actually ends.
     await this.setIndicator(slug, true);
-    return this.toSummary(rec);
+    return this.toSummary(rec, slug);
   }
 
   // Host stops a specific recording. Idempotent-ish: the egress webhook will
@@ -88,7 +102,7 @@ export class RecordingsService {
       this.logger.warn(`stopEgress(${rec.egressId}) failed: ${String(err)}`);
     }
     const fresh = await this.recordings.findByEgressId(rec.egressId);
-    return this.toSummary(fresh ?? rec);
+    return this.toSummary(fresh ?? rec, slug);
   }
 
   // A non-host participant stops the active recording they started. Authority
@@ -107,7 +121,7 @@ export class RecordingsService {
   async list(slug: string): Promise<{ recordings: RecordingSummary[] }> {
     const room = await this.requireRoom(slug);
     const rows = await this.recordings.listByRoom(room.id);
-    return { recordings: rows.map((r) => this.toSummary(r)) };
+    return { recordings: rows.map((r) => this.toSummary(r, slug)) };
   }
 
   // Every recording across all rooms a signed-in host owns. Each carries its Room
@@ -117,9 +131,8 @@ export class RecordingsService {
     const rows = await this.recordings.listByHostUser(hostUserId);
     return {
       recordings: rows.map((r) => ({
-        ...this.toSummary(r),
+        ...this.toSummary(r, r.room.slug),
         room: r.room.slug,
-        hostKey: r.room.hostKey,
       })),
     };
   }
@@ -204,16 +217,22 @@ export class RecordingsService {
     return { room, rec };
   }
 
-  private toSummary(rec: {
-    id: string;
-    status: string;
-    objectKey: string;
-    sizeBytes: bigint | null;
-    durationMs: number | null;
-    startedAt: Date;
-    endedAt: Date | null;
-    error: string | null;
-  }): RecordingSummary {
+  // `slug` is the recording's Room Code — needed to bind the download token to
+  // this exact room + recording (docs/adr/0022). Every caller has it in scope.
+  private toSummary(
+    rec: {
+      id: string;
+      status: string;
+      objectKey: string;
+      sizeBytes: bigint | null;
+      durationMs: number | null;
+      startedAt: Date;
+      endedAt: Date | null;
+      error: string | null;
+    },
+    slug: string,
+  ): RecordingSummary {
+    const downloadable = rec.status === 'completed';
     return {
       id: rec.id,
       status: rec.status,
@@ -223,7 +242,9 @@ export class RecordingsService {
       startedAt: rec.startedAt.toISOString(),
       endedAt: rec.endedAt?.toISOString() ?? null,
       error: rec.error,
-      downloadable: rec.status === 'completed',
+      downloadable,
+      // Only a finished file is downloadable; no point minting a token otherwise.
+      downloadToken: downloadable ? this.downloadTokens.sign(slug, rec.id) : null,
     };
   }
 

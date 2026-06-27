@@ -37,6 +37,19 @@ export function useRecording({ room, token, isHost, hostKey }: { room: string; t
     }
   }, [metadata]);
 
+  // When the recording started (server-stamped, ms epoch), for the live timer in
+  // the Recording Indicator. Stamped alongside the flag, so it propagates to
+  // every client the same way and is correct even for someone who joined late.
+  const recordingStartedAt = useMemo(() => {
+    if (!metadata) return null;
+    try {
+      const v = (JSON.parse(metadata) as { recordingStartedAt?: unknown }).recordingStartedAt;
+      return typeof v === 'number' ? v : null;
+    } catch {
+      return null;
+    }
+  }, [metadata]);
+
   const [phase, setPhase] = useState<RequestPhase>('idle');
   const [incoming, setIncoming] = useState<IncomingRecordRequest | null>(null);
   const [outcome, setOutcome] = useState<RecordOutcome | null>(null);
@@ -185,6 +198,7 @@ export function useRecording({ room, token, isHost, hostKey }: { room: string; t
 
   return {
     recordingActive,
+    recordingStartedAt,
     iAmRecorder,
     phase,
     busy,

@@ -2,10 +2,10 @@
 
 import Link from 'next/link';
 import { Download } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api, type MyRecording } from '@/lib/api';
 import { useSession } from '@/lib/auth-client';
-import IconButton from '@/components/IconButton';
+import IconLink from '@/components/IconLink';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 // Cross-room recordings view. Since the lobby list is pared to upcoming
@@ -14,7 +14,6 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 export default function RecordingsPage() {
   const { data: session, isPending } = useSession();
   const [recordings, setRecordings] = useState<MyRecording[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session) return;
@@ -27,22 +26,6 @@ export default function RecordingsPage() {
       active = false;
     };
   }, [session]);
-
-  const download = useCallback(async (rec: MyRecording) => {
-    try {
-      const blob = await api.downloadRecording(rec.room, rec.id, rec.hostKey);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = rec.filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    } catch {
-      setError('Couldn’t download that recording.');
-    }
-  }, []);
 
   return (
     <main className="flex flex-1 items-center justify-center p-6">
@@ -73,12 +56,15 @@ export default function RecordingsPage() {
                     {r.sizeBytes != null && ` · ${formatSize(r.sizeBytes)}`}
                   </p>
                 </div>
-                {r.downloadable ? (
-                  <IconButton
+                {r.downloadUrl ? (
+                  <IconLink
                     icon={Download}
                     label={`Download recording from ${r.room}`}
                     className="bg-cyan text-black hover:brightness-110"
-                    onClick={() => download(r)}
+                    href={r.downloadUrl}
+                    download={r.filename}
+                    target="_blank"
+                    rel="noopener"
                   />
                 ) : (
                   <span className="shrink-0 text-xs text-white/40">{statusWord(r.status)}</span>
@@ -87,8 +73,6 @@ export default function RecordingsPage() {
             ))}
           </ul>
         )}
-
-        {error && <p className="text-sm text-magenta">{error}</p>}
       </div>
     </main>
   );

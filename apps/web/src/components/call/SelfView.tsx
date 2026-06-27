@@ -22,10 +22,14 @@ export default function SelfView({
   trackRef,
   corner,
   onCornerChange,
+  fallbackName,
 }: {
   trackRef: TrackReferenceOrPlaceholder;
   corner: Corner;
   onCornerChange: (corner: Corner) => void;
+  // The local participant's known name — this float always shows the local
+  // camera, so forward it so the tile never flashes a placeholder on join.
+  fallbackName?: string;
 }) {
   // Live drag offset from the resting corner; null when not dragging.
   const [delta, setDelta] = useState<{ x: number; y: number } | null>(null);
@@ -60,7 +64,7 @@ export default function SelfView({
       style={delta ? { transform: `translate(${delta.x}px, ${delta.y}px)` } : undefined}
       className={`absolute z-20 aspect-video w-28 touch-none cursor-grab select-none active:cursor-grabbing sm:w-44 ${CORNER_CLASS[corner]}`}
     >
-      <VideoTile trackRef={trackRef} active={false} />
+      <VideoTile trackRef={trackRef} active={false} fallbackName={fallbackName} />
     </div>
   );
 }

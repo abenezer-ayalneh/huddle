@@ -109,7 +109,15 @@ export default function CallStage({
         style={{ height: '100dvh' }}
         className="bg-dotgrid"
       >
-        <CallView room={room} token={connection.token} onLeaveClick={() => setShowLeaveDialog(true)} overlay={overlay} isHost={isHost} hostKey={hostKey} />
+        <CallView
+          room={room}
+          token={connection.token}
+          displayName={displayName}
+          onLeaveClick={() => setShowLeaveDialog(true)}
+          overlay={overlay}
+          isHost={isHost}
+          hostKey={hostKey}
+        />
         <RoomAudioRenderer />
       </LiveKitRoom>
       <LeaveConfirmDialog open={showLeaveDialog} onConfirm={confirmLeave} onCancel={() => setShowLeaveDialog(false)} />
@@ -120,6 +128,7 @@ export default function CallStage({
 function CallView({
   room,
   token,
+  displayName,
   onLeaveClick,
   overlay,
   isHost,
@@ -127,6 +136,7 @@ function CallView({
 }: {
   room: string;
   token: string;
+  displayName: string;
   onLeaveClick: () => void;
   overlay?: ReactNode;
   isHost: boolean;
@@ -225,6 +235,7 @@ function CallView({
         iAmPresenting={presentation.iAmPresenting}
         onStopPresenting={presentation.handleShareClick}
         onStageTrackChange={setStageTrack}
+        localName={displayName}
       />
       {/* Scoped boundaries (docs/adr/0018): the chat and the data-message-driven
           overlays are the likely crash sources. A crash in any of them fails to
@@ -266,7 +277,7 @@ function CallView({
       </ErrorBoundary>
       <ErrorBoundary label="Call toasts" fallback={null}>
         <div className="pointer-events-none absolute inset-x-0 top-14 z-30 flex flex-col items-center gap-2">
-          <RecordingIndicator active={recording.recordingActive} />
+          <RecordingIndicator active={recording.recordingActive} startedAt={recording.recordingStartedAt} />
           <RecordingToast
             incoming={recording.incoming}
             pending={recording.phase === 'pending'}

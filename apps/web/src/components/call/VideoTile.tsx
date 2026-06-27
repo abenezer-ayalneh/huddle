@@ -31,6 +31,7 @@ export default function VideoTile({
   active,
   pinned,
   onTogglePin,
+  fallbackName,
 }: {
   trackRef: TrackReferenceOrPlaceholder;
   active: boolean;
@@ -38,6 +39,9 @@ export default function VideoTile({
   // (the floating Self-view and the presentation strip pass nothing).
   pinned?: boolean;
   onTogglePin?: () => void;
+  // The already-known display name, passed only by the local render sites. See
+  // the label note below for why the local tile needs it.
+  fallbackName?: string;
 }) {
   const participant = trackRef.participant;
   const { cameraOn, micOn } = useParticipantMedia(participant);
@@ -47,7 +51,13 @@ export default function VideoTile({
   const showVideo = isTrackReference(trackRef) && (isScreenShare || cameraOn);
   const mirror = useMirrorLocalCamera(trackRef);
 
-  const label = participant.name || participant.identity || 'Guest';
+  // The local participant connects with an empty name/identity: livekit-client
+  // builds it as `new LocalParticipant('', '', …)` and only fills these in when
+  // the server's JoinResponse lands a beat later. Without `fallbackName` the
+  // local tile would flash a placeholder before the name resolves, so the local
+  // render sites pass the already-known display name. Remote tiles arrive with
+  // their name on their token and need no fallback.
+  const label = participant.name || fallbackName || participant.identity || 'Participant';
   const initials = getInitials(label);
 
   // Avatar shown in the camera-off placeholder in place of the initials. A
