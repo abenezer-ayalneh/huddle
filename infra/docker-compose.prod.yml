@@ -3,34 +3,15 @@
 #   docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
 #     --env-file .env.prod up -d --build
 #
-# It adds the front door (Caddy) + containerized web/api, switches LiveKit to the
-# prod config (external IP, embedded TURN/TLS, metrics), and sets restart:always.
-# Internal stores (postgres/redis/minio) keep the localhost-only port bindings
-# from the base file — they're reached over the Docker network here. See
-# docs/adr/0004 and docs/SETUP.md.
+# It adds containerized web/api, switches LiveKit to the prod config (external
+# IP, embedded TURN/TLS, metrics), and sets restart:always. TLS termination and
+# signal/WSS reverse proxying are handled by a HOST-installed Caddy (see
+# infra/huddle.caddy), not a container — the web/api containers publish their
+# ports on localhost for it to reach. Internal stores (postgres/redis/minio)
+# keep the localhost-only port bindings from the base file — they're reached
+# over the Docker network here. See docs/adr/0004 and docs/SETUP.md.
 
 services:
-  # --- Front door: TLS termination + signal/WSS reverse proxy ---
-  caddy:
-    image: caddy:2-alpine
-    restart: always
-    ports:
-      - '80:80'
-      - '443:443'
-    environment:
-      ACME_EMAIL: ${ACME_EMAIL}
-      APP_DOMAIN: ${APP_DOMAIN}
-      API_DOMAIN: ${API_DOMAIN}
-      LIVEKIT_DOMAIN: ${LIVEKIT_DOMAIN}
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-data:/data
-      - caddy-config:/config
-    depends_on:
-      - web
-      - api
-      - livekit
-
   # --- Frontend (Next.js standalone) ---
   web:
     build:
@@ -48,9 +29,8 @@ services:
       # PORT; the ports mapping below uses the same value so they can't drift.
       PORT: '${WEB_PORT:-3000}'
       HOSTNAME: '0.0.0.0' # Next standalone must bind all interfaces (not just localhost)
-    # Published on localhost so a HOST-installed reverse proxy (e.g. a global
-    # Caddy) can reach it. Harmless when the containerized `caddy` service is used
-    # instead (it reaches `web` by service name). Never bound to a public iface.
+    # Published on localhost so the HOST-installed Caddy can reach it. Never
+    # bound to a public iface.
     # ${WEB_HOST_PORT} is the host port Caddy proxies to (default 3001); the
     # container side is the app's internal ${WEB_PORT} (default 3000).
     ports:
@@ -110,7 +90,3 @@ services:
 
   minio:
     restart: always
-
-volumes:
-  caddy-data:
-  caddy-config:
