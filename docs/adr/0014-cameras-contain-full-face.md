@@ -17,8 +17,29 @@ viewport sizes, those crops land unpredictably — exactly the "show the full fa
 in different screen sizes" failure we set out to fix. This ADR supersedes that
 inline comment; the comment in code is updated to point here.
 
-The local camera mirror (`-scale-x-100`) is unaffected — fit and mirroring are
-independent. Only the fit mode changes.
+The local camera mirror (`-scale-x-100`) is unaffected by the fit change — fit
+and mirroring are independent. Only the fit mode changes here. (The mirror is
+itself conditional; see _Self-view mirroring_ below.)
+
+## Self-view mirroring (front camera only)
+
+The local Self-view is mirrored like a bathroom mirror so a participant's own
+movements feel natural — but **only for a front-facing camera**. A phone's back
+(`environment`) camera captures the world as it really is, so mirroring it flips
+text and scenes the wrong way. The rule, applied identically to the in-call
+Self-view (`useMirrorLocalCamera` → `VideoTile`) and the Device Check preview
+(`PreJoinScreen`):
+
+> Mirror unless the live track reports `facingMode === 'environment'`.
+
+The boundary case is deliberate: **cameras that report no `facingMode`** — most
+desktop and external USB webcams — **stay mirrored**, because that is the
+long-standing default and the overwhelmingly common selfie-style use. We
+explicitly did _not_ key on `facingMode === 'user'` (which would un-mirror every
+webcam that omits the field), only on an explicit `'environment'`. `facingMode`
+is read from the live `MediaStreamTrack`'s settings and recomputed on a Switch
+Device (`TrackEvent.Restarted`), since switching cameras restarts the track in
+place. Remote tiles and screen shares are never mirrored.
 
 ## Considered Options
 

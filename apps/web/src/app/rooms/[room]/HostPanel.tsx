@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { api, type PendingKnock } from '@/lib/api';
 import { isAgentIdentity } from '@/lib/controlProtocol';
 import IconButton from '@/components/IconButton';
+import { useDismissOnOutside } from '@/components/call/useDismissOnOutside';
 import RecordingControls from './RecordingControls';
 
 function playDing() {
@@ -60,6 +61,11 @@ export default function HostPanel({ room, hostKey }: { room: string; hostKey: st
   const [open, setOpen] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const panelRef = useRef<HTMLElement>(null);
+
+  // Close on a press outside the panel or on Escape. The reopen pill only mounts
+  // while closed, so unlike chat there is no trigger to exclude.
+  useDismissOnOutside(panelRef, open, () => setOpen(false));
 
   const inviteLink = typeof window !== 'undefined' ? `${window.location.origin}/rooms/${encodeURIComponent(room)}` : '';
 
@@ -144,7 +150,10 @@ export default function HostPanel({ room, hostKey }: { room: string; hostKey: st
   }
 
   return (
-    <aside className="glass-strong absolute inset-y-0 right-0 z-30 flex w-80 max-w-[85vw] flex-col border-l border-white/10 shadow-[-8px_0_50px_oklch(0_0_0/0.5)] animate-in slide-in-from-right duration-200">
+    <aside
+      ref={panelRef}
+      className="glass-strong absolute inset-y-0 right-0 z-30 flex w-80 max-w-[85vw] flex-col border-l border-white/10 shadow-[-8px_0_50px_oklch(0_0_0/0.5)] animate-in slide-in-from-right duration-200"
+    >
       <header className="flex items-center justify-between border-b border-white/10 px-5 py-4">
         <span className="flex items-center gap-2 font-display text-base font-semibold tracking-wide text-white">
           <ShieldCheck className="h-5 w-5 text-cyan" />

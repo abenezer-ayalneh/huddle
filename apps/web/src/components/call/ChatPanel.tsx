@@ -3,6 +3,7 @@
 import type { ReceivedChatMessage } from '@livekit/components-react';
 import { Send, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { useDismissOnOutside } from './useDismissOnOutside';
 
 // Custom in-call chat (replaces the chat panel that shipped inside LiveKit's
 // <VideoConference>). Messages ride the room data channel; history is in-memory
@@ -24,6 +25,7 @@ export default function ChatPanel({
 }) {
   const [draft, setDraft] = useState('');
   const listRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
 
   // Keep the newest message in view as they arrive / on open.
   useEffect(() => {
@@ -31,6 +33,11 @@ export default function ChatPanel({
       listRef.current.scrollTop = listRef.current.scrollHeight;
     }
   }, [messages, open]);
+
+  // Close on a press outside the panel or on Escape. The control-bar chat toggle
+  // is excluded — without it the press would close chat only for the toggle's
+  // own click to reopen it.
+  useDismissOnOutside(panelRef, open, onClose, { ignoreSelector: '[data-chat-toggle]' });
 
   if (!open) return null;
 
@@ -47,7 +54,10 @@ export default function ChatPanel({
   };
 
   return (
-    <aside className="glass-strong absolute inset-y-0 left-0 z-30 flex w-80 max-w-[85vw] flex-col border-r border-white/10 shadow-[8px_0_50px_oklch(0_0_0/0.5)] animate-in slide-in-from-left duration-200">
+    <aside
+      ref={panelRef}
+      className="glass-strong absolute inset-y-0 left-0 z-30 flex w-80 max-w-[85vw] flex-col border-r border-white/10 shadow-[8px_0_50px_oklch(0_0_0/0.5)] animate-in slide-in-from-left duration-200"
+    >
       <header className="flex items-center justify-between border-b border-white/10 px-5 py-4">
         <span className="font-display text-base font-semibold tracking-wide text-white">Chat</span>
         <button

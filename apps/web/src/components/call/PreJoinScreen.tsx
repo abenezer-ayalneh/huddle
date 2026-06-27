@@ -43,6 +43,11 @@ export default function PreJoinScreen({
   const [videoDeviceId, setVideoDeviceId] = useState('');
   const [audioDeviceId, setAudioDeviceId] = useState('');
   const [note, setNote] = useState<string | null>(null);
+  // Mirror the preview like a bathroom mirror for a front camera, but show a
+  // phone's back ("environment") camera un-flipped. Same rule as the in-call
+  // Self-view (useMirrorLocalCamera): mirror unless facingMode is 'environment',
+  // so desktop webcams (no facingMode) stay mirrored. See ADR-0014.
+  const [mirror, setMirror] = useState(true);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -86,6 +91,7 @@ export default function PreJoinScreen({
         attach(stream);
         const settings = stream.getVideoTracks()[0]?.getSettings();
         if (settings?.deviceId) setVideoDeviceId(settings.deviceId);
+        setMirror(settings?.facingMode !== 'environment');
         setNote(null);
       } catch (e) {
         setVideoEnabled(false);
@@ -116,6 +122,7 @@ export default function PreJoinScreen({
         attach(stream);
         const settings = stream.getVideoTracks()[0]?.getSettings();
         if (settings?.deviceId) setVideoDeviceId(settings.deviceId);
+        setMirror(settings?.facingMode !== 'environment');
         await loadDevices(prefs.audioinput);
       } catch (e) {
         if (cancelled) return;
@@ -184,7 +191,7 @@ export default function PreJoinScreen({
       {/* Full-screen preview / placeholder. */}
       <div className="absolute inset-0">
         {videoEnabled ? (
-          <video ref={videoRef} autoPlay playsInline muted className="h-full w-full -scale-x-100 object-cover opacity-90" />
+          <video ref={videoRef} autoPlay playsInline muted className={`h-full w-full object-cover opacity-90 ${mirror ? '-scale-x-100' : ''}`} />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
             <VideoOff className="h-16 w-16 text-white/15" />

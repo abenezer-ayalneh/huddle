@@ -157,7 +157,11 @@ export default function ControlBar({
             onClick={onShareClick}
           />
         )}
-        <ControlButton icon={MessageSquare} label={chatOpen ? 'Hide chat' : 'Show chat'} active={chatOpen} badge={unreadChat} onClick={onToggleChat} />
+        {/* display:contents wrapper carries the marker the chat panel's outside-press
+            handler skips, so this toggle never closes-then-reopens chat. */}
+        <span className="contents" data-chat-toggle>
+          <ControlButton icon={MessageSquare} label={chatOpen ? 'Hide chat' : 'Show chat'} active={chatOpen} badge={unreadChat} onClick={onToggleChat} />
+        </span>
 
         {onPopOut && (
           <ControlButton icon={PictureInPicture2} label={pipActive ? 'Exit picture-in-picture' : 'Pop out video'} active={pipActive} onClick={onPopOut} />

@@ -4,6 +4,7 @@ import { VideoTrack, isTrackReference, type TrackReferenceOrPlaceholder } from '
 import { Track } from 'livekit-client';
 import { MicOff, MonitorUp, Pin, PinOff } from 'lucide-react';
 import { useState } from 'react';
+import { useMirrorLocalCamera } from './useMirrorLocalCamera';
 import { useParticipantMedia } from './useParticipantMedia';
 
 function getInitials(name: string): string {
@@ -44,6 +45,7 @@ export default function VideoTile({
   const isScreenShare = trackRef.source === Track.Source.ScreenShare;
   const isLocal = participant.isLocal;
   const showVideo = isTrackReference(trackRef) && (isScreenShare || cameraOn);
+  const mirror = useMirrorLocalCamera(trackRef);
 
   const label = participant.name || participant.identity || 'Guest';
   const initials = getInitials(label);
@@ -66,9 +68,10 @@ export default function VideoTile({
               // Both screen shares and cameras use contain (letterboxed against
               // the dark tile) rather than cover: a screen must show its whole
               // frame, and a camera must always show the full face on every
-              // viewport shape rather than cropping it (ADR-0014). Only the
-              // local camera is mirrored.
-              className={`h-full w-full object-contain ${isLocal && !isScreenShare ? '-scale-x-100' : ''}`}
+              // viewport shape rather than cropping it (ADR-0014). The local
+              // camera is mirrored — but only when front-facing; the back camera
+              // shows the world un-flipped (useMirrorLocalCamera, ADR-0014).
+              className={`h-full w-full object-contain ${mirror ? '-scale-x-100' : ''}`}
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[oklch(0.18_0.03_300)] to-[oklch(0.13_0.02_270)]">
