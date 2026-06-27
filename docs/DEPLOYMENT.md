@@ -155,22 +155,96 @@ Edit `.env.prod` and set, at minimum:
 
 ### Email (SMTP) — required for email/password signups
 
-New local accounts must confirm their address before they can sign in, and the
-confirmation link is delivered by email. Set SMTP credentials in `.env.prod`:
+New local accounts must confirm their address before they can sign in
+(`requireEmailVerification: true` in `apps/api/src/auth/auth.ts`), and the
+confirmation link is delivered by email. The sender (`apps/api/src/auth/mailer.ts`)
+is provider-agnostic — any SMTP host works. This runbook uses **Brevo's free
+tier** (300 emails/day, no credit card), sending from your own domain so the
+mail passes SPF/DKIM/DMARC and lands in the inbox.
+
+> If `SMTP_HOST` is left blank the API sends **nothing** — the verification link
+> is never logged (it's a bearer credential), and a send that fails fails
+> silently so signup isn't broken. The practical effect: without working SMTP,
+> email/password signups can never complete, and you confirm delivery from the
+> provider's dashboard, not from app logs. (Google sign-in is unaffected —
+> Google verifies the address itself.)
+
+**1. Create a Brevo account and authenticate your domain.**
+
+1. Sign up at <https://www.brevo.com> (free "Starter" plan).
+2. **Senders, Domains & Dedicated IPs → Domains → Add a domain:**
+   `abenezer-ayalneh.dev`. Brevo shows the DNS records to add.
+3. At your DNS provider for `abenezer-ayalneh.dev`, add the records Brevo gives
+   you (exact values come from the Brevo dashboard — these are the shapes):
+
+   | Type  | Host (name)                        | Value                                                   | Purpose                        |
+   | ----- | ---------------------------------- | ------------------------------------------------------- | ------------------------------ |
+   | TXT   | `@` (or `brevo-code...` per Brevo) | `brevo-code:...` ownership token                        | Verify you own the domain      |
+   | TXT   | `@`                                | `v=spf1 include:spf.brevo.com mx ~all`                  | SPF — authorizes Brevo to send |
+   | CNAME | `brevo1._domainkey`                | `b1.<…>.brevo.com` (from dashboard)                     | DKIM key 1                     |
+   | CNAME | `brevo2._domainkey`                | `b2.<…>.brevo.com` (from dashboard)                     | DKIM key 2                     |
+   | TXT   | `_dmarc`                           | `v=DMARC1; p=none; rua=mailto:you@abenezer-ayalneh.dev` | DMARC (monitor-only)           |
+
+   > If you already have an SPF TXT record, **merge** the `include:spf.brevo.com`
+   > into the existing one — a domain may have only a single SPF record.
+   > DMARC starts at `p=none` (no mail is rejected); tighten to `quarantine` /
+   > `reject` later once the `rua` reports show SPF+DKIM passing.
+
+4. Back in Brevo, click **Verify / Authenticate**. Wait for DNS to propagate
+   (`dig +short brevo1._domainkey.abenezer-ayalneh.dev` returns the CNAME) —
+   usually minutes, up to an hour.
+
+**2. Get the SMTP key.** Brevo dashboard → **SMTP & API → SMTP**. Note the
+server (`smtp-relay.brevo.com`), port `587`, your **login email** (the SMTP
+username), and **Generate a new SMTP key** (this is `SMTP_PASS` — _not_ your
+account password).
+
+**3. Set the values in `.env.prod`:**
 
 ```bash
-SMTP_HOST=smtp.your-provider.com   # e.g. Mailgun, SES, Postmark, your own server
-SMTP_PORT=587                      # 587 STARTTLS, or 465 implicit TLS
-SMTP_USER=...
-SMTP_PASS=...
-SMTP_FROM=no-reply@your-domain     # defaults to SMTP_USER if unset
+SMTP_HOST=smtp-relay.brevo.com
+SMTP_PORT=587                            # STARTTLS (mailer sets secure=false here)
+SMTP_USER=you@example.com                # your Brevo account login email
+SMTP_PASS=xsmtpsib-...                   # the SMTP key from step 2
+SMTP_FROM=no-reply@abenezer-ayalneh.dev  # on the domain you authenticated above
 ```
 
-If `SMTP_HOST` is left blank the API only **logs** the verification link to its
-console instead of emailing it — fine for local dev, but in production no one
-receives the link, so email/password signups can never complete. (Google
-sign-in is unaffected — Google verifies the address itself.) Restart `api`
-after changing these.
+`.env.prod` is gitignored — never commit it. Restart the API after changing
+these (the prod compose is an _override_ on the base file, so both `-f` flags
+and `--env-file` are required):
+
+```bash
+docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
+  --env-file .env.prod up -d --no-deps api
+```
+
+> The verification link in the email points at `BETTER_AUTH_URL`
+> (`https://huddle-api.abenezer-ayalneh.dev`) and, once clicked, redirects to
+> `WEB_ORIGIN` (`https://huddle.abenezer-ayalneh.dev`) — both already set above.
+> `autoSignInAfterVerification` means the user is signed in the moment they
+> click, landing back on Huddle.
+
+**4. Verify it works (post-deploy checklist):**
+
+1. On the live site, sign up a fresh test account with a real inbox you control
+   (use a `+tag` alias so you can reuse it).
+2. Confirm the email arrives within ~30s. **Check the spam folder** — if it
+   landed there, SPF/DKIM aren't aligned yet; re-check the DNS records and that
+   `SMTP_FROM` is on the authenticated domain.
+3. Click **Verify my email** → you should land on Huddle, signed in.
+4. If nothing arrives, check whether the API even attempted a send:
+   ```bash
+   docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
+     logs --tail=100 api | grep -i mailer
+   ```
+   `Sent verification email to …` means SMTP accepted the message — so a missing
+   email is a deliverability problem (spam, bounce, DNS), diagnosed in Brevo's
+   dashboard, not the app. **No** `Sent …` line means either `SMTP_HOST` is blank
+   in the container (check `.env.prod` was picked up and `api` restarted) or the
+   send threw and was swallowed by design — in that case Brevo's logs are the
+   only record, since send failures are intentionally silent.
+5. Watch your Brevo dashboard → **Statistics / Logs** for delivery, bounce,
+   blocked, or rejected events — this is your primary delivery signal.
 
 **Ports (only if 3001/3002 are taken on your box).** The containers publish on
 `127.0.0.1:${WEB_HOST_PORT}` (default `3001`) and `127.0.0.1:${API_HOST_PORT}`
