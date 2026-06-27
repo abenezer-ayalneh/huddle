@@ -6,7 +6,7 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--filter", "@huddle/web", "dev"],
       "port": 3000,
-      "autoPort": true
+      "autoPort": false
     }
   ]
 }

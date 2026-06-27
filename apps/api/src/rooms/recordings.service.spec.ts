@@ -1,7 +1,6 @@
-import { ConflictException, ForbiddenException, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import type { Recording, Room } from '@prisma/client';
 import { EgressStatus, type EgressInfo } from 'livekit-server-sdk';
-import { DownloadTokenService } from './download-token.service';
 import type { EgressService } from './egress.service';
 import type { LivekitService } from './livekit.service';
 import { RecordingsService } from './recordings.service';
@@ -73,7 +72,6 @@ describe('RecordingsService', () => {
   let egress: jest.Mocked<Pick<EgressService, 'startRoomComposite' | 'stop'>>;
   let storage: jest.Mocked<Pick<StorageService, 'ensureBucket' | 'getObject'>>;
   let livekit: jest.Mocked<Pick<LivekitService, 'setRecordingActive'>>;
-  let downloadTokens: DownloadTokenService;
   let service: RecordingsService;
 
   beforeEach(() => {
@@ -89,10 +87,7 @@ describe('RecordingsService', () => {
       getObject: jest.fn(),
     };
     livekit = { setRecordingActive: jest.fn().mockResolvedValue(undefined) };
-    // Real signer with a fixed test secret — exercises the actual sign/verify
-    // round-trip rather than a mock that could mask a contract drift.
-    downloadTokens = new DownloadTokenService({ get: () => 'test-download-secret' } as never);
-    service = new RecordingsService(rooms as never, recordings as never, egress as never, storage as never, livekit as never, downloadTokens);
+    service = new RecordingsService(rooms as never, recordings as never, egress as never, storage as never, livekit as never);
   });
 
   it('starts a recording: ensures the bucket and stores the egress job', async () => {
@@ -110,13 +105,6 @@ describe('RecordingsService', () => {
 
   it('404s starting a recording for an unknown room', async () => {
     await expect(service.start('ghost')).rejects.toBeInstanceOf(NotFoundException);
-  });
-
-  it('fails loudly (does not start egress) when the recording store is unavailable', async () => {
-    storage.ensureBucket.mockRejectedValueOnce(new Error('SignatureDoesNotMatch'));
-    await expect(service.start('standup')).rejects.toBeInstanceOf(ServiceUnavailableException);
-    expect(egress.startRoomComposite).not.toHaveBeenCalled();
-    expect(recordings.rows).toHaveLength(0);
   });
 
   it('advances status and captures size/duration on egress complete', async () => {
@@ -146,29 +134,6 @@ describe('RecordingsService', () => {
   it('refuses to download a recording that is not complete', async () => {
     const { id } = await service.start('standup');
     await expect(service.download('standup', id)).rejects.toBeInstanceOf(ConflictException);
-  });
-
-  it('embeds a verifiable download token only once a recording is completed', async () => {
-    const { id } = await service.start('standup');
-
-    // Still recording → no token to mint yet.
-    const before = (await service.list('standup')).recordings[0];
-    expect(before.downloadable).toBe(false);
-    expect(before.downloadToken).toBeNull();
-
-    await service.handleEgressEvent({
-      egressId: 'eg-1',
-      status: EgressStatus.EGRESS_COMPLETE,
-      fileResults: [{ size: 1n, duration: 1n }],
-    } as unknown as EgressInfo);
-
-    const after = (await service.list('standup')).recordings[0];
-    expect(after.downloadable).toBe(true);
-    expect(after.downloadToken).toEqual(expect.any(String));
-    // The token authorizes this exact room + recording, and nothing else.
-    expect(downloadTokens.verify('standup', id, after.downloadToken!)).toBe(true);
-    expect(downloadTokens.verify('other-room', id, after.downloadToken!)).toBe(false);
-    expect(downloadTokens.verify('standup', 'rec-999', after.downloadToken!)).toBe(false);
   });
 
   it('lights the Recording Indicator when a recording starts', async () => {

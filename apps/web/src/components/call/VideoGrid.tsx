@@ -14,7 +14,6 @@ export default function VideoGrid({
   iAmPresenting = false,
   onStopPresenting,
   onStageTrackChange,
-  localName,
 }: {
   presentationOverlay?: React.ReactNode;
   // When the local participant is the Presenter, we must never render their own
@@ -25,10 +24,6 @@ export default function VideoGrid({
   // Picture-in-Picture. Same precedence the layout below uses: presented screen
   // → Pin → Active Speaker → a representative remote → the local camera.
   onStageTrackChange?: (trackRef: TrackReferenceOrPlaceholder | null) => void;
-  // The local participant's already-known display name, threaded down to its
-  // tile so it never flashes a placeholder before LiveKit populates the name
-  // (see VideoTile's `fallbackName`). Used wherever the local tile renders.
-  localName?: string;
 }) {
   const tracks = useTracks(
     [
@@ -108,7 +103,6 @@ export default function VideoGrid({
         }
         stripTracks={cameraTracks}
         activeIdentity={activeIdentity}
-        localName={localName}
       />
     );
   }
@@ -136,21 +130,20 @@ export default function VideoGrid({
         stripTracks={stripTracks}
         activeIdentity={activeIdentity}
         onTogglePin={togglePin}
-        localName={localName}
       />
     );
   }
 
   // Alone — the local camera just fills the stage as the only tile.
   if (remoteTracks.length === 0) {
-    return <EqualGrid cameraTracks={localTrack ? [localTrack] : []} activeIdentity={activeIdentity} localName={localName} />;
+    return <EqualGrid cameraTracks={localTrack ? [localTrack] : []} activeIdentity={activeIdentity} />;
   }
 
   // Others present — equal grid of the remotes, local camera floating.
   return (
     <>
       <EqualGrid cameraTracks={remoteTracks} activeIdentity={activeIdentity} onTogglePin={togglePin} />
-      {localTrack && <SelfView trackRef={localTrack} corner={selfCorner} onCornerChange={setSelfCorner} fallbackName={localName} />}
+      {localTrack && <SelfView trackRef={localTrack} corner={selfCorner} onCornerChange={setSelfCorner} />}
     </>
   );
 }
@@ -159,13 +152,10 @@ function EqualGrid({
   cameraTracks,
   activeIdentity,
   onTogglePin,
-  localName,
 }: {
   cameraTracks: ReturnType<typeof useTracks>;
   activeIdentity: string | undefined;
   onTogglePin?: (identity: string) => void;
-  // The local participant's known name, applied only to its own tile.
-  localName?: string;
 }) {
   const cols = useMemo(() => {
     const n = cameraTracks.length || 1;
@@ -190,7 +180,6 @@ function EqualGrid({
             trackRef={trackRef}
             active={trackRef.participant.identity === activeIdentity && cameraTracks.length > 1}
             onTogglePin={onTogglePin && !trackRef.participant.isLocal ? () => onTogglePin(trackRef.participant.identity) : undefined}
-            fallbackName={trackRef.participant.isLocal ? localName : undefined}
           />
         ))}
       </div>

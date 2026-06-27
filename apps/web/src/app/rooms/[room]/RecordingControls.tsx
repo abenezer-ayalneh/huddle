@@ -4,7 +4,6 @@ import { Circle, Download, Square } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { api, type RecordingSummary } from '@/lib/api';
 import IconButton from '@/components/IconButton';
-import IconLink from '@/components/IconLink';
 
 export default function RecordingControls({ room, hostKey, compact = false }: { room: string; hostKey: string; compact?: boolean }) {
   const [recordings, setRecordings] = useState<RecordingSummary[]>([]);
@@ -61,6 +60,22 @@ export default function RecordingControls({ room, hostKey, compact = false }: { 
     }
   };
 
+  const download = async (rec: RecordingSummary) => {
+    try {
+      const blob = await api.downloadRecording(room, rec.id, hostKey);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = rec.filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError("Couldn't download that recording.");
+    }
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
@@ -100,21 +115,15 @@ export default function RecordingControls({ room, hostKey, compact = false }: { 
             <li key={r.id} className="flex items-center justify-between gap-2 text-xs">
               <span className="min-w-0 truncate">
                 <span className="text-white/80">{formatTime(r.startedAt)}</span>
-                {hasStopped(r) && r.durationMs != null && <span className="ml-2 text-white/40">{formatDuration(r.durationMs)}</span>}
+                <span className="ml-2 text-white/40">{labelFor(r)}</span>
               </span>
-              {r.downloadUrl ? (
-                <IconLink
+              {r.downloadable ? (
+                <IconButton
                   icon={Download}
                   label={`Download ${r.filename}`}
                   size="sm"
                   className="bg-cyan text-black hover:brightness-110"
-                  href={r.downloadUrl}
-                  download={r.filename}
-                  // A successful download streams to the browser's shelf without
-                  // navigating; _blank ensures a rare failed download (e.g. an
-                  // expired token) can't replace — and tear down — the live call.
-                  target="_blank"
-                  rel="noopener"
+                  onClick={() => download(r)}
                 />
               ) : (
                 <span className="shrink-0 text-white/40">{statusWord(r)}</span>
@@ -144,10 +153,9 @@ function statusWord(r: RecordingSummary): string {
   }
 }
 
-// A recording has stopped once it is no longer starting/active — i.e. it ended
-// (completed, failed, or aborted). The recorded length is only meaningful then.
-function hasStopped(r: RecordingSummary): boolean {
-  return r.status !== 'starting' && r.status !== 'active';
+function labelFor(r: RecordingSummary): string {
+  if (r.downloadable && r.sizeBytes != null) return formatSize(r.sizeBytes);
+  return statusWord(r);
 }
 
 function formatTime(iso: string): string {
@@ -157,13 +165,14 @@ function formatTime(iso: string): string {
   });
 }
 
-// Recorded length as m:ss (or h:mm:ss past an hour), e.g. 2:05 or 1:02:05.
-function formatDuration(ms: number): string {
-  const totalSec = Math.round(ms / 1000);
-  const h = Math.floor(totalSec / 3600);
-  const m = Math.floor((totalSec % 3600) / 60);
-  const s = totalSec % 60;
-  const ss = String(s).padStart(2, '0');
-  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${ss}`;
-  return `${m}:${ss}`;
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  const units = ['KB', 'MB', 'GB'];
+  let size = bytes / 1024;
+  let i = 0;
+  while (size >= 1024 && i < units.length - 1) {
+    size /= 1024;
+    i++;
+  }
+  return `${size.toFixed(1)} ${units[i]}`;
 }

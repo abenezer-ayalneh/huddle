@@ -77,7 +77,7 @@ export default function ChatPanel({
         ) : (
           messages.map((m) => {
             const mine = m.from?.isLocal ?? false;
-            const who = m.from?.name || m.from?.identity || 'Participant';
+            const who = m.from?.name || m.from?.identity || 'Guest';
             return (
               <div key={`${m.timestamp}-${m.from?.identity ?? ''}`} className={`flex flex-col ${mine ? 'items-end' : 'items-start'}`}>
                 <span className="mb-0.5 px-1 text-[11px] text-white/45">

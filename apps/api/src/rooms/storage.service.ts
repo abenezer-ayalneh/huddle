@@ -50,60 +50,24 @@ export class StorageService {
 
   // Idempotently ensure the bucket exists. Memoised so concurrent recordings
   // don't race to create it. Called before the first egress upload happens.
-  // A failure is NOT cached: a later attempt (e.g. after fixing credentials)
-  // can retry without restarting the API.
   ensureBucket(): Promise<void> {
-    return (this._bucketReady ??= this.createBucketIfMissing().catch((err: unknown) => {
-      this._bucketReady = undefined;
-      throw err;
-    }));
+    return (this._bucketReady ??= this.createBucketIfMissing());
   }
 
   private async createBucketIfMissing(): Promise<void> {
-    // Fast path: bucket already exists and our credentials work.
     try {
       await this.client.send(new HeadBucketCommand({ Bucket: this.bucket }));
       return;
-    } catch (err) {
-      // A 404 means the bucket is simply missing — create it below. Anything
-      // else (403 bad signature, store unreachable) is a real failure we must
-      // NOT swallow, or the recording starts and silently fails to upload.
-      if (!this.isNotFound(err)) throw this.storageError('reach', err);
+    } catch {
+      // Not found (or no access) — try to create it below.
     }
     try {
       await this.client.send(new CreateBucketCommand({ Bucket: this.bucket }));
       this.logger.log(`Created recordings bucket "${this.bucket}"`);
     } catch (err) {
-      // A concurrent create or an already-owned bucket is fine; bad credentials
-      // or an unreachable store must surface, not be logged away.
-      if (this.isAlreadyOwned(err)) return;
-      throw this.storageError('create the recordings bucket in', err);
+      // A concurrent create or an already-owned bucket is fine.
+      this.logger.warn(`Could not create bucket "${this.bucket}": ${String(err)}`);
     }
-  }
-
-  private statusOf(err: unknown): number | undefined {
-    return (err as { $metadata?: { httpStatusCode?: number } })?.$metadata?.httpStatusCode;
-  }
-
-  private nameOf(err: unknown): string {
-    return (err as { name?: string })?.name ?? '';
-  }
-
-  private isNotFound(err: unknown): boolean {
-    return this.statusOf(err) === 404 || this.nameOf(err) === 'NotFound' || this.nameOf(err) === 'NoSuchBucket';
-  }
-
-  private isAlreadyOwned(err: unknown): boolean {
-    const name = this.nameOf(err);
-    return name === 'BucketAlreadyOwnedByYou' || name === 'BucketAlreadyExists';
-  }
-
-  // Log the underlying S3 detail (for ops) and return an opaque error to throw —
-  // the caller turns it into a clean Fault so internals never reach the client.
-  private storageError(verb: string, err: unknown): Error {
-    const detail = err instanceof Error ? err.message : String(err);
-    this.logger.error(`Could not ${verb} recording storage "${this.bucket}": ${detail}`);
-    return new Error(`recording storage unavailable: ${detail}`);
   }
 
   // Stream an object back for a download. Returns the body plus the size so the

@@ -197,15 +197,6 @@ export class LivekitService {
     }
     if ((meta.recording === true) === active) return;
     meta.recording = active;
-    // Stamp (or clear) the recording start time alongside the flag, so every
-    // client can show a live recording timer off the same real-time metadata
-    // propagation. Only written on the off→true transition (the early-return
-    // above means egress-update events don't reset it).
-    if (active) {
-      meta.recordingStartedAt = Date.now();
-    } else {
-      delete meta.recordingStartedAt;
-    }
     await this.svc.updateRoomMetadata(room, JSON.stringify(meta));
   }
 
