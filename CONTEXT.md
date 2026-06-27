@@ -157,8 +157,17 @@ Self-view stops floating and docks into the thumbnail strip alongside everyone
 else. It is always shown while the camera is on — there is no hide control. Its
 corner and visibility are session-only (a rejoin resets it to the default
 corner).
-_Avoid_: PiP / picture-in-picture (fine in code), self-mirror, local tile,
-floating thumbnail
+_Avoid_: PiP / Picture-in-Picture — that is now a distinct feature, the OS-level
+[[Picture-in-Picture]] window. The Self-view is the in-page floating self-camera
+and is never called PiP. Also: self-mirror, local tile, floating thumbnail
+
+**Active Speaker**:
+The remote participant LiveKit currently reports as loudest. The [[Equal Grid]]
+gives every tile equal size and does **not** focus the speaker — the Active
+Speaker is used only as the fallback feed for [[Picture-in-Picture]] when nothing
+is presented and no one is pinned. It carries no on-stage emphasis in the normal
+grid.
+_Avoid_: Dominant speaker, loudest, current talker
 
 **Pin**:
 A local-only focus action: a participant promotes one other participant to fill
@@ -185,6 +194,33 @@ accounts with no picture) or the image fails to load — a broken Avatar is neve
 camera is on the video replaces it.
 _Avoid_: Profile picture/photo (fine in prose, but "Avatar" is the domain term),
 gravatar, headshot, initials (the initials are the fallback — a distinct thing)
+
+### Mobile & background
+
+**Background Call**:
+A call that keeps running while the app loses the foreground on mobile (the user
+switches apps or locks the screen). The participant stays a present member of the
+room: their microphone keeps publishing so they are still heard, while their
+camera turns **off** (the OS suspends capture anyway, and others see the
+participant's [[Avatar]] rather than a frozen frame); the camera returns to its
+prior state on foreground. This is a property of the [[Call Connection]] surviving
+backgrounding — distinct from leaving, which tears the connection down. The main
+stage is offered as [[Picture-in-Picture]] so the user can keep watching.
+_Avoid_: Background mode, keep-alive, minimize
+
+**Picture-in-Picture (PiP)**:
+The OS-level floating window that shows a single video feed outside the browser,
+so a [[Background Call]] stays visible while the user is in another app. It holds
+exactly one feed (a native browser window, not a custom player or the grid),
+mirroring the main stage: the presented screen if someone is presenting, else the
+pinned participant ([[Pin]]), else the [[Active Speaker]]. Entered via an explicit
+pop-out control (a user gesture, reliable everywhere PiP exists) and, where the
+browser permits, automatically on backgrounding. On iOS, entering PiP is also what
+keeps the media session alive in the background; on Android background audio
+survives without it. Distinct from the [[Self-view]] (an in-page floating
+self-camera, never called PiP).
+_Avoid_: Pop-out (fine as the control's label/verb), mini player, floating grid,
+Self-view
 
 ### Presenting
 

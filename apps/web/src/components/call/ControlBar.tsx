@@ -14,6 +14,7 @@ import {
   MessageSquare,
   MousePointer2,
   PhoneOff,
+  PictureInPicture2,
   Square,
   type LucideIcon,
 } from 'lucide-react';
@@ -36,6 +37,8 @@ export default function ControlBar({
   onRecordClick,
   recordBusy = false,
   suspendShortcuts = false,
+  onPopOut,
+  pipActive = false,
 }: {
   onLeave: () => void;
   chatOpen: boolean;
@@ -57,6 +60,11 @@ export default function ControlBar({
   // Keyboard Shortcuts (docs/adr/0013): true while controlling a remote machine,
   // when keystrokes belong to that machine, not the call.
   suspendShortcuts?: boolean;
+  // Picture-in-Picture (CONTEXT.md): pop the main stage into the OS-level
+  // floating window so a Background Call stays visible. undefined hides the
+  // control where PiP is unsupported.
+  onPopOut?: () => void;
+  pipActive?: boolean;
 }) {
   const mic = useTrackToggle({ source: Track.Source.Microphone });
   const cam = useTrackToggle({ source: Track.Source.Camera });
@@ -150,6 +158,10 @@ export default function ControlBar({
           />
         )}
         <ControlButton icon={MessageSquare} label={chatOpen ? 'Hide chat' : 'Show chat'} active={chatOpen} badge={unreadChat} onClick={onToggleChat} />
+
+        {onPopOut && (
+          <ControlButton icon={PictureInPicture2} label={pipActive ? 'Exit picture-in-picture' : 'Pop out video'} active={pipActive} onClick={onPopOut} />
+        )}
 
         {recordMode && onRecordClick && <RecordButton mode={recordMode} busy={recordBusy} onClick={onRecordClick} />}
 

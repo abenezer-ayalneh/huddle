@@ -1,7 +1,9 @@
 'use client';
 
-import { LiveKitRoom, RoomAudioRenderer, useChat, type LocalUserChoices } from '@livekit/components-react';
-import { useCallback, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { LiveKitRoom, RoomAudioRenderer, useChat, type LocalUserChoices, type TrackReferenceOrPlaceholder } from '@livekit/components-react';
+import { useCallback, useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useBackgroundCall } from '@/components/call/useBackgroundCall';
+import { usePictureInPicture } from '@/components/call/usePictureInPicture';
 import AgentLaunchDialog from '@/components/call/AgentLaunchDialog';
 import ChatPanel from '@/components/call/ChatPanel';
 import ConnectionStatus from '@/components/call/ConnectionStatus';
@@ -60,6 +62,23 @@ export default function CallStage({
     onLeave();
   }, [onLeave]);
 
+  // Back-gesture intercept (Android OS back button / Safari swipe): once in the
+  // call, trap the history pop and surface the Leave confirmation instead of
+  // navigating away. Converting the pop into an in-app decision also keeps the
+  // page mounted so leaving tears the connection down exactly once — no
+  // bfcache-frozen page that reconnects into a "ghost" duplicate on return.
+  useEffect(() => {
+    if (!choices) return;
+    window.history.pushState({ huddleCall: true }, '');
+    function onPopState() {
+      setShowLeaveDialog(true);
+      // Re-arm so a second back press is trapped too.
+      window.history.pushState({ huddleCall: true }, '');
+    }
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [choices]);
+
   if (!choices) {
     return (
       <PreJoinScreen
@@ -115,6 +134,14 @@ function CallView({
 }) {
   const { chatMessages, send, isSending } = useChat();
   const [chatOpen, setChatOpen] = useState(false);
+
+  // Background Call + Picture-in-Picture. VideoGrid reports the feed that owns
+  // the main stage; PiP mirrors it into the OS floating window, and the
+  // background hook keeps the call alive (mic on, camera off) when the app is
+  // backgrounded on mobile, auto-entering PiP where the browser allows it.
+  const [stageTrack, setStageTrack] = useState<TrackReferenceOrPlaceholder | null>(null);
+  const { videoRef: pipVideoRef, enter: enterPip, exit: exitPip, active: pipActive, supported: pipSupported } = usePictureInPicture(stageTrack);
+  useBackgroundCall({ enterPip });
 
   const presentation = usePresentation(isHost);
   const recording = useRecording({ room, token, isHost, hostKey });
@@ -197,6 +224,7 @@ function CallView({
         presentationOverlay={control.controlling ? <RemoteControlSurface sendInput={control.sendInput} sendClipboard={control.sendClipboard} /> : undefined}
         iAmPresenting={presentation.iAmPresenting}
         onStopPresenting={presentation.handleShareClick}
+        onStageTrackChange={setStageTrack}
       />
       {/* Scoped boundaries (docs/adr/0018): the chat and the data-message-driven
           overlays are the likely crash sources. A crash in any of them fails to
@@ -219,6 +247,8 @@ function CallView({
         onRecordClick={recordMode ? onRecordClick : undefined}
         recordBusy={recording.busy}
         suspendShortcuts={!!control.controlling}
+        onPopOut={pipSupported ? () => (pipActive ? exitPip() : enterPip()) : undefined}
+        pipActive={pipActive}
       />
       <ErrorBoundary label="Remote control banner" fallback={null}>
         <div className="pointer-events-none absolute inset-x-0 top-2 z-30 flex justify-center">
@@ -276,6 +306,10 @@ function CallView({
       <CallTimer />
       <ConnectionStatus />
       {overlay}
+      {/* The single feed handed to native Picture-in-Picture. Kept in the DOM
+          and playing (PiP requires that) but visually out of the way — the grid
+          renders the real tiles. */}
+      <video ref={pipVideoRef} autoPlay playsInline muted className="pointer-events-none fixed bottom-0 right-0 -z-10 h-px w-px opacity-0" />
     </>
   );
 }

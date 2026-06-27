@@ -1,9 +1,9 @@
 'use client';
 
-import { useSpeakingParticipants, useTracks } from '@livekit/components-react';
+import { useSpeakingParticipants, useTracks, type TrackReferenceOrPlaceholder } from '@livekit/components-react';
 import { Track } from 'livekit-client';
 import { MonitorOff, MonitorUp, PinOff } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { isAgentIdentity } from '@/lib/controlProtocol';
 import FocusLayout, { trackKey } from './FocusLayout';
 import SelfView, { type Corner } from './SelfView';
@@ -13,12 +13,17 @@ export default function VideoGrid({
   presentationOverlay,
   iAmPresenting = false,
   onStopPresenting,
+  onStageTrackChange,
 }: {
   presentationOverlay?: React.ReactNode;
   // When the local participant is the Presenter, we must never render their own
   // presented track back to them — see PresenterPlaceholder below.
   iAmPresenting?: boolean;
   onStopPresenting?: () => void;
+  // Reports the feed that owns the main stage so it can be mirrored into
+  // Picture-in-Picture. Same precedence the layout below uses: presented screen
+  // → Pin → Active Speaker → a representative remote → the local camera.
+  onStageTrackChange?: (trackRef: TrackReferenceOrPlaceholder | null) => void;
 }) {
   const tracks = useTracks(
     [
@@ -54,6 +59,24 @@ export default function VideoGrid({
   }
 
   const togglePin = (identity: string) => setPinnedIdentity((cur) => (cur === identity ? null : identity));
+
+  // The feed that owns the main stage, by the same precedence the layout uses
+  // below — reported up for Picture-in-Picture to mirror. The Presenter's own
+  // screen is excluded (they never see it; see PresenterPlaceholder).
+  const stageTrack: TrackReferenceOrPlaceholder | null =
+    screenTrack && !iAmPresenting
+      ? screenTrack
+      : pinnedTrack
+        ? pinnedTrack
+        : (remoteTracks.find((t) => t.participant.identity === activeIdentity) ?? remoteTracks[0] ?? localTrack ?? null);
+  // Report only when the chosen feed actually changes (its key), not on every
+  // render. The effect closes over the `stageTrack` from that render, which is
+  // the correct value for the new key.
+  const stageKey = stageTrack ? trackKey(stageTrack) : null;
+  useEffect(() => {
+    onStageTrackChange?.(stageTrack);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed by stageKey; onStageTrackChange is a stable setter
+  }, [stageKey]);
 
   // A presentation owns the stage — it preempts the Pin, which is restored when
   // the share ends.
