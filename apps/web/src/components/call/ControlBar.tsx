@@ -179,11 +179,11 @@ export default function ControlBar({
 
 // Share-time choice (docs/adr/0010): plain Present (browser picker, any
 // surface, never controllable) vs Present with Control (the desktop agent
-// shares one whole monitor and can hand input to a participant).
-// Present with Control is disabled pending the agent runtime fix
-// (rust-sdks#795) and the manual two-window verification.
+// shares one whole monitor and can hand input to a participant). The agent
+// runtime crash that gated this (rust-sdks#795) is fixed — see
+// docs/REMOTE_CONTROL_PLAN.md slice 3.
 // Rendered as the chevron-menu body of the share MergedControlButton.
-function ShareMenuContent({ onPresent, close }: { onPresent: () => void; onPresentWithControl: () => void; close: () => void }) {
+function ShareMenuContent({ onPresent, onPresentWithControl, close }: { onPresent: () => void; onPresentWithControl: () => void; close: () => void }) {
   const item = (onClick: () => void, icon: LucideIcon, title: string, hint: string, disabled = false) => {
     const Icon = icon;
     return (
@@ -213,7 +213,7 @@ function ShareMenuContent({ onPresent, close }: { onPresent: () => void; onPrese
   return (
     <PopoverContent side="top" sideOffset={14} className="glass-strong w-72 gap-1 rounded-xl p-1.5">
       {item(onPresent, MonitorUp, 'Present screen', 'Share a tab, window, or screen — view only')}
-      {item(() => {}, MousePointer2, 'Present with control', 'Share a monitor via the desktop agent; participants can take the mouse', true)}
+      {item(onPresentWithControl, MousePointer2, 'Present with control', 'Share a monitor via the desktop agent; participants can take the mouse')}
     </PopoverContent>
   );
 }

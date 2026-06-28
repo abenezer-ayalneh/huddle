@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- Huddle Control Agent app icon: the Huddle mark (four brand dots + play
+       triangle) on the brand's dark-indigo background. Source of truth — run
+       `cargo tauri icon app-icon.svg` to regenerate the icons/ set. -->
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="36%" r="78%">
+      <stop offset="0%" stop-color="#1b1832"/>
+      <stop offset="100%" stop-color="#0a0913"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="224" fill="url(#bg)"/>
+  <!-- Logo drawn in its own 72×72 space (viewBox -4..68 shows full circles,
+       which the original 0..64 logo clips at the frame), centered with padding. -->
+  <svg x="192" y="192" width="640" height="640" viewBox="-4 -4 72 72">
+    <circle cx="32" cy="4" r="8" fill="#d946a8"/>
+    <circle cx="60" cy="32" r="8" fill="#5ce0d6"/>
+    <circle cx="32" cy="60" r="8" fill="#d946a8"/>
+    <circle cx="4" cy="32" r="8" fill="#5ce0d6"/>
+    <polygon points="27,24 27,40 41,32" fill="#ffffff" opacity="0.95"/>
+  </svg>
+</svg>

@@ -1,6 +1,7 @@
-use enigo::{
-    Button, Coordinate, Direction, Enigo, Keyboard, Mouse, Settings,
-};
+use enigo::{Button, Coordinate, Direction, Enigo, Mouse, Settings};
+#[cfg(not(target_os = "macos"))]
+use enigo::Keyboard;
+#[cfg_attr(target_os = "macos", allow(unused_imports))]
 use log::{info, warn};
 use serde::Deserialize;
 
@@ -125,17 +126,27 @@ impl Injector {
                 code,
                 modifiers,
             } => {
-                let direction = match action {
-                    KeyAction::Down => Direction::Press,
-                    KeyAction::Up => Direction::Release,
-                };
-                if let Some(enigo_key) = to_enigo_key(key, code) {
-                    self.enigo
-                        .key(enigo_key, direction)
-                        .map_err(|e| format!("key: {e}"))
-                } else {
-                    info!("unmapped key: key={key}, code={code}, modifiers={modifiers:?}");
+                // macOS: post raw CGEvents keyed off the physical `code`. enigo's
+                // keyboard path resolves chars→keycodes via Text Input Source
+                // APIs, which are main-thread-only on macOS 26 and SIGTRAP when
+                // called from this injector thread (rust crash: get_layoutdependent_keycode).
+                #[cfg(target_os = "macos")]
+                {
+                    mac_key::post(code, key, action, modifiers);
                     Ok(())
+                }
+                #[cfg(not(target_os = "macos"))]
+                {
+                    let direction = match action {
+                        KeyAction::Down => Direction::Press,
+                        KeyAction::Up => Direction::Release,
+                    };
+                    if let Some(enigo_key) = to_enigo_key(key, code) {
+                        self.enigo.key(enigo_key, direction).map_err(|e| format!("key: {e}"))
+                    } else {
+                        info!("unmapped key: key={key}, code={code}, modifiers={modifiers:?}");
+                        Ok(())
+                    }
                 }
             }
         }
@@ -158,6 +169,7 @@ fn to_enigo_button(btn: &MouseBtn) -> Button {
     }
 }
 
+#[cfg(not(target_os = "macos"))]
 fn to_enigo_key(key: &str, code: &str) -> Option<enigo::Key> {
     match code {
         "Backspace" => Some(enigo::Key::Backspace),
@@ -196,6 +208,91 @@ fn to_enigo_key(key: &str, code: &str) -> Option<enigo::Key> {
                 key.chars().next().map(enigo::Key::Unicode)
             } else {
                 None
+            }
+        }
+    }
+}
+
+// macOS keyboard injection via raw CGEvents. Keyed off the browser's physical
+// `code` (W3C UI Events) → ANSI virtual keycode, which is layout-independent and
+// the right fidelity for remote control. Crucially this never touches the Text
+// Input Source APIs (TISCopy*/TSMGetInputSourceProperty) that enigo uses to map
+// a char to a keycode — those assert the main thread on macOS 26 and SIGTRAP
+// when invoked from the injector thread.
+#[cfg(target_os = "macos")]
+mod mac_key {
+    use core_graphics::event::{CGEvent, CGEventFlags, CGEventTapLocation, CGKeyCode};
+    use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
+    use log::warn;
+
+    use super::{KeyAction, Modifier};
+
+    // W3C KeyboardEvent.code → macOS ANSI virtual keycode.
+    fn keycode_for(code: &str) -> Option<CGKeyCode> {
+        Some(match code {
+            "KeyA" => 0x00, "KeyS" => 0x01, "KeyD" => 0x02, "KeyF" => 0x03, "KeyH" => 0x04,
+            "KeyG" => 0x05, "KeyZ" => 0x06, "KeyX" => 0x07, "KeyC" => 0x08, "KeyV" => 0x09,
+            "KeyB" => 0x0B, "KeyQ" => 0x0C, "KeyW" => 0x0D, "KeyE" => 0x0E, "KeyR" => 0x0F,
+            "KeyY" => 0x10, "KeyT" => 0x11, "Digit1" => 0x12, "Digit2" => 0x13, "Digit3" => 0x14,
+            "Digit4" => 0x15, "Digit6" => 0x16, "Digit5" => 0x17, "Equal" => 0x18, "Digit9" => 0x19,
+            "Digit7" => 0x1A, "Minus" => 0x1B, "Digit8" => 0x1C, "Digit0" => 0x1D, "BracketRight" => 0x1E,
+            "KeyO" => 0x1F, "KeyU" => 0x20, "BracketLeft" => 0x21, "KeyI" => 0x22, "KeyP" => 0x23,
+            "Enter" => 0x24, "KeyL" => 0x25, "KeyJ" => 0x26, "Quote" => 0x27, "KeyK" => 0x28,
+            "Semicolon" => 0x29, "Backslash" => 0x2A, "Comma" => 0x2B, "Slash" => 0x2C, "KeyN" => 0x2D,
+            "KeyM" => 0x2E, "Period" => 0x2F, "Tab" => 0x30, "Space" => 0x31, "Backquote" => 0x32,
+            "Backspace" => 0x33, "NumpadEnter" => 0x4C, "Escape" => 0x35,
+            "MetaRight" => 0x36, "MetaLeft" => 0x37, "ShiftLeft" => 0x38, "CapsLock" => 0x39,
+            "AltLeft" => 0x3A, "ControlLeft" => 0x3B, "ShiftRight" => 0x3C, "AltRight" => 0x3D,
+            "ControlRight" => 0x3E,
+            "F1" => 0x7A, "F2" => 0x78, "F3" => 0x63, "F4" => 0x76, "F5" => 0x60, "F6" => 0x61,
+            "F7" => 0x62, "F8" => 0x64, "F9" => 0x65, "F10" => 0x6D, "F11" => 0x67, "F12" => 0x6F,
+            "Delete" => 0x75, "Home" => 0x73, "End" => 0x77, "PageUp" => 0x74, "PageDown" => 0x79,
+            "ArrowLeft" => 0x7B, "ArrowRight" => 0x7C, "ArrowDown" => 0x7D, "ArrowUp" => 0x7E,
+            _ => return None,
+        })
+    }
+
+    fn flags_for(mods: &[Modifier]) -> CGEventFlags {
+        let mut f = CGEventFlags::empty();
+        for m in mods {
+            f |= match m {
+                Modifier::Shift => CGEventFlags::CGEventFlagShift,
+                Modifier::Ctrl => CGEventFlags::CGEventFlagControl,
+                Modifier::Alt => CGEventFlags::CGEventFlagAlternate,
+                Modifier::Meta => CGEventFlags::CGEventFlagCommand,
+            };
+        }
+        f
+    }
+
+    pub fn post(code: &str, key: &str, action: &KeyAction, mods: &[Modifier]) {
+        let down = matches!(action, KeyAction::Down);
+        let Ok(source) = CGEventSource::new(CGEventSourceStateID::CombinedSessionState) else {
+            warn!("CGEventSource unavailable");
+            return;
+        };
+
+        if let Some(keycode) = keycode_for(code) {
+            match CGEvent::new_keyboard_event(source, keycode, down) {
+                Ok(event) => {
+                    if !mods.is_empty() {
+                        event.set_flags(flags_for(mods));
+                    }
+                    event.post(CGEventTapLocation::HID);
+                }
+                Err(_) => warn!("failed to build key event for {code}"),
+            }
+            return;
+        }
+
+        // Unmapped physical key but a printable character: emit it as a Unicode
+        // string on key-down (no layout lookup). Modifier combos still need a
+        // real keycode, so this path is best-effort for exotic keys only.
+        if down && key.chars().count() == 1 {
+            if let Ok(event) = CGEvent::new_keyboard_event(source, 0, true) {
+                let utf16: Vec<u16> = key.encode_utf16().collect();
+                event.set_string_from_utf16_unchecked(&utf16);
+                event.post(CGEventTapLocation::HID);
             }
         }
     }

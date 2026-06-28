@@ -156,23 +156,39 @@ session indicator, tray; deep-link plugin for `huddle://`).
    flows browser → dialog → stub redeem end-to-end. `huddle://` launch ships
    via hidden iframe; protocol _registration_ lands with the real agent
    (slice 3) — until then the dialog's copy-paste code is the path.
-3. **Agent: join + capture + publish.** 🚧 Tauri 2 + Rust skeleton
-   implemented: redeem flow, LiveKit room join, xcap monitor capture → I420 →
-   NativeVideoSource, control:\* protocol handler, deep-link + CLI arg entry
-   points. Compiles and links (livekit 0.7.45 + xcap 0.8 + libwebrtc 0.3.36).
-   **Blocked at runtime on macOS 26 (Tahoe):** the prebuilt WebRTC binary in
-   webrtc-sys crashes on `+[NSString stringForAbslStringView:]` during
-   PeerConnectionFactory init ([rust-sdks#795][gh795]). The `-ObjC` linker
-   fix is applied but needs an updated prebuilt binary from upstream. Code is
-   structurally complete; will be testable on macOS 15 or when upstream ships
-   a Tahoe-compatible binary.
+3. **Agent: join + capture + publish.** ✅ Tauri 2 + Rust: redeem flow,
+   LiveKit room join, xcap monitor capture → I420 → NativeVideoSource,
+   control:\* protocol handler, deep-link + CLI arg entry points. Built on
+   livekit 0.7.49 + xcap 0.8 + libwebrtc 0.3.38. **Verified live on macOS
+   26.5.1 (Tahoe):** the agent redeems a code, joins as `agent:<presenter>`,
+   and publishes a real screen-share track (confirmed via
+   `RoomServiceClient.listParticipants`: source=SCREEN*SHARE, the monitor's
+   native resolution).
+   \_Crash fix (was the slice-3 blocker):* on macOS the agent aborted during
+   `PeerConnectionFactory::Create` with `doesNotRecognizeSelector:` on
+   `+[RTCVideoEncoderVP9 scalabilityModes]`. Root cause was **not**
+   `+[NSString stringForAbslStringView:]` as previously thought — it was the
+   linker dead-stripping libwebrtc's Objective-C **category** methods from the
+   static archive. The `-ObjC` link flag (which forces all ObjC symbols to
+   load) had been _documented_ as applied but was never actually in the
+   build; it now lives in `apps/agent/src-tauri/build.rs`, macOS-gated. The
+   `examples/webrtc_probe.rs` regression probe reproduces and verifies the fix
+   without the GUI/pairing flow. (Related upstream: [rust-sdks#795][gh795].)
    [gh795]: https://github.com/livekit/rust-sdks/issues/795
-4. **Agent: injection.** ✅ `enigo` 0.3 for mouse/keyboard. Normalized
-   [0,1] coordinates from `control:input` mapped to monitor pixel coords
-   using monitor origin (x,y), dimensions, and DPI scale factor. Mouse
-   move/down/up/scroll and full keyboard (Unicode keys, modifiers, F-keys,
-   nav keys). Dedicated injector thread receives events via channel from
-   the protocol handler. Scroll magnitude scaled ×3 for usable feel.
+4. **Agent: injection.** ✅ **Verified live on macOS 26.5.1** end-to-end (a
+   scripted controller drove the real cursor to pixel-accurate targets and
+   typed into TextEdit; see `apps/agent-stub/drive.mjs`). Mouse
+   (move/down/up/scroll) via `enigo` 0.3; normalized [0,1] coords from
+   `control:input` mapped to monitor pixels via origin (x,y), dimensions, and
+   scale. Scroll magnitude ×3 for feel. Dedicated injector thread.
+   _Keyboard crash fix:_ keyboard is **not** routed through enigo on macOS.
+   enigo's char→keycode resolution calls Text Input Source APIs
+   (`TSMGetInputSourceProperty`/`islGetInputSourceListWithAdditions`) which
+   assert the main thread on macOS 26 and `SIGTRAP` when called from the
+   injector thread (first keystroke killed the agent). macOS keyboard now posts
+   raw `CGEvent`s keyed off the browser's physical `code` → ANSI virtual
+   keycode (`src/input.rs` `mac_key`) — no TIS, thread-safe, and layout-correct
+   for remote control. Other OSes keep the enigo keyboard path.
 5. **Clipboard + teardown edges.** ✅ `arboard` 3 for bidirectional
    clipboard sync (text-only v1). Polling watcher (500ms) on a dedicated
    thread detects local changes and sends `control:clipboard` to the
@@ -193,17 +209,16 @@ session indicator, tray; deep-link plugin for `huddle://`).
 
 - ~~LiveKit **Rust SDK screen-publish maturity** vs. capture crate choice —
   validate in slice 3 before committing; this is the long pole.~~
-  **Resolved (slice 3):** livekit 0.7.45 + xcap 0.8 compile and link. The
-  capture → I420 → NativeVideoSource → publish pipeline is structurally
-  complete. Runtime validation blocked by the macOS 26 WebRTC crash
-  (rust-sdks#795); the code path itself is correct.
-- **macOS 26 (Tahoe) runtime crash** (rust-sdks#795): prebuilt WebRTC binary
-  references `+[NSString stringForAbslStringView:]` which is gone from
-  Foundation in macOS 26. The `-ObjC` linker flag (PR #847, merged, in
-  livekit 0.7.45) loads the category, but the category's implementation
-  references a missing symbol. Needs an upstream rebuild of the WebRTC
-  prebuilt against the macOS 26 SDK. Track the issue; no in-project
-  workaround.
+  **Resolved (slice 3):** livekit 0.7.49 + xcap 0.8. The capture → I420 →
+  NativeVideoSource → publish pipeline is verified live — the agent publishes
+  a real screen-share track that the server confirms.
+- ~~**macOS 26 (Tahoe) runtime crash** (rust-sdks#795)~~ **Resolved.** The
+  abort was the linker dead-stripping libwebrtc's Objective-C category methods
+  from the static archive (surfaced as `doesNotRecognizeSelector:` on
+  `+[RTCVideoEncoderVP9 scalabilityModes]` during `PeerConnectionFactory`
+  init), **not** a missing-Foundation-symbol issue. Fixed in-project by adding
+  `-ObjC` to the agent's `build.rs` (macOS-gated). No upstream rebuild was
+  needed; verified on macOS 26.5.1.
 - **Coordinate fidelity**: letterboxing on the controller side × DPI scaling on
   the agent side. Slice 4's acceptance test exists to flush this out.
 - **Browser-reserved shortcuts** (Cmd-W and friends) can't all be captured —

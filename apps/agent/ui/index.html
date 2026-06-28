@@ -338,12 +338,24 @@
           setStatus('Failed to list monitors: ' + e, 'error');
         }
 
-        try {
-          const info = await invoke('get_session_info');
-          if (info) {
-            roomNameEl.textContent = info.room;
-          }
-        } catch {}
+        // Pull the redeemed room. The deep-link redeem is async, so on a fresh
+        // launch it may still be in flight here — and the pushed `session-ready`
+        // event can be emitted before this webview's listener attaches. Poll
+        // until it lands (idempotent with the event listener below).
+        pollSessionRoom();
+      }
+
+      async function pollSessionRoom() {
+        for (let i = 0; i < 40; i++) {
+          try {
+            const info = await invoke('get_session_info');
+            if (info && info.room) {
+              roomNameEl.textContent = info.room;
+              return;
+            }
+          } catch {}
+          await new Promise((r) => setTimeout(r, 300));
+        }
       }
 
       document.getElementById('btn-perm-screen').addEventListener('click', () => {
