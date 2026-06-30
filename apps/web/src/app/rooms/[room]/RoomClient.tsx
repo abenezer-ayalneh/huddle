@@ -24,7 +24,7 @@ export default function RoomClient({ room }: { room: string }) {
 
   const leave = useCallback(() => {
     clearHostSession(room);
-    router.push('/');
+    router.push('/lobby');
   }, [room, router]);
 
   const [host, setHost] = useState<ReturnType<typeof loadHostSession>>(null);

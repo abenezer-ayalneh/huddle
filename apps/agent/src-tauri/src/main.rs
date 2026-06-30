@@ -29,6 +29,19 @@ struct AppState {
     session: Mutex<Option<Session>>,
 }
 
+fn hide_main_window(app: &AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.hide();
+    }
+}
+
+fn show_main_window(app: &AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+}
+
 #[tauri::command]
 fn list_monitors() -> Result<Vec<MonitorInfo>, String> {
     session::list_monitors()
@@ -62,7 +75,16 @@ async fn start_sharing(
     };
 
     let (event_tx, mut event_rx) = mpsc::unbounded_channel();
-    let new_session = Session::start(redeemed, monitor_id, event_tx).await?;
+    // Hide before capture starts so the shared monitor never includes the
+    // agent's own setup/status window.
+    hide_main_window(&app);
+    let new_session = match Session::start(redeemed, monitor_id, event_tx).await {
+        Ok(session) => session,
+        Err(e) => {
+            show_main_window(&app);
+            return Err(e);
+        }
+    };
 
     {
         let mut session = state.session.lock().unwrap();
@@ -77,6 +99,7 @@ async fn start_sharing(
                     let _ = app2.emit("sharing-started", serde_json::json!({ "room": room }));
                 }
                 SessionEvent::Stopped => {
+                    show_main_window(&app2);
                     let _ = app2.emit("sharing-stopped", serde_json::json!({}));
                 }
             }
@@ -158,10 +181,7 @@ async fn handle_deep_link(app: &AppHandle, url: &str) {
             *state.session_info.lock().unwrap() = Some(redeemed);
             let _ = app.emit("session-ready", payload);
 
-            if let Some(window) = app.get_webview_window("main") {
-                let _ = window.show();
-                let _ = window.set_focus();
-            }
+            show_main_window(app);
         }
         Err(e) => {
             info!("redeem failed: {e}");

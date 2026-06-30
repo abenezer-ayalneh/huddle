@@ -160,6 +160,8 @@ the server always generates a unique **Room Code** (a Meet-style identifier like
 - `room` — the generated Room Code (URL path + LiveKit room name).
 - `scheduledStart` — `null` for "start now", else the ISO time.
 - `token` — host LiveKit JWT (grants incl. `roomAdmin: true`, metadata role=host).
+- `livekitUrl` — the browser-facing LiveKit signal URL. In local tunnel testing
+  this may differ from the API's server-side admin URL.
 - `hostKey` — opaque secret; the client stores it and sends it as `x-host-key`.
   **401** if not signed in.
 

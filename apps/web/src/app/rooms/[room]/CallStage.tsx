@@ -88,7 +88,6 @@ export default function CallStage({
           audioEnabled: true,
         }}
         onSubmit={setChoices}
-        onError={(e) => onError(`Couldn't access your camera or microphone: ${e.message}. Check browser permissions and try again.`)}
         heading="Ready to join?"
         subheading="Check your camera and mic before you go live."
         submitLabel="Join call"

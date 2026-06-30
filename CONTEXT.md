@@ -108,6 +108,30 @@ the toggles on the Device Check before joining. If a remembered device is absent
 _Avoid_: Saved devices, default devices, startup state (use "on/off state" or
 "enabled/disabled state" for the toggle preference)
 
+**Device Recovery**:
+What surfaces when a participant's camera or microphone can't be accessed — they
+blocked it, another app is holding it, or none is present — and helps them restore
+it without leaving the [[Device Check]] or the call. The affected device's button
+shows it on sight: it carries a **Device Alert** (a small "!" badge) the moment the
+page loads, turns red, and disables its device picker ("Permission blocked").
+Pressing the button — or its [[Keyboard Shortcut]], which mirrors the button —
+**re-requests the permission**, firing the browser's own popup the way Google Meet
+does, rather than telling the user to hunt for the address-bar icon. Only when the
+browser won't re-prompt (or the device is busy or missing) does the **Device
+Recovery dialog** appear, with guidance tailored to the cause: friendly,
+browser-specific unblock steps, "close the other app", or "connect a device".
+Camera and microphone recover **independently** — one may be blocked while the
+other works. When access returns the device comes back **on** and its picker
+repopulates (a first-time grant during a normal join is left alone, so a saved
+mute-on-join preference still holds). A blocked or unavailable device is a
+[[Domain Outcome]] (the participant's own choice or their environment), never a
+[[Fault]], so it must never show the Fault surface.
+Lives on both the Device Check and the in-call controls; where a device is blocked,
+its in-call button drops the [[Switch Device]] chevron and the press triggers
+recovery instead of a toggle.
+_Avoid_: Permission prompt (that is the browser's own dialog, not ours), permission
+error, camera/mic error, blocked-device toast
+
 ### Mute feedback
 
 **Mute Reminder**:

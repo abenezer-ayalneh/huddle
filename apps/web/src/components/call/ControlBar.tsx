@@ -18,8 +18,12 @@ import {
   Square,
   type LucideIcon,
 } from 'lucide-react';
+import { useState } from 'react';
 import { PopoverContent } from '@/components/ui/popover';
+import { classifyMediaError, type FailureCause, type RecoveryDevice } from '@/lib/deviceRecovery';
 import MergedControlButton, { DeviceMenuContent, type DeviceSection } from './MergedControlButton';
+import DeviceRecoveryDialog, { type RecoveryTarget } from './DeviceRecoveryDialog';
+import { useMediaPermissions } from './useMediaPermissions';
 import { useMuteReminder } from './useMuteReminder';
 import { useCallShortcuts, useModifierKeyLabel } from './useCallShortcuts';
 
@@ -66,8 +70,72 @@ export default function ControlBar({
   onPopOut?: () => void;
   pipActive?: boolean;
 }) {
-  const mic = useTrackToggle({ source: Track.Source.Microphone });
-  const cam = useTrackToggle({ source: Track.Source.Camera });
+  // Device Recovery (docs/adr/0023): classify a failed mic/camera toggle so a
+  // badge + recovery dialog can explain a blocked / busy / missing device. A
+  // failed toggle today does nothing visible; this makes it actionable.
+  const [micFailure, setMicFailure] = useState<FailureCause | null>(null);
+  const [camFailure, setCamFailure] = useState<FailureCause | null>(null);
+  const [recovery, setRecovery] = useState<RecoveryTarget | null>(null);
+
+  // onChange clears the failure on a successful (re)enable — covering the busy /
+  // in-use case, where the permission never changed so the listener below won't
+  // fire. onDeviceError classifies a failed attempt.
+  const clearFailure = (device: RecoveryDevice) => {
+    if (device === 'camera') setCamFailure(null);
+    else setMicFailure(null);
+    setRecovery((r) => (r?.device === device ? null : r));
+  };
+  const mic = useTrackToggle({
+    source: Track.Source.Microphone,
+    onChange: (enabled) => enabled && clearFailure('microphone'),
+    onDeviceError: (e) => setMicFailure(classifyMediaError(e)),
+  });
+  const cam = useTrackToggle({
+    source: Track.Source.Camera,
+    onChange: (enabled) => enabled && clearFailure('camera'),
+    onDeviceError: (e) => setCamFailure(classifyMediaError(e)),
+  });
+
+  // Auto-recovery: when a permission flips back to granted (unblocked from the
+  // address bar or via the popup below), clear the blocked state and — if the
+  // participant had actually tried to use that device (a recorded failure, not a
+  // passive proactive badge) — turn it back on. A permission that was simply
+  // never granted is left off, so nothing goes live unasked.
+  const permissions = useMediaPermissions((device) => {
+    const hadFailure = device === 'camera' ? camFailure !== null : micFailure !== null;
+    clearFailure(device);
+    if (!hadFailure) return;
+    if (device === 'camera') {
+      if (!cam.enabled && !cam.pending) void cam.toggle(true);
+    } else if (!mic.enabled && !mic.pending) {
+      void mic.toggle(true);
+    }
+  });
+
+  // Re-request a blocked device by calling getUserMedia from the click (a user
+  // gesture), so the browser shows its own permission popup — like Google Meet,
+  // instead of pointing at the address bar. On grant we release the probe stream
+  // and turn the track on; on failure (no re-prompt, or re-denied) we fall back
+  // to the recovery dialog and its manual unblock steps.
+  const reRequest = async (device: RecoveryDevice) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(device === 'camera' ? { video: true } : { audio: true });
+      stream.getTracks().forEach((t) => t.stop());
+      clearFailure(device);
+      if (device === 'camera') {
+        if (!cam.enabled && !cam.pending) void cam.toggle(true);
+      } else if (!mic.enabled && !mic.pending) {
+        void mic.toggle(true);
+      }
+    } catch (e) {
+      setRecovery({ device, cause: classifyMediaError(e) });
+    }
+  };
+
+  // Effective cause: an observed failure, or a permission we can already see is
+  // denied — so the badge shows proactively, before the participant even clicks.
+  const camCause: FailureCause | null = camFailure ?? (permissions.camera === 'denied' ? 'denied' : null);
+  const micCause: FailureCause | null = micFailure ?? (permissions.microphone === 'denied' ? 'denied' : null);
 
   // Mute Reminder (docs/adr/0012): nudge the user when they talk while muted.
   // Listens to the active mic only while muted; reads the chosen device so we
@@ -81,10 +149,12 @@ export default function ControlBar({
   const mod = useModifierKeyLabel();
   useCallShortcuts({
     onToggleAudio: () => {
-      if (!mic.pending) void mic.toggle();
+      if (micCause) void reRequest('microphone');
+      else if (!mic.pending) void mic.toggle();
     },
     onToggleCamera: () => {
-      if (!cam.pending) void cam.toggle();
+      if (camCause) void reRequest('camera');
+      else if (!cam.pending) void cam.toggle();
     },
     suspended: suspendShortcuts,
     pushToTalk: {
@@ -117,23 +187,25 @@ export default function ControlBar({
           {showMuteReminder && <MuteReminderBubble />}
           <MergedControlButton
             icon={mic.enabled ? Mic : MicOff}
-            label={mic.enabled ? `Mute microphone (${mod}D)` : `Unmute microphone (${mod}D) · Hold Space to talk`}
+            label={micCause ? 'Fix microphone access' : mic.enabled ? `Mute microphone (${mod}D)` : `Unmute microphone (${mod}D) · Hold Space to talk`}
             menuLabel="Switch microphone or speaker"
             active={mic.enabled}
             danger={!mic.enabled}
             disabled={mic.pending}
-            onClick={() => mic.toggle()}
+            alert={!!micCause}
+            onClick={micCause ? () => void reRequest('microphone') : () => mic.toggle()}
             menu={(close) => <DeviceMenuContent sections={micSections} close={close} onPick={(kind) => kind === 'audioinput' && ensureOn(mic)} />}
           />
         </div>
         <MergedControlButton
           icon={cam.enabled ? Video : VideoOff}
-          label={cam.enabled ? `Turn camera off (${mod}E)` : `Turn camera on (${mod}E)`}
+          label={camCause ? 'Fix camera access' : cam.enabled ? `Turn camera off (${mod}E)` : `Turn camera on (${mod}E)`}
           menuLabel="Switch camera"
           active={cam.enabled}
           danger={!cam.enabled}
           disabled={cam.pending}
-          onClick={() => cam.toggle()}
+          alert={!!camCause}
+          onClick={camCause ? () => void reRequest('camera') : () => cam.toggle()}
           menu={(close) => <DeviceMenuContent sections={[{ kind: 'videoinput', label: 'Camera' }]} close={close} onPick={() => ensureOn(cam)} />}
         />
 
@@ -173,6 +245,12 @@ export default function ControlBar({
 
         <ControlButton icon={PhoneOff} label="Leave call" leave onClick={onLeave} />
       </div>
+      <DeviceRecoveryDialog
+        target={recovery}
+        permission={recovery ? permissions[recovery.device] : 'unsupported'}
+        onTryAgain={() => recovery && void reRequest(recovery.device)}
+        onClose={() => setRecovery(null)}
+      />
     </div>
   );
 }

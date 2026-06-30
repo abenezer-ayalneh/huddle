@@ -12,9 +12,8 @@ import DateTimePicker from '@/components/DateTimePicker';
 import IconButton from '@/components/IconButton';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
-// Auth/dashboard card. Rendered inside the server-component lobby shell so the
-// surrounding marketing copy (HeroCopy) and JSON-LD stay in static HTML for
-// crawlers; only this interactive island ships as a client bundle.
+// Auth/dashboard card. Rendered inside the server-component lobby shell so only
+// this interactive island ships as a client bundle.
 export default function LobbyAuthCard() {
   const { data: session, isPending } = useSession();
 
@@ -47,7 +46,7 @@ const inputClass =
   'w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2.5 text-white outline-none transition-colors placeholder:text-white/40 focus:border-cyan/60 focus:ring-2 focus:ring-cyan/30';
 
 function SignIn() {
-  const callbackURL = typeof window !== 'undefined' ? window.location.origin : undefined;
+  const callbackURL = typeof window !== 'undefined' ? `${window.location.origin}/lobby` : undefined;
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -61,8 +60,8 @@ function SignIn() {
   useEffect(() => {
     const code = new URLSearchParams(window.location.search).get('error');
     if (!code) return;
-    setError(oauthErrorMessage(code));
     window.history.replaceState(null, '', window.location.pathname);
+    setTimeout(() => setError(oauthErrorMessage(code)), 0);
   }, []);
 
   const canSubmit = email.trim() && password.length >= 8 && (mode === 'signin' || name.trim()) && !busy;

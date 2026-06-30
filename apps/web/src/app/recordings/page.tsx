@@ -32,7 +32,7 @@ export default function RecordingsPage() {
       <div className="glass-strong w-full max-w-md space-y-6 rounded-2xl p-8 shadow-[0_8px_60px_oklch(0_0_0/0.5)]">
         <header className="flex items-center justify-between">
           <h1 className="font-display text-2xl font-semibold text-white">Recordings</h1>
-          <Link href="/" className="text-sm text-white/55 underline-offset-2 transition-colors hover:text-cyan hover:underline">
+          <Link href="/lobby" className="text-sm text-white/55 underline-offset-2 transition-colors hover:text-cyan hover:underline">
             Back to lobby
           </Link>
         </header>

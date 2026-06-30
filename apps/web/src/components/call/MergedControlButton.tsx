@@ -5,6 +5,7 @@ import { Check, ChevronUp, type LucideIcon } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { saveDevicePreference, type PreferenceKind } from '@/lib/devicePreferences';
+import DeviceAlertBadge from './DeviceAlertBadge';
 
 // A device picker section (one kind of device with its display label), used by
 // DeviceMenuContent.
@@ -31,6 +32,7 @@ export default function MergedControlButton({
   active = false,
   danger = false,
   disabled = false,
+  alert = false,
   onClick,
   menu,
 }: {
@@ -40,6 +42,10 @@ export default function MergedControlButton({
   active?: boolean;
   danger?: boolean;
   disabled?: boolean;
+  // Device Recovery (docs/adr/0023): the button's device can't be accessed.
+  // Collapse to a single badged button — no Switch Device chevron — whose press
+  // opens the recovery dialog instead of toggling.
+  alert?: boolean;
   onClick?: () => void;
   // Popover body for the chevron side. Receives a close() it can call after a
   // pick so the menu dismisses itself.
@@ -47,6 +53,21 @@ export default function MergedControlButton({
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const tone = toneFor(active, danger);
+
+  if (alert) {
+    return (
+      <button
+        type="button"
+        title={label}
+        aria-label={label}
+        onClick={onClick}
+        className={`relative flex h-8 w-8 items-center justify-center rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 sm:h-11 sm:w-11 [&>svg]:h-4 [&>svg]:w-4 sm:[&>svg]:h-5 sm:[&>svg]:w-5 ${toneFor(false, true)}`}
+      >
+        <Icon />
+        <DeviceAlertBadge />
+      </button>
+    );
+  }
 
   return (
     <Popover open={menuOpen} onOpenChange={setMenuOpen}>

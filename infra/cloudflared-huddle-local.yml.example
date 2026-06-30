@@ -1,0 +1,15 @@
+# Copy to ~/.cloudflared/huddle-local.yml after creating the huddle-local tunnel.
+# Replace the tunnel UUID and credentials path with the values printed by:
+#   cloudflared tunnel create huddle-local
+
+tunnel: <huddle-local-tunnel-uuid>
+credentials-file: /Users/abeni/.cloudflared/<huddle-local-tunnel-uuid>.json
+
+ingress:
+  - hostname: local-huddle.abenezer-ayalneh.dev
+    service: http://localhost:3000
+  - hostname: local-huddle-api.abenezer-ayalneh.dev
+    service: http://localhost:3001
+  - hostname: local-huddle-livekit.abenezer-ayalneh.dev
+    service: http://localhost:7880
+  - service: http_status:404

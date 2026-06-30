@@ -3,6 +3,7 @@
 .env.*
 !.env.example
 !.env.prod.example
+!.env.tunnel.example
 
 # SSH deploy keys — never commit private keys (see docs/RUNBOOK_CICD.md)
 huddle_deploy_key

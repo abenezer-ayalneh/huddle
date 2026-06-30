@@ -129,6 +129,16 @@ pnpm dev:web        # Next.js dev server
 3. Open the link in a second window, enter a name, and **knock**.
 4. Back in the host window, **admit** the guest. You should see/hear both.
 
+## 6b. Test from other LAN devices with HTTPS
+
+For cross-device local testing with your `abenezer-ayalneh.dev` domain, use the
+manual Cloudflare Tunnel runbook:
+[`docs/CLOUDFLARE_LOCAL_TUNNEL.md`](./CLOUDFLARE_LOCAL_TUNNEL.md).
+
+Cloudflare fronts the web/API/LiveKit signal URLs, but LiveKit media still uses
+your `LIVEKIT_NODE_IP` directly. Treat this as a same-LAN test path, not the
+production deployment.
+
 ## Troubleshooting
 
 - **Camera/mic blocked:** browsers only allow media on `https` or `localhost`.

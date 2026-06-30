@@ -177,9 +177,8 @@ export default function GuestGate({
       <PreJoinScreen
         defaults={{ username: signedInName ?? '', videoEnabled: true, audioEnabled: true }}
         onSubmit={submitCheck}
-        // The Device Check is informational: a denied or missing camera/mic must
-        // not block the knock, so device errors are logged, not surfaced.
-        onError={(e) => console.warn('Device Check error (continuing):', e.message)}
+        // A denied or missing camera/mic never blocks the knock — Device
+        // Recovery (docs/adr/0023) handles it in place on the Device Check.
         heading="Join meeting"
         subheading={`Check your camera and mic, then ask to join “${room}”.`}
         submitLabel="Ask to join"

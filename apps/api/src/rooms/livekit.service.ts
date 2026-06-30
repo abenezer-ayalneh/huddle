@@ -18,7 +18,8 @@ export interface ParticipantClaims {
 export class LivekitService {
   private readonly apiKey: string;
   private readonly apiSecret: string;
-  // ws:// URL handed to the browser; http:// URL for the admin REST client.
+  // Public ws:// or wss:// URL handed to browsers; httpUrl stays server-local
+  // for admin REST calls and egress.
   readonly livekitUrl: string;
   private readonly httpUrl: string;
 
@@ -33,9 +34,10 @@ export class LivekitService {
     if (!apiKey || !apiSecret || !livekitUrl) {
       throw new InternalServerErrorException('LiveKit service misconfigured');
     }
+    const publicLivekitUrl = this.config.get<string>('LIVEKIT_PUBLIC_URL') || livekitUrl;
     this.apiKey = apiKey;
     this.apiSecret = apiSecret;
-    this.livekitUrl = livekitUrl;
+    this.livekitUrl = publicLivekitUrl;
     this.httpUrl = livekitUrl.replace(/^ws/, 'http');
   }
 
