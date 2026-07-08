@@ -1,6 +1,13 @@
 pnpm-lock.yaml
+.claude/
 node_modules/
 .next/
 dist/
 build/
 coverage/
+.turbo/
+.cache/
+graphify-out/
+infra/data/
+apps/agent/src-tauri/target/
+apps/agent/src-tauri/gen/schemas/

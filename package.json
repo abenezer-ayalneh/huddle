@@ -20,6 +20,7 @@
     "tunnel:run": "cloudflared tunnel --config ~/.cloudflared/huddle-local.yml run huddle-local",
     "tunnel:validate": "cloudflared tunnel --config ~/.cloudflared/huddle-local.yml ingress validate",
     "lint": "pnpm -r lint",
+    "format:write": "prettier --ignore-unknown --write .",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test",

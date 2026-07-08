@@ -65,7 +65,9 @@ export default function DeviceRecoveryDialog({
           <ol className="space-y-2 text-sm text-white/80">
             {content.steps.map((step, i) => (
               <li key={i} className="flex gap-2.5">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/10 text-[11px] font-semibold text-white/70">{i + 1}</span>
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/10 text-[11px] font-semibold text-white/70">
+                  {i + 1}
+                </span>
                 <span className="pt-0.5">{step}</span>
               </li>
             ))}

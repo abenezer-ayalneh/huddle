@@ -55,10 +55,7 @@ export function unblockSteps(browser: BrowserId): { steps: string[]; autoRecover
     case 'edge':
       return {
         autoRecovers: true,
-        steps: [
-          'Click the camera icon (or the small sliders icon) at the right end of the address bar.',
-          'Choose “Allow” for Camera and Microphone.',
-        ],
+        steps: ['Click the camera icon (or the small sliders icon) at the right end of the address bar.', 'Choose “Allow” for Camera and Microphone.'],
       };
     case 'firefox':
       return {
@@ -71,18 +68,12 @@ export function unblockSteps(browser: BrowserId): { steps: string[]; autoRecover
     case 'safari':
       return {
         autoRecovers: false,
-        steps: [
-          'In the menu bar, open Safari ▸ Settings for This Website…',
-          'Set Camera and Microphone to “Allow”.',
-        ],
+        steps: ['In the menu bar, open Safari ▸ Settings for This Website…', 'Set Camera and Microphone to “Allow”.'],
       };
     default:
       return {
         autoRecovers: false,
-        steps: [
-          'Look for a camera or lock icon near your browser’s address bar and click it.',
-          'Set Camera and Microphone to “Allow”.',
-        ],
+        steps: ['Look for a camera or lock icon near your browser’s address bar and click it.', 'Set Camera and Microphone to “Allow”.'],
       };
   }
 }
