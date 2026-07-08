@@ -6,15 +6,35 @@ import nodemailer from 'nodemailer';
 // link BetterAuth asks us to deliver (see auth.ts → emailVerification). When
 // SMTP credentials are present we send a real message; otherwise we do nothing.
 // We never log the link: a verification URL is a bearer credential (clicking it
-// confirms the account), so it must not sit in logs. A send that fails fails
-// silently — it must not break the signup flow. The consequence is that without
-// working SMTP, email verification simply cannot complete (use Brevo dashboard
-// logs, not app logs, to confirm delivery in prod).
+// confirms the account), so it must not sit in logs. A send that fails must not
+// break the signup flow, but we do log sanitized SMTP diagnostics so production
+// can distinguish bad env, provider rejection, and deliverability issues.
 
 const logger = new Logger('Mailer');
 
 // BetterAuth hands us the full user + a verification URL; we only need these.
 type VerificationEmail = { user: { email: string; name?: string | null }; url: string };
+
+function describeMailerError(error: unknown): string {
+  if (!(error instanceof Error)) {
+    return String(error);
+  }
+
+  const details = error as Error & {
+    code?: unknown;
+    command?: unknown;
+    responseCode?: unknown;
+    response?: unknown;
+  };
+  const parts = [error.message];
+
+  if (details.code) parts.push(`code=${String(details.code)}`);
+  if (details.command) parts.push(`command=${String(details.command)}`);
+  if (details.responseCode) parts.push(`responseCode=${String(details.responseCode)}`);
+  if (details.response) parts.push(`response=${String(details.response)}`);
+
+  return parts.join(' ');
+}
 
 export function buildVerificationMailer(config: ConfigService) {
   const webOrigin = config.get<string>('WEB_ORIGIN') ?? 'http://localhost:3000';
@@ -63,9 +83,10 @@ export function buildVerificationMailer(config: ConfigService) {
           `<p>If you didn't create a Huddle account, you can ignore this message.</p>`,
       });
       logger.log(`Sent verification email to ${user.email}`);
-    } catch {
-      // Fail silently: a send failure must not break the signup flow, and we
-      // never log the link. Confirm delivery via the SMTP provider's dashboard.
+    } catch (error) {
+      // A send failure must not break signup, and the verification URL must
+      // never be logged. Keep enough SMTP context to debug prod wiring.
+      logger.warn(`Failed to send verification email to ${user.email} via ${host}:${port} from ${from}: ${describeMailerError(error)}`);
     }
   };
 }

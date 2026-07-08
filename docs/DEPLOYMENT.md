@@ -153,7 +153,7 @@ Edit `.env.prod` and set, at minimum:
 
 `.env.prod` is gitignored — never commit it.
 
-### Email (SMTP) — required for email/password signups
+### Verification Email Delivery (SMTP) — required for email/password signups
 
 New local accounts must confirm their address before they can sign in
 (`requireEmailVerification: true` in `apps/api/src/auth/auth.ts`), and the
@@ -163,9 +163,10 @@ tier** (300 emails/day, no credit card), sending from your own domain so the
 mail passes SPF/DKIM/DMARC and lands in the inbox.
 
 > If `SMTP_HOST` is left blank the API sends **nothing** — the verification link
-> is never logged (it's a bearer credential), and a send that fails fails
-> silently so signup isn't broken. The practical effect: without working SMTP,
-> email/password signups can never complete, and you confirm delivery from the
+> is never logged (it's a bearer credential). A send that fails logs sanitized
+> SMTP diagnostics without the link and still does not break signup. The
+> practical effect: without working SMTP, email/password signups can never
+> complete. Once the API logs a successful send, confirm delivery from the
 > provider's dashboard, not from app logs. (Google sign-in is unaffected —
 > Google verifies the address itself.)
 
@@ -239,10 +240,12 @@ docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
    ```
    `Sent verification email to …` means SMTP accepted the message — so a missing
    email is a deliverability problem (spam, bounce, DNS), diagnosed in Brevo's
-   dashboard, not the app. **No** `Sent …` line means either `SMTP_HOST` is blank
-   in the container (check `.env.prod` was picked up and `api` restarted) or the
-   send threw and was swallowed by design — in that case Brevo's logs are the
-   only record, since send failures are intentionally silent.
+   dashboard, not the app. `Failed to send verification email …` means the API
+   attempted SMTP but the provider or network rejected it; inspect the sanitized
+   `code`, `command`, `responseCode`, and `response` values, then compare them
+   with Brevo's logs. **No** mailer line means the API did not reach SMTP, most
+   commonly because `SMTP_HOST` is blank in the container or `.env.prod` was not
+   picked up before the `api` restart.
 5. Watch your Brevo dashboard → **Statistics / Logs** for delivery, bounce,
    blocked, or rejected events — this is your primary delivery signal.
 

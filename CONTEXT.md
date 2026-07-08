@@ -225,6 +225,16 @@ camera is on the video replaces it.
 _Avoid_: Profile picture/photo (fine in prose, but "Avatar" is the domain term),
 gravatar, headshot, initials (the initials are the fallback — a distinct thing)
 
+### Accounts
+
+**Verification Email Delivery**:
+The product obligation to get the email-confirmation message for a new local
+account into the participant's inbox so they can finish creating the account.
+Without it, an email/password signup remains incomplete; social sign-in is a
+separate path because the provider has already verified the address.
+_Avoid_: Emailing issue, SMTP issue (implementation detail), magic link (this
+confuses account verification with passwordless sign-in)
+
 ### Mobile & background
 
 **Background Call**:
