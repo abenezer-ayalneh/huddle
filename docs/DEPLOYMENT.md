@@ -207,7 +207,7 @@ SMTP_HOST=smtp-relay.brevo.com
 SMTP_PORT=587                            # STARTTLS (mailer sets secure=false here)
 SMTP_USER=you@example.com                # your Brevo account login email
 SMTP_PASS=xsmtpsib-...                   # the SMTP key from step 2
-SMTP_FROM=no-reply@abenezer-ayalneh.dev  # on the domain you authenticated above
+SMTP_FROM=no-reply@abenezer-ayalneh.dev  # sender address; email displays as "Huddle"
 ```
 
 `.env.prod` is gitignored — never commit it. Restart the API after changing
@@ -219,11 +219,10 @@ docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
   --env-file .env.prod up -d --no-deps api
 ```
 
-> The verification link in the email points at `BETTER_AUTH_URL`
-> (`https://huddle-api.abenezer-ayalneh.dev`) and, once clicked, redirects to
-> `WEB_ORIGIN` (`https://huddle.abenezer-ayalneh.dev`) — both already set above.
-> `autoSignInAfterVerification` means the user is signed in the moment they
-> click, landing back on Huddle.
+> The verification link in the email points at `WEB_ORIGIN` (`/verify-email`)
+> so the user sees Huddle's verifying screen. That page calls the BetterAuth
+> verifier on `BETTER_AUTH_URL` and then routes to the lobby.
+> `autoSignInAfterVerification` means the user is signed in by that verifier.
 
 **4. Verify it works (post-deploy checklist):**
 
@@ -231,7 +230,8 @@ docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
    (use a `+tag` alias so you can reuse it).
 2. Confirm the email arrives within ~30s. **Check the spam folder** — if it
    landed there, SPF/DKIM aren't aligned yet; re-check the DNS records and that
-   `SMTP_FROM` is on the authenticated domain.
+   `SMTP_FROM` is on the authenticated domain. The inbox sender name should show
+   `Huddle`; the address remains whatever you configured as `SMTP_FROM`.
 3. Click **Verify my email** → you should land on Huddle, signed in.
 4. If nothing arrives, check whether the API even attempted a send:
    ```bash

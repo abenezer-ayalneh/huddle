@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Calendar, Check, Copy, LogOut, Play } from 'lucide-react';
+import { Calendar, Check, Copy, LogOut, MailCheck, Play } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { api, isFaultError, type RoomSummary } from '@/lib/api';
 import { signIn, signUp, signOut, useSession } from '@/lib/auth-client';
@@ -11,6 +11,16 @@ import { saveHostSession } from '@/lib/hostSession';
 import DateTimePicker from '@/components/DateTimePicker';
 import IconButton from '@/components/IconButton';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 // Auth/dashboard card. Rendered inside the server-component lobby shell so only
 // this interactive island ships as a client bundle.
@@ -53,6 +63,7 @@ function SignIn() {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
 
   // Surface an OAuth failure bounced back via ?error=… (BetterAuth redirects
   // here when we pass errorCallbackURL). Strip the param afterwards so a refresh
@@ -68,16 +79,17 @@ function SignIn() {
 
   async function submit() {
     if (!canSubmit) return;
+    const submittedEmail = email.trim();
     setBusy(true);
     setError(null);
     const result =
       mode === 'signup'
         ? await signUp.email({
             name: name.trim(),
-            email: email.trim(),
+            email: submittedEmail,
             password,
           })
-        : await signIn.email({ email: email.trim(), password });
+        : await signIn.email({ email: submittedEmail, password });
     setBusy(false);
     if (result.error) {
       // A 4xx is a credential/validation Domain Outcome — keep it inline. A
@@ -88,78 +100,110 @@ function SignIn() {
       if (status >= 400) {
         setError(result.error.message ?? (mode === 'signup' ? "Couldn't create that account." : 'Wrong email or password.'));
       }
+      return;
+    }
+    if (mode === 'signup') {
+      setEmail(submittedEmail);
+      setVerificationEmail(submittedEmail);
     }
   }
 
+  function closeVerificationDialog() {
+    setVerificationEmail(null);
+    setMode('signin');
+    setName('');
+    setPassword('');
+    setError(null);
+  }
+
   return (
-    <div className="space-y-5">
-      <div className="space-y-1">
-        <h2 className="font-display text-2xl font-semibold text-white">{mode === 'signup' ? 'Create your account' : 'Welcome back'}</h2>
-        <p className="text-sm text-white/55">
-          {mode === 'signup' ? 'Create an account to host or schedule a meeting.' : 'Sign in to host or schedule a meeting.'}
-        </p>
-      </div>
+    <>
+      <div className="space-y-5">
+        <div className="space-y-1">
+          <h2 className="font-display text-2xl font-semibold text-white">{mode === 'signup' ? 'Create your account' : 'Welcome back'}</h2>
+          <p className="text-sm text-white/55">
+            {mode === 'signup' ? 'Create an account to host or schedule a meeting.' : 'Sign in to host or schedule a meeting.'}
+          </p>
+        </div>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          submit();
-        }}
-        className="space-y-3"
-      >
-        {mode === 'signup' && (
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Display name" autoComplete="name" className={inputClass} />
-        )}
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" autoComplete="email" className={inputClass} />
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password (8+ characters)"
-          autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-          className={inputClass}
-        />
-
-        {error && <p className="text-sm text-magenta">{error}</p>}
-
-        <button
-          type="submit"
-          disabled={!canSubmit}
-          className="neon-magenta flex items-center justify-center gap-2 w-full rounded-lg bg-magenta px-4 py-2.5 font-display font-semibold tracking-wide text-white transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            submit();
+          }}
+          className="space-y-3"
         >
-          {busy && <LoadingSpinner className="h-4 w-4" />}
-          {!busy && (mode === 'signup' ? 'Create account' : 'Sign in')}
-        </button>
-      </form>
+          {mode === 'signup' && (
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Display name" autoComplete="name" className={inputClass} />
+          )}
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" autoComplete="email" className={inputClass} />
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password (8+ characters)"
+            autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+            className={inputClass}
+          />
 
-      <button
-        type="button"
-        onClick={() => {
-          setMode(mode === 'signin' ? 'signup' : 'signin');
-          setError(null);
-        }}
-        className="text-sm text-white/55 underline-offset-2 transition-colors hover:text-cyan hover:underline"
-      >
-        {mode === 'signin' ? 'Need an account? Create one' : 'Already have an account? Sign in'}
-      </button>
+          {error && <p className="text-sm text-magenta">{error}</p>}
 
-      <div className="border-t border-white/10 pt-4">
+          <button
+            type="submit"
+            disabled={!canSubmit}
+            className="neon-magenta flex items-center justify-center gap-2 w-full rounded-lg bg-magenta px-4 py-2.5 font-display font-semibold tracking-wide text-white transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+          >
+            {busy && <LoadingSpinner className="h-4 w-4" />}
+            {!busy && (mode === 'signup' ? 'Create account' : 'Sign in')}
+          </button>
+        </form>
+
         <button
           type="button"
-          disabled={busy}
           onClick={() => {
-            setBusy(true);
-            signIn.social({ provider: 'google', callbackURL, errorCallbackURL: callbackURL });
+            setMode(mode === 'signin' ? 'signup' : 'signin');
+            setError(null);
           }}
-          className="flex items-center justify-center gap-2 w-full rounded-lg border border-white/15 bg-white/5 px-4 py-2.5 font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50 disabled:cursor-not-allowed disabled:opacity-40"
+          className="text-sm text-white/55 underline-offset-2 transition-colors hover:text-cyan hover:underline"
         >
-          {busy && <LoadingSpinner className="h-4 w-4" />}
-          {!busy && 'Continue with Google'}
+          {mode === 'signin' ? 'Need an account? Create one' : 'Already have an account? Sign in'}
         </button>
+
+        <div className="border-t border-white/10 pt-4">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              setBusy(true);
+              signIn.social({ provider: 'google', callbackURL, errorCallbackURL: callbackURL });
+            }}
+            className="flex items-center justify-center gap-2 w-full rounded-lg border border-white/15 bg-white/5 px-4 py-2.5 font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {busy && <LoadingSpinner className="h-4 w-4" />}
+            {!busy && 'Continue with Google'}
+          </button>
+        </div>
+
+        <p className="text-xs text-white/45">Have a meeting link? Just open it — you don&apos;t need an account to join.</p>
       </div>
 
-      <p className="text-xs text-white/45">Have a meeting link? Just open it — you don&apos;t need an account to join.</p>
-    </div>
+      <AlertDialog open={verificationEmail !== null} onOpenChange={(open) => !open && closeVerificationDialog()}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogMedia className="bg-cyan/15 text-cyan">
+              <MailCheck />
+            </AlertDialogMedia>
+            <AlertDialogTitle>Check your email</AlertDialogTitle>
+            <AlertDialogDescription>
+              We sent a verification link to {verificationEmail}. Open it to finish setting up your Huddle account.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={closeVerificationDialog}>Got it</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
