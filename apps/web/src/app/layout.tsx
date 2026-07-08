@@ -3,13 +3,13 @@ import { Exo_2, Rajdhani } from 'next/font/google';
 import FaultLayer from '@/components/faults/FaultLayer';
 import './globals.css';
 
-// Exo 2 — geometric, futuristic display face for headings and brand.
+// Exo 2: geometric, futuristic display face for headings and brand.
 const exo2 = Exo_2({
   variable: '--font-exo2',
   subsets: ['latin'],
 });
 
-// Rajdhani — techy, open sans for body and UI. Non-variable, so weights are
+// Rajdhani: techy, open sans for body and UI. Non-variable, so weights are
 // declared explicitly.
 const rajdhani = Rajdhani({
   variable: '--font-rajdhani',
@@ -19,9 +19,9 @@ const rajdhani = Rajdhani({
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://huddle.abenezer-ayalneh.dev';
 const siteName = 'Huddle';
-const siteTitle = 'Huddle — Self-hosted video conferencing on LiveKit';
+const siteTitle = 'Huddle - Self-hosted video conferencing on LiveKit';
 const siteDescription =
-  'Huddle is a self-hosted, browser-based video conferencing app built on LiveKit. Hosts schedule or start instant meetings; guests join from a shared link through a waiting room — no account, no installs. Screen share, in-call chat, recording, and host controls included.';
+  'Huddle is a self-hosted, browser-based video conferencing app built on LiveKit. Hosts schedule or start instant meetings; guests join from a shared link through a waiting room, with no account or install. Screen share, in-call chat, recording, and host controls included.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
   },
   title: {
     // Use the full positioning string by default so the lobby and OG previews
-    // show "Huddle — Self-hosted video conferencing…" rather than the bare
+    // show the full positioning string rather than the bare
     // brand. Child routes still override via the %s template.
     default: siteTitle,
     template: '%s | Huddle',
@@ -77,7 +77,7 @@ export const metadata: Metadata = {
         url: '/opengraph-image.png',
         width: 1200,
         height: 630,
-        alt: 'Huddle — Self-hosted video conferencing',
+        alt: 'Huddle - Self-hosted video conferencing',
       },
     ],
   },
