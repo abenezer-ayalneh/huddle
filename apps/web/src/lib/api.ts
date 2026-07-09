@@ -179,15 +179,6 @@ export const api = {
   removeParticipant: (room: string, identity: string, hostKey: string) =>
     request<{ ok: true }>(`/rooms/${encodeURIComponent(room)}/participants/${encodeURIComponent(identity)}`, { method: 'DELETE', hostKey }),
 
-  // Present with Control (docs/adr/0010): mint a one-time pairing code for the
-  // Control Agent. Authorized by the participant's own LiveKit token — anyone
-  // in the call may present, so anyone in the call may pair an agent.
-  controlAgentLink: (room: string, participantToken: string) =>
-    request<{ code: string; expiresInSeconds: number }>(`/rooms/${encodeURIComponent(room)}/control-agent-link`, {
-      method: 'POST',
-      headers: { 'x-participant-token': participantToken },
-    }),
-
   // All of the signed-in host's recordings across their rooms (session-authed).
   // Backs the lobby /recordings page; each item carries its Room Code and a
   // signed downloadUrl built client-side from the server's token.

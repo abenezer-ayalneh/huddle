@@ -51,7 +51,6 @@ Two classes share the envelope but get different UX (see `CONTEXT.md` →
 | `RECORDING_NOT_READY`    | 409     | Domain Outcome | download before the recording is `completed`     | (tailored)      |
 | `RECORDING_NOT_FOUND`    | 404     | Domain Outcome | unknown recording for the room                   | (tailored)      |
 | `DOWNLOAD_TOKEN_INVALID` | 401     | Domain Outcome | missing/expired/forged recording download token  | (native)        |
-| `PAIRING_CODE_INVALID`   | 404     | Domain Outcome | unknown / expired Control Agent pairing code     | (tailored)      |
 | `WEBHOOK_UNVERIFIED`     | 401     | —              | bad LiveKit webhook signature (server-to-server) | n/a             |
 
 > A **knock denial** is not in this table: it is a `200` poll returning
@@ -249,28 +248,6 @@ never unmutes anyone. The state is stored in the LiveKit room metadata.
 ### DELETE /rooms/:room/participants/:identity _(host)_
 
 Remove (kick) a participant. Header `x-host-key`. **Response 200:** `{ "ok": true }`.
-
-### POST /rooms/:room/control-agent-link _(participant)_ — Phase 10
-
-Mint a one-time pairing code for the Control Agent (Present with Control,
-docs/adr/0010). Authorized by the caller's **own LiveKit join token** in the
-`x-participant-token` header — holding a valid token for this room is the
-authority (anyone in the call may present, so anyone may pair an agent).
-
-**Response 200:** `{ "code": "qYjO1Wx-", "expiresInSeconds": 60 }` — the code
-travels via the `huddle://present?code=…&api=…` deep link (or copy-paste).
-**401** if the token is missing, invalid, expired, or for another room.
-
-### POST /control-agent/redeem — Phase 10
-
-The desktop agent exchanges its pairing code for a scoped LiveKit token. The
-code is the bearer: single-use (atomic GETDEL), 60s TTL.
-
-**Request:** `{ "code": "qYjO1Wx-" }`
-**Response 200:** `{ "token", "livekitUrl", "room", "presenterIdentity",
-"presenterName" }` — the token is for identity `agent:<presenterIdentity>`,
-may publish only screen-share sources + data, cannot subscribe, ttl 2m.
-**404** for an unknown, expired, or already-redeemed code.
 
 ### POST /rooms/:room/recordings _(host)_
 

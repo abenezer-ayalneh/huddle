@@ -1,6 +1,4 @@
 import { Module } from '@nestjs/common';
-import { ControlAgentController } from './control-agent.controller';
-import { ControlAgentService } from './control-agent.service';
 import { DownloadTokenGuard } from './download-token.guard';
 import { DownloadTokenService } from './download-token.service';
 import { EgressService } from './egress.service';
@@ -18,7 +16,7 @@ import { StorageService } from './storage.service';
 import { WebhookController } from './webhook.controller';
 
 @Module({
-  controllers: [RoomsController, RecordingsController, ControlAgentController, WebhookController],
+  controllers: [RoomsController, RecordingsController, WebhookController],
   providers: [
     RoomsService,
     RoomRepository,
@@ -28,7 +26,6 @@ import { WebhookController } from './webhook.controller';
     ParticipantGuard,
     DownloadTokenGuard,
     DownloadTokenService,
-    ControlAgentService,
     RecordingsService,
     RecordingRepository,
     EgressService,

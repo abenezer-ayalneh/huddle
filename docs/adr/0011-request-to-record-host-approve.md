@@ -116,8 +116,8 @@ host's UI acts on it); approve/deny are addressed back to the requester.
 
 - Host start/stop and **approve** (start-for-participant): `HostGuard`
   (`x-host-key`).
-- Requester stop: participant token (as used by the Control Agent link, via
-  `ParticipantGuard`), matched against the recording's `startedByIdentity`.
+- Requester stop: participant token (via `ParticipantGuard`), matched against
+  the recording's `startedByIdentity`.
 - The host key is never shared with the requester.
 
 ## Consequences

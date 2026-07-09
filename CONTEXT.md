@@ -153,8 +153,7 @@ The modifier maps per-platform — Cmd (⌘) on macOS, Ctrl on Windows/Linux —
 audio shortcut is ⌘D / Ctrl+D and the video shortcut is ⌘E / Ctrl+E. The binding
 claims those combos for the call ahead of the browser's own defaults and any
 browser extension (the same way Meet/Zoom do). Active on the Device Check screen
-and during the call; suspended while the participant is a Controller, when
-keystrokes belong to the controlled machine.
+and during the call.
 _Avoid_: Hotkey, accelerator, keybinding
 
 **Push to Talk**:
@@ -163,9 +162,8 @@ microphone is turned on for the duration of the hold and returns to off on
 release. It acts only when the participant is muted — when already live, holding
 the spacebar does nothing. In-call only: there is nothing to talk into before
 joining, so it is inert on the Device Check screen. The microphone button shows
-its live state for the duration; there is no separate indicator. Like the
-Keyboard Shortcuts, it is suspended during a Remote Control session, and it never
-fires while typing in a text field (chat, name).
+its live state for the duration; there is no separate indicator. It never fires
+while typing in a text field (chat, name).
 _Avoid_: PTT (fine in code), walkie-talkie mode, hold to unmute, hold to speak
 
 ### Video layout
@@ -284,8 +282,8 @@ it is not rendered for them at all. This is what defeats the **infinite-mirror**
 effect (the Droste tunnel that appears when the presented surface contains the
 call window): because the captured pixels of the Presenter's stage are a static
 card rather than a live feed, the recursion never forms in the stream everyone
-else receives. Applies to both a plain Present and a Present with Control. The
-Presenter still sees their own camera thumbnail in the sidebar.
+else receives. The Presenter still sees their own camera thumbnail in the
+sidebar.
 _Avoid_: Self-view (that is the camera thumbnail, a different thing), self-mirror
 
 **Ask to Present**:
@@ -296,60 +294,6 @@ request times out after 30 seconds with an auto-decline. The host bypasses this
 flow entirely — a host can force-take the presentation at any time, stopping the
 current share immediately.
 _Avoid_: Request to share, take over request
-
-### Remote control
-
-**Remote Control**:
-A consent-gated session in which one participant (the Controller) operates the
-Presenter's machine — mouse, keyboard, and clipboard (both directions) — while
-the Presenter is presenting with control. Exists only inside a Present with
-Control; ends automatically when the presentation stops. Only the Presenter can
-start one (by granting a request or offering); there is **no host bypass** —
-unlike Ask to Present, the host cannot force-take someone's machine.
-_Avoid_: Screen control, remote access, takeover, remote desktop
-
-**Present with Control**:
-The share-time action that starts a controllable presentation: the Presenter's
-Control Agent (not the browser) captures and publishes a whole monitor. Chosen
-explicitly when the share starts — a plain Present can never become controllable
-mid-flight, and a Present with Control shares exactly one monitor, never a
-window. It counts as presenting: the single-presenter rule spans both kinds.
-Desktop only (mobile browsers cannot present at all).
-_Avoid_: Controllable share, agent share, control mode
-
-**Controller**:
-The participant currently operating the Presenter's machine in a Remote Control
-session. Exactly one at a time. Becomes Controller when the Presenter grants
-their request or offers them control; stops being one on Revoke, Release, or
-when the presentation ends. Any participant may be a Controller from a plain
-browser — no install needed on the controlling side.
-_Avoid_: Driver, operator, remote user
-
-**Control Agent**:
-The desktop application on the Presenter's machine that makes Remote Control
-possible: it joins the room invisibly as the Presenter's agent, publishes the
-monitor, receives the Controller's input over data messages, and injects it
-into the OS. It is the enforcement point — it only accepts input from the one
-granted Controller, and it is the only component that ever touches the machine.
-Launched per-presentation via a deep link from the in-call browser session;
-holds no standing credentials. The person remains the Presenter; the agent is
-plumbing, never shown as a participant.
-_Avoid_: Daemon, helper, client, companion app
-
-**Request / Offer Control**:
-The two ways a Remote Control session starts. Request Control: a viewer asks
-the Presenter (times out like Ask to Present). Offer Control: the Presenter
-hands control to a chosen participant unprompted. Both resolve by the receiving
-side's Grant/Accept or Decline.
-_Avoid_: Take control, ask to drive
-
-**Revoke / Release**:
-The two ways a Remote Control session ends early. Revoke: the Presenter ends
-the Controller's session, instantly, at any moment, no confirmation. Release:
-the Controller voluntarily gives control back. Either way the presentation
-itself continues.
-_Avoid_: Kick (that's removing a participant from the call), stop share (that
-ends the presentation, which also ends control, but is a different act)
 
 ### In-call host controls
 

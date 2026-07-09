@@ -3,7 +3,6 @@
 import { useLocalParticipant, useRoomContext, useTracks } from '@livekit/components-react';
 import { RoomEvent, Track, type RemoteParticipant } from 'livekit-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { isAgentIdentity, presenterIdentityFor, sendControlMessage } from '@/lib/controlProtocol';
 import { PRESENT_TOPIC, decode, sendPresentMessage } from '@/lib/presentProtocol';
 
 export type OutgoingRequest = {
@@ -32,13 +31,7 @@ export function usePresentation(isHost: boolean) {
   const screenTracks = useTracks([{ source: Track.Source.ScreenShare, withPlaceholder: false }], { onlySubscribed: false });
 
   const presenterTrack = screenTracks[0] ?? null;
-  // A controllable presentation is published by the presenter's Control Agent
-  // (identity `agent:<presenter>`), not their browser. The person remains the
-  // Presenter — resolve the agent identity back to the human everywhere, so
-  // the present:* protocol keeps targeting browsers, not agents.
-  const publisherIdentity = presenterTrack?.participant.identity ?? null;
-  const agentIdentity = publisherIdentity !== null && isAgentIdentity(publisherIdentity) ? publisherIdentity : null;
-  const presenterIdentity = publisherIdentity !== null ? presenterIdentityFor(publisherIdentity) : null;
+  const presenterIdentity = presenterTrack?.participant.identity ?? null;
   const presenterName = presenterTrack?.participant.name || presenterIdentity;
   const iAmPresenting = presenterIdentity === localParticipant.identity;
   const someoneElsePresenting = presenterIdentity !== null && !iAmPresenting;
@@ -75,13 +68,8 @@ export function usePresentation(isHost: boolean) {
   }, [localParticipant]);
 
   const stopMyShare = useCallback(async () => {
-    // An agent-published share isn't a browser track — tell the agent to stop.
-    if (agentIdentity && presenterIdentityFor(agentIdentity) === localParticipant.identity) {
-      await sendControlMessage(localParticipant, [agentIdentity], { v: 1, type: 'control:stop-present' });
-      return;
-    }
     await localParticipant.setScreenShareEnabled(false);
-  }, [localParticipant, agentIdentity]);
+  }, [localParticipant]);
 
   // When presenter disappears while we have a pending outgoing request,
   // auto-resolve: drop the request and start our share. The request is cleared
@@ -256,8 +244,6 @@ export function usePresentation(isHost: boolean) {
   return {
     presenterIdentity,
     presenterName,
-    // Non-null when the current share is agent-published (controllable).
-    agentIdentity,
     iAmPresenting,
     someoneElsePresenting,
     outgoing,

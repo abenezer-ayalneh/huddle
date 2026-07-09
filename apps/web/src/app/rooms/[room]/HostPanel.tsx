@@ -4,7 +4,6 @@ import { useRemoteParticipants, useRoomInfo } from '@livekit/components-react';
 import { Check, Copy, ShieldCheck, UserCheck, UserMinus, UserX, VolumeX, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { api, type PendingKnock } from '@/lib/api';
-import { isAgentIdentity } from '@/lib/controlProtocol';
 import IconButton from '@/components/IconButton';
 import { useDismissOnOutside } from '@/components/call/useDismissOnOutside';
 import RecordingControls from './RecordingControls';
@@ -29,9 +28,7 @@ function playDing() {
 }
 
 export default function HostPanel({ room, hostKey }: { room: string; hostKey: string }) {
-  // Control Agents never appear as people — not even to the host. Stopping an
-  // agent's share is the presenter's Revoke/stop, not a host mute/kick.
-  const participants = useRemoteParticipants().filter((p) => !isAgentIdentity(p.identity));
+  const participants = useRemoteParticipants();
   const { metadata } = useRoomInfo();
   const muteOnEntry = useMemo(() => {
     if (!metadata) return false;

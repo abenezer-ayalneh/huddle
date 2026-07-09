@@ -4,19 +4,16 @@ import { useSpeakingParticipants, useTracks, type TrackReferenceOrPlaceholder } 
 import { Track } from 'livekit-client';
 import { MonitorOff, MonitorUp, PinOff } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { isAgentIdentity } from '@/lib/controlProtocol';
 import FocusLayout, { trackKey } from './FocusLayout';
 import SelfView, { type Corner } from './SelfView';
 import VideoTile from './VideoTile';
 
 export default function VideoGrid({
-  presentationOverlay,
   iAmPresenting = false,
   onStopPresenting,
   onStageTrackChange,
   localName,
 }: {
-  presentationOverlay?: React.ReactNode;
   // When the local participant is the Presenter, we must never render their own
   // presented track back to them — see PresenterPlaceholder below.
   iAmPresenting?: boolean;
@@ -42,9 +39,7 @@ export default function VideoGrid({
   const activeIdentity = speaking[0]?.identity;
 
   const screenTrack = useMemo(() => tracks.find((t) => t.source === Track.Source.ScreenShare) ?? null, [tracks]);
-  // Control Agents are plumbing, not people: their screen share renders like
-  // anyone's, but they must never get a (placeholder) camera tile.
-  const cameraTracks = useMemo(() => tracks.filter((t) => t.source === Track.Source.Camera && !isAgentIdentity(t.participant.identity)), [tracks]);
+  const cameraTracks = useMemo(() => tracks.filter((t) => t.source === Track.Source.Camera), [tracks]);
 
   // The local camera leaves the grid: with others present it floats as the
   // Self-view; the rest are the remote tiles that fill the grid.
@@ -98,12 +93,7 @@ export default function VideoGrid({
             // Placeholder".
             <PresenterPlaceholder onStop={onStopPresenting} />
           ) : (
-            <>
-              <VideoTile trackRef={screenTrack} active={false} />
-              {/* Remote-control input capture mounts over the presented video;
-                  it finds the <video> through this shared positioning context. */}
-              {presentationOverlay}
-            </>
+            <VideoTile trackRef={screenTrack} active={false} />
           )
         }
         stripTracks={cameraTracks}

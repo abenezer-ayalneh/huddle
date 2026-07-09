@@ -228,50 +228,5 @@ the user; see `docs/adr/0004-deploy-topology-single-vps.md` and
 > deployment is what gets verified. The lone application-code change is knock
 > state → Redis; everything else is infra/config.
 
-### Phase 10 — Remote Control (planned)
-
-Let a participant operate the Presenter's machine during a controllable
-presentation. Language: `CONTEXT.md` → "Remote control". Decision record:
-`docs/adr/0010-remote-control-hidden-agent.md`. Plan:
-`docs/REMOTE_CONTROL_PLAN.md`.
-
-- [x] **Protocol + browser-side UX first** — `control:*` data messages
-      (versioned), Request/Offer/Grant/Decline/Revoke/Release flows, input
-      capture on the presented tile, indicators on both sides. Provable
-      end-to-end against a stub agent before any Rust exists.
-- [x] **API** — pairing endpoints (`control-agent-link` + `redeem`):
-      screenshare + data grants only, single-use code (Redis GETDEL), short
-      TTL, authorized by the participant's own LiveKit token.
-- [x] **Web — Present with Control** — share-time action beside Present;
-      deep-link launch (hidden iframe) + copy-paste fallback;
-      `agent:<identity>` → person mapping wherever a Presenter is named.
-- [ ] **Control Agent** (desktop: Rust core + Tauri shell) — deep-link intake +
-      confirm dialog + monitor picker; join hidden; capture + publish one
-      monitor; inject mouse/keyboard from the granted Controller only;
-      bidirectional clipboard sync; revoke/release/share-stop teardown.
-- [ ] **Packaging** — installers, macOS notarization + permission onboarding
-      (Screen Recording, Accessibility), Windows signing.
-- **Done when:** manual three-party test passes — desktop Presenter (agent) +
-  browser Controller + third observer: present with control → request → grant →
-  mouse/keyboard/clipboard round-trip → revoke → presentation continues.
-
-> **Boundaries (decided, not TODOs):** controlled targets are desktop-only;
-> mobile browsers can't present at all; iOS can never be a target. An
-> Android-native agent (Kotlin/AccessibilityService — not Tauri) is a someday
-> note, not a commitment. No host bypass for control, ever. Clipboard sync
-> ships guard-less by explicit choice — see the ADR before "fixing" it.
->
-> Verified (browser + API slices): full protocol round-trip against a live
-> stack via `apps/agent-stub` (`test-drive.mjs`) — enforcement, input,
-> clipboard both ways, revoke, stop-present — plus the in-browser flow
-> (share menu → pairing dialog → stub joins → attribution/ribbon → stop).
-> Two findings folded back into the design: LiveKit `hidden` suppresses the
-> agent's tracks (agent is UI-filtered instead, see ADR 0010), and deep links
-> must launch from a hidden iframe (`location.href` to an unhandled scheme
-> unloads the call). Multi-participant request/offer UX remains a **manual
-> two-window test**, like every live-A/V phase before it.
-
----
-
 Keep this file honest: check boxes as you go, and move items between phases if
 priorities change.

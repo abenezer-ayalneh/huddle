@@ -55,9 +55,8 @@ of the `x-host-key` header.
 
 2. **Stateless beats stateful here.** The download is idempotent and read-only,
    so a signed token needs no Redis round-trip and no revocation list. Statelessness
-   also makes the token reusable within its window, which the one-time Control
-   Agent pairing code (ADR-style Redis token) is deliberately not — and a strict
-   one-time token would break the native manager's range requests.
+   also makes the token reusable within its window, while a strict one-time Redis
+   token would break the native manager's range requests.
 
 3. **Embedding exploits the existing poll.** The list already refreshes every 4s
    for the host (and only the host), so a freshly-signed URL costs nothing extra
@@ -102,9 +101,9 @@ of the `x-host-key` header.
    buffers to memory, still ends with a save dialog, and is _not_ the browser's
    native download. Rejected: doesn't deliver the asked-for experience.
 
-4. **One-time Redis token (mirroring Control Agent pairing).** Revocable, but
-   adds a Redis round-trip on the download path and the strict one-time semantics
-   break native resume/range requests. Rejected for downloads specifically.
+4. **One-time Redis token.** Revocable, but adds a Redis round-trip on the
+   download path and the strict one-time semantics break native resume/range
+   requests. Rejected for downloads specifically.
 
 We chose **stateless signed URL embedded in the list, proxied through the API**
 because it delivers true native download progress, keeps the storage proxy and

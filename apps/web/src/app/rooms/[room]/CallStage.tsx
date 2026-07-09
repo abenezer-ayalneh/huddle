@@ -1,10 +1,9 @@
 'use client';
 
 import { LiveKitRoom, RoomAudioRenderer, useChat, type LocalUserChoices, type TrackReferenceOrPlaceholder } from '@livekit/components-react';
-import { useCallback, useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useBackgroundCall } from '@/components/call/useBackgroundCall';
 import { usePictureInPicture } from '@/components/call/usePictureInPicture';
-import AgentLaunchDialog from '@/components/call/AgentLaunchDialog';
 import ChatPanel from '@/components/call/ChatPanel';
 import ConnectionStatus from '@/components/call/ConnectionStatus';
 import CallTimer from '@/components/call/CallTimer';
@@ -13,22 +12,14 @@ import PresentationToast from '@/components/call/PresentationToast';
 import PreJoinScreen from '@/components/call/PreJoinScreen';
 import RecordingIndicator from '@/components/call/RecordingIndicator';
 import RecordingToast from '@/components/call/RecordingToast';
-import RemoteControlBanner from '@/components/call/RemoteControlBanner';
-import RemoteControlSurface from '@/components/call/RemoteControlSurface';
-import RemoteControlToast from '@/components/call/RemoteControlToast';
 import VideoGrid from '@/components/call/VideoGrid';
 import ErrorBoundary from '@/components/faults/ErrorBoundary';
 import { usePresentation } from '@/components/call/usePresentation';
 import { useRecording } from '@/components/call/useRecording';
-import { useRemoteControl } from '@/components/call/useRemoteControl';
-import { api, API_URL } from '@/lib/api';
 import LeaveConfirmDialog from './LeaveConfirmDialog';
 import { Centered } from './ui';
 
 type Connection = { token: string; livekitUrl: string };
-
-// Static capability — nothing to subscribe to.
-const emptySubscribe = () => () => {};
 
 export default function CallStage({
   room,
@@ -170,48 +161,6 @@ function CallView({
           : 'request';
 
   const onRecordClick = recordMode === 'recording' ? recording.stopRecording : recordMode === 'pending' ? recording.cancelRequest : recording.requestToRecord;
-  const control = useRemoteControl({
-    presenterIdentity: presentation.presenterIdentity,
-    presenterName: presentation.presenterName,
-    iAmPresenting: presentation.iAmPresenting,
-    agentIdentity: presentation.agentIdentity,
-  });
-
-  // Present with Control entry point. Desktop browsers only — gated on
-  // getDisplayMedia as a coarse "this is a desktop" check (the agent itself
-  // captures, but a phone can't run the desktop agent next to it). Read via
-  // useSyncExternalStore so SSR renders false without a hydration mismatch.
-  const canPresentWithControl = useSyncExternalStore(
-    emptySubscribe,
-    () => !!navigator.mediaDevices?.getDisplayMedia,
-    () => false,
-  );
-
-  const [launchCode, setLaunchCode] = useState<string | null>(null);
-  const presentWithControl = useCallback(async () => {
-    try {
-      const { code } = await api.controlAgentLink(room, token);
-      setLaunchCode(code);
-      // Hand the one-time code to the agent via deep link. Launched from a
-      // hidden iframe — assigning location.href to an unhandled custom scheme
-      // unloads the page (disconnecting the call!); an iframe contains the
-      // failure. The dialog stays up as the no-handler fallback either way.
-      const frame = document.createElement('iframe');
-      frame.style.display = 'none';
-      frame.src = `huddle://present?code=${encodeURIComponent(code)}&api=${encodeURIComponent(API_URL)}`;
-      document.body.appendChild(frame);
-      setTimeout(() => frame.remove(), 3000);
-    } catch {
-      setLaunchCode(null);
-    }
-  }, [room, token]);
-
-  // The agent joined and its share is up — the launch dialog has done its
-  // job. Render-time adjustment, same pattern as the unread counter below.
-  if (launchCode !== null && presentation.agentIdentity && presentation.iAmPresenting) {
-    setLaunchCode(null);
-  }
-
   const [unread, setUnread] = useState(0);
   const [prev, setPrev] = useState({
     len: chatMessages.length,
@@ -230,7 +179,6 @@ function CallView({
   return (
     <>
       <VideoGrid
-        presentationOverlay={control.controlling ? <RemoteControlSurface sendInput={control.sendInput} sendClipboard={control.sendClipboard} /> : undefined}
         iAmPresenting={presentation.iAmPresenting}
         onStopPresenting={presentation.handleShareClick}
         onStageTrackChange={setStageTrack}
@@ -251,29 +199,13 @@ function CallView({
         iAmPresenting={presentation.iAmPresenting}
         someoneElsePresenting={presentation.someoneElsePresenting}
         onShareClick={presentation.handleShareClick}
-        onPresentWithControl={canPresentWithControl ? presentWithControl : undefined}
         hasOutgoingRequest={!!presentation.outgoing}
         recordMode={recordMode}
         onRecordClick={recordMode ? onRecordClick : undefined}
         recordBusy={recording.busy}
-        suspendShortcuts={!!control.controlling}
         onPopOut={pipSupported ? () => (pipActive ? exitPip() : enterPip()) : undefined}
         pipActive={pipActive}
       />
-      <ErrorBoundary label="Remote control banner" fallback={null}>
-        <div className="pointer-events-none absolute inset-x-0 top-2 z-30 flex justify-center">
-          <RemoteControlBanner
-            iAmControllablePresenter={control.iAmControllablePresenter}
-            controller={control.controller}
-            controlling={control.controlling}
-            canRequest={control.controllable && !presentation.iAmPresenting && !control.controlling && !control.outgoingRequest && !control.incomingOffer}
-            onRequest={control.requestControl}
-            onRevoke={control.revoke}
-            onRelease={control.release}
-            onOffer={control.offerControl}
-          />
-        </div>
-      </ErrorBoundary>
       <ErrorBoundary label="Call toasts" fallback={null}>
         <div className="pointer-events-none absolute inset-x-0 top-14 z-30 flex flex-col items-center gap-2">
           <RecordingIndicator active={recording.recordingActive} startedAt={recording.recordingStartedAt} />
@@ -295,23 +227,7 @@ function CallView({
             onDecline={presentation.declinePresentation}
             onDismissOutcome={presentation.dismissOutcome}
           />
-          <RemoteControlToast
-            incomingRequest={control.incomingRequest}
-            incomingOffer={control.incomingOffer}
-            outgoingRequest={control.outgoingRequest}
-            outgoingOffer={control.outgoingOffer}
-            outcome={control.outcome}
-            onGrant={control.grantRequest}
-            onDeclineRequest={control.declineRequest}
-            onAcceptOffer={control.acceptOffer}
-            onDeclineOffer={control.declineOffer}
-            onCancelRequest={control.cancelRequest}
-            onDismissOutcome={control.dismissOutcome}
-          />
         </div>
-      </ErrorBoundary>
-      <ErrorBoundary label="Agent launch" fallback={null}>
-        <AgentLaunchDialog code={launchCode} onCancel={() => setLaunchCode(null)} />
       </ErrorBoundary>
       <CallTimer />
       <ConnectionStatus />

@@ -37,13 +37,6 @@ existing live state; no separate indicator. Space is taken only unmodified and
 outside text fields, with `preventDefault` (no `stopImmediatePropagation`) so it
 stops page scroll / focused-button activation without disturbing other listeners.
 
-The sharp constraint is the existing global keyboard capture in
-`RemoteControlSurface` (ADR-0010): while a participant is a **Controller**, every
-keystroke is captured and forwarded to the controlled machine. A key cannot mean
-two things at once, so **all three gestures are suspended during a Remote Control
-session** — when suspended we return without stopping the event, so the control
-surface's own capture listener still receives it.
-
 ## Considered Options
 
 - **Bubble-phase `preventDefault` only** — rejected: stops the browser default but
@@ -67,8 +60,6 @@ surface's own capture listener still receives it.
   shortcut is outside any page's reach and would need rebinding by the user.
 - The override is surgical: only the bare ⌘D/⌘E and unmodified Space are taken; any
   other combo (⌃⌘D, ⌘⇧E, AltGr+D, Shift+Space, …) passes through.
-- During a Remote Control session the gestures are inert and pass the event on, so
-  the control surface still forwards keystrokes to the remote machine.
 - Push-to-talk is inert on the Device Check screen and while typing; key-repeat is
   ignored so a held spacebar unmutes once, and the mic re-mutes on `blur` so it is
   never left stuck open. The mic is driven with an explicit on/off (not a flip), so

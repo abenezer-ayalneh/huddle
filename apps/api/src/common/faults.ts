@@ -29,7 +29,6 @@ export const FaultCode = {
   // The signed recording-download link is missing, malformed, or past its TTL
   // (docs/adr/0022). The host just re-opens the recordings list to get a fresh one.
   DOWNLOAD_TOKEN_INVALID: 'DOWNLOAD_TOKEN_INVALID',
-  PAIRING_CODE_INVALID: 'PAIRING_CODE_INVALID',
   WEBHOOK_UNVERIFIED: 'WEBHOOK_UNVERIFIED',
 } as const;
 

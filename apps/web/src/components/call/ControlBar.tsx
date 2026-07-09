@@ -12,14 +12,12 @@ import {
   MonitorUp,
   MonitorOff,
   MessageSquare,
-  MousePointer2,
   PhoneOff,
   PictureInPicture2,
   Square,
   type LucideIcon,
 } from 'lucide-react';
 import { useState } from 'react';
-import { PopoverContent } from '@/components/ui/popover';
 import { classifyMediaError, type FailureCause, type RecoveryDevice } from '@/lib/deviceRecovery';
 import MergedControlButton, { DeviceMenuContent, type DeviceSection } from './MergedControlButton';
 import DeviceRecoveryDialog, { type RecoveryTarget } from './DeviceRecoveryDialog';
@@ -35,12 +33,10 @@ export default function ControlBar({
   iAmPresenting,
   someoneElsePresenting,
   onShareClick,
-  onPresentWithControl,
   hasOutgoingRequest,
   recordMode,
   onRecordClick,
   recordBusy = false,
-  suspendShortcuts = false,
   onPopOut,
   pipActive = false,
 }: {
@@ -51,9 +47,6 @@ export default function ControlBar({
   iAmPresenting: boolean;
   someoneElsePresenting: boolean;
   onShareClick: () => void;
-  // Present with Control (docs/adr/0010): undefined hides the share menu —
-  // the caller gates it to desktop browsers when nobody is presenting yet.
-  onPresentWithControl?: () => void;
   hasOutgoingRequest: boolean;
   // Request to Record (docs/adr/0011): the non-host's record affordance. The
   // host records from the Host panel instead, so this is hidden (mode
@@ -61,9 +54,6 @@ export default function ControlBar({
   recordMode?: 'request' | 'pending' | 'recording';
   onRecordClick?: () => void;
   recordBusy?: boolean;
-  // Keyboard Shortcuts (docs/adr/0013): true while controlling a remote machine,
-  // when keystrokes belong to that machine, not the call.
-  suspendShortcuts?: boolean;
   // Picture-in-Picture (CONTEXT.md): pop the main stage into the OS-level
   // floating window so a Background Call stays visible. undefined hides the
   // control where PiP is unsupported.
@@ -156,7 +146,6 @@ export default function ControlBar({
       if (camCause) void reRequest('camera');
       else if (!cam.pending) void cam.toggle();
     },
-    suspended: suspendShortcuts,
     pushToTalk: {
       micEnabled: mic.enabled,
       micPending: mic.pending,
@@ -211,24 +200,13 @@ export default function ControlBar({
 
         <span className="mx-1 h-7 w-px bg-white/10" />
 
-        {onPresentWithControl && !iAmPresenting && !someoneElsePresenting ? (
-          <MergedControlButton
-            icon={MonitorUp}
-            label={shareLabel}
-            menuLabel="More ways to present"
-            disabled={hasOutgoingRequest}
-            onClick={onShareClick}
-            menu={(close) => <ShareMenuContent close={close} onPresent={onShareClick} onPresentWithControl={onPresentWithControl} />}
-          />
-        ) : (
-          <ControlButton
-            icon={iAmPresenting ? MonitorOff : MonitorUp}
-            label={shareLabel}
-            active={iAmPresenting}
-            disabled={hasOutgoingRequest}
-            onClick={onShareClick}
-          />
-        )}
+        <ControlButton
+          icon={iAmPresenting ? MonitorOff : MonitorUp}
+          label={shareLabel}
+          active={iAmPresenting}
+          disabled={hasOutgoingRequest}
+          onClick={onShareClick}
+        />
         {/* display:contents wrapper carries the marker the chat panel's outside-press
             handler skips, so this toggle never closes-then-reopens chat. */}
         <span className="contents" data-chat-toggle>
@@ -252,47 +230,6 @@ export default function ControlBar({
         onClose={() => setRecovery(null)}
       />
     </div>
-  );
-}
-
-// Share-time choice (docs/adr/0010): plain Present (browser picker, any
-// surface, never controllable) vs Present with Control (the desktop agent
-// shares one whole monitor and can hand input to a participant). The agent
-// runtime crash that gated this (rust-sdks#795) is fixed — see
-// docs/REMOTE_CONTROL_PLAN.md slice 3.
-// Rendered as the chevron-menu body of the share MergedControlButton.
-function ShareMenuContent({ onPresent, onPresentWithControl, close }: { onPresent: () => void; onPresentWithControl: () => void; close: () => void }) {
-  const item = (onClick: () => void, icon: LucideIcon, title: string, hint: string, disabled = false) => {
-    const Icon = icon;
-    return (
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => {
-          close();
-          onClick();
-        }}
-        className="flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
-      >
-        <Icon className="mt-0.5 h-4 w-4 shrink-0 text-cyan" />
-        <span className="min-w-0">
-          <span className="flex items-center gap-2 text-sm font-medium text-white/90">
-            {title}
-            {disabled && (
-              <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/60">Coming soon</span>
-            )}
-          </span>
-          <span className="block text-xs text-white/50">{hint}</span>
-        </span>
-      </button>
-    );
-  };
-
-  return (
-    <PopoverContent side="top" sideOffset={14} className="glass-strong w-72 gap-1 rounded-xl p-1.5">
-      {item(onPresent, MonitorUp, 'Present screen', 'Share a tab, window, or screen — view only')}
-      {item(onPresentWithControl, MousePointer2, 'Present with control', 'Share a monitor via the desktop agent; participants can take the mouse')}
-    </PopoverContent>
   );
 }
 

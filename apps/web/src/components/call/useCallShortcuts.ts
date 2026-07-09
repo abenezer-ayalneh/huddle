@@ -24,9 +24,6 @@ type Props = {
   onToggleAudio: () => void;
   // Flip the camera (Cmd/Ctrl+E).
   onToggleCamera: () => void;
-  // Suspend every gesture — used while a Controller's keystrokes belong to the
-  // controlled machine (Remote Control, docs/adr/0010).
-  suspended?: boolean;
   // Omitted where push-to-talk has nothing to talk into (the Device Check).
   pushToTalk?: PushToTalk;
 };
@@ -70,10 +67,7 @@ export function useCallShortcuts(props: Props): void {
     }
 
     function onKeyDown(e: KeyboardEvent) {
-      const { onToggleAudio, onToggleCamera, suspended, pushToTalk } = ref.current;
-      // Suspended while controlling a remote machine; do nothing and, crucially,
-      // do NOT stop the event — let RemoteControlSurface's own listener have it.
-      if (suspended) return;
+      const { onToggleAudio, onToggleCamera, pushToTalk } = ref.current;
 
       // ⌘/Ctrl+D / +E — mirror the mic / camera buttons. stopImmediatePropagation
       // keeps the combo from the browser's default AND from any extension's

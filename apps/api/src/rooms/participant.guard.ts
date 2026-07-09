@@ -4,9 +4,9 @@ import { FaultCode, faultBody } from '../common/faults';
 import { LivekitService } from './livekit.service';
 
 // The in-call participant making the request, proven by their own LiveKit
-// join token (the `x-participant-token` header). Anyone in the call may
-// present, so anyone in the call may pair a Control Agent — no host key and
-// no account session required, just the token we minted when they joined.
+// join token (the `x-participant-token` header). Participant-scoped actions
+// need no host key or account session, just the token we minted when they
+// joined.
 export interface CallParticipant {
   identity: string;
   name: string;
