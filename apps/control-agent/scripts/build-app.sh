@@ -3,6 +3,12 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONFIG="${CONFIGURATION:-release}"
+# TCC binds Screen Recording and Accessibility approval to the app's designated
+# requirement. Prefer a persistent Apple Development identity for local builds;
+# an ad-hoc signature gets a new identity every rebuild and loses that approval.
+DEFAULT_SIGN_IDENTITY="$(security find-identity -v -p codesigning 2>/dev/null | awk -F '"' '/Apple Development:/ { print $2; exit }')"
+SIGN_IDENTITY="${CODE_SIGN_IDENTITY:-$DEFAULT_SIGN_IDENTITY}"
+SIGN_IDENTITY="${SIGN_IDENTITY:--}"
 swift build --package-path "$ROOT" --configuration "$CONFIG"
 
 BIN="$ROOT/.build/arm64-apple-macosx/$CONFIG/HuddleControlAgent"
@@ -24,15 +30,20 @@ for FRAMEWORK in RustLiveKitUniFFI.framework LiveKitWebRTC.framework; do
   ditto "$SOURCE" "$DESTINATION"
   # install_name_tool changes the copied Mach-O when it is later used as the
   # app executable, so give each embedded framework its own fresh local seal.
-  codesign --force --sign - "$DESTINATION"
+  codesign --force --sign "$SIGN_IDENTITY" "$DESTINATION"
 done
 
 # SwiftPM gives the executable an @loader_path rpath for its build directory.
 # A distributed .app keeps third-party frameworks in Contents/Frameworks, so
 # add the bundle-relative lookup path before its local ad-hoc signature.
 install_name_tool -add_rpath "@executable_path/../Frameworks" "$APP/Contents/MacOS/HuddleControlAgent"
-codesign --force --sign - "$APP"
+codesign --force --sign "$SIGN_IDENTITY" --entitlements "$ROOT/Entitlements.plist" "$APP"
 codesign --verify --deep --strict "$APP"
 
-echo "Built unsigned $APP"
+if [[ "$SIGN_IDENTITY" == "-" ]]; then
+  echo "Built ad-hoc signed $APP"
+  echo "Warning: macOS treats every ad-hoc rebuild as a new privacy client. Set CODE_SIGN_IDENTITY to an Apple Development identity to retain permissions."
+else
+  echo "Built locally signed $APP with $SIGN_IDENTITY"
+fi
 echo "For distribution, sign with Developer ID + hardened runtime and notarize the app before publishing it."

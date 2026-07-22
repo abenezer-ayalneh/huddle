@@ -20,9 +20,10 @@ public enum CoordinateMapper {
         }
         return CGPoint(
             x: geometry.bounds.minX + CGFloat(x) * geometry.bounds.width,
-            // Browser/video coordinates grow downward; CoreGraphics global
-            // display coordinates grow upward from the lower-left corner.
-            y: geometry.bounds.maxY - CGFloat(y) * geometry.bounds.height
+            // CGEvent cursor locations use Quartz display coordinates, whose
+            // vertical direction matches browser/video coordinates: both grow
+            // downward from the display's top edge. Do not flip y here.
+            y: geometry.bounds.minY + CGFloat(y) * geometry.bounds.height
         )
     }
 }

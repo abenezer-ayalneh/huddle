@@ -206,8 +206,11 @@ private actor LiveKitAgent {
     }
 
     private func currentGeometry() -> DisplayGeometry {
-        let screen = NSScreen.main?.frame ?? .zero
-        return DisplayGeometry(displayID: 0, bounds: screen)
+        // CGDisplayBounds and CGEvent share Quartz's global coordinate space.
+        // NSScreen.frame is AppKit-space and can be inverted/offset on a
+        // multi-display desktop.
+        let displayID = CGMainDisplayID()
+        return DisplayGeometry(displayID: displayID, bounds: CGDisplayBounds(displayID))
     }
 }
 

@@ -46,7 +46,12 @@ final class CoreTests: XCTestCase {
 
     func testCoordinateAndReleaseState() {
         let geometry = DisplayGeometry(displayID: 1, bounds: CGRect(x: 10, y: 20, width: 100, height: 200))
-        XCTAssertEqual(CoordinateMapper.point(x: 0.5, y: 0.25, in: geometry), CGPoint(x: 60, y: 170))
+        // The controller's normalized y comes from browser/video coordinates
+        // (top = 0, bottom = 1), which is also the coordinate direction that
+        // CGEvent uses for the target display.
+        XCTAssertEqual(CoordinateMapper.point(x: 0.5, y: 0, in: geometry), CGPoint(x: 60, y: 20))
+        XCTAssertEqual(CoordinateMapper.point(x: 0.5, y: 0.25, in: geometry), CGPoint(x: 60, y: 70))
+        XCTAssertEqual(CoordinateMapper.point(x: 0.5, y: 1, in: geometry), CGPoint(x: 60, y: 220))
         var state = InputState()
         state.apply(.button(action: .down, x: 0, y: 0, button: .left))
         state.apply(.key(action: .down, code: "KeyA", key: "a", modifiers: []))
