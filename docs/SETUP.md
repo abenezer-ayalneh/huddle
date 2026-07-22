@@ -139,6 +139,25 @@ Cloudflare fronts the web/API/LiveKit signal URLs, but LiveKit media still uses
 your `LIVEKIT_NODE_IP` directly. Treat this as a same-LAN test path, not the
 production deployment.
 
+## 6c. Run the macOS Control Agent (Phase 10)
+
+Remote Control requires the native companion app on the Sharer's Mac. Build the
+unsigned local app and open it with:
+
+```bash
+swift test --package-path apps/control-agent
+./apps/control-agent/scripts/build-app.sh
+open "apps/control-agent/dist/Huddle Control Agent.app"
+```
+
+The browser opens a one-time `huddle-control://join` link after Sharer consent.
+The agent redeems that code once, joins LiveKit with a server-minted
+screen-share-only token, and asks macOS for Screen Recording and Accessibility
+permission. A production build must be signed with Developer ID, notarized, and
+distributed as a trusted `.app`/`.dmg`; signing credentials are not part of the
+repository. Remote Control ends if either human, the agent, or the room
+disconnects, and the Sharer or Controller can stop it from Huddle.
+
 ## Troubleshooting
 
 - **Camera/mic blocked:** browsers only allow media on `https` or `localhost`.

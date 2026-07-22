@@ -4,6 +4,7 @@ import { useLocalParticipant, useRoomContext, useTracks } from '@livekit/compone
 import { RoomEvent, Track, type RemoteParticipant } from 'livekit-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { PRESENT_TOPIC, decode, sendPresentMessage } from '@/lib/presentProtocol';
+import { isControlAgentParticipant } from '@/lib/controlProtocol';
 
 export type OutgoingRequest = {
   presenterIdentity: string;
@@ -24,13 +25,15 @@ export type PresentationOutcome =
 const REQUEST_TIMEOUT_MS = 30_000;
 const OUTCOME_DISPLAY_MS = 4_000;
 
-export function usePresentation(isHost: boolean) {
+export function usePresentation(isHost: boolean, remoteControlActive = false) {
   const room = useRoomContext();
   const { localParticipant } = useLocalParticipant();
 
   const screenTracks = useTracks([{ source: Track.Source.ScreenShare, withPlaceholder: false }], { onlySubscribed: false });
 
-  const presenterTrack = screenTracks[0] ?? null;
+  // The Control Agent's desktop track is a Remote Control stage, not a normal
+  // Present. It must never enter Ask to Present's client-side state machine.
+  const presenterTrack = screenTracks.find((track) => !isControlAgentParticipant(track.participant)) ?? null;
   const presenterIdentity = presenterTrack?.participant.identity ?? null;
   const presenterName = presenterTrack?.participant.name || presenterIdentity;
   const iAmPresenting = presenterIdentity === localParticipant.identity;
@@ -222,6 +225,7 @@ export function usePresentation(isHost: boolean) {
   }, [presenterIdentity, isHost, localParticipant]);
 
   const handleShareClick = useCallback(async () => {
+    if (remoteControlActive) return;
     if (iAmPresenting) {
       await stopMyShare();
     } else if (!someoneElsePresenting) {
@@ -231,7 +235,7 @@ export function usePresentation(isHost: boolean) {
     } else {
       await requestPresentation();
     }
-  }, [iAmPresenting, someoneElsePresenting, isHost, stopMyShare, startMyShare, forceTake, requestPresentation]);
+  }, [iAmPresenting, someoneElsePresenting, isHost, stopMyShare, startMyShare, forceTake, requestPresentation, remoteControlActive]);
 
   // Cleanup timers on unmount.
   useEffect(() => {

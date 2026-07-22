@@ -10,6 +10,11 @@ import { LivekitService } from './livekit.service';
 export interface CallParticipant {
   identity: string;
   name: string;
+  role?: string;
+  // Present on requests resolved from a LiveKit JWT. Optional keeps this
+  // lightweight value object compatible with existing service unit tests that
+  // construct participants directly.
+  tokenExpiresAt?: number;
 }
 
 type RequestWithParticipant = Request & { participant?: CallParticipant };
@@ -28,13 +33,15 @@ export class ParticipantGuard implements CanActivate {
     }
 
     const claims = await this.livekit.verifyParticipantToken(token);
-    if (!claims || claims.room !== slug) {
+    if (!claims || claims.room !== slug || claims.tokenExpiresAt <= Date.now() || claims.role === 'control-agent') {
       throw new UnauthorizedException(faultBody(FaultCode.NOT_PARTICIPANT, 'Not a participant of this room'));
     }
 
     req.participant = {
       identity: claims.identity,
       name: claims.name || claims.identity,
+      role: claims.role,
+      tokenExpiresAt: claims.tokenExpiresAt,
     };
     return true;
   }

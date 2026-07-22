@@ -89,6 +89,7 @@ model Room {
   hostUserId     String
   host           User        @relation(fields: [hostUserId], references: [id], onDelete: Cascade)
   recordings     Recording[]
+  remoteControlSessions RemoteControlSession[]
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
@@ -120,4 +121,29 @@ model Recording {
 
   @@index([roomId])
   @@map("recording")
+}
+
+// Metadata-only audit history for attended Remote Control (docs/adr/0024).
+// Runtime authority lives in Redis; this row deliberately stores no input
+// events, screenshots, frames, clipboard data, or secret contents.
+model RemoteControlSession {
+  id                 String    @id @default(cuid())
+  roomId             String
+  room               Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sharerIdentity     String
+  sharerName         String
+  controllerIdentity String
+  controllerName     String
+  agentIdentity      String?
+  // requested | active | denied | ended | expired | failed
+  status             String    @default("requested")
+  startedAt          DateTime?
+  endedAt            DateTime?
+  renewalDueAt       DateTime?
+  endReason          String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([roomId, status])
+  @@map("remote_control_session")
 }

@@ -1,11 +1,31 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AccessToken, RoomServiceClient, TokenVerifier, TrackSource, WebhookReceiver } from 'livekit-server-sdk';
+import { AccessToken, RoomServiceClient, TokenVerifier, TrackSource, WebhookReceiver, type WebhookEvent } from 'livekit-server-sdk';
 
 export interface ParticipantClaims {
   identity: string;
   name?: string;
   room?: string;
+  role?: string;
+  tokenExpiresAt: number;
+}
+
+export interface ConnectedParticipant {
+  identity: string;
+  name: string;
+  role?: string;
+}
+
+export interface RemoteControlRoomState {
+  sessionId: string;
+  status: 'awaiting-agent' | 'active';
+  sharerIdentity: string;
+  sharerName: string;
+  controllerIdentity: string;
+  controllerName: string;
+  agentIdentity: string;
+  agentConnected: boolean;
+  renewalDueAt: string;
 }
 
 // Thin wrapper over the LiveKit server SDK: minting tokens and room admin.
@@ -22,6 +42,7 @@ export class LivekitService {
   private _svc?: RoomServiceClient;
   private _webhook?: WebhookReceiver;
   private _verifier?: TokenVerifier;
+  private readonly metadataWrites = new Map<string, Promise<void>>();
 
   constructor(private readonly config: ConfigService) {
     const apiKey = this.config.get<string>('LIVEKIT_API_KEY');
@@ -57,10 +78,13 @@ export class LivekitService {
     try {
       const claims = await this.verifier.verify(token);
       if (!claims.sub) return null;
+      const metadata = this.parseMetadata(claims.metadata);
       return {
         identity: claims.sub,
         name: claims.name,
         room: claims.video?.room,
+        role: typeof metadata.role === 'string' ? metadata.role : undefined,
+        tokenExpiresAt: typeof claims.exp === 'number' ? claims.exp * 1000 : 0,
       };
     } catch {
       return null;
@@ -90,12 +114,75 @@ export class LivekitService {
     return at.toJwt();
   }
 
+  // A narrowly scoped token for the native macOS Control Agent. It is visible to
+  // the SFU so clients can subscribe to its screen track, but its signed role lets
+  // Huddle filter it out of people-facing UI (docs/adr/0024).
+  async mintControlAgentToken(opts: {
+    room: string;
+    sessionId: string;
+    sharerIdentity: string;
+    controllerIdentity: string;
+    agentIdentity: string;
+  }): Promise<string> {
+    const at = new AccessToken(this.apiKey, this.apiSecret, {
+      identity: opts.agentIdentity,
+      name: 'Control Agent',
+      // The bootstrap bearer is two minutes; the resulting agent token must
+      // survive the 30-minute Sharer reconfirmation window. Its authority is
+      // still bounded by the room metadata projection and the grant's human
+      // participant-token deadline.
+      ttl: '1h',
+      metadata: JSON.stringify({
+        role: 'control-agent',
+        room: opts.room,
+        sessionId: opts.sessionId,
+        sharerIdentity: opts.sharerIdentity,
+        controllerIdentity: opts.controllerIdentity,
+        agentIdentity: opts.agentIdentity,
+      }),
+    });
+    at.addGrant({
+      roomJoin: true,
+      room: opts.room,
+      canPublish: true,
+      canPublishSources: [TrackSource.SCREEN_SHARE],
+      canSubscribe: true,
+      canPublishData: false,
+      roomAdmin: false,
+      hidden: false,
+    });
+    return at.toJwt();
+  }
+
   async createRoom(name: string): Promise<void> {
     await this.svc.createRoom({ name });
   }
 
   async removeParticipant(room: string, identity: string): Promise<void> {
     await this.svc.removeParticipant(room, identity);
+  }
+
+  async disconnectControlAgent(room: string, identity: string): Promise<void> {
+    await this.svc.removeParticipant(room, identity, {
+      revokeTokenTs: BigInt(Math.floor(Date.now() / 1000)),
+    });
+  }
+
+  async getConnectedParticipant(room: string, identity: string): Promise<ConnectedParticipant | null> {
+    const participants = await this.svc.listParticipants(room);
+    const participant = participants.find((candidate) => candidate.identity === identity);
+    if (!participant) return null;
+    const metadata = this.parseMetadata(participant.metadata);
+    return {
+      identity: participant.identity,
+      name: participant.name || participant.identity,
+      role: typeof metadata.role === 'string' ? metadata.role : undefined,
+    };
+  }
+
+  async hasActiveScreenShare(room: string): Promise<boolean> {
+    const participants = await this.svc.listParticipants(room);
+    return participants.some((participant) => participant.tracks.some((track) => track.source === TrackSource.SCREEN_SHARE));
   }
 
   // --- Mute on Entry (see docs/adr/0007) ---------------------------------
@@ -111,17 +198,11 @@ export class LivekitService {
 
   // Set the flag, merging into any existing metadata so other keys survive.
   async setMuteOnEntry(room: string, muted: boolean): Promise<void> {
-    const [info] = await this.svc.listRooms([room]);
-    let meta: Record<string, unknown> = {};
-    if (info?.metadata) {
-      try {
-        meta = JSON.parse(info.metadata) as Record<string, unknown>;
-      } catch {
-        meta = {};
-      }
-    }
-    meta.muteOnEntry = muted;
-    await this.svc.updateRoomMetadata(room, JSON.stringify(meta));
+    await this.mutateRoomMetadata(room, (meta) => {
+      if (meta.muteOnEntry === muted) return false;
+      meta.muteOnEntry = muted;
+      return true;
+    });
   }
 
   // Force-mute every non-host microphone currently published in the room. The
@@ -151,56 +232,50 @@ export class LivekitService {
   // Mute on Entry. Its purpose is consent: no one is recorded without an
   // on-screen signal, regardless of who started the recording.
   async setRecordingActive(room: string, active: boolean): Promise<void> {
-    const [info] = await this.svc.listRooms([room]);
-    let meta: Record<string, unknown> = {};
-    if (info?.metadata) {
-      try {
-        meta = JSON.parse(info.metadata) as Record<string, unknown>;
-      } catch {
-        meta = {};
+    await this.mutateRoomMetadata(room, (meta) => {
+      if ((meta.recording === true) === active) return false;
+      meta.recording = active;
+      // Stamp (or clear) the recording start time alongside the flag, so every
+      // client can show a live recording timer off the same real-time metadata
+      // propagation. Only written on the off→true transition.
+      if (active) {
+        meta.recordingStartedAt = Date.now();
+      } else {
+        delete meta.recordingStartedAt;
       }
-    }
-    if ((meta.recording === true) === active) return;
-    meta.recording = active;
-    // Stamp (or clear) the recording start time alongside the flag, so every
-    // client can show a live recording timer off the same real-time metadata
-    // propagation. Only written on the off→true transition (the early-return
-    // above means egress-update events don't reset it).
-    if (active) {
-      meta.recordingStartedAt = Date.now();
-    } else {
-      delete meta.recordingStartedAt;
-    }
-    await this.svc.updateRoomMetadata(room, JSON.stringify(meta));
+      return true;
+    });
   }
 
   async stampStartedAt(room: string): Promise<void> {
-    const [info] = await this.svc.listRooms([room]);
-    let meta: Record<string, unknown> = {};
-    if (info?.metadata) {
-      try {
-        meta = JSON.parse(info.metadata) as Record<string, unknown>;
-      } catch {
-        meta = {};
-      }
-    }
-    if (meta.startedAt) return;
-    meta.startedAt = Date.now();
-    await this.svc.updateRoomMetadata(room, JSON.stringify(meta));
+    await this.mutateRoomMetadata(room, (meta) => {
+      if (meta.startedAt) return false;
+      meta.startedAt = Date.now();
+      return true;
+    });
   }
 
   async clearStartedAt(room: string): Promise<void> {
-    const [info] = await this.svc.listRooms([room]);
-    if (!info?.metadata) return;
-    let meta: Record<string, unknown> = {};
-    try {
-      meta = JSON.parse(info.metadata) as Record<string, unknown>;
-    } catch {
-      return;
-    }
-    if (!meta.startedAt) return;
-    delete meta.startedAt;
-    await this.svc.updateRoomMetadata(room, JSON.stringify(meta));
+    await this.mutateRoomMetadata(room, (meta) => {
+      if (!meta.startedAt) return false;
+      delete meta.startedAt;
+      return true;
+    });
+  }
+
+  // Display-safe projection of the Redis Remote Control grant. Serialized with
+  // recording/mute metadata writes so concurrent consent and recording changes
+  // do not replace one another's keys in the single API process.
+  async setRemoteControlState(room: string, state: RemoteControlRoomState | null): Promise<void> {
+    await this.mutateRoomMetadata(room, (meta) => {
+      if (state) {
+        meta.remoteControl = state;
+        return true;
+      }
+      if (!('remoteControl' in meta)) return false;
+      delete meta.remoteControl;
+      return true;
+    });
   }
 
   private readMuteOnEntry(metadata?: string): boolean {
@@ -213,11 +288,33 @@ export class LivekitService {
   }
 
   private isHost(metadata?: string): boolean {
-    if (!metadata) return false;
+    return this.parseMetadata(metadata).role === 'host';
+  }
+
+  private parseMetadata(metadata?: string): Record<string, unknown> {
+    if (!metadata) return {};
     try {
-      return (JSON.parse(metadata) as { role?: unknown }).role === 'host';
+      return JSON.parse(metadata) as Record<string, unknown>;
     } catch {
-      return false;
+      return {};
+    }
+  }
+
+  private async mutateRoomMetadata(room: string, mutate: (metadata: Record<string, unknown>) => boolean): Promise<void> {
+    const previous = this.metadataWrites.get(room) ?? Promise.resolve();
+    const current = previous
+      .catch(() => undefined)
+      .then(async () => {
+        const [info] = await this.svc.listRooms([room]);
+        const metadata = this.parseMetadata(info?.metadata);
+        if (!mutate(metadata)) return;
+        await this.svc.updateRoomMetadata(room, JSON.stringify(metadata));
+      });
+    this.metadataWrites.set(room, current);
+    try {
+      await current;
+    } finally {
+      if (this.metadataWrites.get(room) === current) this.metadataWrites.delete(room);
     }
   }
 
@@ -230,7 +327,7 @@ export class LivekitService {
     return audioTracks.length;
   }
 
-  async receiveWebhook(body: string, authHeader?: string) {
+  async receiveWebhook(body: string, authHeader?: string): Promise<WebhookEvent> {
     return this.webhook.receive(body, authHeader);
   }
 }

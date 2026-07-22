@@ -274,17 +274,16 @@ call layout switches from the equal grid to a split view: the presented content
 fills the main area and participant thumbnails move to a sidebar.
 _Avoid_: Sharer, broadcaster
 
-**Presenter Placeholder**:
-What the Presenter themselves sees in the main stage instead of their own
-presented content: a static "You're presenting" card (with a Stop button) over a
-dimmed/blurred backdrop. The Presenter is never shown their own live screen feed —
-it is not rendered for them at all. This is what defeats the **infinite-mirror**
-effect (the Droste tunnel that appears when the presented surface contains the
-call window): because the captured pixels of the Presenter's stage are a static
-card rather than a live feed, the recursion never forms in the stream everyone
-else receives. The Presenter still sees their own camera thumbnail in the
-sidebar.
-_Avoid_: Self-view (that is the camera thumbnail, a different thing), self-mirror
+**Presenter Preview**:
+What the Presenter sees in the main stage during a normal [[Present]]: their own
+live shared content under a dark protective tint, with the choice to reveal or
+hide it locally. The tint makes an **infinite mirror** (the Droste tunnel when
+the presented surface contains the call window) less visually disruptive, but a
+live preview cannot eliminate recursive capture. It affects only the Presenter;
+everyone else receives the unmasked presentation, and the camera thumbnail stays
+in the sidebar.
+_Avoid_: Presenter Placeholder (the retired static-card behavior), Self-view
+(that is the camera thumbnail, a different thing), self-mirror
 
 **Ask to Present**:
 When a participant wants to present while someone else already is, they send a
@@ -294,6 +293,38 @@ request times out after 30 seconds with an auto-decline. The host bypasses this
 flow entirely — a host can force-take the presentation at any time, stopping the
 current share immediately.
 _Avoid_: Request to share, take over request
+
+### Remote control
+
+**Remote Control**:
+In-call, attended control of one admitted participant's desktop by another
+admitted participant. The desktop is visible to the whole room while control is
+active. It requires an explicit Request from the Controller and approval from
+the Sharer, is limited to mouse and keyboard input, and is reconfirmed by the
+Sharer every 30 minutes. Remote Control and [[Present]] are mutually exclusive.
+_Avoid_: Remote access (suggests unattended access), desktop sharing, support
+code
+
+**Sharer**:
+The participant whose desktop is visible and controlled during Remote Control.
+The Sharer approves or denies the Request, launches the [[Control Agent]], may
+stop at any time, and must reconfirm every 30 minutes. This role is scoped to one
+active Remote Control session and is distinct from the [[Presenter]].
+_Avoid_: Presenter, Host, controlled user
+
+**Controller**:
+The admitted participant whom the Sharer approved to send mouse and keyboard
+input to the Sharer's [[Control Agent]]. The Controller may stop at any time and
+may type secrets; Huddle never records input events or their contents.
+_Avoid_: Operator, driver, support agent
+
+**Control Agent**:
+The signed and notarized native macOS helper app that captures the Sharer's
+desktop, publishes it into the LiveKit room, and applies input only from the
+server-approved [[Controller]]. It joins as a companion participant hidden from
+people-facing participant UI, has no room Host authority, and holds no standing
+credential. Its local Stop action disconnects it, which ends Remote Control.
+_Avoid_: Host (already the room role), daemon, desktop client
 
 ### In-call host controls
 

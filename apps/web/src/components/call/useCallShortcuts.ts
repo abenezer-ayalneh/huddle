@@ -67,6 +67,10 @@ export function useCallShortcuts(props: Props): void {
     }
 
     function onKeyDown(e: KeyboardEvent) {
+      // The focused Remote Control surface owns keyboard events while the
+      // Controller is operating the desktop; do not steal Cmd/Ctrl+D/E or
+      // Space for local call controls.
+      if ((e.target as HTMLElement | null)?.closest?.('[data-remote-control-input]')) return;
       const { onToggleAudio, onToggleCamera, pushToTalk } = ref.current;
 
       // ⌘/Ctrl+D / +E — mirror the mic / camera buttons. stopImmediatePropagation
@@ -100,6 +104,7 @@ export function useCallShortcuts(props: Props): void {
     }
 
     function onKeyUp(e: KeyboardEvent) {
+      if ((e.target as HTMLElement | null)?.closest?.('[data-remote-control-input]')) return;
       if (e.code === 'Space' && talking) {
         e.preventDefault();
         reMute();

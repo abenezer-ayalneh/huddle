@@ -12,10 +12,15 @@ import PresentationToast from '@/components/call/PresentationToast';
 import PreJoinScreen from '@/components/call/PreJoinScreen';
 import RecordingIndicator from '@/components/call/RecordingIndicator';
 import RecordingToast from '@/components/call/RecordingToast';
+import RemoteControlBanner from '@/components/call/RemoteControlBanner';
+import RemoteControlSurface from '@/components/call/RemoteControlSurface';
+import RemoteControlToast from '@/components/call/RemoteControlToast';
+import AgentLaunchDialog from '@/components/call/AgentLaunchDialog';
 import VideoGrid from '@/components/call/VideoGrid';
 import ErrorBoundary from '@/components/faults/ErrorBoundary';
 import { usePresentation } from '@/components/call/usePresentation';
 import { useRecording } from '@/components/call/useRecording';
+import { useRemoteControl } from '@/components/call/useRemoteControl';
 import LeaveConfirmDialog from './LeaveConfirmDialog';
 import { Centered } from './ui';
 
@@ -143,8 +148,9 @@ function CallView({
   const { videoRef: pipVideoRef, enter: enterPip, exit: exitPip, active: pipActive, supported: pipSupported } = usePictureInPicture(stageTrack);
   useBackgroundCall({ enterPip });
 
-  const presentation = usePresentation(isHost);
   const recording = useRecording({ room, token, isHost, hostKey });
+  const remoteControl = useRemoteControl({ room, participantToken: token });
+  const presentation = usePresentation(isHost, !!remoteControl.session);
 
   // The non-host record affordance walks request → wait → stop (approval starts
   // the recording immediately). The host records from the Host panel, and nobody
@@ -183,6 +189,14 @@ function CallView({
         onStopPresenting={presentation.handleShareClick}
         onStageTrackChange={setStageTrack}
         localName={displayName}
+        remoteControlSession={remoteControl.session}
+        isRemoteSharer={remoteControl.iAmSharer}
+        onRequestControl={(identity) => void remoteControl.requestControl(identity)}
+        remoteControlInput={
+          remoteControl.iAmController && remoteControl.session?.agentConnected ? (
+            <RemoteControlSurface sendInput={remoteControl.sendInput} onEscape={() => void remoteControl.stop()} />
+          ) : undefined
+        }
       />
       {/* Scoped boundaries (docs/adr/0018): the chat and the data-message-driven
           overlays are the likely crash sources. A crash in any of them fails to
@@ -203,12 +217,31 @@ function CallView({
         recordMode={recordMode}
         onRecordClick={recordMode ? onRecordClick : undefined}
         recordBusy={recording.busy}
+        remoteControlActive={!!remoteControl.session}
         onPopOut={pipSupported ? () => (pipActive ? exitPip() : enterPip()) : undefined}
         pipActive={pipActive}
       />
       <ErrorBoundary label="Call toasts" fallback={null}>
         <div className="pointer-events-none absolute inset-x-0 top-14 z-30 flex flex-col items-center gap-2">
           <RecordingIndicator active={recording.recordingActive} startedAt={recording.recordingStartedAt} />
+          <RemoteControlBanner
+            session={remoteControl.session}
+            iAmSharer={remoteControl.iAmSharer}
+            iAmController={remoteControl.iAmController}
+            recordingActive={recording.recordingActive}
+            renewalRemainingMs={remoteControl.renewalRemainingMs}
+            onStop={remoteControl.stop}
+            onRenew={remoteControl.renew}
+          />
+          <RemoteControlToast
+            incoming={remoteControl.incomingRequest}
+            outgoing={remoteControl.outgoingRequest}
+            notice={remoteControl.notice}
+            recordingActive={recording.recordingActive}
+            onApprove={remoteControl.approve}
+            onDeny={remoteControl.deny}
+            onDismiss={remoteControl.dismissNotice}
+          />
           <RecordingToast
             incoming={recording.incoming}
             pending={recording.phase === 'pending'}
@@ -231,6 +264,7 @@ function CallView({
       </ErrorBoundary>
       <CallTimer />
       <ConnectionStatus />
+      <AgentLaunchDialog bootstrap={remoteControl.helperBootstrap} onDismiss={remoteControl.dismissHelperBootstrap} />
       {overlay}
       {/* The single feed handed to native Picture-in-Picture. Kept in the DOM
           and playing (PiP requires that) but visually out of the way — the grid

@@ -5,7 +5,8 @@ A browser-based, Google Meet–style video conferencing app built on a
 create or schedule meetings; guests join from a shared link through a waiting
 room — no account needed.
 
-> **Status:** Feature-complete through the roadmap (Phases 0–9). Core calling,
+> **Status:** Feature-complete through Phase 9, with attended Remote Control
+> (Phase 10) implemented behind the macOS companion-agent workflow. Core calling,
 > host controls, accounts/scheduling, recording, and single-VPS deploy hardening
 > are all implemented. See [`docs/ROADMAP.md`](docs/ROADMAP.md) for per-phase
 > detail and verification notes.
@@ -25,6 +26,9 @@ room — no account needed.
   server-side via a per-room host key.
 - **Recording** — host-toggled room-composite recording via LiveKit Egress to
   self-hosted MinIO (S3), downloaded back through the host-authorized API.
+- **Attended Remote Control** — Sharer-approved, room-scoped mouse/keyboard
+  control through a signed macOS Control Agent; no unattended access,
+  clipboard, file transfer, or desktop audio.
 - **Deploy hardening** — Caddy TLS front door, embedded TURN, Redis-backed knock
   state, `/health` + `/ready`, JSON logs, and a production compose override.
 
@@ -38,6 +42,7 @@ room — no account needed.
 - **Auth:** BetterAuth (mounted in the API at `/api/auth/*`)
 - **Edge (prod):** Caddy (automatic HTTPS/WSS) · embedded TURN
 - **Tooling:** pnpm workspaces, Docker Compose, Husky + lint-staged
+- **Control Agent:** Swift 6 / SwiftUI + LiveKit Swift SDK 2.15.1 (macOS 13+)
 
 ## Quick start (local dev)
 
@@ -67,6 +72,8 @@ pnpm lint                          # eslint across workspaces
 pnpm typecheck                     # tsc --noEmit across workspaces
 pnpm test                          # unit tests (API)
 pnpm build                         # build all workspaces
+swift test --package-path apps/control-agent  # Control Agent core tests
+./apps/control-agent/scripts/build-app.sh     # local unsigned macOS app
 ```
 
 A Husky pre-commit hook runs prettier (lint-staged) + typecheck + tests.

@@ -6,7 +6,8 @@ Guidance for Codex (and any AI agent) working in this repository.
 
 A self-hosted, browser-based video conferencing app (a Google Meet–style product)
 built on **LiveKit** (open-source WebRTC SFU). The app is **implemented through
-Phase 9** (all roadmap phases done): `apps/web` (Next.js) + `apps/api` (NestJS),
+Phase 10** (attended Remote Control, macOS-first): `apps/web` (Next.js) +
+`apps/api` (NestJS),
 with `infra/` holding the dev and prod (`docker-compose.prod.yml`) stacks.
 
 Read the docs in `docs/` first — especially `docs/ROADMAP.md` (phase status) and
@@ -21,6 +22,11 @@ exact requirements.
 MVP = create/join a room, publish & subscribe to camera + mic, participant grid,
 mute/unmute, leave call. Screen share, chat, recording, and scheduling are
 **later phases** — do not build them unless the active phase says so.
+
+Phase 10 Remote Control is an explicit exception to the MVP scope: it is an
+attended, room-scoped feature using the native macOS Control Agent. Keep its
+consent, identity binding, 30-minute renewal, and no-clipboard/file/audio
+exclusions intact; do not turn it into unattended access.
 
 ## Target stack
 

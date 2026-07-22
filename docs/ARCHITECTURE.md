@@ -2,7 +2,7 @@
 
 ## Overview
 
-Three independent pieces, plus Redis:
+Four application/participant-side pieces, plus the backing services:
 
 1. **Web frontend** (Next.js) — the UI users interact with. Connects directly to
    the LiveKit server for media via the client SDK.
@@ -10,36 +10,43 @@ Three independent pieces, plus Redis:
    endpoints, and (later) receives LiveKit webhooks. Holds the API key/secret.
 3. **LiveKit server** (self-hosted container) — the WebRTC SFU that actually
    routes audio/video between participants.
-4. **Redis** — required by LiveKit for state when running more than one node and
+4. **Control Agent** (`apps/control-agent`, macOS) — an attended, short-lived
+   companion for a Remote Control Sharer. It joins the room with a scoped
+   one-time token, publishes the desktop, and applies only the approved
+   Controller's mouse/keyboard packets.
+5. **Redis** — required by LiveKit for state when running more than one node and
    for some features (and a sensible default even for a single node).
-5. **Postgres** (Phase 7) — persists user accounts and managed rooms (scheduled
+6. **Postgres** (Phase 7) — persists user accounts and managed rooms (scheduled
    meetings). The API talks to it via Prisma; auth tables are owned by BetterAuth.
 
 The browser talks to the **backend over HTTPS** (to get a token) and to the
 **LiveKit server over secure WebSocket + WebRTC** (for media). The backend talks
-to LiveKit over its server API for admin tasks.
+to LiveKit over its server API for admin tasks. During Remote Control, the
+Control Agent also connects directly to LiveKit; input packets travel over
+LiveKit, while authority remains in the backend.
 
 ## Component diagram
 
 ```
                 ┌──────────────────────────────────────────┐
-                │                Browser                     │
-                │  Next.js app + livekit-client SDK          │
-                └───────┬───────────────────────┬────────────┘
-                        │ 1) HTTPS: get token    │ 2) WSS + WebRTC: media
-                        ▼                        ▼
+                │                Browser                   │
+                │  Next.js app + livekit-client SDK        │
+                └───────┬──────────────────────┬───────────┘
+                        │ HTTPS: authority      │ WSS + WebRTC: media/data
+                        ▼                       ▼
         ┌───────────────────────────┐   ┌────────────────────────────┐
         │   NestJS API (apps/api)   │   │  LiveKit server (infra)     │
-        │  - POST /token            │   │  - SFU / room management    │
-        │  - room helpers           │   │  - WebRTC, TURN             │
-        │  - webhook receiver (L8+) │◀──┤  - webhooks (later phase)   │
+        │  - participant tokens     │   │  - SFU / room management    │
+        │  - room + control grants  │   │  - WebRTC, TURN, data       │
+        │  - webhook receiver       │◀──┤  - lifecycle webhooks       │
         │  holds API key + secret   │   └─────────────┬──────────────┘
         └─────────────┬─────────────┘                 │
-                      │ server SDK (admin/token)       │ state
-                      └────────────────┐               ▼
-                                       │        ┌──────────────┐
-                                       └───────▶│    Redis     │
-                                                └──────────────┘
+                      │ Redis + Prisma                         ▲
+                      ▼                                        │
+               ┌──────────────┐      ┌─────────────────────────┴┐
+               │ Redis / PG   │      │ macOS Control Agent      │
+               │ grant / audit│      │ screen publish + input   │
+               └──────────────┘      └──────────────────────────┘
 ```
 
 ## Token / connection flow (the critical path)
@@ -64,6 +71,46 @@ only ever receives a scoped, expiring token.
   the backend decides what a token is allowed to do.
 - **Trusted (server-side):** NestJS API and LiveKit server, configured via env /
   `livekit.yaml`. Secrets never cross to the client.
+- **Privileged but narrowly scoped:** the Control Agent can capture a display and
+  inject input after macOS grants Screen Recording and Accessibility permission.
+  It receives no API secret or Host authority. A LiveKit input packet is only
+  transport: the agent also requires its one-time token identity and the current
+  server-written Remote Control grant to match room, session, Sharer, Controller,
+  and agent identities.
+
+## Remote Control (post-Phase 9)
+
+1. A Controller asks the API to control a connected Sharer. The API verifies the
+   participant token, both room presences, no active Present track, and no active
+   Remote Control grant. The request is stored in Redis and an audit row is
+   created in Postgres. A reliable LiveKit data packet only wakes the Sharer's
+   prompt; it is not the request's authority.
+2. The Sharer approves or denies through participant-authorized API endpoints.
+   Approval atomically consumes the request, creates the Redis grant with a
+   30-minute renewal deadline, updates LiveKit room metadata with display-safe
+   state, and returns a short-lived bootstrap code. Denial completes the audit.
+3. The browser opens the signed macOS Control Agent with that code. The agent
+   redeems it once for a short-lived, screen-share-only LiveKit token whose
+   metadata binds all five grant identifiers. No LiveKit JWT is put in a URL.
+4. The agent joins under `control-agent:<sessionId>`, publishes its screen track,
+   and observes server-written room metadata. It is filtered from participant
+   lists and camera placeholders, but remains protocol-visible: LiveKit's native
+   `hidden` grant also hides publications and therefore cannot carry the room-
+   visible desktop.
+5. The approved Controller sends versioned, session-scoped mouse/keyboard data
+   packets directly to that agent. The agent checks the SFU-attested sender,
+   session id, controller id, renewal deadline, and current room metadata before
+   injecting any event. Mouse moves are lossy/coalesced; clicks and keys are
+   reliable. Input content is never sent to the API or database.
+6. Sharer or Controller may stop. A LiveKit `participant_left` webhook also ends
+   the grant when the Sharer, Controller, or agent leaves. The agent's local Stop
+   button disconnects it rather than exercising a third stop authority. A small
+   API expiry loop ends grants that miss the 30-minute Sharer reconfirmation.
+
+Remote Control and Present are mutually exclusive. The API checks for a Present
+track on request and approval; the web disables Present for every participant
+while Remote Control metadata exists. Recording remains allowed, with an
+explicit approval warning that the room-visible desktop may be recorded.
 
 ## Data & persistence
 
@@ -80,6 +127,9 @@ only ever receives a scoped, expiring token.
   - `recording` (**Phase 8**) — one row per egress job: `egressId`, `roomId`,
     `status` (`starting`→`active`→`completed`/`failed`), `objectKey` (path in the
     S3 bucket), `sizeBytes?`, `durationMs?`. Lifecycle is webhook-driven.
+  - `remote_control_session` — metadata-only attended-control audit: participant
+    and agent identities/names, status, start/end/renewal timestamps, and end
+    reason. It never stores input, clipboard, screenshots, frames, or secrets.
 - Media is now stored too (Phase 8): recordings live in **MinIO** (S3-compatible
   object store), not in Postgres — the DB only holds the recording metadata above.
 

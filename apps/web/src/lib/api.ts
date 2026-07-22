@@ -2,6 +2,7 @@
 // Host-only calls authorize with the per-room hostKey via the x-host-key header.
 import { emitFault } from './faults';
 import { FaultError, httpFetch, isFaultError, readFault } from './http';
+import type { RemoteControlSession } from './controlProtocol';
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
@@ -51,6 +52,25 @@ export type PendingKnock = {
   // null for anonymous guests or accounts without a picture.
   image?: string | null;
   requestedAt: number;
+};
+
+export type RemoteControlRequestSummary = {
+  requestId: string;
+  room: string;
+  sharerIdentity: string;
+  sharerName: string;
+  controllerIdentity: string;
+  controllerName: string;
+  requestedAt: string;
+  expiresAt: string;
+};
+
+export type RemoteControlApproval = {
+  session: RemoteControlSession;
+  helper: {
+    bootstrapCode: string;
+    expiresAt: string;
+  };
 };
 
 // A room-composite recording (Phase 8).
@@ -224,6 +244,43 @@ export const api = {
     });
     return toRecordingSummary(r, room);
   },
+
+  // --- Attended Remote Control (docs/adr/0024) ---
+  requestRemoteControl: (room: string, sharerIdentity: string, participantToken: string) =>
+    request<RemoteControlRequestSummary>(`/rooms/${encodeURIComponent(room)}/remote-control/requests`, {
+      method: 'POST',
+      headers: { 'x-participant-token': participantToken },
+      body: JSON.stringify({ sharerIdentity }),
+    }),
+
+  getRemoteControlRequest: (room: string, requestId: string, participantToken: string) =>
+    request<RemoteControlRequestSummary>(`/rooms/${encodeURIComponent(room)}/remote-control/requests/${encodeURIComponent(requestId)}`, {
+      headers: { 'x-participant-token': participantToken },
+    }),
+
+  approveRemoteControl: (room: string, requestId: string, participantToken: string) =>
+    request<RemoteControlApproval>(`/rooms/${encodeURIComponent(room)}/remote-control/requests/${encodeURIComponent(requestId)}/approve`, {
+      method: 'POST',
+      headers: { 'x-participant-token': participantToken },
+    }),
+
+  denyRemoteControl: (room: string, requestId: string, participantToken: string) =>
+    request<{ status: 'denied' }>(`/rooms/${encodeURIComponent(room)}/remote-control/requests/${encodeURIComponent(requestId)}/deny`, {
+      method: 'POST',
+      headers: { 'x-participant-token': participantToken },
+    }),
+
+  stopRemoteControl: (room: string, sessionId: string, participantToken: string) =>
+    request<{ status: 'ended'; endedAt: string }>(`/rooms/${encodeURIComponent(room)}/remote-control/${encodeURIComponent(sessionId)}/stop`, {
+      method: 'POST',
+      headers: { 'x-participant-token': participantToken },
+    }),
+
+  renewRemoteControl: (room: string, sessionId: string, participantToken: string) =>
+    request<{ sessionId: string; renewalDueAt: string }>(`/rooms/${encodeURIComponent(room)}/remote-control/${encodeURIComponent(sessionId)}/renew`, {
+      method: 'POST',
+      headers: { 'x-participant-token': participantToken },
+    }),
 
   // No downloadRecording(): a finished recording carries a signed downloadUrl in
   // its summary, rendered as a plain `<a download>` so the browser downloads it

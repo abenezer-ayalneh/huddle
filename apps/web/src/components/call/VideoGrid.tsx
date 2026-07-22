@@ -3,19 +3,24 @@
 import { useSpeakingParticipants, useTracks, type TrackReferenceOrPlaceholder } from '@livekit/components-react';
 import { Track } from 'livekit-client';
 import { MonitorOff, MonitorUp, PinOff } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import FocusLayout, { trackKey } from './FocusLayout';
 import SelfView, { type Corner } from './SelfView';
 import VideoTile from './VideoTile';
+import { isControlAgentParticipant, type RemoteControlSession } from '@/lib/controlProtocol';
 
 export default function VideoGrid({
   iAmPresenting = false,
   onStopPresenting,
   onStageTrackChange,
   localName,
+  remoteControlSession,
+  isRemoteSharer = false,
+  onRequestControl,
+  remoteControlInput,
 }: {
-  // When the local participant is the Presenter, we must never render their own
-  // presented track back to them — see PresenterPlaceholder below.
+  // When the local participant is the Presenter, they see their own shared
+  // track through the protected local-only PresenterPreview below.
   iAmPresenting?: boolean;
   onStopPresenting?: () => void;
   // Reports the feed that owns the main stage so it can be mirrored into
@@ -26,6 +31,10 @@ export default function VideoGrid({
   // tile so it never flashes a placeholder before LiveKit populates the name
   // (see VideoTile's `fallbackName`). Used wherever the local tile renders.
   localName?: string;
+  remoteControlSession?: RemoteControlSession | null;
+  isRemoteSharer?: boolean;
+  onRequestControl?: (identity: string) => void;
+  remoteControlInput?: ReactNode;
 }) {
   const tracks = useTracks(
     [
@@ -38,8 +47,12 @@ export default function VideoGrid({
   const speaking = useSpeakingParticipants();
   const activeIdentity = speaking[0]?.identity;
 
-  const screenTrack = useMemo(() => tracks.find((t) => t.source === Track.Source.ScreenShare) ?? null, [tracks]);
-  const cameraTracks = useMemo(() => tracks.filter((t) => t.source === Track.Source.Camera), [tracks]);
+  const screenTrack = useMemo(() => {
+    const screenTracks = tracks.filter((t) => t.source === Track.Source.ScreenShare);
+    if (remoteControlSession) return screenTracks.find((t) => t.participant.identity === remoteControlSession.agentIdentity) ?? null;
+    return screenTracks.find((t) => !isControlAgentParticipant(t.participant)) ?? null;
+  }, [remoteControlSession, tracks]);
+  const cameraTracks = useMemo(() => tracks.filter((t) => t.source === Track.Source.Camera && !isControlAgentParticipant(t.participant)), [tracks]);
 
   // The local camera leaves the grid: with others present it floats as the
   // Self-view; the rest are the remote tiles that fill the grid.
@@ -61,10 +74,12 @@ export default function VideoGrid({
   const togglePin = (identity: string) => setPinnedIdentity((cur) => (cur === identity ? null : identity));
 
   // The feed that owns the main stage, by the same precedence the layout uses
-  // below — reported up for Picture-in-Picture to mirror. The Presenter's own
-  // screen is excluded (they never see it; see PresenterPlaceholder).
+  // below — reported up for Picture-in-Picture to mirror. A normal Presenter
+  // sees their live screen inside PresenterPreview; the local shared track is
+  // still omitted from PiP. Remote Control keeps its static local safety surface.
+  const hideOwnStage = iAmPresenting || isRemoteSharer;
   const stageTrack: TrackReferenceOrPlaceholder | null =
-    screenTrack && !iAmPresenting
+    screenTrack && !hideOwnStage
       ? screenTrack
       : pinnedTrack
         ? pinnedTrack
@@ -84,21 +99,24 @@ export default function VideoGrid({
     return (
       <FocusLayout
         main={
-          iAmPresenting ? (
-            // The Presenter is never shown their own live feed. Rendering it
-            // would be captured and re-broadcast, producing the infinite-mirror
-            // (Droste) tunnel when the shared surface contains the call. A
-            // *static* card breaks the recursion in the captured stream — a
-            // blurred *live* feed would not. See CONTEXT.md "Presenter
-            // Placeholder".
-            <PresenterPlaceholder onStop={onStopPresenting} />
+          isRemoteSharer ? (
+            // A Remote Control Sharer never sees the agent's own desktop track.
+            // Its native capture has a dedicated static safety surface; ordinary
+            // browser presentations use the live, tinted PresenterPreview below.
+            <RemoteControlPlaceholder />
+          ) : iAmPresenting ? (
+            <PresenterPreview key={trackKey(screenTrack)} trackRef={screenTrack} onStop={onStopPresenting} />
           ) : (
-            <VideoTile trackRef={screenTrack} active={false} />
+            <>
+              <VideoTile trackRef={screenTrack} active={false} />
+              {remoteControlInput}
+            </>
           )
         }
         stripTracks={cameraTracks}
         activeIdentity={activeIdentity}
         localName={localName}
+        onRequestControl={onRequestControl}
       />
     );
   }
@@ -126,6 +144,7 @@ export default function VideoGrid({
         stripTracks={stripTracks}
         activeIdentity={activeIdentity}
         onTogglePin={togglePin}
+        onRequestControl={onRequestControl}
         localName={localName}
       />
     );
@@ -133,13 +152,15 @@ export default function VideoGrid({
 
   // Alone — the local camera just fills the stage as the only tile.
   if (remoteTracks.length === 0) {
-    return <EqualGrid cameraTracks={localTrack ? [localTrack] : []} activeIdentity={activeIdentity} localName={localName} />;
+    return (
+      <EqualGrid cameraTracks={localTrack ? [localTrack] : []} activeIdentity={activeIdentity} localName={localName} onRequestControl={onRequestControl} />
+    );
   }
 
   // Others present — equal grid of the remotes, local camera floating.
   return (
     <>
-      <EqualGrid cameraTracks={remoteTracks} activeIdentity={activeIdentity} onTogglePin={togglePin} />
+      <EqualGrid cameraTracks={remoteTracks} activeIdentity={activeIdentity} onTogglePin={togglePin} onRequestControl={onRequestControl} />
       {localTrack && <SelfView trackRef={localTrack} corner={selfCorner} onCornerChange={setSelfCorner} fallbackName={localName} />}
     </>
   );
@@ -149,11 +170,13 @@ function EqualGrid({
   cameraTracks,
   activeIdentity,
   onTogglePin,
+  onRequestControl,
   localName,
 }: {
   cameraTracks: ReturnType<typeof useTracks>;
   activeIdentity: string | undefined;
   onTogglePin?: (identity: string) => void;
+  onRequestControl?: (identity: string) => void;
   // The local participant's known name, applied only to its own tile.
   localName?: string;
 }) {
@@ -180,6 +203,7 @@ function EqualGrid({
             trackRef={trackRef}
             active={trackRef.participant.identity === activeIdentity && cameraTracks.length > 1}
             onTogglePin={onTogglePin && !trackRef.participant.isLocal ? () => onTogglePin(trackRef.participant.identity) : undefined}
+            onRequestControl={onRequestControl && !trackRef.participant.isLocal ? () => onRequestControl(trackRef.participant.identity) : undefined}
             fallbackName={trackRef.participant.isLocal ? localName : undefined}
           />
         ))}
@@ -188,11 +212,10 @@ function EqualGrid({
   );
 }
 
-// What the Presenter sees in place of their own presented content: a static,
-// frosted-glass card — never a live <VideoTrack>. The backdrop is purely
-// decorative (fixed gradient + blurred neon blobs), so the screen capture of
-// this region is a constant image and the mirror recursion never forms.
-function PresenterPlaceholder({ onStop }: { onStop?: () => void }) {
+// The Remote Control Sharer sees this static confirmation surface instead of
+// the native agent's desktop track. Unlike a normal browser presentation, that
+// capture remains hidden from the Sharer (see PresenterPreview below).
+function RemoteControlPlaceholder() {
   return (
     <div className="cyber-clip relative h-full w-full overflow-hidden bg-[oklch(0.12_0.02_280)]">
       <div className="absolute inset-0 bg-gradient-to-br from-[oklch(0.2_0.05_320)] to-[oklch(0.13_0.03_265)]" />
@@ -205,21 +228,65 @@ function PresenterPlaceholder({ onStop }: { onStop?: () => void }) {
             <MonitorUp className="h-7 w-7 text-cyan" />
           </div>
           <div className="space-y-1">
-            <p className="font-display text-lg font-semibold text-white/90">You&apos;re presenting to everyone</p>
-            <p className="text-sm text-white/55">Your screen is live for the room. We hide it here so you don&apos;t see an endless mirror.</p>
+            <p className="font-display text-lg font-semibold text-white/90">Your desktop is visible to the room</p>
+            <p className="text-sm text-white/55">Remote Control keeps your desktop on the main stage. Everyone in this room can see it.</p>
           </div>
-          {onStop && (
-            <button
-              type="button"
-              onClick={onStop}
-              className="neon-magenta mt-1 inline-flex items-center gap-2 rounded-full bg-magenta px-4 py-2 text-sm font-medium text-white transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-magenta/60"
-            >
-              <MonitorOff className="h-4 w-4" />
-              Stop presenting
-            </button>
-          )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// The normal Presenter sees the live browser screen they are publishing. The
+// default tint makes a recursively captured call much less distracting, but it
+// deliberately remains a live preview: the Presenter can reveal it on demand.
+// This state is local to the component and resets when the screen track ends.
+function PresenterPreview({ trackRef, onStop }: { trackRef: TrackReferenceOrPlaceholder; onStop?: () => void }) {
+  const [isRevealed, setIsRevealed] = useState(false);
+
+  const stopControl = onStop && (
+    <button
+      type="button"
+      onClick={onStop}
+      className="neon-magenta inline-flex items-center gap-2 rounded-full border border-magenta/70 bg-magenta/15 px-4 py-2 text-sm font-medium text-white transition hover:bg-magenta/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-magenta/80"
+    >
+      <MonitorOff className="h-4 w-4" />
+      Stop presenting
+    </button>
+  );
+
+  return (
+    <div className="relative h-full w-full">
+      <VideoTile trackRef={trackRef} active={false} />
+      {isRevealed ? (
+        <div className="absolute left-1/2 top-3 z-10 flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 flex-wrap justify-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsRevealed(false)}
+            className="neon-cyan inline-flex items-center gap-2 rounded-full border border-cyan/70 bg-[oklch(0.16_0.04_240_/_0.78)] px-4 py-2 text-sm font-medium text-cyan transition hover:bg-cyan/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/80"
+          >
+            Hide my screen
+          </button>
+          {stopControl}
+        </div>
+      ) : (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-[oklch(0.13_0.025_280_/_0.76)] p-6 backdrop-blur-[1px]">
+          <div className="flex max-w-md flex-col items-center text-center">
+            <p className="font-display text-xl font-semibold text-white sm:text-2xl">You are presenting</p>
+            <p className="mt-2 text-sm font-medium text-white/80">This is here to avoid infinite mirroring</p>
+            <div className="mt-5 flex flex-wrap justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setIsRevealed(true)}
+                className="neon-cyan inline-flex items-center gap-2 rounded-full border border-cyan/70 bg-cyan/10 px-4 py-2 text-sm font-medium text-cyan transition hover:bg-cyan/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/80"
+              >
+                Show my screen anyway
+              </button>
+              {stopControl}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

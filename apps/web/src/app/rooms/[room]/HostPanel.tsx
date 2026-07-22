@@ -7,6 +7,7 @@ import { api, type PendingKnock } from '@/lib/api';
 import IconButton from '@/components/IconButton';
 import { useDismissOnOutside } from '@/components/call/useDismissOnOutside';
 import RecordingControls from './RecordingControls';
+import { isControlAgentParticipant } from '@/lib/controlProtocol';
 
 function playDing() {
   try {
@@ -29,6 +30,8 @@ function playDing() {
 
 export default function HostPanel({ room, hostKey }: { room: string; hostKey: string }) {
   const participants = useRemoteParticipants();
+  const humanParticipants = useMemo(() => participants.filter((participant) => !isControlAgentParticipant(participant)), [participants]);
+  const controlAgents = useMemo(() => participants.filter((participant) => isControlAgentParticipant(participant)), [participants]);
   const { metadata } = useRoomInfo();
   const muteOnEntry = useMemo(() => {
     if (!metadata) return false;
@@ -243,11 +246,11 @@ export default function HostPanel({ room, hostKey }: { room: string; hostKey: st
               </button>
             )}
           </div>
-          {participants.length === 0 ? (
+          {humanParticipants.length === 0 ? (
             <p className="text-white/45">No other participants.</p>
           ) : (
             <ul className="space-y-2">
-              {participants.map((p) => (
+              {humanParticipants.map((p) => (
                 <li key={p.identity} className="flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2">
                   <span className="truncate text-white/90">{p.name || p.identity}</span>
                   <span className="flex shrink-0 gap-1">
@@ -273,6 +276,26 @@ export default function HostPanel({ room, hostKey }: { room: string; hostKey: st
             </ul>
           )}
         </Section>
+
+        {controlAgents.length > 0 && (
+          <Section title="Control Agent">
+            <ul className="space-y-2">
+              {controlAgents.map((agent) => (
+                <li key={agent.identity} className="flex items-center justify-between gap-2 rounded-lg border border-cyan/20 bg-cyan/5 px-3 py-2">
+                  <span className="truncate text-white/75">Control Agent companion</span>
+                  <IconButton
+                    icon={UserMinus}
+                    label="Remove Control Agent"
+                    variant="danger"
+                    size="sm"
+                    disabled={busy === `remove-${agent.identity}`}
+                    onClick={() => remove(agent.identity)}
+                  />
+                </li>
+              ))}
+            </ul>
+          </Section>
+        )}
       </div>
     </aside>
   );

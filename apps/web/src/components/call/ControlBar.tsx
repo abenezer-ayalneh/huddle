@@ -37,6 +37,7 @@ export default function ControlBar({
   recordMode,
   onRecordClick,
   recordBusy = false,
+  remoteControlActive = false,
   onPopOut,
   pipActive = false,
 }: {
@@ -54,6 +55,7 @@ export default function ControlBar({
   recordMode?: 'request' | 'pending' | 'recording';
   onRecordClick?: () => void;
   recordBusy?: boolean;
+  remoteControlActive?: boolean;
   // Picture-in-Picture (CONTEXT.md): pop the main stage into the OS-level
   // floating window so a Background Call stays visible. undefined hides the
   // control where PiP is unsupported.
@@ -153,7 +155,13 @@ export default function ControlBar({
     },
   });
 
-  const shareLabel = iAmPresenting ? 'Stop presenting' : someoneElsePresenting ? 'Ask to present' : 'Share screen';
+  const shareLabel = remoteControlActive
+    ? 'Present is unavailable during Remote Control'
+    : iAmPresenting
+      ? 'Stop presenting'
+      : someoneElsePresenting
+        ? 'Ask to present'
+        : 'Share screen';
 
   // Switch Device semantics: a pick always puts the device into use, so the
   // track turns on after switching (an unmute / camera-on gesture).
@@ -204,7 +212,7 @@ export default function ControlBar({
           icon={iAmPresenting ? MonitorOff : MonitorUp}
           label={shareLabel}
           active={iAmPresenting}
-          disabled={hasOutgoingRequest}
+          disabled={hasOutgoingRequest || remoteControlActive}
           onClick={onShareClick}
         />
         {/* display:contents wrapper carries the marker the chat panel's outside-press

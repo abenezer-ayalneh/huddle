@@ -5,6 +5,7 @@ import { FaultCode, faultBody } from '../common/faults';
 import { LivekitService } from './livekit.service';
 import { RecordingsService } from './recordings.service';
 import { RoomsService } from './rooms.service';
+import { RemoteControlService } from './remote-control.service';
 
 // Receives LiveKit server events. The body is signed with the API key; we
 // verify it with WebhookReceiver before acting. Needs the raw request body
@@ -17,13 +18,14 @@ export class WebhookController {
     private readonly livekit: LivekitService,
     private readonly rooms: RoomsService,
     private readonly recordings: RecordingsService,
+    private readonly remoteControl: RemoteControlService,
   ) {}
 
   @Post('webhook')
   @HttpCode(200)
   async receive(@Req() req: RawBodyRequest<Request>) {
     const raw = req.rawBody?.toString('utf8') ?? '';
-    let event;
+    let event: Awaited<ReturnType<LivekitService['receiveWebhook']>>;
     try {
       event = await this.livekit.receiveWebhook(raw, req.headers.authorization);
     } catch (err) {
@@ -35,6 +37,13 @@ export class WebhookController {
 
     if (event.event === 'participant_joined' && event.room?.name) {
       await this.livekit.stampStartedAt(event.room.name);
+      if (event.participant?.identity) {
+        await this.remoteControl.onParticipantJoined(event.room.name, event.participant.identity);
+      }
+    }
+
+    if (event.event === 'participant_left' && event.room?.name && event.participant?.identity) {
+      await this.remoteControl.onParticipantLeft(event.room.name, event.participant.identity);
     }
 
     if (event.event === 'participant_left' && event.room?.name && event.room.numParticipants === 0) {
@@ -43,6 +52,7 @@ export class WebhookController {
 
     if (event.event === 'room_finished' && event.room?.name) {
       await this.rooms.onRoomFinished(event.room.name);
+      await this.remoteControl.onRoomFinished(event.room.name);
     }
 
     // Egress lifecycle (Phase 8): started / updated / ended carry the egressInfo

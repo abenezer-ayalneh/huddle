@@ -18,6 +18,7 @@ export default function FocusLayout({
   stripTracks,
   activeIdentity,
   onTogglePin,
+  onRequestControl,
   localName,
 }: {
   main: ReactNode;
@@ -27,6 +28,7 @@ export default function FocusLayout({
   // The presentation case omits it — a presentation owns the stage and a pin
   // would have nothing to do.
   onTogglePin?: (identity: string) => void;
+  onRequestControl?: (identity: string) => void;
   // The local participant's known name, applied only to its docked self-view
   // tile in the strip (see VideoTile's `fallbackName`).
   localName?: string;
@@ -49,6 +51,7 @@ export default function FocusLayout({
                 trackRef={trackRef}
                 active={trackRef.participant.identity === activeIdentity && stripTracks.length > 1}
                 onTogglePin={onTogglePin && !trackRef.participant.isLocal ? () => onTogglePin(trackRef.participant.identity) : undefined}
+                onRequestControl={onRequestControl && !trackRef.participant.isLocal ? () => onRequestControl(trackRef.participant.identity) : undefined}
                 fallbackName={trackRef.participant.isLocal ? localName : undefined}
               />
             </div>

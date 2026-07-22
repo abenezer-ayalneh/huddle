@@ -8,6 +8,10 @@ import { ParticipantGuard } from './participant.guard';
 import { RecordingsController } from './recordings.controller';
 import { RecordingRepository } from './recordings.repo';
 import { RecordingsService } from './recordings.service';
+import { RemoteControlController } from './remote-control.controller';
+import { RemoteControlRepository } from './remote-control.repo';
+import { RemoteControlService } from './remote-control.service';
+import { RemoteControlStateService } from './remote-control.state';
 import { RoomRepository } from './rooms.repo';
 import { RoomsController } from './rooms.controller';
 import { RoomsService } from './rooms.service';
@@ -16,7 +20,7 @@ import { StorageService } from './storage.service';
 import { WebhookController } from './webhook.controller';
 
 @Module({
-  controllers: [RoomsController, RecordingsController, WebhookController],
+  controllers: [RoomsController, RecordingsController, RemoteControlController, WebhookController],
   providers: [
     RoomsService,
     RoomRepository,
@@ -30,6 +34,9 @@ import { WebhookController } from './webhook.controller';
     RecordingRepository,
     EgressService,
     StorageService,
+    RemoteControlService,
+    RemoteControlRepository,
+    RemoteControlStateService,
   ],
 })
 export class RoomsModule {}

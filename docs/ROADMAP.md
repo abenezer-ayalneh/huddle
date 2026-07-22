@@ -228,5 +228,37 @@ the user; see `docs/adr/0004-deploy-topology-single-vps.md` and
 > deployment is what gets verified. The lone application-code change is knock
 > state → Redis; everything else is infra/config.
 
+### Phase 10 — Attended Remote Control (macOS first)
+
+Add in-call, consent-based control of a participant's macOS desktop without
+moving the call itself out of the browser. Locked architecture and security
+decisions are in `docs/adr/0024-attended-remote-control-macos-agent.md`.
+
+- [x] Domain language, architecture, stack, API contract, and operational docs.
+- [x] Metadata-only `RemoteControlSession` Postgres audit model + migration.
+- [x] Redis pending request, active identity-bound grant, one-time helper
+      bootstrap, 30-minute reconfirmation, and expiry cleanup.
+- [x] Participant-authorized request / approve / deny / stop / renew endpoints;
+      screen-share-only Control Agent token; LiveKit room metadata projection.
+- [x] Web request action, Sharer consent and Recording warning, room-wide
+      indicator, renewal/stop controls, Present mutual exclusion, and normalized
+      mouse/keyboard packet capture.
+- [x] Swift/SwiftUI macOS Control Agent: permission status, one-time bootstrap,
+      LiveKit join, desktop publish, server-grant validation, input injection,
+      local disconnect/Stop, and companion participant filtering.
+- [x] Developer ID signing, notarization, and beta `.app`/`.dmg` release helper
+      scripts/docs (credentials and the actual notarized artifact remain
+      environment-owned).
+- [x] Automated verification: API unit tests, web lint/typecheck/build, and
+      Swift core tests plus the `HuddleControlAgent` executable build.
+- [ ] Manual two-browser + **signed** Control Agent acceptance (including
+      forged input, Recording warning, all disconnect paths, and
+      reconfirmation expiry). This requires a physical macOS device, Screen
+      Recording/Accessibility consent, and Developer ID release credentials.
+
+**v1 exclusions:** unattended access, clipboard sync, file transfer, desktop
+audio, support codes outside a room, Windows/Linux agents, and richer desktop
+suite features.
+
 Keep this file honest: check boxes as you go, and move items between phases if
 priorities change.

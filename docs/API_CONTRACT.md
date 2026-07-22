@@ -35,23 +35,30 @@ Two classes share the envelope but get different UX (see `CONTEXT.md` →
 
 ### Server-emitted codes
 
-| `code`                   | status  | class          | meaning / origin                                 | recovery action |
-| ------------------------ | ------- | -------------- | ------------------------------------------------ | --------------- |
-| `SESSION_EXPIRED`        | 401     | Fault          | session-gated endpoint, no/expired session       | Sign in         |
-| `UPSTREAM_UNAVAILABLE`   | 502/503 | Fault          | a dependency call failed (LiveKit, MinIO, Redis) | Retry           |
-| `INTERNAL`               | 500     | Fault          | unhandled / misconfigured server error           | Reload          |
-| `VALIDATION`             | 400     | Fault          | `ValidationPipe` rejected the body (client bug)  | (generic)       |
-| `NOT_HOST`               | 401/403 | Domain Outcome | host action without a valid `x-host-key`         | (tailored)      |
-| `NOT_PARTICIPANT`        | 401     | Domain Outcome | missing/invalid `x-participant-token` for room   | (tailored)      |
-| `ROOM_NOT_FOUND`         | 404     | Domain Outcome | unknown room (guest link, host-token)            | (tailored)      |
-| `KNOCK_NOT_FOUND`        | 404     | Domain Outcome | unknown / expired / withdrawn knock              | (tailored)      |
-| `NAME_REQUIRED`          | 400     | Domain Outcome | knock with no display name                       | (inline)        |
-| `RECORDING_IN_PROGRESS`  | 409     | Domain Outcome | start/approve while one is already active        | (tailored)      |
-| `NOT_RECORDING_OWNER`    | 403     | Domain Outcome | `stop-by-participant` you didn't start           | (tailored)      |
-| `RECORDING_NOT_READY`    | 409     | Domain Outcome | download before the recording is `completed`     | (tailored)      |
-| `RECORDING_NOT_FOUND`    | 404     | Domain Outcome | unknown recording for the room                   | (tailored)      |
-| `DOWNLOAD_TOKEN_INVALID` | 401     | Domain Outcome | missing/expired/forged recording download token  | (native)        |
-| `WEBHOOK_UNVERIFIED`     | 401     | —              | bad LiveKit webhook signature (server-to-server) | n/a             |
+| `code`                                | status  | class          | meaning / origin                                 | recovery action |
+| ------------------------------------- | ------- | -------------- | ------------------------------------------------ | --------------- |
+| `SESSION_EXPIRED`                     | 401     | Fault          | session-gated endpoint, no/expired session       | Sign in         |
+| `UPSTREAM_UNAVAILABLE`                | 502/503 | Fault          | a dependency call failed (LiveKit, MinIO, Redis) | Retry           |
+| `INTERNAL`                            | 500     | Fault          | unhandled / misconfigured server error           | Reload          |
+| `VALIDATION`                          | 400     | Fault          | `ValidationPipe` rejected the body (client bug)  | (generic)       |
+| `NOT_HOST`                            | 401/403 | Domain Outcome | host action without a valid `x-host-key`         | (tailored)      |
+| `NOT_PARTICIPANT`                     | 401     | Domain Outcome | missing/invalid `x-participant-token` for room   | (tailored)      |
+| `ROOM_NOT_FOUND`                      | 404     | Domain Outcome | unknown room (guest link, host-token)            | (tailored)      |
+| `KNOCK_NOT_FOUND`                     | 404     | Domain Outcome | unknown / expired / withdrawn knock              | (tailored)      |
+| `NAME_REQUIRED`                       | 400     | Domain Outcome | knock with no display name                       | (inline)        |
+| `RECORDING_IN_PROGRESS`               | 409     | Domain Outcome | start/approve while one is already active        | (tailored)      |
+| `NOT_RECORDING_OWNER`                 | 403     | Domain Outcome | `stop-by-participant` you didn't start           | (tailored)      |
+| `RECORDING_NOT_READY`                 | 409     | Domain Outcome | download before the recording is `completed`     | (tailored)      |
+| `RECORDING_NOT_FOUND`                 | 404     | Domain Outcome | unknown recording for the room                   | (tailored)      |
+| `DOWNLOAD_TOKEN_INVALID`              | 401     | Domain Outcome | missing/expired/forged recording download token  | (native)        |
+| `REMOTE_CONTROL_IN_PROGRESS`          | 409     | Domain Outcome | a request/session already owns the room          | (tailored)      |
+| `REMOTE_CONTROL_NOT_FOUND`            | 404     | Domain Outcome | unknown, consumed, or expired request/session    | (tailored)      |
+| `REMOTE_CONTROL_NOT_ALLOWED`          | 403     | Domain Outcome | caller is not the required Sharer/Controller     | (tailored)      |
+| `REMOTE_CONTROL_PRESENT_ACTIVE`       | 409     | Domain Outcome | Present is active, so control cannot start       | (tailored)      |
+| `REMOTE_CONTROL_RENEWAL_REQUIRED`     | 409     | Domain Outcome | the 30-minute reconfirmation deadline passed     | (tailored)      |
+| `REMOTE_CONTROL_HELPER_NOT_CONNECTED` | 409     | Domain Outcome | helper bootstrap/session is not connected        | (tailored)      |
+| `REMOTE_CONTROL_BOOTSTRAP_INVALID`    | 401     | Domain Outcome | helper code is wrong, expired, or already used   | (native)        |
+| `WEBHOOK_UNVERIFIED`                  | 401     | —              | bad LiveKit webhook signature (server-to-server) | n/a             |
 
 > A **knock denial** is not in this table: it is a `200` poll returning
 > `status: "denied"`, never an error response.
@@ -307,6 +314,198 @@ didn't start the active recording). **Response 200:** the updated
 While a recording is active the room metadata carries `recording: true` (the
 **Recording Indicator**), so every client shows the recording state in real time.
 
+## Remote Control _(post-Phase 9; docs/adr/0024)_
+
+Remote Control is participant-authorized, not Host-authorized. All human actions
+below require the caller's LiveKit join token in `x-participant-token`; the
+`ParticipantGuard` derives identity/name from the signed token and never accepts
+either from the body. The Host has no special stop route.
+
+Pending requests and the single active grant live in Redis. A metadata-only
+`RemoteControlSession` audit row lives in Postgres. Room metadata contains a
+display-safe `remoteControl` projection while active:
+
+```json
+{
+  "remoteControl": {
+    "sessionId": "cm...",
+    "status": "awaiting-agent",
+    "sharerIdentity": "ada-ab12",
+    "sharerName": "Ada",
+    "controllerIdentity": "bo-cd34",
+    "controllerName": "Bo",
+    "agentIdentity": "control-agent:cm...",
+    "agentConnected": false,
+    "renewalDueAt": "2026-07-10T12:30:00.000Z"
+  }
+}
+```
+
+`status` becomes `active` and `agentConnected` becomes `true` after the signed
+LiveKit `participant_joined` webhook observes the expected agent. The entire
+`remoteControl` key is removed when the session ends. This projection contains
+no bootstrap code, JWT, input, screenshot, frame, or secret content.
+
+### POST /rooms/:room/remote-control/requests _(participant)_
+
+The Controller requests control of a connected Sharer.
+
+**Request:** `{ "sharerIdentity": "ada-ab12" }`
+
+**Response 201:**
+
+```json
+{
+  "requestId": "cm...",
+  "room": "abz-mnpq-rfk",
+  "sharerIdentity": "ada-ab12",
+  "sharerName": "Ada",
+  "controllerIdentity": "bo-cd34",
+  "controllerName": "Bo",
+  "requestedAt": "2026-07-10T12:00:00.000Z",
+  "expiresAt": "2026-07-10T12:00:30.000Z"
+}
+```
+
+Both identities must currently be present; self-control and Control Agent
+identities are rejected. Only one pending request or active session may own a
+room. A current screen-share track returns
+`REMOTE_CONTROL_PRESENT_ACTIVE`. After success, the Controller sends the
+server-issued `requestId` to the Sharer over topic `huddle:remote-control`; that
+packet wakes the prompt but grants nothing.
+
+### GET /rooms/:room/remote-control/requests/:requestId _(participant)_
+
+Only the target Sharer or requesting Controller may recover this display-safe
+request. The Sharer's client calls it after receiving a request notification so
+forged data packets cannot invent identities or consent copy.
+
+**Response 200:** the same request summary returned by request creation.
+
+### POST /rooms/:room/remote-control/requests/:requestId/approve _(Sharer)_
+
+Atomically consumes the request. Only its target Sharer may approve. The API
+rechecks participant presence and Present exclusion, creates the active Redis
+grant and room metadata, advances the audit row to `active`, and creates a
+single-use helper bootstrap.
+
+**Response 200:**
+
+```json
+{
+  "session": {
+    "sessionId": "cm...",
+    "status": "awaiting-agent",
+    "sharerIdentity": "ada-ab12",
+    "sharerName": "Ada",
+    "controllerIdentity": "bo-cd34",
+    "controllerName": "Bo",
+    "agentIdentity": "control-agent:cm...",
+    "agentConnected": false,
+    "renewalDueAt": "2026-07-10T12:30:00.000Z"
+  },
+  "helper": {
+    "bootstrapCode": "<opaque one-time bearer>",
+    "expiresAt": "2026-07-10T12:02:00.000Z"
+  }
+}
+```
+
+The browser opens
+`huddle-control://join?room=...&session=...&code=...&api=...`; the LiveKit JWT
+is never placed in that URL. If Recording is active, approval is still
+allowed—the web must show the strong recording warning before this call.
+
+### POST /rooms/:room/remote-control/requests/:requestId/deny _(Sharer)_
+
+Only the target Sharer may deny. Consumes the request and completes the audit as
+`denied`.
+
+**Response 200:** `{ "status": "denied" }`
+
+The Sharer then sends a reliable, addressed `remote-control:denied` UI packet to
+the Controller. The API decision remains authoritative.
+
+### POST /rooms/:room/remote-control/:sessionId/helper-token _(bootstrap bearer)_
+
+Used only by the macOS Control Agent. It deliberately does not use a participant
+token: the short-lived bootstrap code in the body is the bearer. Redemption is
+atomic and single-use.
+
+**Request:** `{ "bootstrapCode": "<opaque one-time bearer>" }`
+
+**Response 200:**
+
+```json
+{
+  "token": "<short-lived LiveKit JWT>",
+  "livekitUrl": "wss://livekit.example.com",
+  "room": "abz-mnpq-rfk",
+  "session": {
+    "sessionId": "cm...",
+    "sharerIdentity": "ada-ab12",
+    "controllerIdentity": "bo-cd34",
+    "agentIdentity": "control-agent:cm...",
+    "renewalDueAt": "2026-07-10T12:30:00.000Z"
+  }
+}
+```
+
+The token may join only this room, subscribe to room data/metadata, and publish
+only a screen-share track. It has no room admin, camera, microphone, or Host
+grant. Wrong, expired, or reused codes return
+`REMOTE_CONTROL_BOOTSTRAP_INVALID`.
+
+Its signed participant metadata is the cross-client identity contract:
+`{ "role": "control-agent", "room", "sessionId", "sharerIdentity",
+"controllerIdentity", "agentIdentity" }`. Browsers use the role plus the active
+grant's exact agent identity to keep the companion out of people-facing UI; the
+agent checks every field against its bootstrap response and room metadata.
+
+### POST /rooms/:room/remote-control/:sessionId/stop _(Sharer or Controller)_
+
+Ends the active grant, clears room metadata, removes the Control Agent from
+LiveKit, and completes the audit row. Only the exact Sharer or Controller in the
+grant may call it. A Host who is neither gets
+`REMOTE_CONTROL_NOT_ALLOWED`.
+
+**Response 200:** `{ "status": "ended", "endedAt": "..." }`
+
+The agent's local Stop button disconnects instead; the verified
+`participant_left` webhook drives the same end path.
+
+### POST /rooms/:room/remote-control/:sessionId/renew _(Sharer)_
+
+Reconfirms attended consent and advances `renewalDueAt` by 30 minutes. Only the
+Sharer may renew. Calling after expiry ends the grant and returns
+`REMOTE_CONTROL_RENEWAL_REQUIRED`.
+
+**Response 200:** `{ "sessionId": "cm...", "renewalDueAt": "..." }`
+
+### Lifecycle from LiveKit webhooks
+
+`participant_joined` marks the expected Control Agent connected. A
+`participant_left` matching the grant's Sharer, Controller, or agent ends the
+session. `room_finished` also ends it. The API expiry loop ends any grant whose
+renewal deadline passes and records `status: "expired"`. Every end path is
+idempotent.
+
+### Remote Control data protocol
+
+Topic: `huddle:remote-control`; JSON messages carry `v: 1`.
+
+| type                     | sender → recipient         | purpose                                                           |
+| ------------------------ | -------------------------- | ----------------------------------------------------------------- |
+| `remote-control:request` | Controller → Sharer        | carries a server-issued request id to wake consent UI             |
+| `remote-control:denied`  | Sharer → Controller        | transient denial UX after the API decision                        |
+| `remote-control:input`   | Controller → Control Agent | `{ sessionId, sequence, event }`; transport only, never authority |
+
+Input events are bounded, normalized mouse `move/down/up/scroll`, keyboard `key`
+down/up, and `release-all`. Pointer coordinates are in `[0,1]` of the published
+desktop. Moves are lossy and coalesced; clicks, scrolls, keys, and release-all
+are reliable. There is no clipboard, file, audio, or secret-content message in
+v1.
+
 ### GET /recordings/mine _(session)_
 
 List **all** recordings across every room the signed-in host owns, newest first
@@ -324,7 +523,8 @@ recordings). Requires a BetterAuth session.
 
 Receive & verify LiveKit server events (signed with the API key). Verified with
 `WebhookReceiver`. On `room_finished`, the API drops that room's **ephemeral
-knocks** (the room record itself is persistent since Phase 7 and is kept). On
+knocks** and ends any Remote Control grant (the room record itself is persistent
+since Phase 7 and is kept). On
 `egress_started/updated/ended` (Phase 8) it advances the matching recording's
 status and captures the file's size/duration. **Response 200** always (ack);
 invalid signatures → **401**.

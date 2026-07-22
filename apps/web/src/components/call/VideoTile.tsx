@@ -2,7 +2,7 @@
 
 import { VideoTrack, isTrackReference, type TrackReferenceOrPlaceholder } from '@livekit/components-react';
 import { Track } from 'livekit-client';
-import { MicOff, MonitorUp, Pin, PinOff } from 'lucide-react';
+import { MicOff, MonitorUp, MousePointer2, Pin, PinOff } from 'lucide-react';
 import { useState } from 'react';
 import { useMirrorLocalCamera } from './useMirrorLocalCamera';
 import { useParticipantMedia } from './useParticipantMedia';
@@ -32,6 +32,7 @@ export default function VideoTile({
   pinned,
   onTogglePin,
   fallbackName,
+  onRequestControl,
 }: {
   trackRef: TrackReferenceOrPlaceholder;
   active: boolean;
@@ -42,6 +43,9 @@ export default function VideoTile({
   // The already-known display name, passed only by the local render sites. See
   // the label note below for why the local tile needs it.
   fallbackName?: string;
+  // A participant-scoped Remote Control action. The API remains authoritative;
+  // this is only the discoverable in-call affordance.
+  onRequestControl?: () => void;
 }) {
   const participant = trackRef.participant;
   const { cameraOn, micOn } = useParticipantMedia(participant);
@@ -117,6 +121,18 @@ export default function VideoTile({
               className="absolute left-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/55 text-white/90 opacity-0 backdrop-blur transition hover:bg-black/75 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
             >
               {pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+            </button>
+          )}
+
+          {onRequestControl && (
+            <button
+              type="button"
+              onClick={onRequestControl}
+              aria-label={`Request control of ${label}`}
+              title={`Request control of ${label}`}
+              className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-cyan/15 text-cyan opacity-0 ring-1 ring-cyan/40 backdrop-blur transition hover:bg-cyan/25 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/70 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
+            >
+              <MousePointer2 className="h-4 w-4" />
             </button>
           )}
 

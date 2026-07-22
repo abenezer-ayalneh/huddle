@@ -1,33 +1,49 @@
 // Minimal in-memory stand-in for ioredis, for unit tests. Implements only the
-// commands RoomStateService uses (string get/set + per-room index sets). TTLs
-// are accepted but not enforced — expiry isn't what the unit tests exercise.
+// commands room state services use (string get/set/getdel + per-room index
+// sets). TTL and NX/XX are enforced so consent and one-time-token tests exercise
+// the same semantics the real Redis client provides.
 // Excluded from the build (see tsconfig.build.json); cast to `Redis` in specs.
 export class FakeRedis {
-  private strings = new Map<string, string>();
+  private strings = new Map<string, { value: string; expiresAt?: number }>();
   private sets = new Map<string, Set<string>>();
+  private setExpiresAt = new Map<string, number>();
 
   get(key: string): Promise<string | null> {
-    return Promise.resolve(this.strings.get(key) ?? null);
+    this.cleanupString(key);
+    return Promise.resolve(this.strings.get(key)?.value ?? null);
   }
 
-  // Mirrors ioredis `set(key, value, 'EX', seconds)`; the TTL args are ignored.
-  set(key: string, value: string, ..._rest: unknown[]): Promise<'OK'> {
-    this.strings.set(key, value);
+  // Mirrors the ioredis forms used by the app:
+  // `set(key, value, 'EX', seconds, 'NX' | 'XX')`.
+  set(key: string, value: string, ...rest: (string | number)[]): Promise<'OK' | null> {
+    this.cleanupString(key);
+    const options = rest.map((value) => String(value).toUpperCase());
+    const exists = this.strings.has(key);
+    if (options.includes('NX') && exists) return Promise.resolve(null);
+    if (options.includes('XX') && !exists) return Promise.resolve(null);
+
+    const exIndex = options.indexOf('EX');
+    const ttlSeconds = exIndex >= 0 ? Number(rest[exIndex + 1]) : undefined;
+    this.strings.set(key, {
+      value,
+      ...(ttlSeconds != null && Number.isFinite(ttlSeconds) ? { expiresAt: Date.now() + ttlSeconds * 1000 } : {}),
+    });
     return Promise.resolve('OK');
   }
 
-  mget(keys: string[]): Promise<(string | null)[]> {
-    return Promise.resolve(keys.map((k) => this.strings.get(k) ?? null));
+  async mget(keys: string[]): Promise<(string | null)[]> {
+    return Promise.all(keys.map((key) => this.get(key)));
   }
 
   // Atomic read-and-delete (Redis >=6.2), used by one-time token flows.
-  getdel(key: string): Promise<string | null> {
-    const value = this.strings.get(key) ?? null;
+  async getdel(key: string): Promise<string | null> {
+    const value = await this.get(key);
     this.strings.delete(key);
-    return Promise.resolve(value);
+    return value;
   }
 
   sadd(key: string, ...members: string[]): Promise<number> {
+    this.cleanupSet(key);
     const set = this.sets.get(key) ?? new Set<string>();
     let added = 0;
     for (const m of members) {
@@ -41,6 +57,7 @@ export class FakeRedis {
   }
 
   srem(key: string, ...members: string[]): Promise<number> {
+    this.cleanupSet(key);
     const set = this.sets.get(key);
     if (!set) return Promise.resolve(0);
     let removed = 0;
@@ -49,6 +66,7 @@ export class FakeRedis {
   }
 
   smembers(key: string): Promise<string[]> {
+    this.cleanupSet(key);
     return Promise.resolve([...(this.sets.get(key) ?? [])]);
   }
 
@@ -56,12 +74,41 @@ export class FakeRedis {
     let removed = 0;
     for (const k of keys) {
       if (this.strings.delete(k)) removed++;
-      if (this.sets.delete(k)) removed++;
+      if (this.sets.delete(k)) {
+        this.setExpiresAt.delete(k);
+        removed++;
+      }
     }
     return Promise.resolve(removed);
   }
 
-  expire(_key: string, _seconds: number): Promise<number> {
-    return Promise.resolve(1);
+  expire(key: string, seconds: number): Promise<number> {
+    this.cleanupString(key);
+    this.cleanupSet(key);
+    const string = this.strings.get(key);
+    if (string) {
+      string.expiresAt = Date.now() + seconds * 1000;
+      return Promise.resolve(1);
+    }
+    if (this.sets.has(key)) {
+      this.setExpiresAt.set(key, Date.now() + seconds * 1000);
+      return Promise.resolve(1);
+    }
+    return Promise.resolve(0);
+  }
+
+  private cleanupString(key: string): void {
+    const value = this.strings.get(key);
+    if (value?.expiresAt != null && value.expiresAt <= Date.now()) {
+      this.strings.delete(key);
+    }
+  }
+
+  private cleanupSet(key: string): void {
+    const expiresAt = this.setExpiresAt.get(key);
+    if (expiresAt != null && expiresAt <= Date.now()) {
+      this.sets.delete(key);
+      this.setExpiresAt.delete(key);
+    }
   }
 }
