@@ -345,6 +345,39 @@ input[type='button'] {
   transform: none;
 }
 
+/* Portrait Equal Grid: camera tiles use the full usable stage width and split
+   the available height evenly. Four rows remain visible once the participant
+   count grows beyond four; later rows scroll without shrinking the visible
+   tiles. The media query is intentionally orientation-based, so portrait
+   desktop windows follow the same layout while landscape mobile retains the
+   desktop Equal Grid. */
+.portrait-equal-grid {
+  --portrait-row-gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .portrait-equal-grid {
+    --portrait-row-gap: 1rem;
+  }
+}
+
+@media (orientation: portrait) {
+  .portrait-equal-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--portrait-row-gap);
+    overflow-y: auto;
+  }
+
+  .portrait-equal-grid > * {
+    flex: 0 0 calc(
+      (100% - (var(--portrait-visible-rows) - 1) * var(--portrait-row-gap)) / var(--portrait-visible-rows)
+    );
+    height: auto;
+    min-height: 0;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .landing-rise {
     animation: landing-rise 760ms cubic-bezier(0.16, 1, 0.3, 1) both;

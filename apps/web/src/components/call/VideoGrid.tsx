@@ -3,7 +3,7 @@
 import { useSpeakingParticipants, useTracks, type TrackReferenceOrPlaceholder } from '@livekit/components-react';
 import { Track } from 'livekit-client';
 import { MonitorOff, MonitorUp, PinOff } from 'lucide-react';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import FocusLayout, { trackKey } from './FocusLayout';
 import SelfView, { type Corner } from './SelfView';
 import VideoTile from './VideoTile';
@@ -187,15 +187,20 @@ function EqualGrid({
     if (n <= 9) return 3;
     return 4;
   }, [cameraTracks.length]);
+  // Portrait Equal Grid shows up to four equal rows at once. Additional
+  // remote tiles remain available through the vertical scroll surface; the
+  // local participant is still rendered separately as the floating Self-view.
+  const portraitVisibleRows = Math.min(cameraTracks.length || 1, 4);
 
   return (
     <div className="absolute inset-0 flex items-center justify-center p-3 pb-24 sm:p-6 sm:pb-28">
       <div
-        className="grid h-full w-full gap-3 sm:gap-4"
+        className="portrait-equal-grid grid h-full w-full gap-3 sm:gap-4"
         style={{
           gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
           gridAutoRows: '1fr',
-        }}
+          '--portrait-visible-rows': portraitVisibleRows,
+        } as CSSProperties}
       >
         {cameraTracks.map((trackRef) => (
           <VideoTile

@@ -175,6 +175,13 @@ ordinary tile here — they appear only as the floating Self-view. Alone in the
 room, the local camera fills the stage instead.
 _Avoid_: Gallery, tile view, speaker grid
 
+**Portrait Equal Grid**:
+The orientation-based Equal Grid used when the viewport is portrait: remote
+tiles stack at full usable width, with one to three tiles sharing the stage
+equally and four or more showing four equal rows with vertical scrolling. The
+local participant remains the floating Self-view.
+_Avoid_: Vertical device layout, mobile-only grid
+
 **Self-view**:
 The local participant's own camera feed as shown back to themselves. In the Equal
 Grid it is a small window that floats over the stage and can be dragged between
