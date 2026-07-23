@@ -11,3 +11,4 @@ graphify-out/
 infra/data/
 apps/agent/src-tauri/target/
 apps/agent/src-tauri/gen/schemas/
+apps/control-agent/.build/

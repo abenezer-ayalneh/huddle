@@ -370,9 +370,7 @@ input[type='button'] {
   }
 
   .portrait-equal-grid > * {
-    flex: 0 0 calc(
-      (100% - (var(--portrait-visible-rows) - 1) * var(--portrait-row-gap)) / var(--portrait-visible-rows)
-    );
+    flex: 0 0 calc((100% - (var(--portrait-visible-rows) - 1) * var(--portrait-row-gap)) / var(--portrait-visible-rows));
     height: auto;
     min-height: 0;
   }

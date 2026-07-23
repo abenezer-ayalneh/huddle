@@ -196,11 +196,13 @@ function EqualGrid({
     <div className="absolute inset-0 flex items-center justify-center p-3 pb-24 sm:p-6 sm:pb-28">
       <div
         className="portrait-equal-grid grid h-full w-full gap-3 sm:gap-4"
-        style={{
-          gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-          gridAutoRows: '1fr',
-          '--portrait-visible-rows': portraitVisibleRows,
-        } as CSSProperties}
+        style={
+          {
+            gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+            gridAutoRows: '1fr',
+            '--portrait-visible-rows': portraitVisibleRows,
+          } as CSSProperties
+        }
       >
         {cameraTracks.map((trackRef) => (
           <VideoTile
