@@ -264,6 +264,12 @@ export const api = {
       headers: { 'x-participant-token': participantToken },
     }),
 
+  reissueRemoteControlBootstrap: (room: string, sessionId: string, participantToken: string) =>
+    request<{ bootstrapCode: string; expiresAt: string }>(`/rooms/${encodeURIComponent(room)}/remote-control/${encodeURIComponent(sessionId)}/bootstrap`, {
+      method: 'POST',
+      headers: { 'x-participant-token': participantToken },
+    }),
+
   denyRemoteControl: (room: string, requestId: string, participantToken: string) =>
     request<{ status: 'denied' }>(`/rooms/${encodeURIComponent(room)}/remote-control/requests/${encodeURIComponent(requestId)}/deny`, {
       method: 'POST',

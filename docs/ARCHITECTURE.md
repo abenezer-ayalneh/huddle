@@ -90,10 +90,12 @@ only ever receives a scoped, expiring token.
    30-minute renewal deadline, updates LiveKit room metadata with display-safe
    state, and returns a short-lived bootstrap code. Denial completes the audit.
 3. The browser opens the signed macOS Control Agent with that code. The agent
-   redeems it once for a short-lived, screen-share-only LiveKit token whose
+   verifies the release policy, asks the Sharer to trust the exact API origin
+   once, and redeems it for a short-lived, screen-share-only LiveKit token whose
    metadata binds all five grant identifiers. No LiveKit JWT is put in a URL.
-4. The agent joins under `control-agent:<sessionId>`, publishes its screen track,
-   and observes server-written room metadata. It is filtered from participant
+4. The agent joins under `control-agent:<sessionId>`, waits for an explicit
+   display selection and local Start confirmation, then publishes only that
+   display track while observing server-written room metadata. It is filtered from participant
    lists and camera placeholders, but remains protocol-visible: LiveKit's native
    `hidden` grant also hides publications and therefore cannot carry the room-
    visible desktop.
@@ -106,6 +108,23 @@ only ever receives a scoped, expiring token.
    the grant when the Sharer, Controller, or agent leaves. The agent's local Stop
    button disconnects it rather than exercising a third stop authority. A small
    API expiry loop ends grants that miss the 30-minute Sharer reconfirmation.
+
+The browser can rotate an awaiting-agent bootstrap through a Sharer-authorized
+endpoint. Rotation revokes the previous two-minute bearer without changing the
+active consent grant, allowing first-time installation to outlive the original
+launch attempt.
+
+## Control Agent distribution
+
+The public `/downloads` page reads the signed `control-agent-beta` manifest and
+offers separate macOS arm64 and x86_64 DMGs. Windows and Linux are explicitly
+marked unavailable. The agent checks the same manifest before redemption,
+caches only verified bytes, and never auto-installs updates. Release artifacts
+are signed/notarized in GitHub Actions and accompanied by SHA-256 values.
+
+The native app exposes a user-triggered, sanitized diagnostics copy action for
+beta support (version, macOS, architecture, permission state, and connection
+state only). It has no telemetry or automatic issue submission.
 
 Remote Control and Present are mutually exclusive. The API checks for a Present
 track on request and approval; the web disables Present for every participant

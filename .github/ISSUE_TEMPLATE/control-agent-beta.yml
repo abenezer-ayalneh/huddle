@@ -1,0 +1,51 @@
+name: Control Agent beta problem
+description: Report a reproducible problem with the attended macOS Control Agent beta.
+title: '[Control Agent] '
+labels:
+  - control-agent
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please do not paste room links, bootstrap codes, participant names, screenshots of private content, or other secrets.
+  - type: textarea
+    id: symptoms
+    attributes:
+      label: What happened?
+      description: Include the exact step where the behavior differed from the expected result.
+    validations:
+      required: true
+  - type: input
+    id: agent-version
+    attributes:
+      label: Control Agent version
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: macos-version
+    attributes:
+      label: macOS version
+      placeholder: macOS 14.6.1
+    validations:
+      required: true
+  - type: input
+    id: architecture
+    attributes:
+      label: Mac architecture
+      placeholder: Apple Silicon or Intel
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Sanitized diagnostics (optional)
+      description: Use the agent's Copy sanitized diagnostics button and paste only that output.
+      render: text
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: I removed room links, bootstrap codes, tokens, participant names, and private screen content.
+          required: true

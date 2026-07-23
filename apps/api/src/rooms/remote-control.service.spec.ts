@@ -191,4 +191,23 @@ describe('RemoteControlService', () => {
     expect(livekit.disconnectControlAgent).toHaveBeenCalledWith(room.slug, expired.agentIdentity);
     expect(audit.endActive).toHaveBeenCalledWith(expired.sessionId, 'expired', 'renewal_timeout', expect.any(Date));
   });
+
+  it('lets only the waiting Sharer rotate the Control Agent bootstrap', async () => {
+    const grant = activeGrant({ agentConnected: false });
+    state.getActive.mockResolvedValue(grant);
+    state.issueBootstrap.mockResolvedValue({ bootstrapCode: 'fresh-code', expiresAt: new Date(Date.now() + 120_000).toISOString() });
+
+    await expect(service.reissueBootstrap(room.slug, grant.sessionId, sharer)).resolves.toEqual(expect.objectContaining({ bootstrapCode: 'fresh-code' }));
+    expect(state.issueBootstrap).toHaveBeenCalledWith(grant);
+
+    await expect(service.reissueBootstrap(room.slug, grant.sessionId, controller)).rejects.toThrow(ForbiddenException);
+  });
+
+  it('rejects bootstrap rotation after the agent connects', async () => {
+    const grant = activeGrant({ agentConnected: true });
+    state.getActive.mockResolvedValue(grant);
+
+    await expect(service.reissueBootstrap(room.slug, grant.sessionId, sharer)).rejects.toThrow(ConflictException);
+    expect(state.issueBootstrap).not.toHaveBeenCalled();
+  });
 });

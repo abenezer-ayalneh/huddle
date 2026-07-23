@@ -27,7 +27,7 @@ export type HelperBootstrap = {
   expiresAt: string;
 };
 
-type Action = 'request' | 'approve' | 'deny' | 'stop' | 'renew';
+type Action = 'request' | 'approve' | 'deny' | 'stop' | 'renew' | 'reopen';
 
 const NOTICE_MS = 5_000;
 
@@ -59,7 +59,9 @@ function domainOutcome(code: string, action: Action): string | null {
         ? 'Only the requested Sharer can respond to this Remote Control request.'
         : action === 'renew'
           ? 'Only the Sharer can reconfirm Remote Control.'
-          : 'Only the Sharer or Controller can stop this Remote Control session.';
+          : action === 'reopen'
+            ? 'Only the Sharer can reopen the Control Agent.'
+            : 'Only the Sharer or Controller can stop this Remote Control session.';
     case 'REMOTE_CONTROL_PRESENT_ACTIVE':
       return 'Remote Control cannot start while someone is presenting.';
     case 'REMOTE_CONTROL_RENEWAL_REQUIRED':
@@ -225,13 +227,10 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
 
   useEffect(() => {
     if (!helperBootstrap) return;
-    if (session?.sessionId === helperBootstrap.sessionId && session.agentConnected) {
+    if (!session || session.sessionId !== helperBootstrap.sessionId || session.agentConnected) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setHelperBootstrap(null);
-      return;
     }
-    const timer = setTimeout(() => setHelperBootstrap(null), Math.max(0, Date.parse(helperBootstrap.expiresAt) - Date.now()));
-    return () => clearTimeout(timer);
   }, [helperBootstrap, session]);
 
   useEffect(() => {
@@ -323,6 +322,23 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
       setBusy(null);
     }
   }, [handleActionError, incomingRequest, localIdentity, participantToken, room]);
+
+  const reopenAgent = useCallback(async (): Promise<HelperBootstrap | null> => {
+    if (!session || !iAmSharer || session.agentConnected) return null;
+    setBusy('reopen');
+    try {
+      const fresh = await api.reissueRemoteControlBootstrap(room, session.sessionId, participantToken);
+      if (!fresh.bootstrapCode || !Number.isFinite(Date.parse(fresh.expiresAt))) throw new Error('Invalid Control Agent bootstrap response');
+      const next = { room, sessionId: session.sessionId, code: fresh.bootstrapCode, expiresAt: fresh.expiresAt };
+      setHelperBootstrap(next);
+      return next;
+    } catch (error) {
+      handleActionError(error, 'reopen');
+      return null;
+    } finally {
+      setBusy(null);
+    }
+  }, [handleActionError, iAmSharer, participantToken, room, session]);
 
   const deny = useCallback(async () => {
     if (!incomingRequest || incomingRequest.sharerIdentity !== localIdentity) return;
@@ -416,6 +432,7 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
     renewalRemainingMs,
     requestControl,
     approve,
+    reopenAgent,
     deny,
     stop,
     renew,

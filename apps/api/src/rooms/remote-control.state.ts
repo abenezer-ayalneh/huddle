@@ -157,6 +157,10 @@ export class RemoteControlStateService {
   }
 
   async issueBootstrap(grant: ActiveRemoteControlGrant): Promise<{ bootstrapCode: string; expiresAt: string }> {
+    // A reissue must invalidate the previous bearer before publishing the new
+    // one.  This keeps the approval flow recoverable without ever leaving two
+    // usable bootstrap codes for the same active session.
+    if (grant.bootstrapDigest) await this.redis.del(this.bootstrapKey(grant.bootstrapDigest));
     const bootstrapCode = randomBytes(32).toString('base64url');
     const digest = this.digest(bootstrapCode);
     const expiresAt = new Date(Date.now() + REMOTE_CONTROL_BOOTSTRAP_TTL_MS).toISOString();

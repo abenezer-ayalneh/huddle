@@ -276,6 +276,19 @@ export class RemoteControlService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  async reissueBootstrap(roomSlug: string, sessionId: string, sharerParticipant: CallParticipant): Promise<{ bootstrapCode: string; expiresAt: string }> {
+    const grant = await this.requireActive(roomSlug, sessionId);
+    if (sharerParticipant.identity !== grant.sharerIdentity) {
+      throw this.notAllowed('Only the Sharer may reopen the Control Agent');
+    }
+    if (this.isGrantExpired(grant)) {
+      await this.endGrant(grant, 'expired', 'renewal_timeout', new Date());
+      throw new ConflictException(faultBody(FaultCode.REMOTE_CONTROL_RENEWAL_REQUIRED, 'Remote Control consent expired'));
+    }
+    if (grant.agentConnected) throw new ConflictException(faultBody(FaultCode.REMOTE_CONTROL_IN_PROGRESS, 'The Control Agent is already connected'));
+    return this.state.issueBootstrap(grant);
+  }
+
   async stop(room: string, sessionId: string, participant: CallParticipant): Promise<{ status: 'ended'; endedAt: string }> {
     const grant = await this.requireActive(room, sessionId);
     if (participant.identity !== grant.sharerIdentity && participant.identity !== grant.controllerIdentity) {

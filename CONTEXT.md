@@ -326,11 +326,14 @@ may type secrets; Huddle never records input events or their contents.
 _Avoid_: Operator, driver, support agent
 
 **Control Agent**:
-The signed and notarized native macOS helper app that captures the Sharer's
-desktop, publishes it into the LiveKit room, and applies input only from the
-server-approved [[Controller]]. It joins as a companion participant hidden from
-people-facing participant UI, has no room Host authority, and holds no standing
-credential. Its local Stop action disconnects it, which ends Remote Control.
+The signed and notarized native macOS helper app that only the [[Sharer]]
+installs. It captures the Sharer's selected display, publishes it into the
+LiveKit room, and applies input only from the server-approved [[Controller]]. It
+joins as a companion participant hidden from people-facing participant UI, has
+no room Host authority, and holds no standing credential. The installed app is
+inert until the Sharer trusts the Huddle server, chooses a display, and confirms
+Start Remote Control. Its local Stop action disconnects it, which ends Remote
+Control. Windows and Linux downloads are not available in the public beta.
 _Avoid_: Host (already the room role), daemon, desktop client
 
 ### In-call host controls

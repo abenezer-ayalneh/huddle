@@ -12,10 +12,10 @@ swift build --package-path apps/control-agent
 ```
 
 The executable accepts a one-time `huddle-control://join?...` URL either from
-macOS Launch Services or from command-line arguments. It redeems the bootstrap
-code once, validates the signed token metadata and room metadata projection,
-then publishes only the desktop screen track and listens for the strict v1
-mouse/keyboard data protocol.
+macOS Launch Services or by pasting the complete link into its window. It checks
+the signed release channel, asks the Sharer to trust the exact Huddle server
+origin once, redeems the bootstrap code, and waits for an explicit display
+selection plus **Start Remote Control** confirmation before publishing.
 
 ## Build a local `.app`
 
@@ -60,8 +60,24 @@ helpers are:
 ```bash
 ./apps/control-agent/scripts/sign-and-notarize.sh
 ./apps/control-agent/scripts/package-dmg.sh
+ARCHITECTURE=arm64 ./apps/control-agent/scripts/package-dmg.sh
+ARCHITECTURE=x86_64 ./apps/control-agent/scripts/package-dmg.sh
 ```
+
+The public beta release workflow is `.github/workflows/control-agent-release.yml`.
+It builds native arm64 and x86_64 artifacts, signs nested frameworks before the
+app, notarizes both the app and final DMG, publishes SHA-256 checksums, and
+advances the signed `control-agent-beta` channel manifest. Apple Developer ID,
+notarytool, and the separate Ed25519 update-signing key remain GitHub secrets.
+
+Before creating a `control-agent-vX.Y.Z` tag, record signed-release-candidate
+acceptance on a physical Apple Silicon Mac and Intel Mac. The tag publishes
+immediately after the automated build because the physical gate is a documented
+pre-tag release requirement.
 
 The user must grant Screen Recording and Accessibility permissions in macOS
 System Settings. The agent has no clipboard, file-transfer, audio-capture, or
-background unattended-control capability.
+background unattended-control capability. **Copy sanitized diagnostics** is an
+explicit user action for beta support; it writes only version, macOS,
+architecture, permission, and connection state to the clipboard and never reads
+or uploads clipboard contents.

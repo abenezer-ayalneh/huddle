@@ -456,6 +456,28 @@ only a screen-share track. It has no room admin, camera, microphone, or Host
 grant. Wrong, expired, or reused codes return
 `REMOTE_CONTROL_BOOTSTRAP_INVALID`.
 
+### POST /rooms/:room/remote-control/:sessionId/bootstrap _(Sharer participant)_
+
+Rotates the one-time Control Agent bootstrap when an approved Sharer needed to
+download or install the app. The participant token must belong to the exact
+Sharer in the active grant, the grant must still be awaiting its agent, and the
+Sharer renewal deadline must not have passed. The previous bootstrap is revoked
+before the new one is stored.
+
+**Response 200:**
+
+```json
+{
+  "bootstrapCode": "<opaque one-time bearer>",
+  "expiresAt": "2026-07-10T12:08:00.000Z"
+}
+```
+
+The endpoint does not create a new session or change consent. A connected agent
+returns `REMOTE_CONTROL_IN_PROGRESS`; an expired grant returns
+`REMOTE_CONTROL_RENEWAL_REQUIRED`; other participants return
+`REMOTE_CONTROL_NOT_ALLOWED`.
+
 Its signed participant metadata is the cross-client identity contract:
 `{ "role": "control-agent", "room", "sessionId", "sharerIdentity",
 "controllerIdentity", "agentIdentity" }`. Browsers use the role plus the active

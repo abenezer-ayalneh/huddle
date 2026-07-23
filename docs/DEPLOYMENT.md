@@ -371,7 +371,21 @@ docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
 
 ---
 
-## 9. Verify
+## 9. Control Agent release channel
+
+The web deployment links to the public beta channel through
+`NEXT_PUBLIC_CONTROL_AGENT_RELEASE_CHANNEL_URL` and
+`NEXT_PUBLIC_CONTROL_AGENT_RELEASES_URL`. The signed channel contains only the
+release manifest and signature; its manifest points to immutable, versioned
+GitHub Release DMGs. Set `NEXT_PUBLIC_CONTROL_AGENT_UPDATE_PUBLIC_KEY` to the
+same Ed25519 public key embedded in the signed agent bundle so the Downloads page
+can show verified release metadata.
+
+Do not put Developer ID certificates, App Store Connect keys, or the manifest
+private key in the VPS environment. They belong only in protected GitHub release
+secrets.
+
+## 10. Verify
 
 ```bash
 curl https://huddle-api.abenezer-ayalneh.dev/health    # {"status":"ok"}
@@ -393,7 +407,7 @@ If media fails to connect, see Troubleshooting below.
 
 ---
 
-## 10. Optional: Google sign-in
+## 11. Optional: Google sign-in
 
 Set `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` in `.env.prod`
 (console.cloud.google.com → Credentials → OAuth client). Authorized redirect
@@ -403,7 +417,7 @@ for `web`).
 
 ---
 
-## 11. Updating the deployment
+## 12. Updating the deployment
 
 ```bash
 git pull          # or rsync the new tree up
@@ -417,7 +431,7 @@ docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
 
 ---
 
-## 12. Backups
+## 13. Backups
 
 The durable state lives in two named Docker volumes:
 
@@ -439,7 +453,7 @@ docker run --rm -v huddle-minio:/data -v "$PWD":/backup alpine \
 
 ---
 
-## 13. Scaling out LiveKit (later)
+## 14. Scaling out LiveKit (later)
 
 The topology is multi-node-ready (shared Redis), but a single node is deployed.
 To add a second SFU node you give it its **own public UDP media port range** and

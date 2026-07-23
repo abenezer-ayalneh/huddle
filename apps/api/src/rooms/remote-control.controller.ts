@@ -43,6 +43,13 @@ export class RemoteControlController {
   }
 
   @UseGuards(ParticipantGuard)
+  @Post(':sessionId/bootstrap')
+  @HttpCode(200)
+  async reissueBootstrap(@Param('room') room: string, @Param('sessionId') sessionId: string, @Participant() participant: CallParticipant) {
+    return this.remoteControl.reissueBootstrap(room, sessionId, participant);
+  }
+
+  @UseGuards(ParticipantGuard)
   @Post(':sessionId/stop')
   @HttpCode(200)
   async stop(@Param('room') room: string, @Param('sessionId') sessionId: string, @Participant() participant: CallParticipant) {

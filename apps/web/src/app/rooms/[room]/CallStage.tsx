@@ -264,7 +264,7 @@ function CallView({
       </ErrorBoundary>
       <CallTimer />
       <ConnectionStatus />
-      <AgentLaunchDialog bootstrap={remoteControl.helperBootstrap} onDismiss={remoteControl.dismissHelperBootstrap} />
+      <AgentLaunchDialog bootstrap={remoteControl.helperBootstrap} onReopen={remoteControl.reopenAgent} onDismiss={remoteControl.dismissHelperBootstrap} />
       {overlay}
       {/* The single feed handed to native Picture-in-Picture. Kept in the DOM
           and playing (PiP requires that) but visually out of the way — the grid

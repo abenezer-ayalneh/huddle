@@ -57,4 +57,19 @@ describe('RemoteControlStateService', () => {
     expect(await state.consumeBootstrap('room-1', grant.sessionId, bootstrap.bootstrapCode)).toBeTruthy();
     expect(await state.consumeBootstrap('room-1', grant.sessionId, bootstrap.bootstrapCode)).toBeUndefined();
   });
+
+  it('rotates a bootstrap so the previous bearer is revoked', async () => {
+    const state = new RemoteControlStateService(new FakeRedis() as unknown as Redis);
+    const grant = active();
+    expect(await state.createPending(pending({ requestId: grant.sessionId }))).toBe(true);
+    expect(await state.activate(grant)).toBe(true);
+
+    const first = await state.issueBootstrap(grant);
+    const current = await state.getActive('room-1');
+    expect(current?.bootstrapDigest).toBeTruthy();
+    const second = await state.issueBootstrap(current!);
+
+    expect(await state.consumeBootstrap('room-1', grant.sessionId, first.bootstrapCode)).toBeUndefined();
+    expect(await state.consumeBootstrap('room-1', grant.sessionId, second.bootstrapCode)).toBeTruthy();
+  });
 });

@@ -260,5 +260,23 @@ decisions are in `docs/adr/0024-attended-remote-control-macos-agent.md`.
 audio, support codes outside a room, Windows/Linux agents, and richer desktop
 suite features.
 
+### Phase 11 — Public macOS Control Agent beta
+
+Make the attended macOS companion installable by Sharers without weakening the
+Phase 10 authority boundary.
+
+- [x] Public OS-aware Downloads page with arm64/x86_64 DMGs and Windows/Linux
+      coming-soon states.
+- [x] Sharer-only launch recovery: bootstrap rotation, full-link paste fallback,
+      explicit origin trust, permission preparation, and display selection.
+- [x] Signed update manifest with advisory updates, required-version blocking,
+      cached outage behavior, checksums, and sanitized user-initiated diagnostics.
+- [x] Native-architecture GitHub release workflow for Developer ID signing,
+      app/DMG notarization, and the beta channel manifest.
+- [ ] Pre-tag signed-release-candidate acceptance on physical Apple Silicon and
+      Intel Macs, followed by the first public beta tag.
+
+Windows and Linux Control Agents remain future phases with no release date.
+
 Keep this file honest: check boxes as you go, and move items between phases if
 priorities change.

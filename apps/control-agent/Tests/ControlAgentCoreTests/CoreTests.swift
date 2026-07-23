@@ -59,4 +59,37 @@ final class CoreTests: XCTestCase {
         XCTAssertEqual(state.heldButtons, [])
         XCTAssertEqual(state.heldKeyCodes, [])
     }
+
+    func testServerTrustIsExactOriginAndStoresNoCredentials() throws {
+        let suite = "huddle-control-agent-tests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        let store = ServerTrustStore(defaults: defaults)
+        let origin = URL(string: "https://huddle.example:8443")!
+        store.trust(origin)
+        XCTAssertTrue(store.isTrusted(origin))
+        XCTAssertFalse(store.isTrusted(URL(string: "https://other.example:8443")!))
+        XCTAssertEqual(store.trustedOrigins(), ["https://huddle.example:8443"])
+        store.forget(origin)
+        XCTAssertFalse(store.isTrusted(origin))
+        defaults.removePersistentDomain(forName: suite)
+    }
+
+    func testRequiredAndAdvisoryReleaseDecisions() throws {
+        let notes = URL(string: "https://github.com/example/releases")!
+        let artifact = AgentReleaseArtifact(url: URL(string: "https://github.com/example/agent.dmg")!, sha256: String(repeating: "a", count: 64), sizeBytes: 1)
+        let manifest = AgentReleaseManifest(
+            schemaVersion: 1,
+            channel: "beta",
+            keyId: "test",
+            version: "1.2.0",
+            minimumSupportedVersion: "1.1.0",
+            minimumMacOS: "13.0",
+            releasedAt: "2026-07-23T00:00:00Z",
+            releaseNotesUrl: notes,
+            downloads: AgentReleaseDownloads(arm64: artifact, x86_64: artifact)
+        )
+        XCTAssertEqual(AgentReleaseVerifier.decision(currentVersion: "1.0.0", manifest: manifest), .required(version: "1.2.0", notes: notes))
+        XCTAssertEqual(AgentReleaseVerifier.decision(currentVersion: "1.1.0", manifest: manifest), .available(version: "1.2.0", notes: notes))
+        XCTAssertEqual(AgentReleaseVerifier.decision(currentVersion: "1.2.0", manifest: manifest), .current)
+    }
 }

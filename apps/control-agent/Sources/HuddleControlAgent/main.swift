@@ -10,20 +10,114 @@ import ControlAgentCore
 final class AgentModel: ObservableObject {
     @Published var status = "Waiting for a Huddle Remote Control link…"
     @Published var error: String?
+    @Published var updateNotice: String?
     @Published var descriptor: BootstrapDescriptor?
     @Published var session: BootstrapSession?
     @Published var connected = false
     @Published var screenPublished = false
     @Published var screenPermission = CGPreflightScreenCaptureAccess()
     @Published var accessibilityPermission = AXIsProcessTrusted()
+    @Published var displays: [DisplayOption] = []
+    @Published var selectedDisplayID: UInt32?
+    @Published var pendingTrustOrigin: String?
+    @Published var manualLink = ""
 
     private var agent: LiveKitAgent?
+    private var pendingDescriptor: BootstrapDescriptor?
+    private let releaseChecker = AgentReleaseChecker()
+
+    var appVersion: String { (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String) ?? "0.0.0" }
+    var releaseChannelURL: URL { URL(string: (Bundle.main.object(forInfoDictionaryKey: "ControlAgentReleaseChannelURL") as? String) ?? "https://github.com/abenezer-ayalneh/huddle/releases/download/control-agent-beta")! }
+    var updatePublicKey: String { (Bundle.main.object(forInfoDictionaryKey: "ControlAgentUpdatePublicKey") as? String) ?? "" }
 
     func accept(_ descriptor: BootstrapDescriptor) {
+        guard agent == nil else {
+            error = "Stop the current Control Agent session before opening another link."
+            return
+        }
         self.descriptor = descriptor
+        pendingDescriptor = descriptor
         error = nil
+        status = "Checking this Huddle server and release…"
+        Task { await begin(descriptor) }
+    }
+
+    func submitManualLink() {
+        do {
+            guard let url = URL(string: manualLink.trimmingCharacters(in: .whitespacesAndNewlines)) else { throw BootstrapLinkError.invalidAction }
+            let descriptor = try BootstrapLink.parse(url)
+            manualLink = ""
+            accept(descriptor)
+        } catch let caught {
+            error = caught.localizedDescription
+        }
+    }
+
+    func confirmServerTrust() {
+        guard let descriptor else { return }
+        ServerTrustStore.shared.trust(descriptor.apiOrigin)
+        pendingTrustOrigin = nil
         status = "Redeeming one-time Control Agent code…"
         Task { await connect(descriptor) }
+    }
+
+    func forgetTrustedServers() {
+        for origin in ServerTrustStore.shared.trustedOrigins() {
+            if let url = URL(string: origin) { ServerTrustStore.shared.forget(url) }
+        }
+        status = "Saved server trust was cleared."
+    }
+
+    func copyDiagnostics() {
+        let os = ProcessInfo.processInfo.operatingSystemVersion
+        #if arch(arm64)
+        let architecture = "arm64"
+        #elseif arch(x86_64)
+        let architecture = "x86_64"
+        #else
+        let architecture = "unknown"
+        #endif
+        let summary = [
+            "Huddle Control Agent diagnostics",
+            "Agent version: \(appVersion)",
+            "macOS: \(os.majorVersion).\(os.minorVersion).\(os.patchVersion)",
+            "Architecture: \(architecture)",
+            "Screen Recording: \(screenPermission ? "granted" : "missing")",
+            "Accessibility: \(accessibilityPermission ? "granted" : "missing")",
+            "Connected: \(connected ? "yes" : "no")",
+            "Screen published: \(screenPublished ? "yes" : "no")",
+        ].joined(separator: "\n")
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(summary, forType: .string)
+        status = "Sanitized diagnostics copied. Paste them into the beta issue form."
+    }
+
+    func startRemoteControl() {
+        guard let selectedDisplayID, let agent else { return }
+        Task { await agent.startScreen(displayID: selectedDisplayID) }
+    }
+
+    private func begin(_ descriptor: BootstrapDescriptor) async {
+        switch await releaseChecker.check(currentVersion: appVersion, channelURL: releaseChannelURL, publicKeyBase64: updatePublicKey) {
+        case let .required(version, notes):
+            updateNotice = "Update required before Remote Control can start (version \(version))."
+            error = "Install the required Control Agent update, then return to Huddle."
+            NSWorkspace.shared.open(notes)
+            return
+        case let .available(version, notes):
+            updateNotice = "A newer Control Agent (\(version)) is available."
+            NSWorkspace.shared.open(notes)
+        case .current, .unavailable:
+            break
+        }
+
+        guard ServerTrustStore.shared.isTrusted(descriptor.apiOrigin) else {
+            pendingTrustOrigin = ServerTrustStore.shared.origin(for: descriptor.apiOrigin)
+            status = "Confirm the Huddle server before continuing."
+            return
+        }
+        status = "Redeeming one-time Control Agent code…"
+        await connect(descriptor)
     }
 
     func refreshPermissions() {
@@ -39,7 +133,6 @@ final class AgentModel: ObservableObject {
             accessibilityPermission = AXIsProcessTrustedWithOptions(["AXTrustedCheckOptionPrompt": true] as CFDictionary)
         }
         refreshPermissions()
-        if let agent, screenPermission { Task { await agent.publishScreenIfNeeded() } }
     }
 
     func stop() {
@@ -48,6 +141,9 @@ final class AgentModel: ObservableObject {
         connected = false
         screenPublished = false
         session = nil
+        displays = []
+        selectedDisplayID = nil
+        pendingDescriptor = nil
         status = "Control Agent stopped."
     }
 
@@ -62,7 +158,7 @@ final class AgentModel: ObservableObject {
             agent = next
             try await next.connect()
             connected = true
-            status = "Connected to \(response.room). Waiting for the server grant and Screen Recording permission…"
+            status = "Connected to \(response.room). Choose a display, then start Remote Control."
         } catch let caught {
             error = caught.localizedDescription
             status = "Could not start Control Agent."
@@ -74,6 +170,17 @@ final class AgentModel: ObservableObject {
         screenPublished = screen
         status = message
     }
+
+    fileprivate func setDisplays(_ next: [DisplayOption]) {
+        displays = next
+        if selectedDisplayID == nil { selectedDisplayID = next.first?.id }
+    }
+}
+
+struct DisplayOption: Identifiable, Equatable, Sendable {
+    let id: UInt32
+    let title: String
+    let dimensions: String
 }
 
 private enum AgentError: LocalizedError {
@@ -107,6 +214,8 @@ private actor LiveKitAgent {
     private var tokenMetadata: AgentTokenMetadata?
     private var input = InputInjector()
     private var screenPublished = false
+    private var screenPublication: LocalTrackPublication?
+    private var selectedDisplayID: UInt32?
     private var stopping = false
 
     init(model: AgentModel, descriptor: BootstrapDescriptor, response: BootstrapResponse) {
@@ -126,9 +235,10 @@ private actor LiveKitAgent {
             throw AgentError.invalidServerResponse
         }
         await metadataChanged(room.metadata)
+        await model?.setDisplays(await availableDisplays())
     }
 
-    func publishScreenIfNeeded() async {
+    func startScreen(displayID: UInt32) async {
         guard !screenPublished,
               gate.canPublishDesktop(
                   tokenMetadata: tokenMetadata,
@@ -138,7 +248,14 @@ private actor LiveKitAgent {
               )
         else { return }
         do {
-            try await room.localParticipant.setScreenShare(enabled: true)
+            let sources = try await MacOSScreenCapturer.sources(for: .display)
+            guard let source = sources.compactMap({ $0 as? MacOSDisplay }).first(where: { $0.displayID == displayID }) else {
+                await model?.updateConnection(true, screen: false, message: "That display is no longer available. Refresh the display list.")
+                return
+            }
+            let track = LocalVideoTrack.createMacOSScreenShareTrack(source: source, options: ScreenShareCaptureOptions(showCursor: true, appAudio: false))
+            screenPublication = try await room.localParticipant.publish(videoTrack: track)
+            selectedDisplayID = displayID
             screenPublished = true
             await model?.updateConnection(true, screen: true, message: "Desktop is visible to the Huddle room.")
         } catch {
@@ -146,10 +263,18 @@ private actor LiveKitAgent {
         }
     }
 
+    private func availableDisplays() async -> [DisplayOption] {
+        guard let sources = try? await MacOSScreenCapturer.sources(for: .display) else { return [] }
+        return sources.compactMap { $0 as? MacOSDisplay }.enumerated().map { index, display in
+            DisplayOption(id: display.displayID, title: "Display \(index + 1)", dimensions: "\(display.width)×\(display.height)")
+        }
+    }
+
     func stop() async {
         stopping = true
         input.releaseAll()
-        _ = try? await room.localParticipant.setScreenShare(enabled: false)
+        if let screenPublication { _ = try? await room.localParticipant.unpublish(publication: screenPublication) }
+        screenPublication = nil
         await room.disconnect()
     }
 
@@ -169,7 +294,7 @@ private actor LiveKitAgent {
             await revokeGrant(message: "Remote Control is waiting for the server grant or has ended.")
             return
         }
-        await publishScreenIfNeeded()
+        if !screenPublished { await model?.updateConnection(true, screen: false, message: "Choose a display, then start Remote Control.") }
     }
 
     private func decodeMetadata(_ metadata: String?) -> AgentTokenMetadata? {
@@ -180,13 +305,15 @@ private actor LiveKitAgent {
     private func revokeGrant(message: String) async {
         input.releaseAll()
         if screenPublished {
-            _ = try? await room.localParticipant.setScreenShare(enabled: false)
+            if let screenPublication { _ = try? await room.localParticipant.unpublish(publication: screenPublication) }
+            screenPublication = nil
             screenPublished = false
         }
         await model?.updateConnection(true, screen: false, message: message)
     }
 
     private func receive(_ data: Data, sender: String?) async {
+        guard screenPublished else { return }
         guard let sender else { return }
         guard let packet = try? ControlPacketDecoder.decode(data) else { return }
         // The actor serializes packets; the gate itself is the server-grant
@@ -209,7 +336,7 @@ private actor LiveKitAgent {
         // CGDisplayBounds and CGEvent share Quartz's global coordinate space.
         // NSScreen.frame is AppKit-space and can be inverted/offset on a
         // multi-display desktop.
-        let displayID = CGMainDisplayID()
+        let displayID = selectedDisplayID ?? CGMainDisplayID()
         return DisplayGeometry(displayID: displayID, bounds: CGDisplayBounds(displayID))
     }
 }
@@ -292,15 +419,47 @@ struct AgentView: View {
             Text("Huddle Control Agent").font(.title2).bold()
             Text(model.status).foregroundStyle(.secondary)
             if let session = model.session { Text("Room \(session.sessionID) · Sharer \(session.sharerName) · Controller \(session.controllerName)").font(.callout) }
+            if let updateNotice = model.updateNotice { Label(updateNotice, systemImage: "arrow.down.circle").foregroundStyle(.orange).font(.callout) }
+            if let origin = model.pendingTrustOrigin {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Trust this Huddle server?").font(.headline)
+                    Text(origin).font(.body.monospaced()).textSelection(.enabled)
+                    Text("The agent remembers only this server origin. It does not save the room or one-time link.").font(.caption).foregroundStyle(.secondary)
+                    Button("Trust & Continue") { model.confirmServerTrust() }.buttonStyle(.borderedProminent)
+                }
+                .padding(12)
+                .background(.yellow.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+            }
             Divider()
             permissionRow("Screen Recording", granted: model.screenPermission)
             permissionRow("Accessibility", granted: model.accessibilityPermission)
             HStack {
-                Button("Open Permission Settings") { model.requestPermissions() }
+                Button("Prepare for Remote Control") { model.requestPermissions() }
                 Button("Refresh") { model.refreshPermissions() }
                 Spacer()
                 Button("Stop", role: .destructive) { model.stop() }.disabled(!model.connected)
             }
+            if !model.displays.isEmpty && model.session != nil && !model.screenPublished {
+                Divider()
+                Text("Choose the display to share").font(.headline)
+                Picker("Display", selection: Binding(get: { model.selectedDisplayID ?? model.displays[0].id }, set: { model.selectedDisplayID = $0 })) {
+                    ForEach(model.displays) { display in
+                        Text("\(display.title) · \(display.dimensions)").tag(display.id)
+                    }
+                }
+                Button("Start Remote Control") { model.startRemoteControl() }.buttonStyle(.borderedProminent).disabled(!model.screenPermission || !model.accessibilityPermission || model.pendingTrustOrigin != nil)
+            }
+            Divider()
+            Text("Manual launch fallback").font(.headline)
+            Text("Paste the complete huddle-control:// link from the Huddle room. The link is cleared after parsing.").font(.caption).foregroundStyle(.secondary)
+            HStack {
+                TextField("huddle-control://join?...", text: $model.manualLink)
+                    .textFieldStyle(.roundedBorder)
+                Button("Open") { model.submitManualLink() }.disabled(model.manualLink.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+            Button("Copy sanitized diagnostics") { model.copyDiagnostics() }.font(.caption)
+            Text("Diagnostics include only app version, macOS, architecture, permission state, and connection state. Nothing is sent automatically.").font(.caption2).foregroundStyle(.secondary)
+            Button("Forget trusted Huddle servers") { model.forgetTrustedServers() }.font(.caption).foregroundStyle(.secondary)
             if let error = model.error { Text(error).foregroundStyle(.red).font(.callout) }
         }
         .padding(24)

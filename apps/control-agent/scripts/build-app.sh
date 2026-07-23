@@ -3,15 +3,21 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONFIG="${CONFIGURATION:-release}"
+ARCHITECTURE="${ARCHITECTURE:-$(uname -m)}"
+case "$ARCHITECTURE" in
+  arm64|aarch64) ARCHITECTURE="arm64"; TARGET="arm64-apple-macosx" ;;
+  x86_64|amd64) ARCHITECTURE="x86_64"; TARGET="x86_64-apple-macosx" ;;
+  *) echo "Unsupported ARCHITECTURE: $ARCHITECTURE" >&2; exit 1 ;;
+esac
 # TCC binds Screen Recording and Accessibility approval to the app's designated
 # requirement. Prefer a persistent Apple Development identity for local builds;
 # an ad-hoc signature gets a new identity every rebuild and loses that approval.
 DEFAULT_SIGN_IDENTITY="$(security find-identity -v -p codesigning 2>/dev/null | awk -F '"' '/Apple Development:/ { print $2; exit }')"
 SIGN_IDENTITY="${CODE_SIGN_IDENTITY:-$DEFAULT_SIGN_IDENTITY}"
 SIGN_IDENTITY="${SIGN_IDENTITY:--}"
-swift build --package-path "$ROOT" --configuration "$CONFIG"
+swift build --package-path "$ROOT" --configuration "$CONFIG" --arch "$ARCHITECTURE"
 
-BIN="$ROOT/.build/arm64-apple-macosx/$CONFIG/HuddleControlAgent"
+BIN="$ROOT/.build/$TARGET/$CONFIG/HuddleControlAgent"
 if [[ ! -x "$BIN" ]]; then
   BIN="$ROOT/.build/$CONFIG/HuddleControlAgent"
 fi
@@ -21,6 +27,15 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$APP/Contents/Framewor
 cp "$BIN" "$APP/Contents/MacOS/HuddleControlAgent"
 cp "$ROOT/Info.plist" "$APP/Contents/Info.plist"
 cp "$ROOT/Entitlements.plist" "$APP/Contents/Resources/Entitlements.plist"
+if [[ -n "${AGENT_VERSION:-}" ]]; then
+  /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $AGENT_VERSION" "$APP/Contents/Info.plist"
+fi
+if [[ -n "${AGENT_BUILD_VERSION:-}" ]]; then
+  /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $AGENT_BUILD_VERSION" "$APP/Contents/Info.plist"
+fi
+if [[ -n "${CONTROL_AGENT_UPDATE_PUBLIC_KEY:-}" ]]; then
+  /usr/libexec/PlistBuddy -c "Set :ControlAgentUpdatePublicKey $CONTROL_AGENT_UPDATE_PUBLIC_KEY" "$APP/Contents/Info.plist"
+fi
 
 BUILD_DIR="$(dirname "$BIN")"
 for FRAMEWORK in RustLiveKitUniFFI.framework LiveKitWebRTC.framework; do
@@ -46,4 +61,5 @@ if [[ "$SIGN_IDENTITY" == "-" ]]; then
 else
   echo "Built locally signed $APP with $SIGN_IDENTITY"
 fi
+echo "Built architecture: $ARCHITECTURE"
 echo "For distribution, sign with Developer ID + hardened runtime and notarize the app before publishing it."

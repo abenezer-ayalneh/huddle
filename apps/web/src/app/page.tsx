@@ -135,6 +135,9 @@ export default function LandingPage() {
             <Link href="#stack" className="hidden rounded-md px-3 py-2 text-sm font-medium text-white/70 transition-colors hover:text-white md:inline-flex">
               Stack
             </Link>
+            <Link href="/downloads" className="hidden rounded-md px-3 py-2 text-sm font-medium text-white/70 transition-colors hover:text-white md:inline-flex">
+              Downloads
+            </Link>
             <Link
               href="/lobby"
               className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md border border-cyan/25 bg-white/[0.08] px-3.5 py-2 text-sm font-semibold text-white shadow-[inset_0_1px_0_oklch(1_0_0/0.09)] transition-colors hover:bg-white/[0.13] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/70"

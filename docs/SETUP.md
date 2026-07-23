@@ -158,6 +158,31 @@ distributed as a trusted `.app`/`.dmg`; signing credentials are not part of the
 repository. Remote Control ends if either human, the agent, or the room
 disconnects, and the Sharer or Controller can stop it from Huddle.
 
+### Public beta downloads (Phase 11)
+
+Sharers can install the public macOS beta from the Huddle **Downloads** page.
+Choose the DMG matching the Mac's architecture (Apple Silicon or Intel), drag
+the app to Applications, launch it, and press **Prepare for Remote Control** to
+grant Screen Recording and Accessibility. Only the Sharer installs the agent;
+Controllers stay in the browser.
+
+If the first two-minute launch link expires while the DMG is being installed,
+return to the room and press **Open Agent** again. Huddle rotates the old
+bootstrap and issues a fresh single-use link. If the browser cannot invoke the
+custom URL, copy the complete `huddle-control://join?...` link and paste it into
+the agent window. The agent asks the Sharer to trust the exact Huddle API origin
+once, then requires a display choice and local **Start Remote Control** click.
+
+For beta support, use the agent's **Copy sanitized diagnostics** button and paste
+the result into the repository's Control Agent issue form. The agent never sends
+diagnostics automatically; do not include room links, bootstrap codes, tokens, or
+private screen content.
+
+Release credentials and the Ed25519 update-signing key are environment-owned.
+The tag workflow is `.github/workflows/control-agent-release.yml`; record
+physical signed-release-candidate results for both Apple Silicon and Intel
+before creating a `control-agent-vX.Y.Z` tag.
+
 ## Troubleshooting
 
 - **Camera/mic blocked:** browsers only allow media on `https` or `localhost`.

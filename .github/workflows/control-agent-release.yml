@@ -1,0 +1,148 @@
+name: Control Agent release
+
+on:
+  push:
+    tags:
+      - 'control-agent-v*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: control-agent-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build ${{ matrix.architecture }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - architecture: arm64
+            runner: macos-15
+          - architecture: x86_64
+            runner: macos-15-intel
+    runs-on: ${{ matrix.runner }}
+    env:
+      AGENT_VERSION: ${{ github.ref_name }}
+      DEVELOPER_ID_APPLICATION: ${{ secrets.DEVELOPER_ID_APPLICATION }}
+      NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
+      NOTARY_ISSUER: ${{ secrets.NOTARY_ISSUER }}
+      NOTARY_KEY_PATH: ${{ runner.temp }}/notary-key.p8
+      KEYCHAIN_PASSWORD: ${{ secrets.RELEASE_KEYCHAIN_PASSWORD }}
+      CONTROL_AGENT_UPDATE_PUBLIC_KEY: ${{ secrets.AGENT_UPDATE_PUBLIC_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: echo "version=${GITHUB_REF_NAME#control-agent-v}" >> "$GITHUB_OUTPUT"
+
+      - name: Import Developer ID certificate
+        env:
+          DEVELOPER_ID_P12_B64: ${{ secrets.DEVELOPER_ID_P12_B64 }}
+          DEVELOPER_ID_P12_PASSWORD: ${{ secrets.DEVELOPER_ID_P12_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          KEYCHAIN="$RUNNER_TEMP/release.keychain-db"
+          echo "$DEVELOPER_ID_P12_B64" | base64 -D > "$RUNNER_TEMP/developer-id.p12"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/developer-id.p12" -k "$KEYCHAIN" -P "$DEVELOPER_ID_P12_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+          security list-keychains -d user -s "$KEYCHAIN"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+
+      - name: Write notarization key
+        env:
+          NOTARY_KEY_B64: ${{ secrets.NOTARY_KEY_B64 }}
+        shell: bash
+        run: echo "$NOTARY_KEY_B64" | base64 -D > "$NOTARY_KEY_PATH"
+
+      - name: Test Control Agent core
+        run: swift test --package-path apps/control-agent
+
+      - name: Build app bundle
+        env:
+          ARCHITECTURE: ${{ matrix.architecture }}
+          AGENT_VERSION: ${{ steps.version.outputs.version }}
+          AGENT_BUILD_VERSION: ${{ github.run_number }}
+          CODE_SIGN_IDENTITY: ${{ secrets.DEVELOPER_ID_APPLICATION }}
+        run: ./apps/control-agent/scripts/build-app.sh
+
+      - name: Sign and notarize app
+        working-directory: apps/control-agent
+        run: ./scripts/sign-and-notarize.sh
+
+      - name: Package and notarize DMG
+        env:
+          ARCHITECTURE: ${{ matrix.architecture }}
+        run: |
+          ./apps/control-agent/scripts/package-dmg.sh
+          ./apps/control-agent/scripts/notarize-dmg.sh "apps/control-agent/dist/Huddle-Control-Agent-macos-${ARCHITECTURE}.dmg"
+          hdiutil verify "apps/control-agent/dist/Huddle-Control-Agent-macos-${ARCHITECTURE}.dmg"
+          codesign --verify --deep --strict "apps/control-agent/dist/Huddle Control Agent.app"
+          lipo -info "apps/control-agent/dist/Huddle Control Agent.app/Contents/MacOS/HuddleControlAgent"
+
+      - name: Upload architecture artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: control-agent-${{ matrix.architecture }}
+          path: apps/control-agent/dist/Huddle-Control-Agent-macos-${{ matrix.architecture }}.dmg
+          if-no-files-found: error
+
+  publish:
+    name: Publish beta channel
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ github.ref_name }}
+      AGENT_UPDATE_PRIVATE_KEY_B64: ${{ secrets.AGENT_UPDATE_PRIVATE_KEY_B64 }}
+      AGENT_UPDATE_KEY_ID: ${{ secrets.AGENT_UPDATE_KEY_ID }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: control-agent-*
+          merge-multiple: true
+
+      - name: Resolve version and create checksums
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#control-agent-v}"
+          TAG="$GITHUB_REF_NAME"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          shasum -a 256 dist/*.dmg > dist/SHA256SUMS
+
+      - name: Create versioned public beta release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "${{ steps.release.outputs.tag }}" dist/*.dmg dist/SHA256SUMS --repo "$GITHUB_REPOSITORY" --prerelease --title "Huddle Control Agent ${{ steps.release.outputs.version }} · Public Beta" --generate-notes
+
+      - name: Sign release channel manifest
+        env:
+          AGENT_RELEASE_NOTES_URL: https://github.com/${{ github.repository }}/releases/tag/${{ steps.release.outputs.tag }}
+        run: node scripts/create-control-agent-manifest.mjs "${{ steps.release.outputs.version }}" "https://github.com/${{ github.repository }}/releases/download/${{ steps.release.outputs.tag }}" dist
+
+      - name: Upload manifest to versioned release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ steps.release.outputs.tag }}" dist/release-manifest.json dist/release-manifest.sig --repo "$GITHUB_REPOSITORY" --clobber
+
+      - name: Advance signed beta channel
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view control-agent-beta --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload control-agent-beta dist/release-manifest.json dist/release-manifest.sig --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create control-agent-beta dist/release-manifest.json dist/release-manifest.sig --repo "$GITHUB_REPOSITORY" --prerelease --title "Huddle Control Agent · Public Beta Channel" --notes "Signed channel manifest for the latest public beta."
+          fi
