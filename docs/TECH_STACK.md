@@ -62,7 +62,8 @@ are outside v1.
 ## Things intentionally deferred
 
 - Additional native platforms for Remote Control (Windows/Linux).
-- Clipboard sync, file transfer, remote audio, and unattended access.
+- Rich/binary clipboard transfer, file transfer, remote audio, and unattended
+  access. Plain-text Clipboard Sharing is an attended Remote Control capability.
 - CI/CD, IaC, observability stack — add once the app runs end to end.
 
 When you introduce any of these, append a row above and a short rationale here.

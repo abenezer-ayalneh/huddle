@@ -31,8 +31,23 @@ final class CoreTests: XCTestCase {
         ])
         XCTAssertEqual(try ControlPacketDecoder.decode(paste).command, .clipboardPaste("Hello"))
 
+        let malformedCopy = try JSONSerialization.data(withJSONObject: [
+            "v": 1, "type": "remote-control:clipboard-copy", "sessionId": "session", "sequence": 3, "unexpected": true,
+        ])
+        XCTAssertThrowsError(try ControlPacketDecoder.decode(malformedCopy))
+
+        let empty = try JSONSerialization.data(withJSONObject: [
+            "v": 1, "type": "remote-control:clipboard-paste", "sessionId": "session", "sequence": 3, "text": "",
+        ])
+        XCTAssertThrowsError(try ControlPacketDecoder.decode(empty))
+
+        let nonText = try JSONSerialization.data(withJSONObject: [
+            "v": 1, "type": "remote-control:clipboard-paste", "sessionId": "session", "sequence": 4, "text": ["formatted"],
+        ])
+        XCTAssertThrowsError(try ControlPacketDecoder.decode(nonText))
+
         let tooLarge = try JSONSerialization.data(withJSONObject: [
-            "v": 1, "type": "remote-control:clipboard-paste", "sessionId": "session", "sequence": 3,
+            "v": 1, "type": "remote-control:clipboard-paste", "sessionId": "session", "sequence": 5,
             "text": String(repeating: "x", count: maximumClipboardTextBytes + 1),
         ])
         XCTAssertThrowsError(try ControlPacketDecoder.decode(tooLarge))
@@ -61,6 +76,20 @@ final class CoreTests: XCTestCase {
             return XCTFail("forged sender was accepted")
         }
         XCTAssertEqual(sender, .wrongSender)
+        guard case .failure(let wrongSession) = gate.authorize(ControlCommandPacket(sessionID: "other-session", sequence: 2, command: .clipboardCopy), senderIdentity: "controller", localAgentIdentity: "control-agent:session", tokenMetadata: token, projection: projection, connected: true, now: Date()) else {
+            return XCTFail("wrong session was accepted")
+        }
+        XCTAssertEqual(wrongSession, .wrongSession)
+
+        let expired = RemoteControlProjection(sessionID: "session", status: "active", sharerIdentity: "sharer", sharerName: "Ada", controllerIdentity: "controller", controllerName: "Bo", agentIdentity: "control-agent:session", agentConnected: true, renewalDueAt: Date(timeIntervalSinceNow: -1))
+        guard case .failure(let expiry) = gate.authorize(ControlCommandPacket(sessionID: "session", sequence: 2, command: .clipboardPaste("late")), senderIdentity: "controller", localAgentIdentity: "control-agent:session", tokenMetadata: token, projection: expired, connected: true, now: Date()) else {
+            return XCTFail("expired clipboard paste was accepted")
+        }
+        XCTAssertEqual(expiry, .expired)
+        guard case .failure(let disconnected) = gate.authorize(ControlCommandPacket(sessionID: "session", sequence: 2, command: .clipboardCopy), senderIdentity: "controller", localAgentIdentity: "control-agent:session", tokenMetadata: token, projection: projection, connected: false, now: Date()) else {
+            return XCTFail("disconnected clipboard copy was accepted")
+        }
+        XCTAssertEqual(disconnected, .disconnected)
     }
 
     func testClipboardSuppressionConsumesOnlyTheExpectedPasteboardChange() {

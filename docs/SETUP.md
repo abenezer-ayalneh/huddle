@@ -151,12 +151,13 @@ open "apps/control-agent/dist/Huddle Control Agent.app"
 ```
 
 The browser opens a one-time `huddle-control://join` link after Sharer consent.
-The agent redeems that code once, joins LiveKit with a server-minted
-screen-share-only token, and asks macOS for Screen Recording and Accessibility
-permission. A production build must be signed with Developer ID, notarized, and
-distributed as a trusted `.app`/`.dmg`; signing credentials are not part of the
-repository. Remote Control ends if either human, the agent, or the room
-disconnects, and the Sharer or Controller can stop it from Huddle.
+The agent redeems that code once, joins LiveKit with a server-minted token that
+may publish the selected screen share and recipient-targeted plain-text clipboard
+updates, and asks macOS for Screen Recording and Accessibility permission. A
+production build must be signed with Developer ID, notarized, and distributed as
+a trusted `.app`/`.dmg`; signing credentials are not part of the repository.
+Remote Control ends if either human, the agent, or the room disconnects, and the
+Sharer or Controller can stop it from Huddle.
 
 ### Public beta downloads (Phase 11)
 

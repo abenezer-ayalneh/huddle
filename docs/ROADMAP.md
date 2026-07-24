@@ -239,7 +239,8 @@ decisions are in `docs/adr/0024-attended-remote-control-macos-agent.md`.
 - [x] Redis pending request, active identity-bound grant, one-time helper
       bootstrap, 30-minute reconfirmation, and expiry cleanup.
 - [x] Participant-authorized request / approve / deny / stop / renew endpoints;
-      screen-share-only Control Agent token; LiveKit room metadata projection.
+      screen-share-media-only Control Agent token plus recipient-targeted data
+      publishing for clipboard updates; LiveKit room metadata projection.
 - [x] Web request action, Sharer consent and Recording warning, room-wide
       indicator, renewal/stop controls, Present mutual exclusion, and normalized
       mouse/keyboard packet capture.
@@ -249,6 +250,10 @@ decisions are in `docs/adr/0024-attended-remote-control-macos-agent.md`.
 - [x] Swift/SwiftUI macOS Control Agent: permission status, one-time bootstrap,
       LiveKit join, desktop publish, server-grant validation, input injection,
       local disconnect/Stop, and companion participant filtering.
+- [x] Plain-text Clipboard Sharing: explicit approval/reconfirmation disclosure,
+      Sharer-only enabled state, native Controller Copy/Paste shortcuts,
+      recipient-targeted agent updates, echo suppression, and latest-value
+      browser fallback.
 - [x] Developer ID signing, notarization, and beta `.app`/`.dmg` release helper
       scripts/docs (credentials and the actual notarized artifact remain
       environment-owned).
@@ -259,9 +264,9 @@ decisions are in `docs/adr/0024-attended-remote-control-macos-agent.md`.
       reconfirmation expiry). This requires a physical macOS device, Screen
       Recording/Accessibility consent, and Developer ID release credentials.
 
-**v1 exclusions:** unattended access, clipboard sync, file transfer, desktop
-audio, support codes outside a room, Windows/Linux agents, and richer desktop
-suite features.
+**v1 exclusions:** unattended access, rich/binary clipboard sync, file transfer,
+desktop audio, support codes outside a room, Windows/Linux agents, and richer
+desktop suite features. Plain-text Clipboard Sharing is defined in ADR 0026.
 
 ### Phase 11 — Public macOS Control Agent beta
 

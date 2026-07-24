@@ -113,8 +113,11 @@ immediately after the automated build because the physical gate is a documented
 pre-tag release requirement.
 
 The user must grant Screen Recording and Accessibility permissions in macOS
-System Settings. The agent has no clipboard, file-transfer, audio-capture, or
-background unattended-control capability. **Copy sanitized diagnostics** is an
-explicit user action for beta support; it writes only version, macOS,
-architecture, permission, and connection state to the clipboard and never reads
-or uploads clipboard contents.
+System Settings. During an active, approved Remote Control session, the agent
+observes and relays only transferable plain-text clipboard changes to the exact
+Controller, accepts Controller text only through the native Paste shortcut, and
+never persists or uploads clipboard contents. It has no rich/binary clipboard,
+file-transfer, audio-capture, or background unattended-control capability.
+**Copy sanitized diagnostics** is an explicit user action for beta support; it
+writes only version, macOS, architecture, permission, and connection state to
+the clipboard.

@@ -54,4 +54,5 @@ warning instead of Apple trust; physical two-browser acceptance remains a
 separate, outstanding gate. A future trusted release still needs an Apple
 release credential set, an update-signing key, a public release channel, and a
 physical acceptance checklist. Neither path adds Windows/Linux agents,
-telemetry, clipboard/file/audio features, or unattended access.
+telemetry, rich clipboard/file/audio features, or unattended access. Attended
+plain-text Clipboard Sharing remains governed by ADR 0026.

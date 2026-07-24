@@ -516,17 +516,26 @@ idempotent.
 
 Topic: `huddle:remote-control`; JSON messages carry `v: 1`.
 
-| type                     | sender → recipient         | purpose                                                           |
-| ------------------------ | -------------------------- | ----------------------------------------------------------------- |
-| `remote-control:request` | Controller → Sharer        | carries a server-issued request id to wake consent UI             |
-| `remote-control:denied`  | Sharer → Controller        | transient denial UX after the API decision                        |
-| `remote-control:input`   | Controller → Control Agent | `{ sessionId, sequence, event }`; transport only, never authority |
+| type                              | sender → recipient         | purpose                                                                        |
+| --------------------------------- | -------------------------- | ------------------------------------------------------------------------------ |
+| `remote-control:request`          | Controller → Sharer        | carries a server-issued request id to wake consent UI                          |
+| `remote-control:denied`           | Sharer → Controller        | transient denial UX after the API decision                                     |
+| `remote-control:input`            | Controller → Control Agent | `{ sessionId, sequence, event }`; transport only, never authority              |
+| `remote-control:clipboard-copy`   | Controller → Control Agent | `{ sessionId, sequence }`; injects the Sharer's native Copy shortcut           |
+| `remote-control:clipboard-paste`  | Controller → Control Agent | `{ sessionId, sequence, text }`; writes bounded plain text, then injects Paste |
+| `remote-control:clipboard-update` | Control Agent → Controller | `{ sessionId, revision, text }`; recipient-targeted Sharer plain-text update   |
 
 Input events are bounded, normalized mouse `move/down/up/scroll`, keyboard `key`
 down/up, and `release-all`. Pointer coordinates are in `[0,1]` of the published
 desktop. Moves are lossy and coalesced; clicks, scrolls, keys, and release-all
-are reliable. There is no clipboard, file, audio, or secret-content message in
-v1.
+are reliable. Clipboard messages are also reliable, use the same monotonic
+authorization sequence as input, and must fit the 8 KiB on-wire packet budget;
+plain text is capped at 6 KiB so JSON framing remains inside that limit. The
+agent sends `clipboard-update` only to the active Controller, accepts copy/paste
+only from that exact Controller, and sends no content to an HTTP endpoint or
+persistent store. Empty, non-text, rich, binary, and oversized clipboard values
+are rejected whole. There is no file, audio, rich-content, or binary-content
+message in v1.
 
 ### GET /recordings/mine _(session)_
 

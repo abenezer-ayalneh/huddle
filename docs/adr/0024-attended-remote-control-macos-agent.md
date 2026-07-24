@@ -7,7 +7,9 @@ requests control of a Sharer's desktop; the Sharer explicitly approves or denies
 inside the active room. On approval, a signed/notarized native Swift **Control
 Agent** joins the same LiveKit room as a short-lived companion, publishes the
 Sharer's desktop, and applies the approved Controller's mouse and keyboard input.
-The browser remains the call surface for both people.
+The browser remains the call surface for both people. Plain-text Clipboard
+Sharing is defined by ADR 0026 and is limited to the active Sharer, Controller,
+and Control Agent.
 
 This ADR changes the previous browser-only platform boundary. The terms Remote
 Control, Sharer, Controller, and Control Agent are fixed in `CONTEXT.md`.
@@ -41,9 +43,9 @@ secrets; the product does not inspect or persist them.
 The Control Agent is a narrow Swift/SwiftUI macOS app using the official LiveKit
 Swift SDK, macOS screen capture, and Core Graphics event injection. It requests
 Screen Recording and Accessibility permission with explicit status and recovery
-UI. It publishes no microphone/audio, synchronizes no clipboard, transfers no
-files, and implements no richer remote-desktop features in v1. Windows and Linux
-are deferred.
+UI. It publishes no microphone/audio, shares only bounded plain-text clipboard
+changes under ADR 0026, transfers no files, and implements no richer
+remote-desktop features in v1. Windows and Linux are deferred.
 
 The beta is distributed with a Developer ID signature and Apple notarization.
 Entitlements are minimal and App Sandbox is not enabled because cross-application
@@ -79,28 +81,32 @@ display-safe projection to LiveKit room metadata so browsers and the Control
 Agent receive changes in real time. Postgres stores a metadata-only audit row
 through requested, active, denied, ended, expired, or failed states.
 
-Reliable data packets wake request/deny UI and carry clicks/keys; lossy packets
-carry coalesced pointer moves. Every input packet includes the session id. The
-Control Agent injects it only when the SFU-attested sender is the grant's exact
-Controller and its token/room-metadata grant still matches all identities and is
-inside the renewal deadline. A forged packet from any other participant is
-ignored. No input event is relayed to the API.
+Reliable data packets wake request/deny UI and carry clicks, keys, and the
+clipboard copy/paste commands; lossy packets carry coalesced pointer moves.
+Every privileged Controller packet includes the session id and uses one shared
+monotonic authorization sequence. The Control Agent executes it only when the
+SFU-attested sender is the grant's exact Controller and its token/room-metadata
+grant still matches all identities and is inside the renewal deadline. A forged
+packet from any other participant is ignored. The agent's clipboard updates are
+reliably addressed only to the exact Controller. No input or clipboard content
+is relayed to the API.
 
 ### Bootstrap and token scope
 
 Sharer approval returns an opaque bootstrap code, not a LiveKit JWT. The browser
 passes only the Room Code, session id, short-lived code, and public API origin to
 the `huddle-control` deep link. Redemption is atomic and single-use. It returns a short-lived token
-that may join one room, subscribe to data/metadata, and publish only a screen
-share. The token carries no room-admin, camera, microphone, or Host authority and
-is never stored at rest.
+that may join one room, subscribe to data/metadata, publish the selected screen
+share, and publish recipient-targeted clipboard updates. The token carries no
+room-admin, camera, microphone, or Host authority and is never stored at rest.
 
 ### Lifecycle and authority
 
-The Sharer must reconfirm every 30 minutes. Renewal advances the deadline by
-another 30 minutes; missing it expires the grant, clears room metadata, disconnects
-the agent, and completes the audit row. The grant also ends when the Sharer,
-Controller, or Control Agent disconnects.
+The Sharer must reconfirm every 30 minutes. The confirmation explicitly restates
+mouse, keyboard, and plain-text clipboard sharing. Renewal advances the deadline
+by another 30 minutes; missing it expires the grant, clears room metadata,
+disconnects the agent, and completes the audit row. The grant also ends when the
+Sharer, Controller, or Control Agent disconnects.
 
 Only the Sharer and Controller may call the Remote Control stop endpoint. The
 room Host gains no special Remote Control stop authority, although the existing

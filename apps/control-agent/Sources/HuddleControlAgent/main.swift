@@ -279,6 +279,9 @@ private actor LiveKitAgent {
         stopping = true
         input.releaseAll()
         stopClipboardMonitoring()
+        // Set this before awaiting unpublish/disconnect so an already-running
+        // pasteboard observation cannot publish after local Stop.
+        screenPublished = false
         if let screenPublication { _ = try? await room.localParticipant.unpublish(publication: screenPublication) }
         screenPublication = nil
         await room.disconnect()
@@ -312,9 +315,10 @@ private actor LiveKitAgent {
         input.releaseAll()
         stopClipboardMonitoring()
         if screenPublished {
+            // Block clipboard delivery before the asynchronous unpublish.
+            screenPublished = false
             if let screenPublication { _ = try? await room.localParticipant.unpublish(publication: screenPublication) }
             screenPublication = nil
-            screenPublished = false
         }
         await model?.updateConnection(true, screen: false, message: message)
     }
@@ -341,8 +345,14 @@ private actor LiveKitAgent {
         case let .input(event):
             input.apply(event, geometry: currentGeometry())
         case .clipboardCopy:
+            // The browser will already have seen Ctrl/Command down before the
+            // shortcut key. Release that platform modifier so this is exactly
+            // the macOS Command-C gesture, including for Windows/Linux
+            // Controllers.
+            input.releaseAll()
             input.copy()
         case let .clipboardPaste(text):
+            input.releaseAll()
             guard let changeCount = await writeClipboard(text) else { return }
             clipboardEcho.recordLocalPasteboardWrite(changeCount: changeCount)
             clipboardChangeCount = changeCount
@@ -406,7 +416,18 @@ private actor LiveKitAgent {
     }
 
     private func publishClipboardUpdate(_ text: String) async {
-        guard ClipboardText.isTransferable(text) else { return }
+        // A pasteboard read crosses actors. Re-check the active grant at the
+        // last possible point so expiry, metadata revocation, or disconnect
+        // cannot leak a value that was observed just before session end.
+        guard screenPublished,
+              gate.canPublishDesktop(
+                  tokenMetadata: tokenMetadata,
+                  localAgentIdentity: response.session.agentIdentity,
+                  projection: projection,
+                  now: Date(),
+              ),
+              ClipboardText.isTransferable(text)
+        else { return }
         clipboardRevision &+= 1
         let payload: [String: Any] = [
             "v": 1,
@@ -417,7 +438,7 @@ private actor LiveKitAgent {
         ]
         guard let data = try? JSONSerialization.data(withJSONObject: payload), data.count <= maximumControlPacketBytes else { return }
         let options = DataPublishOptions(
-            destinationIdentities: [Participant.Identity(response.session.controllerIdentity)],
+            destinationIdentities: [Participant.Identity(from: response.session.controllerIdentity)],
             topic: remoteControlTopic,
             reliable: true,
         )

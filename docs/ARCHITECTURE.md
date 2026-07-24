@@ -12,8 +12,9 @@ Four application/participant-side pieces, plus the backing services:
    routes audio/video between participants.
 4. **Control Agent** (`apps/control-agent`, macOS) — an attended, short-lived
    companion for a Remote Control Sharer. It joins the room with a scoped
-   one-time token, publishes the desktop, and applies only the approved
-   Controller's mouse/keyboard packets.
+   one-time token, publishes the desktop, applies only the approved Controller's
+   mouse/keyboard packets, and relays bounded plain-text clipboard updates only
+   to that Controller.
 5. **Redis** — required by LiveKit for state when running more than one node and
    for some features (and a sensible default even for a single node).
 6. **Postgres** (Phase 7) — persists user accounts and managed rooms (scheduled
@@ -91,19 +92,24 @@ only ever receives a scoped, expiring token.
    state, and returns a short-lived bootstrap code. Denial completes the audit.
 3. The browser opens the signed macOS Control Agent with that code. The agent
    verifies the release policy, asks the Sharer to trust the exact API origin
-   once, and redeems it for a short-lived, screen-share-only LiveKit token whose
-   metadata binds all five grant identifiers. No LiveKit JWT is put in a URL.
+   once, and redeems it for a short-lived token that may publish the selected
+   screen-share track and recipient-targeted clipboard data. Its metadata binds
+   all five grant identifiers. No LiveKit JWT is put in a URL.
 4. The agent joins under `control-agent:<sessionId>`, waits for an explicit
    display selection and local Start confirmation, then publishes only that
    display track while observing server-written room metadata. It is filtered from participant
    lists and camera placeholders, but remains protocol-visible: LiveKit's native
    `hidden` grant also hides publications and therefore cannot carry the room-
    visible desktop.
-5. The approved Controller sends versioned, session-scoped mouse/keyboard data
-   packets directly to that agent. The agent checks the SFU-attested sender,
-   session id, controller id, renewal deadline, and current room metadata before
-   injecting any event. Mouse moves are lossy/coalesced; clicks and keys are
-   reliable. Input content is never sent to the API or database.
+5. The approved Controller sends versioned, session-scoped mouse/keyboard and
+   clipboard-copy/paste data packets directly to that agent. The agent checks
+   the SFU-attested sender, session id, controller id, renewal deadline, and
+   current room metadata before injecting an event or writing the pasteboard.
+   While its desktop is published it observes the Sharer's plain-text pasteboard
+   and reliably sends each transferable change to that exact Controller, while
+   suppressing its expected echo after a Controller paste. Mouse moves are
+   lossy/coalesced; clicks, keys, and clipboard packets are reliable. Clipboard
+   contents are never sent to the API, Redis, Postgres, room metadata, or logs.
 6. Sharer or Controller may stop. A LiveKit `participant_left` webhook also ends
    the grant when the Sharer, Controller, or agent leaves. The agent's local Stop
    button disconnects it rather than exercising a third stop authority. A small

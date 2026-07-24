@@ -307,8 +307,11 @@ _Avoid_: Request to share, take over request
 In-call, attended control of one admitted participant's desktop by another
 admitted participant. The desktop is visible to the whole room while control is
 active. It requires an explicit Request from the Controller and approval from
-the Sharer, is limited to mouse and keyboard input, and is reconfirmed by the
-Sharer every 30 minutes. Remote Control and [[Present]] are mutually exclusive.
+the Sharer, permits mouse, keyboard, and plain-text Clipboard Sharing, and is
+reconfirmed by the Sharer every 30 minutes. Clipboard Sharing automatically
+sends the Sharer's plain-text clipboard changes only to the Controller; the
+Controller sends text only with their normal Paste shortcut. Remote Control and
+[[Present]] are mutually exclusive.
 _Avoid_: Remote access (suggests unattended access), desktop sharing, support
 code
 
@@ -321,6 +324,7 @@ _Avoid_: Ask for control, control invite, request remote access
 **Remote Control Status**:
 The persistent room-wide signal that identifies the Controller and Sharer and
 states whether their Remote Control is waiting for the Control Agent or active.
+Only the Sharer also sees that Clipboard Sharing is enabled.
 _Avoid_: Remote Control banner, control toast, control notification
 
 **Sharer**:
@@ -332,15 +336,18 @@ _Avoid_: Presenter, Host, controlled user
 
 **Controller**:
 The admitted participant whom the Sharer approved to send mouse and keyboard
-input to the Sharer's [[Control Agent]]. The Controller may stop at any time and
-may type secrets; Huddle never records input events or their contents.
+input to the Sharer's [[Control Agent]]. The Controller receives only the
+Sharer's current transferable plain text and may send their own text only by
+using the platform Paste shortcut. The Controller may stop at any time and may
+type secrets; Huddle never records input events or clipboard contents.
 _Avoid_: Operator, driver, support agent
 
 **Control Agent**:
 The signed and notarized native macOS helper app that only the [[Sharer]]
 installs. It captures the Sharer's selected display, publishes it into the
-LiveKit room, and applies input only from the server-approved [[Controller]]. It
-joins as a companion participant hidden from people-facing participant UI, has
+LiveKit room, applies input only from the server-approved [[Controller]], and
+relays bounded plain-text clipboard updates only to that Controller. It joins as
+a companion participant hidden from people-facing participant UI, has
 no room Host authority, and holds no standing credential. The installed app is
 inert until the Sharer trusts the Huddle server, chooses a display, and confirms
 Start Remote Control. Its local Stop action disconnects it, which ends Remote
