@@ -29,7 +29,6 @@ jobs:
       DEVELOPER_ID_APPLICATION: ${{ secrets.DEVELOPER_ID_APPLICATION }}
       NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
       NOTARY_ISSUER: ${{ secrets.NOTARY_ISSUER }}
-      NOTARY_KEY_PATH: ${{ runner.temp }}/notary-key.p8
       KEYCHAIN_PASSWORD: ${{ secrets.RELEASE_KEYCHAIN_PASSWORD }}
       CONTROL_AGENT_UPDATE_PUBLIC_KEY: ${{ secrets.AGENT_UPDATE_PUBLIC_KEY }}
     steps:
@@ -60,7 +59,12 @@ jobs:
         env:
           NOTARY_KEY_B64: ${{ secrets.NOTARY_KEY_B64 }}
         shell: bash
-        run: echo "$NOTARY_KEY_B64" | base64 -D > "$NOTARY_KEY_PATH"
+        run: |
+          set -euo pipefail
+          NOTARY_KEY_PATH="$RUNNER_TEMP/notary-key.p8"
+          echo "$NOTARY_KEY_B64" | base64 -D > "$NOTARY_KEY_PATH"
+          chmod 600 "$NOTARY_KEY_PATH"
+          echo "NOTARY_KEY_PATH=$NOTARY_KEY_PATH" >> "$GITHUB_ENV"
 
       - name: Test Control Agent core
         run: swift test --package-path apps/control-agent
