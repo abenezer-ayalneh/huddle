@@ -159,11 +159,7 @@ export function decodeRemoteControlMessage(data: Uint8Array): RemoteControlMessa
         if (!hasOnlyKeys(value, ['v', 'type', 'requestId']) || !isBoundedString(value.requestId)) return null;
         return { v: 1, type: value.type, requestId: value.requestId };
       case 'remote-control:input': {
-        if (
-          !hasOnlyKeys(value, ['v', 'type', 'sessionId', 'sequence', 'event']) ||
-          !isBoundedString(value.sessionId) ||
-          !isSequence(value.sequence)
-        )
+        if (!hasOnlyKeys(value, ['v', 'type', 'sessionId', 'sequence', 'event']) || !isBoundedString(value.sessionId) || !isSequence(value.sequence))
           return null;
         const event = decodeInputEvent(value.event);
         if (!event) return null;

@@ -20,6 +20,7 @@ export default function RemoteControlSurface({
   onEscape?: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const controlCursorRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
   const pendingMove = useRef<{ x: number; y: number } | null>(null);
   const pendingScroll = useRef<{ x: number; y: number; dx: number; dy: number } | null>(null);
@@ -29,21 +30,71 @@ export default function RemoteControlSurface({
   const lastEscapeAt = useRef(0);
   const [focused, setFocused] = useState(false);
 
-  const toNorm = useCallback((clientX: number, clientY: number, clamp: boolean) => {
+  const getVideoContentBounds = useCallback(() => {
     const video = ref.current?.parentElement?.querySelector('video');
     if (!video || !video.videoWidth || !video.videoHeight) return null;
     const rect = video.getBoundingClientRect();
     const scale = Math.min(rect.width / video.videoWidth, rect.height / video.videoHeight);
     const width = video.videoWidth * scale;
     const height = video.videoHeight * scale;
-    let x = (clientX - rect.left - (rect.width - width) / 2) / width;
-    let y = (clientY - rect.top - (rect.height - height) / 2) / height;
+    return {
+      left: rect.left + (rect.width - width) / 2,
+      top: rect.top + (rect.height - height) / 2,
+      width,
+      height,
+    };
+  }, []);
+
+  const toNorm = useCallback((clientX: number, clientY: number, clamp: boolean) => {
+    const bounds = getVideoContentBounds();
+    if (!bounds) return null;
+    let x = (clientX - bounds.left) / bounds.width;
+    let y = (clientY - bounds.top) / bounds.height;
     if (clamp) {
       x = Math.max(0, Math.min(1, x));
       y = Math.max(0, Math.min(1, y));
     } else if (x < 0 || x > 1 || y < 0 || y > 1) return null;
     return { x, y };
+  }, [getVideoContentBounds]);
+
+  const hideControlCursor = useCallback(() => {
+    const cursor = controlCursorRef.current;
+    if (!cursor) return;
+    cursor.style.opacity = '0';
+    cursor.removeAttribute('data-pressed');
+    const halo = cursor.querySelector<HTMLElement>('[data-control-cursor-halo]');
+    if (halo) halo.style.opacity = '0';
   }, []);
+
+  const setControlCursorPressed = useCallback((pressed: boolean) => {
+    const cursor = controlCursorRef.current;
+    if (!cursor) return;
+    if (pressed) cursor.setAttribute('data-pressed', '');
+    else cursor.removeAttribute('data-pressed');
+    const halo = cursor.querySelector<HTMLElement>('[data-control-cursor-halo]');
+    if (halo) halo.style.opacity = pressed ? '1' : '0';
+  }, []);
+
+  const updateControlCursor = useCallback(
+    (point: { x: number; y: number }, pointerType: string) => {
+      if (pointerType !== 'mouse' && pointerType !== 'pen') {
+        hideControlCursor();
+        return;
+      }
+      const cursor = controlCursorRef.current;
+      const surface = ref.current?.getBoundingClientRect();
+      const bounds = getVideoContentBounds();
+      if (!cursor || !surface || !bounds) return;
+      const x = bounds.left - surface.left + point.x * bounds.width;
+      const y = bounds.top - surface.top + point.y * bounds.height;
+      // This cursor is intentionally updated outside React state. It is
+      // immediate Controller feedback, while the rAF-coalesced input stream
+      // remains the authority path to the Control Agent.
+      cursor.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+      cursor.style.opacity = '1';
+    },
+    [getVideoContentBounds, hideControlCursor],
+  );
 
   const flush = useCallback(() => {
     raf.current = null;
@@ -127,26 +178,35 @@ export default function RemoteControlSurface({
       pressedKeys.current.delete(event.code);
       sendInput({ kind: 'key', action: 'up', code: event.code, key: event.key.slice(0, 64), modifiers: modifiers(event) });
     };
-    const onVisibility = () => document.hidden && releaseAll();
+    const onVisibility = () => {
+      if (!document.hidden) return;
+      hideControlCursor();
+      releaseAll();
+    };
+    const onWindowBlur = () => {
+      hideControlCursor();
+      releaseAll();
+    };
     window.addEventListener('keydown', onKeyDown, true);
     window.addEventListener('keyup', onKeyUp, true);
-    window.addEventListener('blur', releaseAll);
+    window.addEventListener('blur', onWindowBlur);
     document.addEventListener('visibilitychange', onVisibility);
     return () => {
       window.removeEventListener('keydown', onKeyDown, true);
       window.removeEventListener('keyup', onKeyUp, true);
-      window.removeEventListener('blur', releaseAll);
+      window.removeEventListener('blur', onWindowBlur);
       document.removeEventListener('visibilitychange', onVisibility);
       releaseAll();
     };
-  }, [focused, onClipboardCopy, onClipboardPaste, onEscape, releaseAll, sendInput]);
+  }, [focused, hideControlCursor, onClipboardCopy, onClipboardPaste, onEscape, releaseAll, sendInput]);
 
   useEffect(
     () => () => {
       if (raf.current != null) cancelAnimationFrame(raf.current);
+      hideControlCursor();
       releaseAll();
     },
-    [releaseAll],
+    [hideControlCursor, releaseAll],
   );
 
   return (
@@ -159,37 +219,64 @@ export default function RemoteControlSurface({
       onFocus={() => setFocused(true)}
       onBlur={() => {
         setFocused(false);
+        hideControlCursor();
         releaseAll();
       }}
       onPointerMove={(event) => {
         if (!focused) return;
         const point = toNorm(event.clientX, event.clientY, dragging.current);
-        if (point) {
-          pendingMove.current = point;
-          schedule();
+        if (!point) {
+          hideControlCursor();
+          return;
         }
+        updateControlCursor(point, event.pointerType);
+        pendingMove.current = point;
+        schedule();
       }}
       onPointerDown={(event) => {
         if (!focused) {
+          hideControlCursor();
           event.currentTarget.focus();
           return;
         }
         const button = BUTTONS[event.button];
         const point = toNorm(event.clientX, event.clientY, false);
-        if (!button || !point) return;
+        if (!button || !point) {
+          hideControlCursor();
+          return;
+        }
+        updateControlCursor(point, event.pointerType);
+        setControlCursorPressed(event.pointerType === 'mouse' || event.pointerType === 'pen');
         event.preventDefault();
         dragging.current = true;
         event.currentTarget.setPointerCapture(event.pointerId);
         sendInput({ kind: 'down', ...point, button });
       }}
       onPointerUp={(event) => {
+        const wasDragging = dragging.current;
         const button = BUTTONS[event.button];
         const point = toNorm(event.clientX, event.clientY, true);
         dragging.current = false;
+        if (!wasDragging) {
+          hideControlCursor();
+          return;
+        }
+        setControlCursorPressed(false);
+        if (point) updateControlCursor(point, event.pointerType);
+        else hideControlCursor();
         if (button && point) sendInput({ kind: 'up', ...point, button });
       }}
-      onPointerCancel={releaseAll}
-      onLostPointerCapture={releaseAll}
+      onPointerCancel={() => {
+        hideControlCursor();
+        releaseAll();
+      }}
+      onLostPointerCapture={() => {
+        // Pointer capture is released automatically after a normal pointer-up.
+        // Only a loss while dragging is an interrupted control gesture.
+        if (!dragging.current) return;
+        hideControlCursor();
+        releaseAll();
+      }}
       onContextMenu={(event) => event.preventDefault()}
       className={`absolute inset-0 z-10 touch-none rounded-[inherit] ring-2 ring-inset ${
         focused ? 'cursor-none ring-cyan/80' : 'cursor-crosshair ring-cyan/30'
@@ -200,6 +287,21 @@ export default function RemoteControlSurface({
           Click to control this desktop
         </span>
       )}
+      <div
+        ref={controlCursorRef}
+        aria-hidden="true"
+        className="pointer-events-none absolute left-0 top-0 z-20 opacity-0 will-change-transform"
+        style={{ transform: 'translate3d(-9999px, -9999px, 0)' }}
+      >
+        <span
+          data-control-cursor-halo
+          className="absolute -left-2 -top-2 h-8 w-8 rounded-full border border-cyan/70 bg-cyan/15 transition-opacity duration-75"
+          style={{ opacity: 0 }}
+        />
+        <svg viewBox="0 0 24 24" className="relative h-6 w-6 overflow-visible drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)]">
+          <path d="M2 1.5 4.4 21l5.2-6.1 4.3 7.4 4.1-2.4-4.4-7.4 8.4-.8L2 1.5Z" fill="white" stroke="black" strokeLinejoin="round" strokeWidth="1.8" />
+        </svg>
+      </div>
     </div>
   );
 }

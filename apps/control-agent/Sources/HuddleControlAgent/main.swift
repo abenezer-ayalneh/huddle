@@ -257,7 +257,9 @@ private actor LiveKitAgent {
                 await model?.updateConnection(true, screen: false, message: "That display is no longer available. Refresh the display list.")
                 return
             }
-            let track = LocalVideoTrack.createMacOSScreenShareTrack(source: source, options: ScreenShareCaptureOptions(showCursor: true, appAudio: false))
+            // The Controller sees a low-latency browser Control Cursor. Including
+            // the captured macOS cursor here would create delayed video feedback.
+            let track = LocalVideoTrack.createMacOSScreenShareTrack(source: source, options: ScreenShareCaptureOptions(showCursor: false, appAudio: false))
             screenPublication = try await room.localParticipant.publish(videoTrack: track)
             selectedDisplayID = displayID
             screenPublished = true
@@ -486,6 +488,7 @@ extension LiveKitAgent: RoomDelegate {
 
 private struct InputInjector {
     private var state = InputState()
+    private var scroll = ScrollDeltaAccumulator()
 
     mutating func apply(_ event: ControlInputEvent, geometry: DisplayGeometry) {
         switch event {
@@ -493,8 +496,14 @@ private struct InputInjector {
         case let .button(action, x, y, button):
             postMouse(action == .down ? mouseDown(button) : mouseUp(button), x: x, y: y, button: button, geometry: geometry)
             state.apply(event)
-        case let .scroll(_, _, dx, dy):
-            let event = CGEvent(scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 2, wheel1: Int32(dy), wheel2: Int32(dx), wheel3: 0)
+        case let .scroll(x, y, dx, dy):
+            guard let point = CoordinateMapper.point(x: x, y: y, in: geometry) else { return }
+            // Pointer moves are intentionally lossy, so use the scroll packet's
+            // own coordinate to make the visible target receive the event.
+            post(.mouseMoved, point: point, button: .left)
+            guard let delta = scroll.consume(browserDX: dx, browserDY: dy) else { return }
+            let event = CGEvent(scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 2, wheel1: delta.vertical, wheel2: delta.horizontal, wheel3: 0)
+            event?.location = point
             event?.post(tap: .cghidEventTap)
         case let .key(action, code, _, modifiers):
             guard let keyCode = KeyboardCodeMap.virtualKey(for: code) else { return }
@@ -507,6 +516,7 @@ private struct InputInjector {
     }
 
     mutating func releaseAll() {
+        scroll.reset()
         let held = state.drainHeldInputs()
         let point = NSEvent.mouseLocation
         for button in held.buttons { post(mouseUp(button), point: point, button: button) }

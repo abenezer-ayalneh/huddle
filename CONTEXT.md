@@ -327,6 +327,20 @@ states whether their Remote Control is waiting for the Control Agent or active.
 Only the Sharer also sees that Clipboard Sharing is enabled.
 _Avoid_: Remote Control banner, control toast, control notification
 
+**Control Cursor**:
+The immediate, Controller-only visual feedback for the latest intended mouse or
+pen position on the Sharer's desktop. It does not confirm macOS input injection
+or confer control authority; the Control Agent remains authoritative for the
+actual desktop pointer.
+_Avoid_: Native cursor, pointer acknowledgement, remote cursor
+
+**Trackpad Scroll**:
+The Controller's two-finger horizontal or vertical scrolling of the Sharer's
+visible desktop during [[Remote Control]]. It moves remote content in the same
+apparent direction as the Controller's view. Pinch, zoom, rotation, and system
+swipe gestures are excluded.
+_Avoid_: Gesture support (too broad), remote touch controls
+
 **Sharer**:
 The participant whose desktop is visible and controlled during Remote Control.
 The Sharer approves or denies the Request, launches the [[Control Agent]], may

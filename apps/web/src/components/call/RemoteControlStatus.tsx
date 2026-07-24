@@ -68,7 +68,9 @@ export default function RemoteControlStatus({
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-white/95">{active ? relationship : waiting}</p>
           <p className="text-xs text-white/55">{active ? 'Remote Control active' : 'Remote Control approved · desktop not yet shared'}</p>
-          {iAmSharer && active && <p className="mt-0.5 text-xs text-cyan/80">Clipboard sharing on · plain text copied on this Mac is shared with {session.controllerName}.</p>}
+          {iAmSharer && active && (
+            <p className="mt-0.5 text-xs text-cyan/80">Clipboard sharing on · plain text copied on this Mac is shared with {session.controllerName}.</p>
+          )}
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-2">
@@ -117,7 +119,8 @@ export default function RemoteControlStatus({
           <AlertDialogHeader>
             <AlertDialogTitle>Continue Remote Control?</AlertDialogTitle>
             <AlertDialogDescription>
-              For the next 30 minutes, {session.controllerName} can continue using mouse and keyboard input. Plain text copied on this Mac will also be shared with them.
+              For the next 30 minutes, {session.controllerName} can continue using mouse and keyboard input. Plain text copied on this Mac will also be shared
+              with them.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

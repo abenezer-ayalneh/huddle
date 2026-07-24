@@ -65,6 +65,46 @@ public enum ClipboardText {
     }
 }
 
+// Browsers report high-resolution scroll deltas as floating-point CSS pixels,
+// while Core Graphics accepts signed integer wheel values. Keep the fractional
+// remainder so slow trackpad motion is not silently discarded between packets.
+// Core Graphics' wheel direction is opposite the browser's apparent content
+// motion, so the conversion intentionally negates both axes at this boundary.
+public struct SmoothScrollWheelDelta: Equatable, Sendable {
+    public let vertical: Int32
+    public let horizontal: Int32
+
+    public init(vertical: Int32, horizontal: Int32) {
+        self.vertical = vertical
+        self.horizontal = horizontal
+    }
+}
+
+public struct ScrollDeltaAccumulator: Sendable {
+    private var verticalRemainder = 0.0
+    private var horizontalRemainder = 0.0
+
+    public init() {}
+
+    public mutating func consume(browserDX: Double, browserDY: Double) -> SmoothScrollWheelDelta? {
+        let verticalValue = verticalRemainder - browserDY
+        let horizontalValue = horizontalRemainder - browserDX
+        let vertical = Int32(verticalValue.rounded(.towardZero))
+        let horizontal = Int32(horizontalValue.rounded(.towardZero))
+
+        verticalRemainder = verticalValue - Double(vertical)
+        horizontalRemainder = horizontalValue - Double(horizontal)
+
+        guard vertical != 0 || horizontal != 0 else { return nil }
+        return SmoothScrollWheelDelta(vertical: vertical, horizontal: horizontal)
+    }
+
+    public mutating func reset() {
+        verticalRemainder = 0
+        horizontalRemainder = 0
+    }
+}
+
 public enum ControlPacketDecoder {
     private static let maximumJavaScriptInteger = 9_007_199_254_740_991.0
     private static let maximumWheelDelta = 4_096.0

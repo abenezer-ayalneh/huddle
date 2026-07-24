@@ -20,6 +20,39 @@ final class CoreTests: XCTestCase {
         XCTAssertThrowsError(try ControlPacketDecoder.decode(Data(repeating: 0, count: maximumControlPacketBytes + 1)))
     }
 
+    func testScrollPacketsAndAccumulatorPreserveTrackpadMotion() throws {
+        let scroll = try JSONSerialization.data(withJSONObject: [
+            "v": 1, "type": "remote-control:input", "sessionId": "session", "sequence": 2,
+            "event": ["kind": "scroll", "x": 0.25, "y": 0.75, "dx": 0.4, "dy": -0.4],
+        ])
+        XCTAssertEqual(
+            try ControlPacketDecoder.decode(scroll).command,
+            .input(.scroll(x: 0.25, y: 0.75, dx: 0.4, dy: -0.4)),
+        )
+
+        let outOfBounds = try JSONSerialization.data(withJSONObject: [
+            "v": 1, "type": "remote-control:input", "sessionId": "session", "sequence": 3,
+            "event": ["kind": "scroll", "x": 0.25, "y": 0.75, "dx": 4_097, "dy": 0],
+        ])
+        XCTAssertThrowsError(try ControlPacketDecoder.decode(outOfBounds))
+
+        var accumulator = ScrollDeltaAccumulator()
+        XCTAssertNil(accumulator.consume(browserDX: 0.4, browserDY: -0.4))
+        XCTAssertEqual(
+            accumulator.consume(browserDX: 0.7, browserDY: -0.7),
+            SmoothScrollWheelDelta(vertical: 1, horizontal: -1),
+        )
+        XCTAssertEqual(
+            accumulator.consume(browserDX: -3.25, browserDY: 2.75),
+            SmoothScrollWheelDelta(vertical: -2, horizontal: 3),
+        )
+
+        accumulator.reset()
+        XCTAssertNil(accumulator.consume(browserDX: 0.75, browserDY: 0.75))
+        accumulator.reset()
+        XCTAssertNil(accumulator.consume(browserDX: 0.5, browserDY: 0.5))
+    }
+
     func testClipboardCommandsAreStrictlyBounded() throws {
         let copy = try JSONSerialization.data(withJSONObject: [
             "v": 1, "type": "remote-control:clipboard-copy", "sessionId": "session", "sequence": 1,
