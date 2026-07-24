@@ -8,7 +8,7 @@ import { CONTROL_AGENT_ISSUES_URL, CONTROL_AGENT_RELEASES_URL } from '@/lib/cont
 
 export const metadata: Metadata = {
   title: 'Control Agent downloads',
-  description: 'Download the signed Huddle Control Agent for attended macOS Remote Control.',
+  description: 'Download the Huddle Control Agent public beta for attended macOS Remote Control.',
   alternates: { canonical: '/downloads' },
 };
 
@@ -16,6 +16,7 @@ export const revalidate = 3600;
 
 export default async function DownloadsPage() {
   const release = await getControlAgentRelease();
+  const hasVerifiedSignedRelease = release?.verified === true;
   return (
     <main className="min-h-screen bg-background text-white">
       <nav className="mx-auto flex h-20 max-w-6xl items-center justify-between gap-4 px-5 sm:px-8" aria-label="Downloads navigation">
@@ -31,8 +32,9 @@ export default async function DownloadsPage() {
         <p className="font-display text-xs font-semibold uppercase tracking-[0.24em] text-cyan">Remote Control · Public beta</p>
         <h1 className="mt-4 max-w-3xl font-display text-5xl font-bold leading-[0.96] tracking-normal sm:text-7xl">Give the Sharer a safe local switch.</h1>
         <p className="mt-6 max-w-2xl text-lg leading-8 text-white/65">
-          The Control Agent is a signed, notarized macOS companion. It shares one selected display only after the Sharer approves Remote Control in the room and
-          confirms locally.
+          {hasVerifiedSignedRelease
+            ? 'The Control Agent is a signed, notarized macOS companion. It shares one selected display only after the Sharer approves Remote Control in the room and confirms locally.'
+            : 'The Apple-Silicon no-cost beta is an unnotarized macOS companion. It shares one selected display only after the Sharer approves Remote Control in the room and confirms locally.'}
         </p>
         <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-white/55">
           <span className="inline-flex items-center gap-2 rounded-full border border-cyan/25 bg-cyan/10 px-3 py-1.5 text-cyan">
@@ -46,8 +48,9 @@ export default async function DownloadsPage() {
         <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-6 sm:p-8">
           <h2 className="font-display text-2xl font-semibold">Release integrity and help</h2>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-white/55">
-            Every beta artifact is published with a SHA-256 checksum and a signed release manifest. The agent checks for required updates before redeeming a new
-            session; it never installs updates silently.
+            {hasVerifiedSignedRelease
+              ? 'Every signed beta artifact is published with a SHA-256 checksum and a signed release manifest. The agent checks for required updates before redeeming a new session; it never installs updates silently.'
+              : 'The no-cost beta publishes a SHA-256 checksum but has no Apple notarization or signed update manifest. It never installs updates silently; install a newer build only from this downloads page.'}
           </p>
           <div className="mt-5 flex flex-wrap gap-4 text-sm">
             <a

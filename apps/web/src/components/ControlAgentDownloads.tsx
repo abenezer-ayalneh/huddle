@@ -3,10 +3,16 @@
 import { Apple, CheckCircle2, Cpu, Download, ExternalLink, Monitor, ShieldCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { ControlAgentRelease } from '@/lib/controlAgentReleaseShared';
-import { CONTROL_AGENT_RELEASES_URL, formatBytes } from '@/lib/controlAgentReleaseShared';
+import {
+  CONTROL_AGENT_FREE_BETA_CHECKSUM_URL,
+  CONTROL_AGENT_FREE_BETA_DOWNLOAD_URL,
+  CONTROL_AGENT_RELEASES_URL,
+  formatBytes,
+} from '@/lib/controlAgentReleaseShared';
 
 type DetectedPlatform = 'mac' | 'windows' | 'linux' | 'other';
 type DetectedArchitecture = 'arm64' | 'x86_64' | 'unknown';
+type DownloadArtifact = { url: string; checksumUrl?: string; sizeBytes?: number; signed: boolean };
 
 function detectPlatform(): { platform: DetectedPlatform; architecture: DetectedArchitecture } {
   if (typeof navigator === 'undefined') return { platform: 'other', architecture: 'unknown' };
@@ -38,7 +44,14 @@ export default function ControlAgentDownloads({ release }: { release: ControlAge
     return () => window.cancelAnimationFrame(frame);
   }, []);
 
-  const download = (architecture: 'arm64' | 'x86_64') => (release?.verified ? release.downloads[architecture] : undefined);
+  const download = (architecture: 'arm64' | 'x86_64'): DownloadArtifact | undefined => {
+    const signedArtifact = release?.verified ? release.downloads[architecture] : undefined;
+    if (signedArtifact) return { ...signedArtifact, signed: true };
+    if (architecture === 'arm64') {
+      return { url: CONTROL_AGENT_FREE_BETA_DOWNLOAD_URL, checksumUrl: CONTROL_AGENT_FREE_BETA_CHECKSUM_URL, signed: false };
+    }
+    return undefined;
+  };
   const macDetected = detected.platform === 'mac';
   const architectureLabel = detected.architecture === 'arm64' ? 'Apple Silicon' : detected.architecture === 'x86_64' ? 'Intel' : null;
 
@@ -69,17 +82,29 @@ export default function ControlAgentDownloads({ release }: { release: ControlAge
                 </div>
                 <div className="mt-6 flex items-center justify-between gap-4 text-xs text-white/45">
                   <span className="inline-flex items-center gap-1.5">
-                    <Cpu className="size-3.5" /> {release?.version ?? 'Beta artifact pending'}
+                    <Cpu className="size-3.5" />{' '}
+                    {artifact?.signed ? release?.version : architecture === 'arm64' ? 'No-cost public beta' : 'Beta artifact pending'}
                   </span>
-                  {artifact ? <span>{formatBytes(artifact.sizeBytes)} · SHA-256 published</span> : null}
+                  {artifact?.sizeBytes ? <span>{formatBytes(artifact.sizeBytes)} · SHA-256 published</span> : null}
                 </div>
                 {artifact ? (
-                  <a
-                    href={artifact.url}
-                    className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-magenta px-4 py-3 font-display font-semibold text-background transition hover:brightness-110"
-                  >
-                    <Download className="size-4" /> Download {label} DMG
-                  </a>
+                  <>
+                    <a
+                      href={artifact.url}
+                      className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-magenta px-4 py-3 font-display font-semibold text-background transition hover:brightness-110"
+                    >
+                      <Download className="size-4" /> Download {label} DMG
+                    </a>
+                    {!artifact.signed ? (
+                      <p className="mt-3 text-xs leading-5 text-orange-200/80">
+                        This no-cost beta is not Developer ID signed or notarized. Verify its{' '}
+                        <a href={artifact.checksumUrl} className="text-cyan underline hover:text-white">
+                          SHA-256 checksum
+                        </a>{' '}
+                        before opening it, then explicitly choose Open Anyway in macOS Privacy &amp; Security.
+                      </p>
+                    ) : null}
+                  </>
                 ) : (
                   <a
                     href={CONTROL_AGENT_RELEASES_URL}
@@ -102,7 +127,8 @@ export default function ControlAgentDownloads({ release }: { release: ControlAge
         </p>
         {release && !release.verified ? (
           <p className="mt-2 text-center text-xs text-orange-200/75">
-            The signed release manifest could not be verified here. Use the GitHub beta release page while the deployment key is being configured.
+            The signed release manifest could not be verified here. The Apple-Silicon no-cost beta remains available above; use the GitHub beta releases page
+            for any signed release.
           </p>
         ) : null}
       </section>
@@ -112,8 +138,11 @@ export default function ControlAgentDownloads({ release }: { release: ControlAge
           <div className="flex gap-3">
             <CheckCircle2 className="mt-1 size-5 shrink-0 text-cyan" />
             <div>
-              <h3 className="font-display text-lg font-semibold text-white">Install once</h3>
-              <p className="mt-1 text-sm leading-6 text-white/55">Open the DMG, drag Huddle Control Agent to Applications, then launch it.</p>
+              <h3 className="font-display text-lg font-semibold text-white">Install deliberately</h3>
+              <p className="mt-1 text-sm leading-6 text-white/55">
+                Open the DMG, drag Huddle Control Agent to Applications, then launch it. The no-cost beta needs one explicit Open Anyway approval after you
+                verify its checksum.
+              </p>
             </div>
           </div>
           <div className="flex gap-3">

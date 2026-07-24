@@ -29,12 +29,31 @@ without competing with the primary session flow.
 ```
 
 The resulting app is locally signed when an Apple Development identity is
-available, but it is not a release artifact. Distribution must use a Developer
-ID certificate, hardened runtime, notarization, and a separately published
-update channel; those credentials and signing identities are intentionally not
-stored in this repository. The build script embeds the LiveKit runtime
-frameworks in the app bundle, so the `.app` can run outside SwiftPM's `.build`
-directory.
+available, but it is not a trusted public release. A Developer ID certificate,
+hardened runtime, notarization, and a separately published update channel are
+required for Gatekeeper-recognized direct distribution; those credentials and
+signing identities are intentionally not stored in this repository. The build
+script embeds the LiveKit runtime frameworks in the app bundle, so the `.app`
+can run outside SwiftPM's `.build` directory.
+
+### Build a no-cost Apple-Silicon public beta
+
+```bash
+./apps/control-agent/scripts/build-free-beta.sh
+./apps/control-agent/scripts/publish-free-beta.sh
+```
+
+The first command creates an arm64 DMG and an adjacent SHA-256 checksum using
+an ad-hoc signature; the second uploads those two files to the permanent
+`control-agent-free-beta` GitHub prerelease. A free GitHub account with write
+access is enough, but it must be authenticated locally first.
+
+This path deliberately has **no Developer ID signature, no notarization, and
+no signed update manifest**. macOS will show a warning on first launch; after
+verifying the checksum from the same GitHub release, the tester must explicitly
+choose **Open Anyway** in **System Settings → Privacy & Security**. It is a
+testing/public-beta path only, never a substitute for the trusted release flow
+below.
 
 ### Regenerate the app icon
 
@@ -82,7 +101,7 @@ ARCHITECTURE=arm64 ./apps/control-agent/scripts/package-dmg.sh
 ARCHITECTURE=x86_64 ./apps/control-agent/scripts/package-dmg.sh
 ```
 
-The public beta release workflow is `.github/workflows/control-agent-release.yml`.
+The trusted public beta release workflow is `.github/workflows/control-agent-release.yml`.
 It builds native arm64 and x86_64 artifacts, signs nested frameworks before the
 app, notarizes both the app and final DMG, publishes SHA-256 checksums, and
 advances the signed `control-agent-beta` channel manifest. Apple Developer ID,

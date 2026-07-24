@@ -385,6 +385,23 @@ Do not put Developer ID certificates, App Store Connect keys, or the manifest
 private key in the VPS environment. They belong only in protected GitHub release
 secrets.
 
+### No-cost Apple-Silicon beta
+
+The Downloads page also has a permanent fallback link for the arm64
+`control-agent-free-beta` GitHub prerelease. It needs no VPS environment value:
+build and publish it from an Apple-Silicon Mac with:
+
+```bash
+./apps/control-agent/scripts/build-free-beta.sh
+./apps/control-agent/scripts/publish-free-beta.sh
+```
+
+Publish the GitHub release before deploying the page change, so the direct
+download link never points at a missing asset. This is an ad-hoc signed,
+unnotarized beta with a SHA-256 checksum, not a replacement for the Developer
+ID channel above. The page must retain its Gatekeeper warning and must never
+claim that this artifact has a signed update manifest.
+
 ## 10. Verify
 
 ```bash

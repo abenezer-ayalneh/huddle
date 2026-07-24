@@ -276,6 +276,13 @@ Phase 10 authority boundary.
       cached outage behavior, checksums, and sanitized user-initiated diagnostics.
 - [x] Native-architecture GitHub release workflow for Developer ID signing,
       app/DMG notarization, and the beta channel manifest.
+- [x] No-cost Apple-Silicon DMG packaging, checksum publication script, and an
+      explicitly unnotarized Downloads-page fallback. This path has no signed
+      update channel and must not be called a trusted release.
+- [x] Publish the first no-cost Apple-Silicon beta to the public GitHub release
+      channel with its SHA-256 checksum.
+- [ ] Physical two-browser acceptance of the no-cost Apple-Silicon beta,
+      including its one-time Gatekeeper override and macOS privacy permissions.
 - [ ] Pre-tag signed-release-candidate acceptance on physical Apple Silicon and
       Intel Macs, followed by the first public beta tag.
 
