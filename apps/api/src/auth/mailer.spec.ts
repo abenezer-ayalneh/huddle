@@ -52,8 +52,8 @@ describe('buildVerificationMailer', () => {
     });
     expect(sendMail).toHaveBeenCalledTimes(1);
 
-    const [firstCall] = sendMail.mock.calls as unknown as [unknown];
-    const message = firstCall as {
+    const [[firstMessage]] = sendMail.mock.calls as unknown as [[unknown]];
+    const message = firstMessage as {
       from: unknown;
       to: string;
       subject: string;
