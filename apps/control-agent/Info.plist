@@ -10,6 +10,8 @@
 	<string>com.huddle.control-agent</string>
 	<key>CFBundleName</key>
 	<string>Huddle Control Agent</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

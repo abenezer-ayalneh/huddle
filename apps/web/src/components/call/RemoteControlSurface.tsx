@@ -170,7 +170,9 @@ export default function RemoteControlSurface({ sendInput, onEscape }: { sendInpu
       onPointerCancel={releaseAll}
       onLostPointerCapture={releaseAll}
       onContextMenu={(event) => event.preventDefault()}
-      className={`absolute inset-0 z-10 cursor-crosshair touch-none rounded-[inherit] ring-2 ring-inset ${focused ? 'ring-cyan/80' : 'ring-cyan/30'}`}
+      className={`absolute inset-0 z-10 touch-none rounded-[inherit] ring-2 ring-inset ${
+        focused ? 'cursor-none ring-cyan/80' : 'cursor-crosshair ring-cyan/30'
+      }`}
     >
       {!focused && (
         <span className="absolute left-1/2 top-1/2 -translate-x-1/2 rounded-full bg-black/70 px-4 py-2 text-xs text-white/80">

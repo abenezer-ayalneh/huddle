@@ -7,7 +7,7 @@ import { ConsoleLogger, LogLevel } from '@nestjs/common';
 // Enabled via LOG_FORMAT=json (set in the prod compose env). See
 // docs/adr/0004-deploy-topology-single-vps.md (observability).
 export class JsonLogger extends ConsoleLogger {
-  protected printMessages(messages: unknown[], context = '', logLevel: LogLevel = 'log', _writeStreamType?: 'stdout' | 'stderr'): void {
+  protected printMessages(messages: unknown[], context = '', logLevel: LogLevel = 'log'): void {
     for (const message of messages) {
       const line = JSON.stringify({
         level: logLevel,

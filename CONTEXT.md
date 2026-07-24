@@ -312,6 +312,17 @@ Sharer every 30 minutes. Remote Control and [[Present]] are mutually exclusive.
 _Avoid_: Remote access (suggests unattended access), desktop sharing, support
 code
 
+**Request Control**:
+The participant-scoped proposal to control another admitted participant's
+desktop. It creates no control authority until that participant explicitly
+approves and becomes the Sharer.
+_Avoid_: Ask for control, control invite, request remote access
+
+**Remote Control Status**:
+The persistent room-wide signal that identifies the Controller and Sharer and
+states whether their Remote Control is waiting for the Control Agent or active.
+_Avoid_: Remote Control banner, control toast, control notification
+
 **Sharer**:
 The participant whose desktop is visible and controlled during Remote Control.
 The Sharer approves or denies the Request, launches the [[Control Agent]], may

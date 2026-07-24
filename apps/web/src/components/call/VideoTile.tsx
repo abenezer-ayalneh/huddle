@@ -130,7 +130,7 @@ export default function VideoTile({
               onClick={onRequestControl}
               aria-label={`Request control of ${label}`}
               title={`Request control of ${label}`}
-              className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-cyan/15 text-cyan opacity-0 ring-1 ring-cyan/40 backdrop-blur transition hover:bg-cyan/25 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/70 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
+              className="absolute bottom-2 right-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full bg-cyan/15 text-cyan opacity-0 ring-1 ring-cyan/40 backdrop-blur transition hover:bg-cyan/25 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/70 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
             >
               <MousePointer2 className="h-4 w-4" />
             </button>
@@ -145,7 +145,11 @@ export default function VideoTile({
           )}
 
           {/* Name pill + status. */}
-          <div className="pointer-events-none absolute bottom-2 left-2 flex max-w-[calc(100%-1rem)] items-center gap-1.5 rounded-md bg-black/55 px-2 py-1 backdrop-blur">
+          <div
+            className={`pointer-events-none absolute bottom-2 left-2 flex items-center gap-1.5 rounded-md bg-black/55 px-2 py-1 backdrop-blur ${
+              onRequestControl ? 'max-w-[calc(100%-3.5rem)]' : 'max-w-[calc(100%-1rem)]'
+            }`}
+          >
             {!micOn && <MicOff className="h-3.5 w-3.5 shrink-0 text-magenta" />}
             {isScreenShare && <MonitorUp className="h-3.5 w-3.5 shrink-0 text-cyan" />}
             <span className="truncate text-xs font-medium text-white/90">

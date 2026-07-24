@@ -412,63 +412,435 @@ private struct InputInjector {
     private func eventFromKey(_ action: KeyAction, code: String, modifiers: Set<KeyModifier>) -> ControlInputEvent { .key(action: action, code: code, key: nil, modifiers: modifiers) }
 }
 
-struct AgentView: View {
-    @ObservedObject var model: AgentModel
+private enum HuddleTheme {
+    static let background = Color(red: 0.075, green: 0.064, blue: 0.12)
+    static let surface = Color(red: 0.13, green: 0.11, blue: 0.18)
+    static let surfaceStrong = Color(red: 0.16, green: 0.13, blue: 0.22)
+    static let magenta = Color(red: 0.85, green: 0.27, blue: 0.66)
+    static let cyan = Color(red: 0.36, green: 0.88, blue: 0.84)
+    static let text = Color.white.opacity(0.96)
+    static let muted = Color.white.opacity(0.58)
+    static let border = Color.white.opacity(0.12)
+}
+
+private struct HuddleBackdrop: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Huddle Control Agent").font(.title2).bold()
-            Text(model.status).foregroundStyle(.secondary)
-            if let session = model.session { Text("Room \(session.sessionID) · Sharer \(session.sharerName) · Controller \(session.controllerName)").font(.callout) }
-            if let updateNotice = model.updateNotice { Label(updateNotice, systemImage: "arrow.down.circle").foregroundStyle(.orange).font(.callout) }
-            if let origin = model.pendingTrustOrigin {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Trust this Huddle server?").font(.headline)
-                    Text(origin).font(.body.monospaced()).textSelection(.enabled)
-                    Text("The agent remembers only this server origin. It does not save the room or one-time link.").font(.caption).foregroundStyle(.secondary)
-                    Button("Trust & Continue") { model.confirmServerTrust() }.buttonStyle(.borderedProminent)
-                }
-                .padding(12)
-                .background(.yellow.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
-            }
-            Divider()
-            permissionRow("Screen Recording", granted: model.screenPermission)
-            permissionRow("Accessibility", granted: model.accessibilityPermission)
-            HStack {
-                Button("Prepare for Remote Control") { model.requestPermissions() }
-                Button("Refresh") { model.refreshPermissions() }
-                Spacer()
-                Button("Stop", role: .destructive) { model.stop() }.disabled(!model.connected)
-            }
-            if !model.displays.isEmpty && model.session != nil && !model.screenPublished {
-                Divider()
-                Text("Choose the display to share").font(.headline)
-                Picker("Display", selection: Binding(get: { model.selectedDisplayID ?? model.displays[0].id }, set: { model.selectedDisplayID = $0 })) {
-                    ForEach(model.displays) { display in
-                        Text("\(display.title) · \(display.dimensions)").tag(display.id)
+        GeometryReader { proxy in
+            ZStack {
+                HuddleTheme.background
+                RadialGradient(
+                    colors: [HuddleTheme.magenta.opacity(0.18), .clear],
+                    center: .topLeading,
+                    startRadius: 0,
+                    endRadius: max(proxy.size.width, proxy.size.height) * 0.72
+                )
+                RadialGradient(
+                    colors: [HuddleTheme.cyan.opacity(0.12), .clear],
+                    center: .bottomTrailing,
+                    startRadius: 0,
+                    endRadius: max(proxy.size.width, proxy.size.height) * 0.62
+                )
+                Canvas { context, size in
+                    let dot = Path(ellipseIn: CGRect(x: 0, y: 0, width: 1.5, height: 1.5))
+                    for x in stride(from: 13.0, through: size.width, by: 26.0) {
+                        for y in stride(from: 13.0, through: size.height, by: 26.0) {
+                            context.drawLayer { layer in
+                                layer.translateBy(x: x, y: y)
+                                layer.fill(dot, with: .color(.white.opacity(0.045)))
+                            }
+                        }
                     }
                 }
-                Button("Start Remote Control") { model.startRemoteControl() }.buttonStyle(.borderedProminent).disabled(!model.screenPermission || !model.accessibilityPermission || model.pendingTrustOrigin != nil)
             }
-            Divider()
-            Text("Manual launch fallback").font(.headline)
-            Text("Paste the complete huddle-control:// link from the Huddle room. The link is cleared after parsing.").font(.caption).foregroundStyle(.secondary)
-            HStack {
-                TextField("huddle-control://join?...", text: $model.manualLink)
-                    .textFieldStyle(.roundedBorder)
-                Button("Open") { model.submitManualLink() }.disabled(model.manualLink.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            }
-            Button("Copy sanitized diagnostics") { model.copyDiagnostics() }.font(.caption)
-            Text("Diagnostics include only app version, macOS, architecture, permission state, and connection state. Nothing is sent automatically.").font(.caption2).foregroundStyle(.secondary)
-            Button("Forget trusted Huddle servers") { model.forgetTrustedServers() }.font(.caption).foregroundStyle(.secondary)
-            if let error = model.error { Text(error).foregroundStyle(.red).font(.callout) }
         }
-        .padding(24)
-        .frame(minWidth: 430)
+        .ignoresSafeArea()
+    }
+}
+
+private struct HuddleMark: View {
+    let size: CGFloat
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.24, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [HuddleTheme.surfaceStrong, HuddleTheme.background],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: size * 0.24, style: .continuous)
+                        .stroke(HuddleTheme.border)
+                )
+            Circle().fill(HuddleTheme.magenta).frame(width: size * 0.17).offset(y: -size * 0.31)
+            Circle().fill(HuddleTheme.cyan).frame(width: size * 0.17).offset(x: size * 0.31)
+            Circle().fill(HuddleTheme.magenta).frame(width: size * 0.17).offset(y: size * 0.31)
+            Circle().fill(HuddleTheme.cyan).frame(width: size * 0.17).offset(x: -size * 0.31)
+            Image(systemName: "cursorarrow")
+                .font(.system(size: size * 0.34, weight: .bold))
+                .foregroundStyle(.white)
+                .shadow(color: .black.opacity(0.5), radius: 3, y: 2)
+        }
+        .frame(width: size, height: size)
+    }
+}
+
+private struct HuddleCard<Content: View>: View {
+    private let content: Content
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        content
+            .padding(18)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(HuddleTheme.surface.opacity(0.9))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(HuddleTheme.border)
+                    )
+            )
+    }
+}
+
+private enum HuddleButtonTone {
+    case primary
+    case secondary
+    case danger
+}
+
+private struct HuddleButtonStyle: ButtonStyle {
+    let tone: HuddleButtonTone
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(foreground)
+            .padding(.horizontal, 14)
+            .frame(minHeight: 36)
+            .background(
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .fill(background.opacity(configuration.isPressed ? 0.72 : 1))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .stroke(border)
+            )
+            .scaleEffect(configuration.isPressed ? 0.98 : 1)
+            .opacity(isEnabled ? 1 : 0.42)
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+    }
+
+    private var foreground: Color {
+        tone == .primary ? HuddleTheme.background : tone == .danger ? HuddleTheme.magenta : HuddleTheme.text
+    }
+
+    private var background: Color {
+        tone == .primary ? HuddleTheme.cyan : tone == .danger ? HuddleTheme.magenta.opacity(0.14) : Color.white.opacity(0.07)
+    }
+
+    private var border: Color {
+        tone == .primary ? HuddleTheme.cyan.opacity(0.7) : tone == .danger ? HuddleTheme.magenta.opacity(0.45) : HuddleTheme.border
+    }
+}
+
+private struct StepHeading: View {
+    let number: Int
+    let title: String
+    let complete: Bool
+
+    var body: some View {
+        HStack(spacing: 10) {
+            ZStack {
+                Circle().fill(complete ? HuddleTheme.cyan.opacity(0.16) : Color.white.opacity(0.07))
+                if complete {
+                    Image(systemName: "checkmark").font(.system(size: 11, weight: .bold)).foregroundStyle(HuddleTheme.cyan)
+                } else {
+                    Text("\(number)").font(.system(size: 11, weight: .bold)).foregroundStyle(HuddleTheme.muted)
+                }
+            }
+            .frame(width: 24, height: 24)
+            Text(title).font(.system(size: 15, weight: .semibold)).foregroundStyle(HuddleTheme.text)
+        }
+    }
+}
+
+private struct PermissionBadge: View {
+    let name: String
+    let granted: Bool
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: granted ? "checkmark.shield.fill" : "exclamationmark.triangle.fill")
+                .foregroundStyle(granted ? HuddleTheme.cyan : Color.orange)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(name).font(.system(size: 13, weight: .medium)).foregroundStyle(HuddleTheme.text)
+                Text(granted ? "Granted" : "Required").font(.caption).foregroundStyle(granted ? HuddleTheme.cyan : Color.orange)
+            }
+            Spacer()
+        }
+        .padding(11)
+        .background(HuddleTheme.surfaceStrong, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+}
+
+struct AgentView: View {
+    @ObservedObject var model: AgentModel
+    @State private var helpExpanded = false
+
+    private var permissionsReady: Bool {
+        model.screenPermission && model.accessibilityPermission
+    }
+
+    var body: some View {
+        ZStack {
+            HuddleBackdrop()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    header
+
+                    if let updateNotice = model.updateNotice {
+                        notice(updateNotice, icon: "arrow.down.circle.fill", color: .orange)
+                    }
+                    if let error = model.error {
+                        notice(error, icon: "exclamationmark.octagon.fill", color: HuddleTheme.magenta)
+                    }
+
+                    trustStep
+                    permissionsStep
+                    displayStep
+                    helpSection
+
+                    Text("Huddle Control Agent \(model.appVersion) · Attended and room-scoped")
+                        .font(.caption2)
+                        .foregroundStyle(HuddleTheme.muted)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 4)
+                }
+                .frame(maxWidth: 680)
+                .padding(28)
+                .frame(maxWidth: .infinity)
+            }
+        }
+        .frame(minWidth: 540, minHeight: 640)
+        .preferredColorScheme(.dark)
         .onAppear { model.refreshPermissions() }
     }
 
-    private func permissionRow(_ name: String, granted: Bool) -> some View {
-        Label(granted ? "\(name) granted" : "\(name) required", systemImage: granted ? "checkmark.circle.fill" : "exclamationmark.triangle.fill").foregroundStyle(granted ? .green : .orange)
+    private var header: some View {
+        HStack(spacing: 16) {
+            HuddleMark(size: 62)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("HUDDLE").font(.system(size: 11, weight: .bold, design: .monospaced)).tracking(3).foregroundStyle(HuddleTheme.magenta)
+                Text("Control Agent").font(.system(size: 25, weight: .bold, design: .rounded)).foregroundStyle(HuddleTheme.text)
+                Text(model.status).font(.callout).foregroundStyle(HuddleTheme.muted).lineLimit(2)
+            }
+            Spacer()
+            statusPill
+        }
+        .padding(.bottom, 4)
+    }
+
+    private var statusPill: some View {
+        let active = model.screenPublished
+        let connected = model.connected
+        return Label(
+            active ? "ACTIVE" : connected ? "CONNECTED" : "WAITING",
+            systemImage: active ? "cursorarrow.motionlines" : connected ? "link" : "circle.dotted"
+        )
+        .font(.system(size: 10, weight: .bold, design: .monospaced))
+        .foregroundStyle(active || connected ? HuddleTheme.cyan : HuddleTheme.muted)
+        .padding(.horizontal, 11)
+        .padding(.vertical, 7)
+        .background((active || connected ? HuddleTheme.cyan : Color.white).opacity(0.08), in: Capsule())
+        .overlay(Capsule().stroke((active || connected ? HuddleTheme.cyan : Color.white).opacity(0.2)))
+    }
+
+    private var trustStep: some View {
+        HuddleCard {
+            VStack(alignment: .leading, spacing: 12) {
+                StepHeading(number: 1, title: "Confirm the Huddle session", complete: model.descriptor != nil && model.pendingTrustOrigin == nil)
+                if let origin = model.pendingTrustOrigin {
+                    Text("Trust this Huddle server?").font(.headline).foregroundStyle(HuddleTheme.text)
+                    Text(origin)
+                        .font(.body.monospaced())
+                        .foregroundStyle(HuddleTheme.cyan)
+                        .textSelection(.enabled)
+                        .padding(10)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 9))
+                    Text("Only this server origin is remembered. The room and one-time link are never saved.")
+                        .font(.caption)
+                        .foregroundStyle(HuddleTheme.muted)
+                    Button("Trust & Continue") { model.confirmServerTrust() }
+                        .buttonStyle(HuddleButtonStyle(tone: .primary))
+                } else if let session = model.session {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Session confirmed").font(.system(size: 13, weight: .semibold)).foregroundStyle(HuddleTheme.cyan)
+                            Text("\(session.controllerName) controls \(session.sharerName)'s selected display")
+                                .font(.callout)
+                                .foregroundStyle(HuddleTheme.muted)
+                        }
+                        Spacer()
+                        Image(systemName: "checkmark.seal.fill").font(.title2).foregroundStyle(HuddleTheme.cyan)
+                    }
+                } else {
+                    HStack(spacing: 12) {
+                        Image(systemName: "link.badge.plus").font(.title2).foregroundStyle(HuddleTheme.magenta)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Open Remote Control from your Huddle room").font(.system(size: 13, weight: .semibold)).foregroundStyle(HuddleTheme.text)
+                            Text("This app stays inert until the Sharer approves a request and opens the one-time link.")
+                                .font(.caption)
+                                .foregroundStyle(HuddleTheme.muted)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var permissionsStep: some View {
+        HuddleCard {
+            VStack(alignment: .leading, spacing: 12) {
+                StepHeading(number: 2, title: "Allow control on this Mac", complete: permissionsReady)
+                Text("Screen Recording publishes the selected display. Accessibility applies only the approved Controller's mouse and keyboard input.")
+                    .font(.caption)
+                    .foregroundStyle(HuddleTheme.muted)
+                HStack(spacing: 10) {
+                    PermissionBadge(name: "Screen Recording", granted: model.screenPermission)
+                    PermissionBadge(name: "Accessibility", granted: model.accessibilityPermission)
+                }
+                HStack(spacing: 8) {
+                    Button(permissionsReady ? "Permissions ready" : "Prepare for Remote Control") { model.requestPermissions() }
+                        .buttonStyle(HuddleButtonStyle(tone: permissionsReady ? .secondary : .primary))
+                    Button("Refresh") { model.refreshPermissions() }
+                        .buttonStyle(HuddleButtonStyle(tone: .secondary))
+                }
+            }
+        }
+    }
+
+    private var displayStep: some View {
+        HuddleCard {
+            VStack(alignment: .leading, spacing: 12) {
+                StepHeading(number: 3, title: "Choose a display and start", complete: model.screenPublished)
+                if model.screenPublished, let session = model.session {
+                    HStack(alignment: .top, spacing: 12) {
+                        ZStack {
+                            Circle().fill(HuddleTheme.cyan.opacity(0.14))
+                            Image(systemName: "display.and.arrow.down").foregroundStyle(HuddleTheme.cyan)
+                        }
+                        .frame(width: 42, height: 42)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Remote Control is active").font(.system(size: 15, weight: .semibold)).foregroundStyle(HuddleTheme.text)
+                            Text("Your selected display is visible to the room. \(session.controllerName) can control it until either of you stops.")
+                                .font(.caption)
+                                .foregroundStyle(HuddleTheme.muted)
+                        }
+                        Spacer()
+                        Button("Stop") { model.stop() }
+                            .buttonStyle(HuddleButtonStyle(tone: .danger))
+                    }
+                } else if model.session != nil && model.connected {
+                    if model.displays.isEmpty {
+                        Label("No displays are available yet. Refresh permissions, then try again.", systemImage: "display.trianglebadge.exclamationmark")
+                            .font(.callout)
+                            .foregroundStyle(.orange)
+                    } else {
+                        Text("Only the selected display is published. Desktop audio is never captured.")
+                            .font(.caption)
+                            .foregroundStyle(HuddleTheme.muted)
+                        Picker(
+                            "Display",
+                            selection: Binding(
+                                get: { model.selectedDisplayID ?? model.displays[0].id },
+                                set: { model.selectedDisplayID = $0 }
+                            )
+                        ) {
+                            ForEach(model.displays) { display in
+                                Text("\(display.title) · \(display.dimensions)").tag(display.id)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .tint(HuddleTheme.cyan)
+                    }
+                    HStack(spacing: 8) {
+                        Button("Start Remote Control") { model.startRemoteControl() }
+                            .buttonStyle(HuddleButtonStyle(tone: .primary))
+                            .disabled(model.displays.isEmpty || !permissionsReady || model.pendingTrustOrigin != nil)
+                        Button("Stop session") { model.stop() }
+                            .buttonStyle(HuddleButtonStyle(tone: .danger))
+                    }
+                } else if model.session != nil {
+                    Label("Connecting to the approved Huddle room…", systemImage: "network")
+                        .font(.callout)
+                        .foregroundStyle(HuddleTheme.muted)
+                } else {
+                    Label("Complete the approved Huddle link before choosing a display.", systemImage: "lock.fill")
+                        .font(.callout)
+                        .foregroundStyle(HuddleTheme.muted)
+                }
+            }
+        }
+    }
+
+    private var helpSection: some View {
+        HuddleCard {
+            DisclosureGroup(isExpanded: $helpExpanded) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Divider().overlay(HuddleTheme.border)
+                    Text("Manual launch fallback").font(.system(size: 13, weight: .semibold)).foregroundStyle(HuddleTheme.text)
+                    Text("Paste the complete huddle-control:// link from the Huddle room. It is cleared immediately after parsing.")
+                        .font(.caption)
+                        .foregroundStyle(HuddleTheme.muted)
+                    HStack(spacing: 8) {
+                        TextField("huddle-control://join?...", text: $model.manualLink)
+                            .textFieldStyle(.plain)
+                            .font(.body.monospaced())
+                            .padding(.horizontal, 11)
+                            .frame(minHeight: 36)
+                            .background(Color.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 9))
+                            .overlay(RoundedRectangle(cornerRadius: 9).stroke(HuddleTheme.border))
+                        Button("Open") { model.submitManualLink() }
+                            .buttonStyle(HuddleButtonStyle(tone: .secondary))
+                            .disabled(model.manualLink.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    }
+                    Divider().overlay(HuddleTheme.border)
+                    Text("Diagnostics contain only app version, macOS, architecture, permissions, and connection state. Nothing is sent automatically.")
+                        .font(.caption)
+                        .foregroundStyle(HuddleTheme.muted)
+                    HStack(spacing: 8) {
+                        Button("Copy sanitized diagnostics") { model.copyDiagnostics() }
+                            .buttonStyle(HuddleButtonStyle(tone: .secondary))
+                        Button("Forget trusted servers") { model.forgetTrustedServers() }
+                            .buttonStyle(HuddleButtonStyle(tone: .danger))
+                    }
+                }
+                .padding(.top, 12)
+            } label: {
+                Label("Having trouble?", systemImage: "questionmark.circle")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(HuddleTheme.text)
+            }
+            .tint(HuddleTheme.cyan)
+        }
+    }
+
+    private func notice(_ text: String, icon: String, color: Color) -> some View {
+        Label(text, systemImage: icon)
+            .font(.callout)
+            .foregroundStyle(color)
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(color.opacity(0.08), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous).stroke(color.opacity(0.22)))
     }
 }
 
@@ -476,10 +848,15 @@ struct AgentView: View {
 struct HuddleControlAgentApp: App {
     @StateObject private var model = AgentModel()
     var body: some Scene {
-        WindowGroup { AgentView(model: model).onOpenURL { url in
-            do { model.accept(try BootstrapLink.parse(url)) } catch { model.error = error.localizedDescription }
-        }.task {
-            if let descriptor = try? BootstrapLink.commandLine(arguments: CommandLine.arguments) { model.accept(descriptor) }
-        } }
+        WindowGroup {
+            AgentView(model: model)
+                .onOpenURL { url in
+                    do { model.accept(try BootstrapLink.parse(url)) } catch { model.error = error.localizedDescription }
+                }
+                .task {
+                    if let descriptor = try? BootstrapLink.commandLine(arguments: CommandLine.arguments) { model.accept(descriptor) }
+                }
+        }
+        .defaultSize(width: 660, height: 760)
     }
 }

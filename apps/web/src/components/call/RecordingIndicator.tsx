@@ -24,9 +24,12 @@ export default function RecordingIndicator({ active, startedAt }: { active: bool
 
   useEffect(() => {
     if (!active || startedAt == null) return;
-    setNow(Date.now());
+    const initialUpdate = setTimeout(() => setNow(Date.now()), 0);
     const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
+    return () => {
+      clearTimeout(initialUpdate);
+      clearInterval(id);
+    };
   }, [active, startedAt]);
 
   if (!active) return null;

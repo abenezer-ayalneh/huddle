@@ -14,7 +14,7 @@ type ConfigValues = Partial<Record<string, string>>;
 function config(values: ConfigValues): Pick<ConfigService, 'get'> {
   return {
     get: jest.fn((key: string) => values[key]),
-  } as unknown as Pick<ConfigService, 'get'>;
+  };
 }
 
 describe('buildVerificationMailer', () => {
@@ -52,7 +52,8 @@ describe('buildVerificationMailer', () => {
     });
     expect(sendMail).toHaveBeenCalledTimes(1);
 
-    const message = sendMail.mock.calls[0][0] as {
+    const [firstCall] = sendMail.mock.calls as unknown as [unknown];
+    const message = firstCall as {
       from: unknown;
       to: string;
       subject: string;

@@ -17,6 +17,11 @@ the signed release channel, asks the Sharer to trust the exact Huddle server
 origin once, redeems the bootstrap code, and waits for an explicit display
 selection plus **Start Remote Control** confirmation before publishing.
 
+The app uses Huddle's dark visual system and guides the Sharer through server
+trust, macOS permissions, and display selection. Manual launch, sanitized
+diagnostics, and trusted-server reset remain available under **Having trouble?**
+without competing with the primary session flow.
+
 ## Build a local `.app`
 
 ```bash
@@ -30,6 +35,19 @@ update channel; those credentials and signing identities are intentionally not
 stored in this repository. The build script embeds the LiveKit runtime
 frameworks in the app bundle, so the `.app` can run outside SwiftPM's `.build`
 directory.
+
+### Regenerate the app icon
+
+The committed `Resources/AppIcon.icns` is generated deterministically from the
+editable Huddle artwork in `Resources/AppIcon.svg`:
+
+```bash
+./apps/control-agent/scripts/generate-app-icon.sh
+```
+
+Regeneration requires ImageMagick and Python Pillow. The normal app/release build
+does not: it copies the committed ICNS into `Contents/Resources`, and
+`CFBundleIconFile` identifies it to macOS.
 
 ### Keep macOS permissions stable during local development
 

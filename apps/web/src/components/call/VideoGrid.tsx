@@ -17,6 +17,7 @@ export default function VideoGrid({
   remoteControlSession,
   isRemoteSharer = false,
   onRequestControl,
+  remoteControlStatus,
   remoteControlInput,
 }: {
   // When the local participant is the Presenter, they see their own shared
@@ -34,6 +35,9 @@ export default function VideoGrid({
   remoteControlSession?: RemoteControlSession | null;
   isRemoteSharer?: boolean;
   onRequestControl?: (identity: string) => void;
+  // Persistent room-wide Remote Control state. The layout gives this rail its
+  // own row below stage content so it never covers the published desktop.
+  remoteControlStatus?: ReactNode;
   remoteControlInput?: ReactNode;
 }) {
   const tracks = useTracks(
@@ -117,6 +121,7 @@ export default function VideoGrid({
         activeIdentity={activeIdentity}
         localName={localName}
         onRequestControl={onRequestControl}
+        statusRail={remoteControlStatus}
       />
     );
   }
@@ -146,6 +151,7 @@ export default function VideoGrid({
         onTogglePin={togglePin}
         onRequestControl={onRequestControl}
         localName={localName}
+        statusRail={remoteControlStatus}
       />
     );
   }
@@ -153,14 +159,26 @@ export default function VideoGrid({
   // Alone — the local camera just fills the stage as the only tile.
   if (remoteTracks.length === 0) {
     return (
-      <EqualGrid cameraTracks={localTrack ? [localTrack] : []} activeIdentity={activeIdentity} localName={localName} onRequestControl={onRequestControl} />
+      <EqualGrid
+        cameraTracks={localTrack ? [localTrack] : []}
+        activeIdentity={activeIdentity}
+        localName={localName}
+        onRequestControl={onRequestControl}
+        statusRail={remoteControlStatus}
+      />
     );
   }
 
   // Others present — equal grid of the remotes, local camera floating.
   return (
     <>
-      <EqualGrid cameraTracks={remoteTracks} activeIdentity={activeIdentity} onTogglePin={togglePin} onRequestControl={onRequestControl} />
+      <EqualGrid
+        cameraTracks={remoteTracks}
+        activeIdentity={activeIdentity}
+        onTogglePin={togglePin}
+        onRequestControl={onRequestControl}
+        statusRail={remoteControlStatus}
+      />
       {localTrack && <SelfView trackRef={localTrack} corner={selfCorner} onCornerChange={setSelfCorner} fallbackName={localName} />}
     </>
   );
@@ -171,12 +189,14 @@ function EqualGrid({
   activeIdentity,
   onTogglePin,
   onRequestControl,
+  statusRail,
   localName,
 }: {
   cameraTracks: ReturnType<typeof useTracks>;
   activeIdentity: string | undefined;
   onTogglePin?: (identity: string) => void;
   onRequestControl?: (identity: string) => void;
+  statusRail?: ReactNode;
   // The local participant's known name, applied only to its own tile.
   localName?: string;
 }) {
@@ -193,28 +213,31 @@ function EqualGrid({
   const portraitVisibleRows = Math.min(cameraTracks.length || 1, 4);
 
   return (
-    <div className="absolute inset-0 flex items-center justify-center p-3 pb-24 sm:p-6 sm:pb-28">
-      <div
-        className="portrait-equal-grid grid h-full w-full gap-3 sm:gap-4"
-        style={
-          {
-            gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-            gridAutoRows: '1fr',
-            '--portrait-visible-rows': portraitVisibleRows,
-          } as CSSProperties
-        }
-      >
-        {cameraTracks.map((trackRef) => (
-          <VideoTile
-            key={trackKey(trackRef)}
-            trackRef={trackRef}
-            active={trackRef.participant.identity === activeIdentity && cameraTracks.length > 1}
-            onTogglePin={onTogglePin && !trackRef.participant.isLocal ? () => onTogglePin(trackRef.participant.identity) : undefined}
-            onRequestControl={onRequestControl && !trackRef.participant.isLocal ? () => onRequestControl(trackRef.participant.identity) : undefined}
-            fallbackName={trackRef.participant.isLocal ? localName : undefined}
-          />
-        ))}
+    <div className="absolute inset-0 flex flex-col p-3 pb-24 sm:p-6 sm:pb-28">
+      <div className="flex min-h-0 flex-1 items-center justify-center">
+        <div
+          className="portrait-equal-grid grid h-full w-full gap-3 sm:gap-4"
+          style={
+            {
+              gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+              gridAutoRows: '1fr',
+              '--portrait-visible-rows': portraitVisibleRows,
+            } as CSSProperties
+          }
+        >
+          {cameraTracks.map((trackRef) => (
+            <VideoTile
+              key={trackKey(trackRef)}
+              trackRef={trackRef}
+              active={trackRef.participant.identity === activeIdentity && cameraTracks.length > 1}
+              onTogglePin={onTogglePin && !trackRef.participant.isLocal ? () => onTogglePin(trackRef.participant.identity) : undefined}
+              onRequestControl={onRequestControl && !trackRef.participant.isLocal ? () => onRequestControl(trackRef.participant.identity) : undefined}
+              fallbackName={trackRef.participant.isLocal ? localName : undefined}
+            />
+          ))}
+        </div>
       </div>
+      {statusRail && <div className="mt-3 shrink-0">{statusRail}</div>}
     </div>
   );
 }

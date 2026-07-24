@@ -181,8 +181,13 @@ export default function PreJoinScreen({
     const prefs = loadDevicePreferences();
     const wantVideo = prefs.videoEnabled !== false;
     const wantAudio = prefs.audioEnabled !== false;
-    if (prefs.videoEnabled !== undefined) setVideoEnabled(prefs.videoEnabled);
-    if (prefs.audioEnabled !== undefined) setAudioEnabled(prefs.audioEnabled);
+    // Defer preference hydration until after the effect's synchronous phase.
+    // This keeps the mount effect focused on media acquisition and avoids a
+    // cascading render during effect setup.
+    queueMicrotask(() => {
+      if (prefs.videoEnabled !== undefined) setVideoEnabled(prefs.videoEnabled);
+      if (prefs.audioEnabled !== undefined) setAudioEnabled(prefs.audioEnabled);
+    });
 
     (async () => {
       try {

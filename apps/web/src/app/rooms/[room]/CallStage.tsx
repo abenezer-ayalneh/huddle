@@ -12,7 +12,7 @@ import PresentationToast from '@/components/call/PresentationToast';
 import PreJoinScreen from '@/components/call/PreJoinScreen';
 import RecordingIndicator from '@/components/call/RecordingIndicator';
 import RecordingToast from '@/components/call/RecordingToast';
-import RemoteControlBanner from '@/components/call/RemoteControlBanner';
+import RemoteControlStatus from '@/components/call/RemoteControlStatus';
 import RemoteControlSurface from '@/components/call/RemoteControlSurface';
 import RemoteControlToast from '@/components/call/RemoteControlToast';
 import AgentLaunchDialog from '@/components/call/AgentLaunchDialog';
@@ -192,6 +192,21 @@ function CallView({
         remoteControlSession={remoteControl.session}
         isRemoteSharer={remoteControl.iAmSharer}
         onRequestControl={(identity) => void remoteControl.requestControl(identity)}
+        remoteControlStatus={
+          remoteControl.session ? (
+            <ErrorBoundary label="Remote control status" fallback={null}>
+              <RemoteControlStatus
+                session={remoteControl.session}
+                iAmSharer={remoteControl.iAmSharer}
+                iAmController={remoteControl.iAmController}
+                recordingActive={recording.recordingActive}
+                renewalRemainingMs={remoteControl.renewalRemainingMs}
+                onStop={remoteControl.stop}
+                onRenew={remoteControl.renew}
+              />
+            </ErrorBoundary>
+          ) : undefined
+        }
         remoteControlInput={
           remoteControl.iAmController && remoteControl.session?.agentConnected ? (
             <RemoteControlSurface sendInput={remoteControl.sendInput} onEscape={() => void remoteControl.stop()} />
@@ -224,15 +239,6 @@ function CallView({
       <ErrorBoundary label="Call toasts" fallback={null}>
         <div className="pointer-events-none absolute inset-x-0 top-14 z-30 flex flex-col items-center gap-2">
           <RecordingIndicator active={recording.recordingActive} startedAt={recording.recordingStartedAt} />
-          <RemoteControlBanner
-            session={remoteControl.session}
-            iAmSharer={remoteControl.iAmSharer}
-            iAmController={remoteControl.iAmController}
-            recordingActive={recording.recordingActive}
-            renewalRemainingMs={remoteControl.renewalRemainingMs}
-            onStop={remoteControl.stop}
-            onRenew={remoteControl.renew}
-          />
           <RemoteControlToast
             incoming={remoteControl.incomingRequest}
             outgoing={remoteControl.outgoingRequest}

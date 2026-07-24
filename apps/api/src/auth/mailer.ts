@@ -28,11 +28,21 @@ function describeMailerError(error: unknown): string {
     response?: unknown;
   };
   const parts = [error.message];
+  const formatDetail = (value: unknown): string => {
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || value == null) {
+      return String(value);
+    }
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return '[unserializable]';
+    }
+  };
 
-  if (details.code) parts.push(`code=${String(details.code)}`);
-  if (details.command) parts.push(`command=${String(details.command)}`);
-  if (details.responseCode) parts.push(`responseCode=${String(details.responseCode)}`);
-  if (details.response) parts.push(`response=${String(details.response)}`);
+  if (details.code) parts.push(`code=${formatDetail(details.code)}`);
+  if (details.command) parts.push(`command=${formatDetail(details.command)}`);
+  if (details.responseCode) parts.push(`responseCode=${formatDetail(details.responseCode)}`);
+  if (details.response) parts.push(`response=${formatDetail(details.response)}`);
 
   return parts.join(' ');
 }
