@@ -2,6 +2,7 @@
 
 import type { LocalUserChoices } from '@livekit/components-react';
 import { ChevronDown, Mic, MicOff, Video, VideoOff } from 'lucide-react';
+import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { loadDevicePreferences, saveDevicePreference, saveDevicePreferences } from '@/lib/devicePreferences';
 import { classifyMediaError, type FailureCause, type RecoveryDevice } from '@/lib/deviceRecovery';
@@ -398,9 +399,11 @@ export default function PreJoinScreen({
 
 function Brand() {
   return (
-    <span className="font-display text-xl font-bold tracking-[0.25em] text-white">
-      HUD<span className="text-magenta text-glow-magenta">DLE</span>
-    </span>
+    <Link href="/" aria-label="Huddle home" className="inline-flex rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60">
+      <span className="font-display text-xl font-bold tracking-[0.25em] text-white">
+        HUD<span className="text-magenta text-glow-magenta">DLE</span>
+      </span>
+    </Link>
   );
 }
 

@@ -217,6 +217,10 @@ private actor LiveKitAgent {
     private var screenPublication: LocalTrackPublication?
     private var selectedDisplayID: UInt32?
     private var stopping = false
+    private var clipboardChangeCount = 0
+    private var clipboardRevision: UInt64 = 0
+    private var clipboardEcho = ClipboardEchoSuppression()
+    private var clipboardMonitor: Task<Void, Never>?
 
     init(model: AgentModel, descriptor: BootstrapDescriptor, response: BootstrapResponse) {
         self.model = model
@@ -257,6 +261,7 @@ private actor LiveKitAgent {
             screenPublication = try await room.localParticipant.publish(videoTrack: track)
             selectedDisplayID = displayID
             screenPublished = true
+            await startClipboardMonitoring()
             await model?.updateConnection(true, screen: true, message: "Desktop is visible to the Huddle room.")
         } catch {
             await model?.updateConnection(true, screen: false, message: "Connected, but Screen Recording permission is required.")
@@ -273,6 +278,7 @@ private actor LiveKitAgent {
     func stop() async {
         stopping = true
         input.releaseAll()
+        stopClipboardMonitoring()
         if let screenPublication { _ = try? await room.localParticipant.unpublish(publication: screenPublication) }
         screenPublication = nil
         await room.disconnect()
@@ -304,6 +310,7 @@ private actor LiveKitAgent {
 
     private func revokeGrant(message: String) async {
         input.releaseAll()
+        stopClipboardMonitoring()
         if screenPublished {
             if let screenPublication { _ = try? await room.localParticipant.unpublish(publication: screenPublication) }
             screenPublication = nil
@@ -329,7 +336,92 @@ private actor LiveKitAgent {
             now: Date(),
         )
         gate = mutable
-        if case .success(let event) = result { input.apply(event, geometry: currentGeometry()) }
+        guard case let .success(command) = result else { return }
+        switch command {
+        case let .input(event):
+            input.apply(event, geometry: currentGeometry())
+        case .clipboardCopy:
+            input.copy()
+        case let .clipboardPaste(text):
+            guard let changeCount = await writeClipboard(text) else { return }
+            clipboardEcho.recordLocalPasteboardWrite(changeCount: changeCount)
+            clipboardChangeCount = changeCount
+            input.paste()
+        }
+    }
+
+    private func startClipboardMonitoring() async {
+        clipboardMonitor?.cancel()
+        clipboardEcho.reset()
+        clipboardChangeCount = await pasteboardSnapshot().changeCount
+        clipboardMonitor = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 250_000_000)
+                guard !Task.isCancelled else { return }
+                await self?.checkClipboard()
+            }
+        }
+    }
+
+    private func stopClipboardMonitoring() {
+        clipboardMonitor?.cancel()
+        clipboardMonitor = nil
+        clipboardEcho.reset()
+    }
+
+    private func checkClipboard() async {
+        guard screenPublished,
+              gate.canPublishDesktop(
+                  tokenMetadata: tokenMetadata,
+                  localAgentIdentity: response.session.agentIdentity,
+                  projection: projection,
+                  now: Date(),
+              )
+        else { return }
+
+        let snapshot = await pasteboardSnapshot()
+        guard snapshot.changeCount != clipboardChangeCount else { return }
+        clipboardChangeCount = snapshot.changeCount
+        guard !clipboardEcho.consumes(changeCount: snapshot.changeCount),
+              let text = snapshot.text,
+              ClipboardText.isTransferable(text)
+        else { return }
+        await publishClipboardUpdate(text)
+    }
+
+    private func pasteboardSnapshot() async -> (changeCount: Int, text: String?) {
+        await MainActor.run {
+            let pasteboard = NSPasteboard.general
+            return (pasteboard.changeCount, pasteboard.string(forType: .string))
+        }
+    }
+
+    private func writeClipboard(_ text: String) async -> Int? {
+        await MainActor.run {
+            let pasteboard = NSPasteboard.general
+            pasteboard.clearContents()
+            guard pasteboard.setString(text, forType: .string) else { return nil }
+            return pasteboard.changeCount
+        }
+    }
+
+    private func publishClipboardUpdate(_ text: String) async {
+        guard ClipboardText.isTransferable(text) else { return }
+        clipboardRevision &+= 1
+        let payload: [String: Any] = [
+            "v": 1,
+            "type": "remote-control:clipboard-update",
+            "sessionId": response.session.sessionID,
+            "revision": clipboardRevision,
+            "text": text,
+        ]
+        guard let data = try? JSONSerialization.data(withJSONObject: payload), data.count <= maximumControlPacketBytes else { return }
+        let options = DataPublishOptions(
+            destinationIdentities: [Participant.Identity(response.session.controllerIdentity)],
+            topic: remoteControlTopic,
+            reliable: true,
+        )
+        try? await room.localParticipant.publish(data: data, options: options)
     }
 
     private func currentGeometry() -> DisplayGeometry {
@@ -365,6 +457,7 @@ extension LiveKitAgent: RoomDelegate {
 
     private func connectionLost() async {
         input.releaseAll()
+        stopClipboardMonitoring()
         screenPublished = false
         await model?.updateConnection(false, screen: false, message: stopping ? "Control Agent stopped." : "Disconnected from the Huddle room.")
     }
@@ -401,11 +494,24 @@ private struct InputInjector {
         }
     }
 
+    func copy() { postCommandShortcut(code: "KeyC") }
+
+    func paste() { postCommandShortcut(code: "KeyV") }
+
     private func postMouse(_ type: CGEventType, x: Double, y: Double, button: MouseButton, geometry: DisplayGeometry) {
         guard let point = CoordinateMapper.point(x: x, y: y, in: geometry) else { return }
         post(type, point: point, button: button)
     }
     private func post(_ type: CGEventType, point: CGPoint, button: MouseButton) { CGEvent(mouseEventSource: nil, mouseType: type, mouseCursorPosition: point, mouseButton: button == .right ? .right : button == .middle ? .center : .left)?.post(tap: .cghidEventTap) }
+    private func postCommandShortcut(code: String) {
+        guard let keyCode = KeyboardCodeMap.virtualKey(for: code) else { return }
+        let down = CGEvent(keyboardEventSource: nil, virtualKey: keyCode, keyDown: true)
+        down?.flags = .maskCommand
+        down?.post(tap: .cghidEventTap)
+        let up = CGEvent(keyboardEventSource: nil, virtualKey: keyCode, keyDown: false)
+        up?.flags = .maskCommand
+        up?.post(tap: .cghidEventTap)
+    }
     private func mouseDown(_ button: MouseButton) -> CGEventType { button == .right ? .rightMouseDown : button == .middle ? .otherMouseDown : .leftMouseDown }
     private func mouseUp(_ button: MouseButton) -> CGEventType { button == .right ? .rightMouseUp : button == .middle ? .otherMouseUp : .leftMouseUp }
     private func flag(for modifier: KeyModifier) -> CGEventFlags { modifier == .shift ? .maskShift : modifier == .ctrl ? .maskControl : modifier == .alt ? .maskAlternate : .maskCommand }

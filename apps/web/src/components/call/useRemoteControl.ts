@@ -98,11 +98,13 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
   const [busy, setBusy] = useState<Action | null>(null);
   const [requestingIdentity, setRequestingIdentity] = useState<string | null>(null);
   const [renewalOverride, setRenewalOverride] = useState<{ sessionId: string; renewalDueAt: string } | null>(null);
+  const [pendingClipboardText, setPendingClipboardText] = useState<string | null>(null);
   const [now, setNow] = useState(0);
 
   const noticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const verificationRef = useRef(0);
   const sequenceRef = useRef(0);
+  const clipboardRevisionRef = useRef(0);
 
   const showNotice = useCallback((next: RemoteControlNotice) => {
     setNotice(next);
@@ -122,6 +124,26 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
         return;
       }
       emitFault({ code: 'REMOTE_CONTROL_CLIENT', message: 'Remote Control could not complete that action.', statusCode: 0 });
+    },
+    [showNotice],
+  );
+
+  const receiveClipboardUpdate = useCallback(
+    (text: string, revision: number) => {
+      if (revision <= clipboardRevisionRef.current) return;
+      clipboardRevisionRef.current = revision;
+      void (async () => {
+        try {
+          await navigator.clipboard.writeText(text);
+          if (revision !== clipboardRevisionRef.current) return;
+          setPendingClipboardText(null);
+          showNotice({ tone: 'success', message: 'Remote clipboard copied to this computer.' });
+        } catch {
+          if (revision !== clipboardRevisionRef.current) return;
+          setPendingClipboardText(text);
+          showNotice({ tone: 'info', message: 'Remote clipboard received. Select Copy received text to place it on this computer.' });
+        }
+      })();
     },
     [showNotice],
   );
@@ -171,8 +193,22 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
       ) {
         setOutgoingRequest(null);
         showNotice({ tone: 'error', message: `${outgoingRequest.sharerName} denied your Remote Control request.` });
+        return;
       }
-      // Input is consumed only by the native Control Agent.
+
+      if (
+        message.type === 'remote-control:clipboard-update' &&
+        session &&
+        iAmController &&
+        session.status === 'active' &&
+        session.agentConnected &&
+        message.sessionId === session.sessionId &&
+        participant.identity === session.agentIdentity
+      ) {
+        receiveClipboardUpdate(message.text, message.revision);
+      }
+      // Input and Controller clipboard commands are consumed only by the native
+      // Control Agent. Clipboard updates are accepted only from the active one.
     }
 
     lkRoom.on(RoomEvent.DataReceived, handleData);
@@ -180,7 +216,7 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
       mounted = false;
       lkRoom.off(RoomEvent.DataReceived, handleData);
     };
-  }, [lkRoom, localIdentity, outgoingRequest, participantToken, room, session, showNotice]);
+  }, [iAmController, lkRoom, localIdentity, outgoingRequest, participantToken, receiveClipboardUpdate, room, session, showNotice]);
 
   // Pending prompts are short-lived server records. Clear their local mirrors at
   // the server-stamped deadline even if an addressed denial packet is lost.
@@ -223,6 +259,11 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
 
   useEffect(() => {
     sequenceRef.current = 0;
+    clipboardRevisionRef.current = 0;
+    // Clipboard content is ephemeral to the active session and must not remain
+    // available for a later Controller or a rejoined room.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPendingClipboardText(null);
   }, [session?.sessionId]);
 
   useEffect(() => {
@@ -412,6 +453,59 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
     [iAmController, localParticipant, session],
   );
 
+  const sendClipboardCopy = useCallback(() => {
+    if (!session || !iAmController || session.status !== 'active' || !session.agentConnected) return;
+    try {
+      const sequence = ++sequenceRef.current;
+      void sendRemoteControlMessage(localParticipant, [session.agentIdentity], {
+        v: 1,
+        type: 'remote-control:clipboard-copy',
+        sessionId: session.sessionId,
+        sequence,
+      }).catch(() => showNotice({ tone: 'error', message: 'Remote copy could not be sent. Try again.' }));
+    } catch {
+      showNotice({ tone: 'error', message: 'Remote copy could not be sent. Try again.' });
+    }
+  }, [iAmController, localParticipant, session, showNotice]);
+
+  const pasteClipboard = useCallback(() => {
+    if (!session || !iAmController || session.status !== 'active' || !session.agentConnected) return;
+    void (async () => {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (!text) {
+          showNotice({ tone: 'info', message: 'Your clipboard has no plain text to paste remotely.' });
+          return;
+        }
+        const sequence = ++sequenceRef.current;
+        await sendRemoteControlMessage(localParticipant, [session.agentIdentity], {
+          v: 1,
+          type: 'remote-control:clipboard-paste',
+          sessionId: session.sessionId,
+          sequence,
+          text,
+        });
+      } catch (error) {
+        if (error instanceof RangeError) {
+          showNotice({ tone: 'error', message: 'That clipboard text is too large to transfer.' });
+          return;
+        }
+        showNotice({ tone: 'error', message: 'Huddle could not read your clipboard. Allow clipboard access, then try Paste again.' });
+      }
+    })();
+  }, [iAmController, localParticipant, session, showNotice]);
+
+  const copyReceivedClipboard = useCallback(async () => {
+    if (!pendingClipboardText) return;
+    try {
+      await navigator.clipboard.writeText(pendingClipboardText);
+      setPendingClipboardText((current) => (current === pendingClipboardText ? null : current));
+      showNotice({ tone: 'success', message: 'Remote clipboard copied to this computer.' });
+    } catch {
+      showNotice({ tone: 'error', message: 'Huddle could not write to your clipboard. Allow clipboard access, then try again.' });
+    }
+  }, [pendingClipboardText, showNotice]);
+
   useEffect(() => {
     return () => {
       if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current);
@@ -430,6 +524,7 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
     busy,
     requestingIdentity,
     renewalRemainingMs,
+    pendingClipboardText,
     requestControl,
     approve,
     reopenAgent,
@@ -437,6 +532,9 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
     stop,
     renew,
     sendInput,
+    sendClipboardCopy,
+    pasteClipboard,
+    copyReceivedClipboard,
     dismissNotice: () => setNotice(null),
     dismissHelperBootstrap: () => setHelperBootstrap(null),
   };

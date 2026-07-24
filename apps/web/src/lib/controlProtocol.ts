@@ -7,7 +7,11 @@ export const REMOTE_CONTROL_TOPIC = 'huddle:remote-control';
 export const REMOTE_CONTROL_VERSION = 1 as const;
 export const CONTROL_AGENT_IDENTITY_PREFIX = 'control-agent:';
 
-const MAX_PACKET_BYTES = 8192;
+export const MAX_REMOTE_CONTROL_PACKET_BYTES = 8192;
+// Keep text well below the packet ceiling so normal JSON framing fits without
+// widening the established Remote Control data budget. The full encoded packet
+// is still checked before it is published.
+export const MAX_CLIPBOARD_TEXT_BYTES = 6 * 1024;
 const MAX_ID_LENGTH = 160;
 const MAX_NAME_LENGTH = 256;
 const MAX_KEY_LENGTH = 64;
@@ -41,7 +45,10 @@ export type RemoteControlInputEvent =
 export type RemoteControlMessage =
   | { v: 1; type: 'remote-control:request'; requestId: string }
   | { v: 1; type: 'remote-control:denied'; requestId: string }
-  | { v: 1; type: 'remote-control:input'; sessionId: string; sequence: number; event: RemoteControlInputEvent };
+  | { v: 1; type: 'remote-control:input'; sessionId: string; sequence: number; event: RemoteControlInputEvent }
+  | { v: 1; type: 'remote-control:clipboard-copy'; sessionId: string; sequence: number }
+  | { v: 1; type: 'remote-control:clipboard-paste'; sessionId: string; sequence: number; text: string }
+  | { v: 1; type: 'remote-control:clipboard-update'; sessionId: string; revision: number; text: string };
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -57,6 +64,14 @@ function hasOnlyKeys(value: Record<string, unknown>, keys: readonly string[]): b
 
 function isBoundedString(value: unknown, max = MAX_ID_LENGTH): value is string {
   return typeof value === 'string' && value.length > 0 && value.length <= max;
+}
+
+function isClipboardText(value: unknown): value is string {
+  return typeof value === 'string' && encoder.encode(value).byteLength > 0 && encoder.encode(value).byteLength <= MAX_CLIPBOARD_TEXT_BYTES;
+}
+
+function isSequence(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
 }
 
 function isCoordinate(value: unknown): value is number {
@@ -127,11 +142,13 @@ function decodeInputEvent(value: unknown): RemoteControlInputEvent | null {
 }
 
 export function encodeRemoteControlMessage(message: RemoteControlMessage): Uint8Array {
-  return encoder.encode(JSON.stringify(message));
+  const encoded = encoder.encode(JSON.stringify(message));
+  if (encoded.byteLength === 0 || encoded.byteLength > MAX_REMOTE_CONTROL_PACKET_BYTES) throw new RangeError('Remote Control message exceeds the packet limit');
+  return encoded;
 }
 
 export function decodeRemoteControlMessage(data: Uint8Array): RemoteControlMessage | null {
-  if (data.byteLength === 0 || data.byteLength > MAX_PACKET_BYTES) return null;
+  if (data.byteLength === 0 || data.byteLength > MAX_REMOTE_CONTROL_PACKET_BYTES) return null;
   try {
     const value: unknown = JSON.parse(decoder.decode(data));
     if (!isRecord(value) || value.v !== REMOTE_CONTROL_VERSION || typeof value.type !== 'string') return null;
@@ -145,15 +162,34 @@ export function decodeRemoteControlMessage(data: Uint8Array): RemoteControlMessa
         if (
           !hasOnlyKeys(value, ['v', 'type', 'sessionId', 'sequence', 'event']) ||
           !isBoundedString(value.sessionId) ||
-          typeof value.sequence !== 'number' ||
-          !Number.isSafeInteger(value.sequence) ||
-          value.sequence < 0
+          !isSequence(value.sequence)
         )
           return null;
         const event = decodeInputEvent(value.event);
         if (!event) return null;
         return { v: 1, type: 'remote-control:input', sessionId: value.sessionId, sequence: value.sequence, event };
       }
+      case 'remote-control:clipboard-copy':
+        if (!hasOnlyKeys(value, ['v', 'type', 'sessionId', 'sequence']) || !isBoundedString(value.sessionId) || !isSequence(value.sequence)) return null;
+        return { v: 1, type: value.type, sessionId: value.sessionId, sequence: value.sequence };
+      case 'remote-control:clipboard-paste':
+        if (
+          !hasOnlyKeys(value, ['v', 'type', 'sessionId', 'sequence', 'text']) ||
+          !isBoundedString(value.sessionId) ||
+          !isSequence(value.sequence) ||
+          !isClipboardText(value.text)
+        )
+          return null;
+        return { v: 1, type: value.type, sessionId: value.sessionId, sequence: value.sequence, text: value.text };
+      case 'remote-control:clipboard-update':
+        if (
+          !hasOnlyKeys(value, ['v', 'type', 'sessionId', 'revision', 'text']) ||
+          !isBoundedString(value.sessionId) ||
+          !isSequence(value.revision) ||
+          !isClipboardText(value.text)
+        )
+          return null;
+        return { v: 1, type: value.type, sessionId: value.sessionId, revision: value.revision, text: value.text };
       default:
         return null;
     }

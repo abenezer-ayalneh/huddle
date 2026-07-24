@@ -54,14 +54,14 @@ public struct GrantGate: Sendable {
     }
 
     public mutating func authorize(
-        _ packet: ControlInputPacket,
+        _ packet: ControlCommandPacket,
         senderIdentity: String,
         localAgentIdentity: String,
         tokenMetadata: AgentTokenMetadata?,
         projection: RemoteControlProjection?,
         connected: Bool,
         now: Date
-    ) -> Result<ControlInputEvent, GrantRejection> {
+    ) -> Result<ControlCommand, GrantRejection> {
         guard connected else { return .failure(.disconnected) }
         guard hasMatchingTokenMetadata(tokenMetadata, localAgentIdentity: localAgentIdentity) else {
             return .failure(.tokenMetadataMismatch)
@@ -81,7 +81,7 @@ public struct GrantGate: Sendable {
         guard packet.sessionID == bootstrap.sessionID else { return .failure(.wrongSession) }
         guard senderIdentity == bootstrap.controllerIdentity else { return .failure(.wrongSender) }
         guard sequence.accept(packet.sequence) else { return .failure(.replayedSequence) }
-        return .success(packet.event)
+        return .success(packet.command)
     }
 
     public mutating func resetSequence() {

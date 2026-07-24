@@ -8,13 +8,24 @@ const BUTTONS: Record<number, 'left' | 'middle' | 'right'> = { 0: 'left', 1: 'mi
 // An explicitly focused input surface over the contained screen track. The
 // browser only transports bounded events; the Control Agent remains the final
 // authority for injection.
-export default function RemoteControlSurface({ sendInput, onEscape }: { sendInput: (event: RemoteControlInputEvent) => void; onEscape?: () => void }) {
+export default function RemoteControlSurface({
+  sendInput,
+  onClipboardCopy,
+  onClipboardPaste,
+  onEscape,
+}: {
+  sendInput: (event: RemoteControlInputEvent) => void;
+  onClipboardCopy: () => void;
+  onClipboardPaste: () => void;
+  onEscape?: () => void;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
   const pendingMove = useRef<{ x: number; y: number } | null>(null);
   const pendingScroll = useRef<{ x: number; y: number; dx: number; dy: number } | null>(null);
   const raf = useRef<number | null>(null);
   const pressedKeys = useRef(new Map<string, { code: string; key?: string }>());
+  const interceptedClipboardKeys = useRef(new Set<string>());
   const lastEscapeAt = useRef(0);
   const [focused, setFocused] = useState(false);
 
@@ -54,6 +65,7 @@ export default function RemoteControlSurface({ sendInput, onEscape }: { sendInpu
     if (dragging.current || pressedKeys.current.size) sendInput({ kind: 'release-all' });
     dragging.current = false;
     pressedKeys.current.clear();
+    interceptedClipboardKeys.current.clear();
   }, [sendInput]);
 
   useEffect(() => {
@@ -97,12 +109,21 @@ export default function RemoteControlSurface({ sendInput, onEscape }: { sendInpu
         releaseAll();
         return;
       }
+      const isMacController = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+      const primaryModifier = isMacController ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey;
+      if (primaryModifier && !event.altKey && (event.code === 'KeyC' || event.code === 'KeyV')) {
+        interceptedClipboardKeys.current.add(event.code);
+        if (event.code === 'KeyC') onClipboardCopy();
+        else onClipboardPaste();
+        return;
+      }
       pressedKeys.current.set(event.code, { code: event.code, key: event.key });
       sendInput({ kind: 'key', action: 'down', code: event.code, key: event.key.slice(0, 64), modifiers: modifiers(event) });
     };
     const onKeyUp = (event: KeyboardEvent) => {
       event.preventDefault();
       event.stopPropagation();
+      if (interceptedClipboardKeys.current.delete(event.code)) return;
       pressedKeys.current.delete(event.code);
       sendInput({ kind: 'key', action: 'up', code: event.code, key: event.key.slice(0, 64), modifiers: modifiers(event) });
     };
@@ -118,7 +139,7 @@ export default function RemoteControlSurface({ sendInput, onEscape }: { sendInpu
       document.removeEventListener('visibilitychange', onVisibility);
       releaseAll();
     };
-  }, [focused, onEscape, releaseAll, sendInput]);
+  }, [focused, onClipboardCopy, onClipboardPaste, onEscape, releaseAll, sendInput]);
 
   useEffect(
     () => () => {
@@ -134,7 +155,7 @@ export default function RemoteControlSurface({ sendInput, onEscape }: { sendInpu
       tabIndex={0}
       data-remote-control-input
       role="application"
-      aria-label="Remote Control screen. Click to focus, then use your mouse and keyboard. Press Escape twice to stop controlling."
+      aria-label="Remote Control screen. Click to focus, then use your mouse and keyboard. Copy and Paste use this computer's normal shortcuts. Press Escape twice to stop controlling."
       onFocus={() => setFocused(true)}
       onBlur={() => {
         setFocused(false);

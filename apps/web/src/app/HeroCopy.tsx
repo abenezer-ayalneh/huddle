@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import HuddleIcon from '@/components/HuddleIcon';
 
 // Server-rendered marketing copy. Lives next to the lobby so search engines and
@@ -7,10 +8,16 @@ export default function HeroCopy() {
   return (
     <div className="space-y-7 text-center lg:text-left">
       <div className="flex items-center justify-center gap-3 lg:justify-start">
-        <HuddleIcon className="size-10 drop-shadow-[0_0_12px_rgba(217,70,168,0.5)]" />
-        <span className="font-display text-2xl font-bold tracking-[0.3em] text-white">
-          HUD<span className="text-magenta text-glow-magenta">DLE</span>
-        </span>
+        <Link
+          href="/"
+          aria-label="Huddle home"
+          className="flex items-center gap-3 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60"
+        >
+          <HuddleIcon className="size-10 drop-shadow-[0_0_12px_rgba(217,70,168,0.5)]" />
+          <span className="font-display text-2xl font-bold tracking-[0.3em] text-white">
+            HUD<span className="text-magenta text-glow-magenta">DLE</span>
+          </span>
+        </Link>
       </div>
       <h1 className="font-display text-5xl font-bold leading-[1.05] tracking-tight text-white sm:text-6xl">
         Meetings,

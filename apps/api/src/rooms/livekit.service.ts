@@ -147,7 +147,9 @@ export class LivekitService {
       canPublish: true,
       canPublishSources: [TrackSource.SCREEN_SHARE],
       canSubscribe: true,
-      canPublishData: false,
+      // The agent may send only recipient-targeted, locally validated clipboard
+      // updates to its exact Controller. Its media remains screen-share-only.
+      canPublishData: true,
       roomAdmin: false,
       hidden: false,
     });

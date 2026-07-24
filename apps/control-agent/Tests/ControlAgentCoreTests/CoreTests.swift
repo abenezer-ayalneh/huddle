@@ -16,7 +16,26 @@ final class CoreTests: XCTestCase {
         ])
         let decoded = try ControlPacketDecoder.decode(payload)
         XCTAssertEqual(decoded.sequence, 1)
+        XCTAssertEqual(decoded.command, .input(.key(action: .down, code: "KeyA", key: nil, modifiers: [.meta])))
         XCTAssertThrowsError(try ControlPacketDecoder.decode(Data(repeating: 0, count: maximumControlPacketBytes + 1)))
+    }
+
+    func testClipboardCommandsAreStrictlyBounded() throws {
+        let copy = try JSONSerialization.data(withJSONObject: [
+            "v": 1, "type": "remote-control:clipboard-copy", "sessionId": "session", "sequence": 1,
+        ])
+        XCTAssertEqual(try ControlPacketDecoder.decode(copy).command, .clipboardCopy)
+
+        let paste = try JSONSerialization.data(withJSONObject: [
+            "v": 1, "type": "remote-control:clipboard-paste", "sessionId": "session", "sequence": 2, "text": "Hello",
+        ])
+        XCTAssertEqual(try ControlPacketDecoder.decode(paste).command, .clipboardPaste("Hello"))
+
+        let tooLarge = try JSONSerialization.data(withJSONObject: [
+            "v": 1, "type": "remote-control:clipboard-paste", "sessionId": "session", "sequence": 3,
+            "text": String(repeating: "x", count: maximumClipboardTextBytes + 1),
+        ])
+        XCTAssertThrowsError(try ControlPacketDecoder.decode(tooLarge))
     }
 
     func testGrantGateBindsSenderProjectionAndSequence() throws {
@@ -26,22 +45,33 @@ final class CoreTests: XCTestCase {
         var gate = GrantGate(bootstrap: snapshot)
         let token = AgentTokenMetadata(role: "control-agent", room: "room", sessionID: "session", sharerIdentity: "sharer", controllerIdentity: "controller", agentIdentity: "control-agent:session")
         let projection = RemoteControlProjection(sessionID: "session", status: "active", sharerIdentity: "sharer", sharerName: "Ada", controllerIdentity: "controller", controllerName: "Bo", agentIdentity: "control-agent:session", agentConnected: true, renewalDueAt: due)
-        let packet = ControlInputPacket(sessionID: "session", sequence: 1, event: .move(x: 0.5, y: 0.5))
+        let packet = ControlCommandPacket(sessionID: "session", sequence: 1, command: .input(.move(x: 0.5, y: 0.5)))
         XCTAssertTrue(gate.canPublishDesktop(tokenMetadata: token, localAgentIdentity: "control-agent:session", projection: projection, now: Date()))
         XCTAssertFalse(gate.canPublishDesktop(tokenMetadata: token, localAgentIdentity: "control-agent:session", projection: RemoteControlProjection(sessionID: "session", status: "awaiting-agent", sharerIdentity: "sharer", sharerName: "Ada", controllerIdentity: "controller", controllerName: "Bo", agentIdentity: "control-agent:session", agentConnected: false, renewalDueAt: due), now: Date()))
         XCTAssertFalse(gate.canPublishDesktop(tokenMetadata: token, localAgentIdentity: "other-agent", projection: projection, now: Date()))
         guard case .success(let event) = gate.authorize(packet, senderIdentity: "controller", localAgentIdentity: "control-agent:session", tokenMetadata: token, projection: projection, connected: true, now: Date()) else {
             return XCTFail("valid input was rejected")
         }
-        XCTAssertEqual(event, .move(x: 0.5, y: 0.5))
+        XCTAssertEqual(event, .input(.move(x: 0.5, y: 0.5)))
         guard case .failure(let replay) = gate.authorize(packet, senderIdentity: "controller", localAgentIdentity: "control-agent:session", tokenMetadata: token, projection: projection, connected: true, now: Date()) else {
             return XCTFail("replayed input was accepted")
         }
         XCTAssertEqual(replay, .replayedSequence)
-        guard case .failure(let sender) = gate.authorize(ControlInputPacket(sessionID: "session", sequence: 2, event: .move(x: 0.5, y: 0.5)), senderIdentity: "forged", localAgentIdentity: "control-agent:session", tokenMetadata: token, projection: projection, connected: true, now: Date()) else {
+        guard case .failure(let sender) = gate.authorize(ControlCommandPacket(sessionID: "session", sequence: 2, command: .clipboardCopy), senderIdentity: "forged", localAgentIdentity: "control-agent:session", tokenMetadata: token, projection: projection, connected: true, now: Date()) else {
             return XCTFail("forged sender was accepted")
         }
         XCTAssertEqual(sender, .wrongSender)
+    }
+
+    func testClipboardSuppressionConsumesOnlyTheExpectedPasteboardChange() {
+        var suppression = ClipboardEchoSuppression()
+        suppression.recordLocalPasteboardWrite(changeCount: 12)
+        XCTAssertFalse(suppression.consumes(changeCount: 11))
+        XCTAssertFalse(suppression.consumes(changeCount: 12))
+
+        suppression.recordLocalPasteboardWrite(changeCount: 13)
+        XCTAssertTrue(suppression.consumes(changeCount: 13))
+        XCTAssertFalse(suppression.consumes(changeCount: 13))
     }
 
     func testCoordinateAndReleaseState() {

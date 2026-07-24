@@ -2,6 +2,9 @@ import Foundation
 
 public let remoteControlTopic = "huddle:remote-control"
 public let maximumControlPacketBytes = 8 * 1024
+// Clipboard text remains within the existing Remote Control packet budget once
+// JSON framing is included. Larger text is rejected whole, never truncated.
+public let maximumClipboardTextBytes = 6 * 1024
 
 public enum MouseButton: String, CaseIterable, Sendable {
     case left, middle, right
@@ -23,17 +26,27 @@ public enum ControlInputEvent: Equatable, Sendable {
     case releaseAll
 }
 
-public struct ControlInputPacket: Equatable, Sendable {
+public enum ControlCommand: Equatable, Sendable {
+    case input(ControlInputEvent)
+    case clipboardCopy
+    case clipboardPaste(String)
+}
+
+public struct ControlCommandPacket: Equatable, Sendable {
     public let sessionID: String
     public let sequence: UInt64
-    public let event: ControlInputEvent
+    public let command: ControlCommand
 
-    public init(sessionID: String, sequence: UInt64, event: ControlInputEvent) {
+    public init(sessionID: String, sequence: UInt64, command: ControlCommand) {
         self.sessionID = sessionID
         self.sequence = sequence
-        self.event = event
+        self.command = command
     }
 }
+
+// Keep the old domain name useful to callers that construct mouse/keyboard
+// packets, while clipboard commands share the exact same sequence gate.
+public typealias ControlInputPacket = ControlCommandPacket
 
 public enum ControlPacketError: Error, Equatable {
     case empty
@@ -46,18 +59,24 @@ public enum ControlPacketError: Error, Equatable {
     case invalidEvent
 }
 
+public enum ClipboardText {
+    public static func isTransferable(_ value: String) -> Bool {
+        !value.isEmpty && value.lengthOfBytes(using: .utf8) <= maximumClipboardTextBytes
+    }
+}
+
 public enum ControlPacketDecoder {
     private static let maximumJavaScriptInteger = 9_007_199_254_740_991.0
     private static let maximumWheelDelta = 4_096.0
 
-    public static func decode(_ data: Data) throws -> ControlInputPacket {
+    public static func decode(_ data: Data) throws -> ControlCommandPacket {
         guard !data.isEmpty else { throw ControlPacketError.empty }
         guard data.count <= maximumControlPacketBytes else { throw ControlPacketError.tooLarge }
         guard let root = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
             throw ControlPacketError.malformed
         }
         guard integer(root["v"]) == 1 else { throw ControlPacketError.unsupportedVersion }
-        guard root["type"] as? String == "remote-control:input" else { throw ControlPacketError.unsupportedType }
+        guard let type = root["type"] as? String else { throw ControlPacketError.unsupportedType }
         guard let sessionID = root["sessionId"] as? String, validIdentifier(sessionID) else {
             throw ControlPacketError.invalidSession
         }
@@ -67,11 +86,28 @@ public enum ControlPacketDecoder {
         else {
             throw ControlPacketError.invalidSequence
         }
-        guard let eventObject = root["event"] as? [String: Any], let kind = eventObject["kind"] as? String else {
-            throw ControlPacketError.invalidEvent
+        let command: ControlCommand
+        switch type {
+        case "remote-control:input":
+            guard exactKeys(root, ["v", "type", "sessionId", "sequence", "event"]),
+                  let eventObject = root["event"] as? [String: Any], let kind = eventObject["kind"] as? String
+            else {
+                throw ControlPacketError.invalidEvent
+            }
+            command = .input(try decodeEvent(kind: kind, object: eventObject))
+        case "remote-control:clipboard-copy":
+            guard exactKeys(root, ["v", "type", "sessionId", "sequence"]) else { throw ControlPacketError.invalidEvent }
+            command = .clipboardCopy
+        case "remote-control:clipboard-paste":
+            guard exactKeys(root, ["v", "type", "sessionId", "sequence", "text"]),
+                  let text = root["text"] as? String,
+                  ClipboardText.isTransferable(text)
+            else { throw ControlPacketError.invalidEvent }
+            command = .clipboardPaste(text)
+        default:
+            throw ControlPacketError.unsupportedType
         }
-        let event = try decodeEvent(kind: kind, object: eventObject)
-        return ControlInputPacket(sessionID: sessionID, sequence: UInt64(sequenceNumber), event: event)
+        return ControlCommandPacket(sessionID: sessionID, sequence: UInt64(sequenceNumber), command: command)
     }
 
     private static func decodeEvent(kind: String, object: [String: Any]) throws -> ControlInputEvent {
@@ -133,8 +169,32 @@ public enum ControlPacketDecoder {
         }
     }
 
+    private static func exactKeys(_ object: [String: Any], _ keys: Set<String>) -> Bool {
+        Set(object.keys) == keys
+    }
+
     private static func integer(_ value: Any?) -> Int? {
         guard let number = number(value), number.rounded(.towardZero) == number else { return nil }
         return Int(exactly: number)
+    }
+}
+
+public struct ClipboardEchoSuppression: Equatable, Sendable {
+    private var expectedChangeCount: Int?
+
+    public init() {}
+
+    public mutating func recordLocalPasteboardWrite(changeCount: Int) {
+        expectedChangeCount = changeCount
+    }
+
+    public mutating func consumes(changeCount: Int) -> Bool {
+        guard let expectedChangeCount else { return false }
+        self.expectedChangeCount = nil
+        return expectedChangeCount == changeCount
+    }
+
+    public mutating func reset() {
+        expectedChangeCount = nil
     }
 }

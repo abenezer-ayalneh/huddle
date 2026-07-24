@@ -34,7 +34,7 @@ export default function RemoteControlToast({
             <p className="font-medium">
               <strong className="text-cyan">{incoming.controllerName}</strong> wants to control your desktop.
             </p>
-            <p className="mt-1 text-xs text-white/65">Everyone in this room will see the desktop. Remote Control includes mouse and keyboard input.</p>
+            <p className="mt-1 text-xs text-white/65">Everyone in this room will see the desktop. Remote Control includes mouse and keyboard input, plus plain-text clipboard sharing with {incoming.controllerName}.</p>
           </div>
         </div>
         {recordingActive && (

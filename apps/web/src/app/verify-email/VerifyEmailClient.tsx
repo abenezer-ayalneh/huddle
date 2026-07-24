@@ -100,7 +100,9 @@ function VerificationShell({ icon, title, body, footer }: { icon: ReactNode; tit
       </div>
 
       <div className="glass-strong w-full max-w-sm rounded-2xl p-8 text-center shadow-[0_8px_60px_oklch(0_0_0/0.5)]">
-        <HuddleIcon className="mx-auto size-12" />
+        <Link href="/" aria-label="Huddle home" className="inline-flex rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60">
+          <HuddleIcon className="size-12" />
+        </Link>
         <div className="mx-auto mt-6 flex size-12 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/10">{icon}</div>
         <h1 className="mt-5 font-display text-2xl font-semibold text-white">{title}</h1>
         <p className="mt-2 text-sm text-white/55">{body}</p>

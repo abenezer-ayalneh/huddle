@@ -201,15 +201,22 @@ function CallView({
                 iAmController={remoteControl.iAmController}
                 recordingActive={recording.recordingActive}
                 renewalRemainingMs={remoteControl.renewalRemainingMs}
+                clipboardCopyPending={remoteControl.pendingClipboardText !== null}
                 onStop={remoteControl.stop}
                 onRenew={remoteControl.renew}
+                onCopyReceivedClipboard={remoteControl.copyReceivedClipboard}
               />
             </ErrorBoundary>
           ) : undefined
         }
         remoteControlInput={
           remoteControl.iAmController && remoteControl.session?.agentConnected ? (
-            <RemoteControlSurface sendInput={remoteControl.sendInput} onEscape={() => void remoteControl.stop()} />
+            <RemoteControlSurface
+              sendInput={remoteControl.sendInput}
+              onClipboardCopy={remoteControl.sendClipboardCopy}
+              onClipboardPaste={remoteControl.pasteClipboard}
+              onEscape={() => void remoteControl.stop()}
+            />
           ) : undefined
         }
       />

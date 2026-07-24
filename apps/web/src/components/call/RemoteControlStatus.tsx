@@ -1,6 +1,17 @@
 'use client';
 
 import { MousePointer2, ShieldAlert } from 'lucide-react';
+import { useState } from 'react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import type { RemoteControlSession } from '@/lib/controlProtocol';
 
 export default function RemoteControlStatus({
@@ -9,19 +20,24 @@ export default function RemoteControlStatus({
   iAmController,
   recordingActive,
   renewalRemainingMs,
+  clipboardCopyPending,
   onStop,
   onRenew,
+  onCopyReceivedClipboard,
 }: {
   session: RemoteControlSession;
   iAmSharer: boolean;
   iAmController: boolean;
   recordingActive: boolean;
   renewalRemainingMs: number | null;
+  clipboardCopyPending: boolean;
   onStop: () => void;
   onRenew: () => void;
+  onCopyReceivedClipboard: () => void | Promise<void>;
 }) {
   const minutes = renewalRemainingMs == null ? null : Math.ceil(renewalRemainingMs / 60_000);
   const active = session.agentConnected;
+  const [renewalConfirmationOpen, setRenewalConfirmationOpen] = useState(false);
 
   const relationship = iAmController
     ? `Controlling ${session.sharerName}`
@@ -52,13 +68,14 @@ export default function RemoteControlStatus({
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-white/95">{active ? relationship : waiting}</p>
           <p className="text-xs text-white/55">{active ? 'Remote Control active' : 'Remote Control approved · desktop not yet shared'}</p>
+          {iAmSharer && active && <p className="mt-0.5 text-xs text-cyan/80">Clipboard sharing on · plain text copied on this Mac is shared with {session.controllerName}.</p>}
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-2">
           {iAmSharer && minutes != null && (
             <button
               type="button"
-              onClick={onRenew}
+              onClick={() => setRenewalConfirmationOpen(true)}
               className="inline-flex h-9 items-center rounded-lg bg-cyan/15 px-3 text-xs font-semibold text-cyan ring-1 ring-cyan/35 transition hover:bg-cyan/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/70"
             >
               Reconfirm{minutes <= 5 ? ` · ${minutes}m` : ''}
@@ -73,6 +90,15 @@ export default function RemoteControlStatus({
               Stop
             </button>
           )}
+          {iAmController && clipboardCopyPending && (
+            <button
+              type="button"
+              onClick={() => void onCopyReceivedClipboard()}
+              className="inline-flex h-9 items-center rounded-lg bg-cyan/15 px-3 text-xs font-semibold text-cyan ring-1 ring-cyan/35 transition hover:bg-cyan/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/70"
+            >
+              Copy received text
+            </button>
+          )}
         </div>
       </div>
 
@@ -85,6 +111,28 @@ export default function RemoteControlStatus({
           The controlled desktop is visible to the room and may be included in the active Recording.
         </div>
       )}
+
+      <AlertDialog open={renewalConfirmationOpen} onOpenChange={setRenewalConfirmationOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Continue Remote Control?</AlertDialogTitle>
+            <AlertDialogDescription>
+              For the next 30 minutes, {session.controllerName} can continue using mouse and keyboard input. Plain text copied on this Mac will also be shared with them.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setRenewalConfirmationOpen(false);
+                onRenew();
+              }}
+            >
+              Reconfirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }
