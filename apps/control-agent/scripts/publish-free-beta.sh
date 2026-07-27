@@ -32,9 +32,9 @@ BUILD_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Conte
 VERSION_TAG="${CONTROL_AGENT_FREE_BETA_VERSION_TAG:-control-agent-free-beta-v${VERSION}-b${BUILD_VERSION}}"
 ASSET_NAME="Huddle-Control-Agent-macos-arm64-${VERSION}-${BUILD_VERSION}.dmg"
 CHECKSUM_NAME="$ASSET_NAME.sha256"
-APPCAST="$ROOT/dist/appcast-arm64.xml"
 STAGING="$(mktemp -d "${TMPDIR:-/tmp}/huddle-sparkle-appcast.XXXXXX")"
 trap 'rm -rf "$STAGING"' EXIT
+APPCAST="$STAGING/appcast-arm64.xml"
 
 cp "$DMG" "$STAGING/$ASSET_NAME"
 shasum -a 256 "$STAGING/$ASSET_NAME" > "$STAGING/$CHECKSUM_NAME"
@@ -43,7 +43,9 @@ shasum -a 256 "$STAGING/$ASSET_NAME" > "$STAGING/$CHECKSUM_NAME"
 # beta channel holds the mutable, signed appcast and the current manual DMG.
 if gh release view "$VERSION_TAG" --repo "$REPOSITORY" >/dev/null 2>&1; then
   gh release download "$VERSION_TAG" --repo "$REPOSITORY" --pattern "$CHECKSUM_NAME" --dir "$STAGING" --clobber
-  cmp -s "$STAGING/$CHECKSUM_NAME" <(shasum -a 256 "$STAGING/$ASSET_NAME") || {
+  REMOTE_SHA256="$(awk '{print $1}' "$STAGING/$CHECKSUM_NAME")"
+  LOCAL_SHA256="$(shasum -a 256 "$STAGING/$ASSET_NAME" | awk '{print $1}')"
+  [[ "$REMOTE_SHA256" == "$LOCAL_SHA256" ]] || {
     echo "Immutable release $VERSION_TAG already exists with different bytes. Increase AGENT_BUILD_VERSION." >&2
     exit 1
   }
@@ -53,12 +55,8 @@ else
     --notes 'Ad-hoc signed and unnotarized Apple-Silicon beta. Verify the SHA-256 checksum, then use macOS Privacy & Security → Open Anyway. The archive is an immutable source for the Ed25519-signed Sparkle update channel.'
 fi
 
-if gh release view "$TAG" --repo "$REPOSITORY" >/dev/null 2>&1; then
-  gh release download "$TAG" --repo "$REPOSITORY" --pattern appcast-arm64.xml --dir "$ROOT/dist" --clobber || true
-fi
-
 "$KEY_TOOL" --account "$KEYCHAIN_ACCOUNT" \
-  --download-url-prefix "https://github.com/$REPOSITORY/releases/download/$VERSION_TAG" \
+  --download-url-prefix "https://github.com/$REPOSITORY/releases/download/$VERSION_TAG/" \
   --versions "$BUILD_VERSION" \
   -o "$APPCAST" \
   "$STAGING"
