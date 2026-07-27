@@ -303,15 +303,24 @@ _Avoid_: Request to share, take over request
 
 ### Remote control
 
+**Selected Display**:
+The entire physical monitor chosen by the Sharer in the macOS Control Agent:
+menu bar, Dock, desktop, every app window, and the Control Agent window are
+included. The Sharer may change this display locally at any time during the
+same approved Remote Control session. Huddle briefly hides the desktop and
+disables input while the old track is unpublished and the replacement track is
+published; a failed switch stays non-interactive until the Sharer retries.
+_Avoid_: selected window, app capture, primary monitor
+
 **Remote Control**:
 In-call, attended control of one admitted participant's desktop by another
-admitted participant. The desktop is visible to the whole room while control is
-active. It requires an explicit Request from the Controller and approval from
-the Sharer, permits mouse, keyboard, and plain-text Clipboard Sharing, and is
-reconfirmed by the Sharer every 30 minutes. Clipboard Sharing automatically
-sends the Sharer's plain-text clipboard changes only to the Controller; the
-Controller sends text only with their normal Paste shortcut. Remote Control and
-[[Present]] are mutually exclusive.
+admitted participant. The Sharer's [[Selected Display]] is visible to the whole
+room while control is active. It requires an explicit Request from the
+Controller and approval from the Sharer, permits mouse, keyboard, and
+plain-text Clipboard Sharing, and is reconfirmed by the Sharer every 30 minutes.
+Clipboard Sharing automatically sends the Sharer's plain-text clipboard changes
+only to the Controller; the Controller sends text only with their normal Paste
+shortcut. Remote Control and [[Present]] are mutually exclusive.
 _Avoid_: Remote access (suggests unattended access), desktop sharing, support
 code
 
@@ -323,8 +332,10 @@ _Avoid_: Ask for control, control invite, request remote access
 
 **Remote Control Status**:
 The persistent room-wide signal that identifies the Controller and Sharer and
-states whether their Remote Control is waiting for the Control Agent or active.
-Only the Sharer also sees that Clipboard Sharing is enabled.
+states whether their Remote Control is waiting for the Control Agent, switching
+displays, or active. During display switching the room shows a non-interactive
+safety surface instead of another participant's video. Only the Sharer also
+sees that Clipboard Sharing is enabled.
 _Avoid_: Remote Control banner, control toast, control notification
 
 **Control Cursor**:
@@ -358,14 +369,16 @@ _Avoid_: Operator, driver, support agent
 
 **Control Agent**:
 The signed and notarized native macOS helper app that only the [[Sharer]]
-installs. It captures the Sharer's selected display, publishes it into the
+installs. It captures the Sharer's entire [[Selected Display]], publishes it
 LiveKit room, applies input only from the server-approved [[Controller]], and
 relays bounded plain-text clipboard updates only to that Controller. It joins as
 a companion participant hidden from people-facing participant UI, has
 no room Host authority, and holds no standing credential. The installed app is
 inert until the Sharer trusts the Huddle server, chooses a display, and confirms
-Start Remote Control. Its local Stop action disconnects it, which ends Remote
-Control. Windows and Linux downloads are not available in the public beta.
+Start Remote Control. Its local Change display picker switches immediately
+within the same approved session; its local Stop action disconnects it, which
+ends Remote Control. Windows and Linux downloads are not available in the public
+beta.
 _Avoid_: Host (already the room role), daemon, desktop client
 
 ### In-call host controls

@@ -96,11 +96,13 @@ only ever receives a scoped, expiring token.
    screen-share track and recipient-targeted clipboard data. Its metadata binds
    all five grant identifiers. No LiveKit JWT is put in a URL.
 4. The agent joins under `control-agent:<sessionId>`, waits for an explicit
-   display selection and local Start confirmation, then publishes only that
-   display track while observing server-written room metadata. It is filtered from participant
-   lists and camera placeholders, but remains protocol-visible: LiveKit's native
-   `hidden` grant also hides publications and therefore cannot carry the room-
-   visible desktop.
+   display selection and local Start confirmation, then publishes the entire
+   physical selected display — menu bar, Dock, desktop, all app windows, and
+   the Control Agent window — while observing server-written room metadata. The
+   Sharer can change displays locally in the same session. It is filtered from
+   participant lists and camera placeholders, but remains protocol-visible:
+   LiveKit's native `hidden` grant also hides publications and therefore cannot
+   carry the room-visible desktop.
 5. The approved Controller sends versioned, session-scoped mouse/keyboard and
    clipboard-copy/paste data packets directly to that agent. The agent checks
    the SFU-attested sender, session id, controller id, renewal deadline, and
@@ -110,7 +112,12 @@ only ever receives a scoped, expiring token.
    suppressing its expected echo after a Controller paste. Mouse moves are
    lossy/coalesced; clicks, keys, and clipboard packets are reliable. Clipboard
    contents are never sent to the API, Redis, Postgres, room metadata, or logs.
-6. Sharer or Controller may stop. A LiveKit `participant_left` webhook also ends
+6. During a display switch the agent releases held input, marks itself
+   non-interactive, unpublishes the old track, publishes the replacement, and
+   updates coordinate geometry before accepting input again. If the replacement
+   fails, the desktop remains unpublished and the agent is retryable; browsers
+   show a protected switching surface instead of another participant's video.
+   Sharer or Controller may stop. A LiveKit `participant_left` webhook also ends
    the grant when the Sharer, Controller, or agent leaves. The agent's local Stop
    button disconnects it rather than exercising a third stop authority. A small
    API expiry loop ends grants that miss the 30-minute Sharer reconfirmation.

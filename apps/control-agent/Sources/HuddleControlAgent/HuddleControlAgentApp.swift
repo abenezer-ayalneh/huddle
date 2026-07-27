@@ -15,6 +15,7 @@ final class AgentModel: ObservableObject {
     @Published var session: BootstrapSession?
     @Published var connected = false
     @Published var screenPublished = false
+    @Published var switchingDisplay = false
     @Published var screenPermission = CGPreflightScreenCaptureAccess()
     @Published var accessibilityPermission = AXIsProcessTrusted()
     @Published var displays: [DisplayOption] = []
@@ -94,8 +95,18 @@ final class AgentModel: ObservableObject {
     }
 
     func startRemoteControl() {
-        guard let selectedDisplayID, let agent else { return }
+        guard !switchingDisplay, let selectedDisplayID, let agent else { return }
         Task { await agent.startScreen(displayID: selectedDisplayID) }
+    }
+
+    func selectDisplay(_ displayID: UInt32) {
+        guard selectedDisplayID != displayID else { return }
+        selectedDisplayID = displayID
+        guard screenPublished, !switchingDisplay, let agent else { return }
+        screenPublished = false
+        switchingDisplay = true
+        status = "Switching display… The Controller is temporarily disabled."
+        Task { await agent.changeDisplay(displayID: displayID) }
     }
 
     private func begin(_ descriptor: BootstrapDescriptor) async {
@@ -141,6 +152,7 @@ final class AgentModel: ObservableObject {
         agent = nil
         connected = false
         screenPublished = false
+        switchingDisplay = false
         session = nil
         displays = []
         selectedDisplayID = nil
@@ -167,9 +179,10 @@ final class AgentModel: ObservableObject {
         }
     }
 
-    fileprivate func updateConnection(_ isConnected: Bool, screen: Bool, message: String) {
+    fileprivate func updateConnection(_ isConnected: Bool, screen: Bool, message: String, switching: Bool = false) {
         connected = isConnected
         screenPublished = screen
+        switchingDisplay = switching
         if !isConnected { updater.setRemoteControlActive(false) }
         status = message
     }
@@ -217,6 +230,7 @@ private actor LiveKitAgent {
     private var tokenMetadata: AgentTokenMetadata?
     private var input = InputInjector()
     private var screenPublished = false
+    private var switchingDisplay = false
     private var screenPublication: LocalTrackPublication?
     private var selectedDisplayID: UInt32?
     private var stopping = false
@@ -247,6 +261,7 @@ private actor LiveKitAgent {
 
     func startScreen(displayID: UInt32) async {
         guard !screenPublished,
+              !switchingDisplay,
               gate.canPublishDesktop(
                   tokenMetadata: tokenMetadata,
                   localAgentIdentity: response.session.agentIdentity,
@@ -260,16 +275,89 @@ private actor LiveKitAgent {
                 await model?.updateConnection(true, screen: false, message: "That display is no longer available. Refresh the display list.")
                 return
             }
+            guard gate.canPublishDesktop(
+                tokenMetadata: tokenMetadata,
+                localAgentIdentity: response.session.agentIdentity,
+                projection: projection,
+                now: Date(),
+            ), !stopping else {
+                return
+            }
             // The Controller sees a low-latency browser Control Cursor. Including
             // the captured macOS cursor here would create delayed video feedback.
-            let track = LocalVideoTrack.createMacOSScreenShareTrack(source: source, options: ScreenShareCaptureOptions(showCursor: false, appAudio: false))
+            let track = LocalVideoTrack.createMacOSScreenShareTrack(
+                source: source,
+                options: ScreenShareCaptureOptions(showCursor: false, appAudio: false, captureEntireDisplay: true),
+            )
             screenPublication = try await room.localParticipant.publish(videoTrack: track)
             selectedDisplayID = displayID
             screenPublished = true
             await startClipboardMonitoring()
-            await model?.updateConnection(true, screen: true, message: "Desktop is visible to the Huddle room.")
+            await model?.updateConnection(true, screen: true, message: "The entire selected display is visible to the Huddle room.")
         } catch {
             await model?.updateConnection(true, screen: false, message: "Connected, but Screen Recording permission is required.")
+        }
+    }
+
+    func changeDisplay(displayID: UInt32) async {
+        guard screenPublished,
+              !switchingDisplay,
+              displayID != selectedDisplayID,
+              gate.canPublishDesktop(
+                  tokenMetadata: tokenMetadata,
+                  localAgentIdentity: response.session.agentIdentity,
+                  projection: projection,
+                  now: Date(),
+              )
+        else { return }
+
+        // Set the gate before any await. This makes the protected gap
+        // non-interactive even while LiveKit is still unpublishing the old
+        // display.
+        switchingDisplay = true
+        screenPublished = false
+        input.releaseAll()
+        stopClipboardMonitoring()
+        let oldPublication = screenPublication
+        screenPublication = nil
+        await model?.updateConnection(true, screen: false, message: "Switching display… The Controller is temporarily disabled.", switching: true)
+        if let oldPublication {
+            _ = try? await room.localParticipant.unpublish(publication: oldPublication)
+        }
+
+        do {
+            let sources = try await MacOSScreenCapturer.sources(for: .display)
+            guard let source = sources.compactMap({ $0 as? MacOSDisplay }).first(where: { $0.displayID == displayID }) else {
+                switchingDisplay = false
+                await model?.updateConnection(true, screen: false, message: "Display switch failed. Choose a display and retry.")
+                return
+            }
+            guard gate.canPublishDesktop(
+                tokenMetadata: tokenMetadata,
+                localAgentIdentity: response.session.agentIdentity,
+                projection: projection,
+                now: Date(),
+            ), !stopping else {
+                switchingDisplay = false
+                return
+            }
+            let track = LocalVideoTrack.createMacOSScreenShareTrack(
+                source: source,
+                options: ScreenShareCaptureOptions(showCursor: false, appAudio: false, captureEntireDisplay: true),
+            )
+            screenPublication = try await room.localParticipant.publish(videoTrack: track)
+            selectedDisplayID = displayID
+            switchingDisplay = false
+            screenPublished = true
+            await startClipboardMonitoring()
+            // selectedDisplayID is updated before screenPublished is re-enabled,
+            // so the next accepted input packet uses the new Quartz geometry.
+            await model?.updateConnection(true, screen: true, message: "The entire selected display is visible to the Huddle room.")
+        } catch {
+            screenPublication = nil
+            switchingDisplay = false
+            screenPublished = false
+            await model?.updateConnection(true, screen: false, message: "Display switch failed. Choose a display and retry.")
         }
     }
 
@@ -287,6 +375,7 @@ private actor LiveKitAgent {
         // Set this before awaiting unpublish/disconnect so an already-running
         // pasteboard observation cannot publish after local Stop.
         screenPublished = false
+        switchingDisplay = false
         if let screenPublication { _ = try? await room.localParticipant.unpublish(publication: screenPublication) }
         screenPublication = nil
         await room.disconnect()
@@ -308,7 +397,9 @@ private actor LiveKitAgent {
             await revokeGrant(message: "Remote Control is waiting for the server grant or has ended.")
             return
         }
-        if !screenPublished { await model?.updateConnection(true, screen: false, message: "Choose a display, then start Remote Control.") }
+        if !screenPublished && !switchingDisplay {
+            await model?.updateConnection(true, screen: false, message: "Choose a display, then start Remote Control.")
+        }
     }
 
     private func decodeMetadata(_ metadata: String?) -> AgentTokenMetadata? {
@@ -319,6 +410,7 @@ private actor LiveKitAgent {
     private func revokeGrant(message: String) async {
         input.releaseAll()
         stopClipboardMonitoring()
+        switchingDisplay = false
         if screenPublished {
             // Block clipboard delivery before the asynchronous unpublish.
             screenPublished = false
@@ -329,7 +421,7 @@ private actor LiveKitAgent {
     }
 
     private func receive(_ data: Data, sender: String?) async {
-        guard screenPublished else { return }
+        guard screenPublished, !switchingDisplay else { return }
         guard let sender else { return }
         guard let packet = try? ControlPacketDecoder.decode(data) else { return }
         // The actor serializes packets; the gate itself is the server-grant
@@ -485,6 +577,7 @@ extension LiveKitAgent: RoomDelegate {
         input.releaseAll()
         stopClipboardMonitoring()
         screenPublished = false
+        switchingDisplay = false
         await model?.updateConnection(false, screen: false, message: stopping ? "Control Agent stopped." : "Disconnected from the Huddle room.")
     }
 }
@@ -872,7 +965,13 @@ struct AgentView: View {
         HuddleCard {
             VStack(alignment: .leading, spacing: 12) {
                 StepHeading(number: 3, title: "Choose a display and start", complete: model.screenPublished)
-                if model.screenPublished, let session = model.session {
+                if model.switchingDisplay {
+                    Label("Switching display… The Controller is disabled until the replacement is live.", systemImage: "arrow.triangle.2.circlepath")
+                        .font(.callout)
+                        .foregroundStyle(HuddleTheme.cyan)
+                    Button("Stop session") { model.stop() }
+                        .buttonStyle(HuddleButtonStyle(tone: .danger))
+                } else if model.screenPublished, let session = model.session {
                     HStack(alignment: .top, spacing: 12) {
                         ZStack {
                             Circle().fill(HuddleTheme.cyan.opacity(0.14))
@@ -881,21 +980,36 @@ struct AgentView: View {
                         .frame(width: 42, height: 42)
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Remote Control is active").font(.system(size: 15, weight: .semibold)).foregroundStyle(HuddleTheme.text)
-                            Text("Your selected display is visible to the room. \(session.controllerName) can control it until either of you stops.")
+                            Text("The entire physical display is visible, including the Control Agent window. \(session.controllerName) can control it until either of you stops.")
                                 .font(.caption)
                                 .foregroundStyle(HuddleTheme.muted)
                         }
                         Spacer()
-                        Button("Stop") { model.stop() }
-                            .buttonStyle(HuddleButtonStyle(tone: .danger))
                     }
+                    if !model.displays.isEmpty {
+                        Picker(
+                            "Change display",
+                            selection: Binding(
+                                get: { model.selectedDisplayID ?? model.displays[0].id },
+                                set: { model.selectDisplay($0) }
+                            )
+                        ) {
+                            ForEach(model.displays) { display in
+                                Text("\(display.title) · \(display.dimensions)").tag(display.id)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .tint(HuddleTheme.cyan)
+                    }
+                    Button("Stop") { model.stop() }
+                        .buttonStyle(HuddleButtonStyle(tone: .danger))
                 } else if model.session != nil && model.connected {
                     if model.displays.isEmpty {
                         Label("No displays are available yet. Refresh permissions, then try again.", systemImage: "display.trianglebadge.exclamationmark")
                             .font(.callout)
                             .foregroundStyle(.orange)
                     } else {
-                        Text("Only the selected display is published. Desktop audio is never captured.")
+                        Text("Only the entire selected physical display is published, including the Control Agent window. Desktop audio is never captured.")
                             .font(.caption)
                             .foregroundStyle(HuddleTheme.muted)
                         Picker(

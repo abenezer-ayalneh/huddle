@@ -152,8 +152,9 @@ open "apps/control-agent/dist/Huddle Control Agent.app"
 
 The browser opens a one-time `huddle-control://join` link after Sharer consent.
 The agent redeems that code once, joins LiveKit with a server-minted token that
-may publish the selected screen share and recipient-targeted plain-text clipboard
-updates, and asks macOS for Screen Recording and Accessibility permission. A
+may publish the entire selected physical display and recipient-targeted
+plain-text clipboard updates, and asks macOS for Screen Recording and
+Accessibility permission. A
 production build must be signed with Developer ID, notarized, and distributed as
 a trusted `.app`/`.dmg`; signing credentials are not part of the repository.
 Remote Control ends if either human, the agent, or the room disconnects, and the
@@ -173,6 +174,10 @@ bootstrap and issues a fresh single-use link. If the browser cannot invoke the
 custom URL, copy the complete `huddle-control://join?...` link and paste it into
 the agent window. The agent asks the Sharer to trust the exact Huddle API origin
 once, then requires a display choice and local **Start Remote Control** click.
+After the desktop is live, the Sharer can use **Change display** for an
+immediate same-session switch. Huddle briefly shows a protected blank and
+disables input until the replacement display is published; a failed switch stays
+unpublished and retryable.
 
 For beta support, use the agent's **Copy sanitized diagnostics** button and paste
 the result into the repository's Control Agent issue form. The agent never sends

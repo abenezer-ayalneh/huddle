@@ -51,6 +51,26 @@ The beta is distributed with a Developer ID signature and Apple notarization.
 Entitlements are minimal and App Sandbox is not enabled because cross-application
 screen capture and Accessibility event injection are the capability being sold.
 
+### Entire selected display and Sharer-local switching
+
+The selected display means the entire physical monitor, including its menu bar,
+Dock, desktop, every app window, and the Control Agent window. The Control Agent
+uses a small Huddle patch of LiveKit Swift v2.15.1, pinned to commit
+7f3af1488411a9787e1e94ddd66b0bed2057bed3, with an opt-in
+captureEntireDisplay option. Only the Remote Control track enables it; ordinary
+browser screen sharing and all backend contracts are unchanged. The patch uses
+ScreenCaptureKit's no-exclusion display filter and sizes the stream from the
+selected display rather than the primary monitor.
+
+After the Sharer chooses a different display in the agent, the same approved
+session switches immediately without renewed approval. The agent releases all
+held input, marks the session non-interactive, unpublishes the old track,
+publishes the new full-display track, updates its Quartz geometry, and only then
+re-enables input. If publication fails, the old desktop remains unpublished and
+the agent stays non-interactive and retryable. During the gap, browsers render a
+non-interactive switching-display surface and never promote another participant's
+video into the Remote Control stage.
+
 ### Companion topology; hidden in product UI, visible to the SFU
 
 The agent joins the room as `control-agent:<sessionId>`, with participant metadata

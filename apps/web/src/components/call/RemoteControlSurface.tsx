@@ -45,17 +45,20 @@ export default function RemoteControlSurface({
     };
   }, []);
 
-  const toNorm = useCallback((clientX: number, clientY: number, clamp: boolean) => {
-    const bounds = getVideoContentBounds();
-    if (!bounds) return null;
-    let x = (clientX - bounds.left) / bounds.width;
-    let y = (clientY - bounds.top) / bounds.height;
-    if (clamp) {
-      x = Math.max(0, Math.min(1, x));
-      y = Math.max(0, Math.min(1, y));
-    } else if (x < 0 || x > 1 || y < 0 || y > 1) return null;
-    return { x, y };
-  }, [getVideoContentBounds]);
+  const toNorm = useCallback(
+    (clientX: number, clientY: number, clamp: boolean) => {
+      const bounds = getVideoContentBounds();
+      if (!bounds) return null;
+      let x = (clientX - bounds.left) / bounds.width;
+      let y = (clientY - bounds.top) / bounds.height;
+      if (clamp) {
+        x = Math.max(0, Math.min(1, x));
+        y = Math.max(0, Math.min(1, y));
+      } else if (x < 0 || x > 1 || y < 0 || y > 1) return null;
+      return { x, y };
+    },
+    [getVideoContentBounds],
+  );
 
   const hideControlCursor = useCallback(() => {
     const cursor = controlCursorRef.current;

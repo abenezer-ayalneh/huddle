@@ -9,6 +9,8 @@ permissions, the LiveKit API secret, or the Control Agent token.
 ```bash
 swift test --package-path apps/control-agent
 swift build --package-path apps/control-agent
+# SDK-fork capture filter and selected-display dimension coverage (macOS)
+swift test --package-path apps/control-agent/Vendor/client-sdk-swift --filter MacOSScreenCapturerTests
 ```
 
 The executable accepts a one-time `huddle-control://join?...` URL either from
@@ -18,9 +20,13 @@ origin once, redeems the bootstrap code, and waits for an explicit display
 selection plus **Start Remote Control** confirmation before publishing.
 
 The app uses Huddle's dark visual system and guides the Sharer through server
-trust, macOS permissions, and display selection. Manual launch, sanitized
-diagnostics, and trusted-server reset remain available under **Having trouble?**
-without competing with the primary session flow.
+trust, macOS permissions, and display selection. The selected display is the
+entire physical monitor, including the menu bar, Dock, desktop, all app windows,
+and the Control Agent window. After publishing, the Sharer's **Change display**
+picker switches immediately within the same approved session; input is disabled
+through the protected unpublish/publish gap and a failed switch stays retryable.
+Manual launch, sanitized diagnostics, and trusted-server reset remain available
+under **Having trouble?** without competing with the primary session flow.
 
 ## Build a local `.app`
 
@@ -129,7 +135,9 @@ System Settings. During an active, approved Remote Control session, the agent
 observes and relays only transferable plain-text clipboard changes to the exact
 Controller, accepts Controller text only through the native Paste shortcut, and
 never persists or uploads clipboard contents. It has no rich/binary clipboard,
-file-transfer, audio-capture, or background unattended-control capability.
+file-transfer, desktop-audio capture, or background unattended-control
+capability. Sharer renewal remains required every 30 minutes and Present remains
+mutually exclusive.
 **Copy sanitized diagnostics** is an explicit user action for beta support; it
 writes only version, macOS, architecture, permission, and connection state to
 the clipboard.

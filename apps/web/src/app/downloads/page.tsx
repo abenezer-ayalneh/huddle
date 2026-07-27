@@ -33,8 +33,8 @@ export default async function DownloadsPage() {
         <h1 className="mt-4 max-w-3xl font-display text-5xl font-bold leading-[0.96] tracking-normal sm:text-7xl">Give the Sharer a safe local switch.</h1>
         <p className="mt-6 max-w-2xl text-lg leading-8 text-white/65">
           {hasVerifiedSignedRelease
-            ? 'The Control Agent is a signed, notarized macOS companion. It shares one selected display only after the Sharer approves Remote Control in the room and confirms locally.'
-            : 'The Apple-Silicon no-cost beta is an unnotarized macOS companion. It shares one selected display only after the Sharer approves Remote Control in the room and confirms locally.'}
+            ? 'The Control Agent is a signed, notarized macOS companion. It shares one entire selected physical display — including the menu bar, Dock, desktop, all windows, and the agent — only after the Sharer approves Remote Control in the room and confirms locally.'
+            : 'The Apple-Silicon no-cost beta is an unnotarized macOS companion. It shares one entire selected physical display — including the menu bar, Dock, desktop, all windows, and the agent — only after the Sharer approves Remote Control in the room and confirms locally.'}
         </p>
         <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-white/55">
           <span className="inline-flex items-center gap-2 rounded-full border border-cyan/25 bg-cyan/10 px-3 py-1.5 text-cyan">
