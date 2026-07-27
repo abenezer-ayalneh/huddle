@@ -83,11 +83,13 @@ export default function VideoGrid({
   // still omitted from PiP. Remote Control keeps its static local safety surface.
   const hideOwnStage = iAmPresenting || isRemoteSharer;
   const stageTrack: TrackReferenceOrPlaceholder | null =
-    screenTrack && !hideOwnStage
-      ? screenTrack
-      : pinnedTrack
-        ? pinnedTrack
-        : (remoteTracks.find((t) => t.participant.identity === activeIdentity) ?? remoteTracks[0] ?? localTrack ?? null);
+    remoteControlSession && !screenTrack
+      ? null
+      : screenTrack && !hideOwnStage
+        ? screenTrack
+        : pinnedTrack
+          ? pinnedTrack
+          : (remoteTracks.find((t) => t.participant.identity === activeIdentity) ?? remoteTracks[0] ?? localTrack ?? null);
   // Report only when the chosen feed actually changes (its key), not on every
   // render. The effect closes over the `stageTrack` from that render, which is
   // the correct value for the new key.
@@ -117,6 +119,22 @@ export default function VideoGrid({
             </>
           )
         }
+        stripTracks={cameraTracks}
+        activeIdentity={activeIdentity}
+        localName={localName}
+        onRequestControl={onRequestControl}
+        statusRail={remoteControlStatus}
+      />
+    );
+  }
+
+  // An active agent may be between publications while the Sharer changes
+  // displays. Never let the normal layout promote another participant's
+  // camera or screen into the Remote Control stage during that protected gap.
+  if (remoteControlSession) {
+    return (
+      <FocusLayout
+        main={<RemoteControlSwitchingSurface />}
         stripTracks={cameraTracks}
         activeIdentity={activeIdentity}
         localName={localName}
@@ -258,10 +276,33 @@ function RemoteControlPlaceholder() {
             <MonitorUp className="h-7 w-7 text-cyan" />
           </div>
           <div className="space-y-1">
-            <p className="font-display text-lg font-semibold text-white/90">Your desktop is visible to the room</p>
-            <p className="text-sm text-white/55">Remote Control keeps your desktop on the main stage. Everyone in this room can see it.</p>
+            <p className="font-display text-lg font-semibold text-white/90">Your entire selected display is visible</p>
+            <p className="text-sm text-white/55">
+              Remote Control keeps the physical display — including the Control Agent window — on the main stage. Everyone in this room can see it.
+            </p>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function RemoteControlSwitchingSurface() {
+  return (
+    <div
+      aria-live="polite"
+      aria-label="Switching display"
+      className="pointer-events-none relative flex h-full w-full items-center justify-center overflow-hidden bg-[oklch(0.08_0.02_230)]"
+    >
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,oklch(0.22_0.06_230_/_0.55),transparent_62%)]" />
+      <div className="relative flex max-w-sm flex-col items-center gap-3 px-6 text-center">
+        <div className="neon-cyan flex aspect-square w-14 items-center justify-center rounded-full bg-cyan/10 ring-1 ring-cyan/35">
+          <MonitorUp className="h-6 w-6 animate-pulse text-cyan" />
+        </div>
+        <p className="font-display text-xl font-semibold text-white/90">Switching display</p>
+        <p className="text-sm text-white/60">
+          The desktop is temporarily hidden while the Sharer changes displays. Control is paused until the new display is live.
+        </p>
       </div>
     </div>
   );
