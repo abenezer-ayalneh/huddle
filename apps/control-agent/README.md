@@ -44,16 +44,28 @@ can run outside SwiftPM's `.build` directory.
 ```
 
 The first command creates an arm64 DMG and an adjacent SHA-256 checksum using
-an ad-hoc signature; the second uploads those two files to the permanent
+an ad-hoc signature; the second publishes it to the permanent
 `control-agent-free-beta` GitHub prerelease. A free GitHub account with write
 access is enough, but it must be authenticated locally first.
 
-This path deliberately has **no Developer ID signature, no notarization, and
-no signed update manifest**. macOS will show a warning on first launch; after
-verifying the checksum from the same GitHub release, the tester must explicitly
-choose **Open Anyway** in **System Settings → Privacy & Security**. It is a
-testing/public-beta path only, never a substitute for the trusted release flow
-below.
+This path deliberately has **no Developer ID signature and no notarization**.
+macOS will show a warning on first launch; after verifying the checksum from the
+same GitHub release, the tester must explicitly choose **Open Anyway** in
+**System Settings → Privacy & Security**. It is a testing/public-beta path only,
+never a substitute for the trusted release flow below.
+
+It does have an optional updater: once, before the first updater build, create
+the free local Sparkle key (the private key remains in your login Keychain):
+
+```bash
+./apps/control-agent/scripts/configure-free-beta-updater.sh
+```
+
+`build-free-beta.sh` reads that account's public key into the app; `publish-free-beta.sh`
+uses the same account to publish an Ed25519-signed appcast and immutable
+versioned DMG. No private key is exported and no Developer ID, notarization, or
+GitHub Actions secret is involved. Existing 0.1.1 builds do not contain Sparkle,
+so they must install the first updater-enabled beta manually.
 
 ### Regenerate the app icon
 

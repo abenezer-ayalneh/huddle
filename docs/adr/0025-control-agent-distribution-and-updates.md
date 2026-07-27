@@ -44,9 +44,13 @@ Releases. Only the Sharer installs it; the Controller remains browser-only.
   Downloads page labels it as such, links the exact checksum, and gives the
   narrow macOS **Open Anyway** path. It never tells a user to disable Gatekeeper
   globally.
-- The no-cost beta has no signed release manifest or automatic/required update
-  enforcement. The app's empty update public key makes release checking
-  unavailable while preserving the attended Remote Control authority boundary.
+- The no-cost beta has no signed release manifest or required-version
+  enforcement. Starting with the first updater-enabled build, it uses a
+  separate local Sparkle Ed25519 key: its private key stays in the publisher's
+  login Keychain, the app embeds the public key, and the permanent beta release
+  publishes a signed appcast that points to an immutable versioned arm64 DMG.
+  The default-off automatic option and active-session pause still apply. This
+  verifies update bytes but does not add Developer ID or notarization trust.
 - The trusted `control-agent-vX.Y.Z` and `control-agent-beta` channels remain
   available for a future Developer ID release; the no-cost asset must not be
   substituted into either signed channel.

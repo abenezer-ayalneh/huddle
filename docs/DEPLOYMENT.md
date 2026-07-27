@@ -385,11 +385,12 @@ Do not put Developer ID certificates, App Store Connect keys, or the manifest
 private key in the VPS environment. They belong only in protected GitHub release
 secrets.
 
-The optional Sparkle updater uses a separate `SPARKLE_UPDATE_PUBLIC_KEY` in the
-packaged app and `SPARKLE_UPDATE_PRIVATE_KEY_B64` only in the release workflow.
-The private key is a base64 Ed25519 seed exported by Sparkle's `generate_keys`;
-it must never be committed or placed on the VPS. The workflow publishes one
-Ed25519-signed appcast per macOS architecture to `control-agent-beta`.
+The future Developer ID channel may use a separate Sparkle key in GitHub release
+secrets. The current no-cost beta instead keeps its Sparkle private key in the
+publisher's login Keychain under `huddle-control-agent-free-beta`; it is neither
+exported nor placed on the VPS or in GitHub. Its public key is embedded into the
+ad-hoc app during the local build, and publication signs an immutable arm64 DMG
+plus the `control-agent-free-beta` appcast with that local key.
 
 ### No-cost Apple-Silicon beta
 
@@ -402,11 +403,20 @@ build and publish it from an Apple-Silicon Mac with:
 ./apps/control-agent/scripts/publish-free-beta.sh
 ```
 
+Before the first updater-enabled build, create the local Sparkle key once:
+
+```bash
+./apps/control-agent/scripts/configure-free-beta-updater.sh
+```
+
 Publish the GitHub release before deploying the page change, so the direct
 download link never points at a missing asset. This is an ad-hoc signed,
 unnotarized beta with a SHA-256 checksum, not a replacement for the Developer
-ID channel above. The page must retain its Gatekeeper warning and must never
-claim that this artifact has a signed update manifest.
+ID channel above. The permanent beta release contains a signed Sparkle appcast
+whose archive points to an immutable versioned release; the page must retain its
+Gatekeeper warning and must never claim that this artifact is notarized or has a
+Developer ID signature. Existing pre-updater beta builds need one manual install
+of the updater-enabled DMG.
 
 ## 10. Verify
 

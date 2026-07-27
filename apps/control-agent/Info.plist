@@ -49,6 +49,8 @@
 	<string></string>
 	<key>SUPublicEDKey</key>
 	<string></string>
+	<key>SURequireSignedFeed</key>
+	<true/>
 	<key>SUSendProfileInfo</key>
 	<false/>
 	<key>SUVerifyUpdateBeforeExtraction</key>
