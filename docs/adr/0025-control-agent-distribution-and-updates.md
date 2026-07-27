@@ -18,10 +18,14 @@ Releases. Only the Sharer installs it; the Controller remains browser-only.
   immutable artifact URLs, sizes, SHA-256 values, release notes, and a key id.
   It is signed with a separate Ed25519 key. The app and Downloads page verify
   it when the public key is configured.
-- Normal updates are advisory and send the Sharer to `/downloads`. A release
-  may mark a minimum version; an older agent blocks new bootstrap redemption.
-  If GitHub is unavailable, a previously verified minimum remains enforced;
-  otherwise the agent may continue with an update warning.
+- Updates remain Sharer-controlled. The Control Agent offers a visible manual
+  **Check for updates** action and an optional, default-off **Automatically
+  download and install updates** setting. Sparkle accepts only an
+  architecture-matched, Ed25519-signed archive over HTTPS. Automatic work is
+  paused for an active Remote Control session and resumed only after it ends.
+  A release may mark a minimum version; an older agent blocks new bootstrap
+  redemption. If GitHub is unavailable, a previously verified minimum remains
+  enforced; otherwise the agent may continue with an update warning.
 - The app trusts an exact HTTPS API origin only after a local confirmation. The
   trust record contains no room, participant, bootstrap, or LiveKit credential.
 - A bootstrap reissue is participant-authorized and Sharer-only. It revokes the
@@ -52,7 +56,7 @@ Releases. Only the Sharer installs it; the Controller remains browser-only.
 Huddle has published a no-cost Apple-Silicon beta with a deliberate Gatekeeper
 warning instead of Apple trust; physical two-browser acceptance remains a
 separate, outstanding gate. A future trusted release still needs an Apple
-release credential set, an update-signing key, a public release channel, and a
-physical acceptance checklist. Neither path adds Windows/Linux agents,
-telemetry, rich clipboard/file/audio features, or unattended access. Attended
-plain-text Clipboard Sharing remains governed by ADR 0026.
+release credential set and physical acceptance checklist. Neither path adds
+Windows/Linux agents, telemetry, rich clipboard/file/audio features, or
+unattended access. Attended plain-text Clipboard Sharing remains governed by
+ADR 0026.

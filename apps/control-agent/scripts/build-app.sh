@@ -37,16 +37,26 @@ fi
 if [[ -n "${CONTROL_AGENT_UPDATE_PUBLIC_KEY:-}" ]]; then
   /usr/libexec/PlistBuddy -c "Set :ControlAgentUpdatePublicKey $CONTROL_AGENT_UPDATE_PUBLIC_KEY" "$APP/Contents/Info.plist"
 fi
+if [[ -n "${SPARKLE_UPDATE_PUBLIC_KEY:-}" ]]; then
+  /usr/libexec/PlistBuddy -c "Set :SUPublicEDKey $SPARKLE_UPDATE_PUBLIC_KEY" "$APP/Contents/Info.plist"
+fi
+if [[ -n "${SPARKLE_UPDATE_FEED_URL:-}" ]]; then
+  /usr/libexec/PlistBuddy -c "Set :SUFeedURL $SPARKLE_UPDATE_FEED_URL" "$APP/Contents/Info.plist"
+fi
 
 BUILD_DIR="$(dirname "$BIN")"
-for FRAMEWORK in RustLiveKitUniFFI.framework LiveKitWebRTC.framework; do
+for FRAMEWORK in RustLiveKitUniFFI.framework LiveKitWebRTC.framework Sparkle.framework; do
   SOURCE="$BUILD_DIR/$FRAMEWORK"
+  if [[ ! -d "$SOURCE" ]]; then
+    SOURCE="$(find "$ROOT/.build/artifacts" -type d -name "$FRAMEWORK" -print -quit 2>/dev/null || true)"
+  fi
   DESTINATION="$APP/Contents/Frameworks/$FRAMEWORK"
   [[ -d "$SOURCE" ]] || { echo "Missing runtime framework: $SOURCE" >&2; exit 1; }
   ditto "$SOURCE" "$DESTINATION"
-  # install_name_tool changes the copied Mach-O when it is later used as the
-  # app executable, so give each embedded framework its own fresh local seal.
-  codesign --force --sign "$SIGN_IDENTITY" "$DESTINATION"
+  # Sparkle includes helper binaries inside its framework. Sign nested code
+  # before the outer app so both ad-hoc beta builds and Developer ID builds
+  # retain a valid bundle seal.
+  codesign --force --deep --sign "$SIGN_IDENTITY" "$DESTINATION"
 done
 
 # SwiftPM gives the executable an @loader_path rpath for its build directory.

@@ -25,6 +25,7 @@ final class AgentModel: ObservableObject {
     private var agent: LiveKitAgent?
     private var pendingDescriptor: BootstrapDescriptor?
     private let releaseChecker = AgentReleaseChecker()
+    let updater = AgentUpdater()
 
     var appVersion: String { (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String) ?? "0.0.0" }
     var releaseChannelURL: URL { URL(string: (Bundle.main.object(forInfoDictionaryKey: "ControlAgentReleaseChannelURL") as? String) ?? "https://github.com/abenezer-ayalneh/huddle/releases/download/control-agent-beta")! }
@@ -158,6 +159,7 @@ final class AgentModel: ObservableObject {
             agent = next
             try await next.connect()
             connected = true
+            updater.setRemoteControlActive(true)
             status = "Connected to \(response.room). Choose a display, then start Remote Control."
         } catch let caught {
             error = caught.localizedDescription
@@ -168,6 +170,7 @@ final class AgentModel: ObservableObject {
     fileprivate func updateConnection(_ isConnected: Bool, screen: Bool, message: String) {
         connected = isConnected
         screenPublished = screen
+        if !isConnected { updater.setRemoteControlActive(false) }
         status = message
     }
 
@@ -751,6 +754,7 @@ struct AgentView: View {
 
                     trustStep
                     permissionsStep
+                    updateStep
                     displayStep
                     helpSection
 
@@ -922,6 +926,50 @@ struct AgentView: View {
                 } else {
                     Label("Complete the approved Huddle link before choosing a display.", systemImage: "lock.fill")
                         .font(.callout)
+                        .foregroundStyle(HuddleTheme.muted)
+                }
+            }
+        }
+    }
+
+    private var updateStep: some View {
+        HuddleCard {
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Control Agent updates", systemImage: "arrow.triangle.2.circlepath")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(HuddleTheme.text)
+                if model.updater.isConfigured {
+                    Text("Updates are optional. Automatic download and installation is disabled by default and is paused for every active Remote Control session.")
+                        .font(.caption)
+                        .foregroundStyle(HuddleTheme.muted)
+                    Toggle(
+                        "Automatically download and install updates",
+                        isOn: Binding(
+                            get: { model.updater.automaticUpdatesEnabled },
+                            set: { model.updater.setAutomaticUpdatesEnabled($0) }
+                        )
+                    )
+                    .toggleStyle(.switch)
+                    .tint(HuddleTheme.cyan)
+                    .disabled(model.connected)
+                    HStack(spacing: 8) {
+                        Button("Check for updates") { model.updater.checkForUpdates() }
+                            .buttonStyle(HuddleButtonStyle(tone: .secondary))
+                            .disabled(model.connected)
+                        if model.connected {
+                            Text("Available when the session stops")
+                                .font(.caption)
+                                .foregroundStyle(HuddleTheme.muted)
+                        }
+                    }
+                    if let message = model.updater.message {
+                        Text(message)
+                            .font(.caption)
+                            .foregroundStyle(HuddleTheme.muted)
+                    }
+                } else {
+                    Text("This local build has no signed update channel. Install a configured public beta to receive update options.")
+                        .font(.caption)
                         .foregroundStyle(HuddleTheme.muted)
                 }
             }

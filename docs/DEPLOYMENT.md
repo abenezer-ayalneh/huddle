@@ -385,6 +385,12 @@ Do not put Developer ID certificates, App Store Connect keys, or the manifest
 private key in the VPS environment. They belong only in protected GitHub release
 secrets.
 
+The optional Sparkle updater uses a separate `SPARKLE_UPDATE_PUBLIC_KEY` in the
+packaged app and `SPARKLE_UPDATE_PRIVATE_KEY_B64` only in the release workflow.
+The private key is a base64 Ed25519 seed exported by Sparkle's `generate_keys`;
+it must never be committed or placed on the VPS. The workflow publishes one
+Ed25519-signed appcast per macOS architecture to `control-agent-beta`.
+
 ### No-cost Apple-Silicon beta
 
 The Downloads page also has a permanent fallback link for the arm64

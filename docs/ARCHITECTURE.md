@@ -124,9 +124,12 @@ launch attempt.
 
 The public `/downloads` page reads the signed `control-agent-beta` manifest and
 offers separate macOS arm64 and x86_64 DMGs. Windows and Linux are explicitly
-marked unavailable. The agent checks the same manifest before redemption,
-caches only verified bytes, and never auto-installs updates. Release artifacts
-are signed/notarized in GitHub Actions and accompanied by SHA-256 values.
+marked unavailable. The agent checks the same manifest before redemption and,
+when the Sharer opts in, uses an architecture-specific Sparkle appcast to
+download and install only Ed25519-signed updates over HTTPS. Automatic updates
+are paused during Remote Control; manual update checks remain available.
+Release artifacts are signed/notarized in GitHub Actions and accompanied by
+SHA-256 values.
 
 The native app exposes a user-triggered, sanitized diagnostics copy action for
 beta support (version, macOS, architecture, permission state, and connection

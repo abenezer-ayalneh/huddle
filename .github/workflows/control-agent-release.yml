@@ -31,6 +31,7 @@ jobs:
       NOTARY_ISSUER: ${{ secrets.NOTARY_ISSUER }}
       KEYCHAIN_PASSWORD: ${{ secrets.RELEASE_KEYCHAIN_PASSWORD }}
       CONTROL_AGENT_UPDATE_PUBLIC_KEY: ${{ secrets.AGENT_UPDATE_PUBLIC_KEY }}
+      SPARKLE_UPDATE_PUBLIC_KEY: ${{ secrets.SPARKLE_UPDATE_PUBLIC_KEY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -75,6 +76,8 @@ jobs:
           AGENT_VERSION: ${{ steps.version.outputs.version }}
           AGENT_BUILD_VERSION: ${{ github.run_number }}
           CODE_SIGN_IDENTITY: ${{ secrets.DEVELOPER_ID_APPLICATION }}
+          SPARKLE_UPDATE_PUBLIC_KEY: ${{ secrets.SPARKLE_UPDATE_PUBLIC_KEY }}
+          SPARKLE_UPDATE_FEED_URL: https://github.com/${{ github.repository }}/releases/download/control-agent-beta/appcast-${{ matrix.architecture }}.xml
         run: ./apps/control-agent/scripts/build-app.sh
 
       - name: Sign and notarize app
@@ -101,11 +104,12 @@ jobs:
   publish:
     name: Publish beta channel
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: macos-15
     env:
       VERSION: ${{ github.ref_name }}
       AGENT_UPDATE_PRIVATE_KEY_B64: ${{ secrets.AGENT_UPDATE_PRIVATE_KEY_B64 }}
       AGENT_UPDATE_KEY_ID: ${{ secrets.AGENT_UPDATE_KEY_ID }}
+      SPARKLE_UPDATE_PRIVATE_KEY_B64: ${{ secrets.SPARKLE_UPDATE_PRIVATE_KEY_B64 }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
@@ -114,6 +118,9 @@ jobs:
           path: dist
           pattern: control-agent-*
           merge-multiple: true
+
+      - name: Resolve Sparkle appcast tool
+        run: swift package resolve --package-path apps/control-agent
 
       - name: Resolve version and create checksums
         id: release
@@ -131,6 +138,27 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release create "${{ steps.release.outputs.tag }}" dist/*.dmg dist/SHA256SUMS --repo "$GITHUB_REPOSITORY" --prerelease --title "Huddle Control Agent ${{ steps.release.outputs.version }} · Public Beta" --generate-notes
 
+      - name: Create architecture-specific signed Sparkle appcasts
+        env:
+          RELEASE_URL: https://github.com/${{ github.repository }}/releases/download/${{ steps.release.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${SPARKLE_UPDATE_PRIVATE_KEY_B64:?SPARKLE_UPDATE_PRIVATE_KEY_B64 is required}"
+          TOOL="apps/control-agent/.build/artifacts/sparkle/Sparkle/bin/generate_appcast"
+          [[ -x "$TOOL" ]] || { echo "Missing Sparkle generate_appcast tool" >&2; exit 1; }
+          for ARCHITECTURE in arm64 x86_64; do
+            STAGING="$RUNNER_TEMP/sparkle-appcast-$ARCHITECTURE"
+            mkdir -p "$STAGING"
+            cp "dist/Huddle-Control-Agent-macos-$ARCHITECTURE.dmg" "$STAGING/"
+            printf '%s\n' "$SPARKLE_UPDATE_PRIVATE_KEY_B64" | "$TOOL" \
+              --ed-key-file - \
+              --download-url-prefix "$RELEASE_URL" \
+              --versions "$GITHUB_RUN_NUMBER" \
+              -o "dist/appcast-$ARCHITECTURE.xml" \
+              "$STAGING"
+          done
+
       - name: Sign release channel manifest
         env:
           AGENT_RELEASE_NOTES_URL: https://github.com/${{ github.repository }}/releases/tag/${{ steps.release.outputs.tag }}
@@ -139,14 +167,14 @@ jobs:
       - name: Upload manifest to versioned release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${{ steps.release.outputs.tag }}" dist/release-manifest.json dist/release-manifest.sig --repo "$GITHUB_REPOSITORY" --clobber
+        run: gh release upload "${{ steps.release.outputs.tag }}" dist/release-manifest.json dist/release-manifest.sig dist/appcast-arm64.xml dist/appcast-x86_64.xml --repo "$GITHUB_REPOSITORY" --clobber
 
       - name: Advance signed beta channel
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if gh release view control-agent-beta --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload control-agent-beta dist/release-manifest.json dist/release-manifest.sig --repo "$GITHUB_REPOSITORY" --clobber
+            gh release upload control-agent-beta dist/release-manifest.json dist/release-manifest.sig dist/appcast-arm64.xml dist/appcast-x86_64.xml --repo "$GITHUB_REPOSITORY" --clobber
           else
-            gh release create control-agent-beta dist/release-manifest.json dist/release-manifest.sig --repo "$GITHUB_REPOSITORY" --prerelease --title "Huddle Control Agent · Public Beta Channel" --notes "Signed channel manifest for the latest public beta."
+            gh release create control-agent-beta dist/release-manifest.json dist/release-manifest.sig dist/appcast-arm64.xml dist/appcast-x86_64.xml --repo "$GITHUB_REPOSITORY" --prerelease --title "Huddle Control Agent · Public Beta Channel" --notes "Signed manifest and Sparkle appcasts for the latest public beta."
           fi

@@ -279,6 +279,8 @@ Phase 10 authority boundary.
       explicit origin trust, permission preparation, and display selection.
 - [x] Signed update manifest with advisory updates, required-version blocking,
       cached outage behavior, checksums, and sanitized user-initiated diagnostics.
+- [x] Opt-in Sparkle updater: architecture-specific Ed25519 appcasts, visible
+      manual check, default-off automatic install, and active-session pause.
 - [x] Native-architecture GitHub release workflow for Developer ID signing,
       app/DMG notarization, and the beta channel manifest.
 - [x] No-cost Apple-Silicon DMG packaging, checksum publication script, and an
