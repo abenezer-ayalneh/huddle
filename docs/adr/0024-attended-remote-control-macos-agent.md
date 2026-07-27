@@ -81,10 +81,15 @@ display-safe projection to LiveKit room metadata so browsers and the Control
 Agent receive changes in real time. Postgres stores a metadata-only audit row
 through requested, active, denied, ended, expired, or failed states.
 
-Reliable data packets wake request/deny UI and carry clicks, keys, and the
-clipboard copy/paste commands; lossy packets carry coalesced pointer moves.
-Every privileged Controller packet includes the session id and uses one shared
-monotonic authorization sequence. The Control Agent executes it only when the
+Reliable data packets are the low-latency wake-up for request/deny UI and carry
+clicks, keys, and the clipboard copy/paste commands; lossy packets carry
+coalesced pointer moves. A target Sharer's browser also briefly polls its
+participant-authorized pending-request endpoint while no Remote Control state is
+active, so a missed request wake-up packet cannot strand the Controller. That
+endpoint returns the request only to its exact Sharer and never publishes
+pending consent state in room metadata. Every privileged Controller packet uses
+the session id and one shared monotonic authorization sequence. The Control
+Agent executes it only when the
 SFU-attested sender is the grant's exact Controller and its token/room-metadata
 grant still matches all identities and is inside the renewal deadline. A forged
 packet from any other participant is ignored. The agent's clipboard updates are

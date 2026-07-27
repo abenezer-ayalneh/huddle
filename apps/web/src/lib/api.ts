@@ -258,6 +258,14 @@ export const api = {
       headers: { 'x-participant-token': participantToken },
     }),
 
+  // A short-lived fallback for an addressed LiveKit request notification that
+  // the target browser did not receive. The API returns a request only to its
+  // exact Sharer, otherwise `null`.
+  getPendingRemoteControlRequest: (room: string, participantToken: string) =>
+    request<{ request: RemoteControlRequestSummary | null }>(`/rooms/${encodeURIComponent(room)}/remote-control/requests/pending`, {
+      headers: { 'x-participant-token': participantToken },
+    }),
+
   approveRemoteControl: (room: string, requestId: string, participantToken: string) =>
     request<RemoteControlApproval>(`/rooms/${encodeURIComponent(room)}/remote-control/requests/${encodeURIComponent(requestId)}/approve`, {
       method: 'POST',

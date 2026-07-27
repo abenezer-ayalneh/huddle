@@ -98,6 +98,14 @@ export class RemoteControlStateService {
     return pending?.requestId === requestId && pending.room === room ? pending : undefined;
   }
 
+  // The target Sharer polls this narrow lookup only as a fallback when an
+  // addressed LiveKit wake-up packet is missed. Authorization stays in the
+  // service layer; this method merely returns the room's current Redis record.
+  async getPendingForRoom(room: string): Promise<PendingRemoteControlRequest | undefined> {
+    const pending = await this.readJson<PendingRemoteControlRequest>(this.pendingKey(room));
+    return pending?.room === room ? pending : undefined;
+  }
+
   // GETDEL ensures approve and deny cannot both consume the same request.
   async consumePending(room: string, requestId: string): Promise<PendingRemoteControlRequest | undefined> {
     // Check the room owner before GETDEL. Without this guard, a caller who

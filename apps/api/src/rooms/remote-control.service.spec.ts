@@ -4,7 +4,7 @@ import { LivekitService } from './livekit.service';
 import type { CallParticipant } from './participant.guard';
 import { RemoteControlRepository } from './remote-control.repo';
 import { RemoteControlService } from './remote-control.service';
-import { RemoteControlStateService, type ActiveRemoteControlGrant } from './remote-control.state';
+import { RemoteControlStateService, type ActiveRemoteControlGrant, type PendingRemoteControlRequest } from './remote-control.state';
 import { RoomRepository } from './rooms.repo';
 
 const room: Room = {
@@ -28,6 +28,28 @@ const sharer: CallParticipant = {
   name: 'Ada',
   tokenExpiresAt: Date.now() + 60 * 60_000,
 };
+
+const bystander: CallParticipant = {
+  identity: 'bystander',
+  name: 'Cy',
+  tokenExpiresAt: Date.now() + 60 * 60_000,
+};
+
+function pendingRequest(overrides: Partial<PendingRemoteControlRequest> = {}): PendingRemoteControlRequest {
+  const now = Date.now();
+  return {
+    requestId: 'request-id',
+    room: room.slug,
+    sharerIdentity: sharer.identity,
+    sharerName: sharer.name,
+    controllerIdentity: controller.identity,
+    controllerName: controller.name,
+    requestedAt: new Date(now).toISOString(),
+    expiresAt: new Date(now + 30_000).toISOString(),
+    controllerTokenExpiresAt: new Date(now + 60 * 60_000).toISOString(),
+    ...overrides,
+  };
+}
 
 function activeGrant(overrides: Partial<ActiveRemoteControlGrant> = {}): ActiveRemoteControlGrant {
   const now = Date.now();
@@ -98,6 +120,7 @@ describe('RemoteControlService', () => {
       hasOwner: jest.fn().mockResolvedValue(false),
       createPending: jest.fn().mockResolvedValue(true),
       getPending: jest.fn(),
+      getPendingForRoom: jest.fn(),
       consumePending: jest.fn(),
       releasePending: jest.fn().mockResolvedValue(undefined),
       activate: jest.fn(),
@@ -155,6 +178,41 @@ describe('RemoteControlService', () => {
         room: room.slug,
       }),
     );
+  });
+
+  it('returns the current pending request only to its exact Sharer', async () => {
+    state.getPendingForRoom.mockResolvedValue(pendingRequest());
+
+    await expect(service.getPendingRequest(room.slug, sharer)).resolves.toEqual({
+      request: expect.objectContaining({
+        requestId: 'request-id',
+        sharerIdentity: sharer.identity,
+        controllerIdentity: controller.identity,
+      }),
+    });
+    expect(state.releasePending).not.toHaveBeenCalled();
+  });
+
+  it('hides the current pending request from its Controller and bystanders', async () => {
+    state.getPendingForRoom.mockResolvedValue(pendingRequest());
+
+    await expect(service.getPendingRequest(room.slug, controller)).resolves.toEqual({ request: null });
+    await expect(service.getPendingRequest(room.slug, bystander)).resolves.toEqual({ request: null });
+  });
+
+  it('returns null when no pending request exists', async () => {
+    state.getPendingForRoom.mockResolvedValue(undefined);
+
+    await expect(service.getPendingRequest(room.slug, sharer)).resolves.toEqual({ request: null });
+  });
+
+  it('expires an overdue pending request instead of returning it to the Sharer', async () => {
+    state.getPendingForRoom.mockResolvedValue(pendingRequest({ expiresAt: new Date(Date.now() - 1).toISOString() }));
+    audit.findById.mockResolvedValue(auditRow());
+
+    await expect(service.getPendingRequest(room.slug, sharer)).resolves.toEqual({ request: null });
+    expect(state.releasePending).toHaveBeenCalledWith(room.slug, 'request-id');
+    expect(audit.expireRequest).toHaveBeenCalledWith('request-id', expect.any(Date));
   });
 
   it('does not let a bystander stop the active grant', async () => {

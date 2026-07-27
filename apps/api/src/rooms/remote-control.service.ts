@@ -133,6 +133,22 @@ export class RemoteControlService implements OnModuleInit, OnModuleDestroy {
     return this.toRequestSummary(pending);
   }
 
+  // LiveKit data is the fast prompt wake-up, but its delivery is not the source
+  // of truth. A joined browser polls this endpoint briefly so an addressed
+  // packet that was missed cannot strand the Controller waiting for a response.
+  // Returning null to Controllers and bystanders makes this safe to call from
+  // every joined browser without revealing a pending consent request room-wide.
+  async getPendingRequest(room: string, participant: CallParticipant): Promise<{ request: RemoteControlRequestSummary | null }> {
+    const pending = await this.state.getPendingForRoom(room);
+    if (!pending) return { request: null };
+    if (this.isRequestExpired(pending)) {
+      await this.expirePending(room, pending.requestId);
+      return { request: null };
+    }
+    if (participant.identity !== pending.sharerIdentity) return { request: null };
+    return { request: this.toRequestSummary(pending) };
+  }
+
   async approve(
     roomSlug: string,
     requestId: string,
@@ -411,11 +427,20 @@ export class RemoteControlService implements OnModuleInit, OnModuleDestroy {
 
   private async requirePending(room: string, requestId: string): Promise<PendingRemoteControlRequest> {
     const pending = await this.state.getPending(room, requestId);
-    if (pending && new Date(pending.expiresAt).getTime() > Date.now()) return pending;
+    if (pending && !this.isRequestExpired(pending)) return pending;
+    await this.expirePending(room, requestId);
+    throw this.notFound('Remote Control request was not found or expired');
+  }
+
+  private async expirePending(room: string, requestId: string): Promise<void> {
     await this.state.releasePending(room, requestId);
     const audit = await this.audit.findById(requestId);
     if (audit?.status === 'requested') await this.audit.expireRequest(requestId, new Date());
-    throw this.notFound('Remote Control request was not found or expired');
+  }
+
+  private isRequestExpired(request: PendingRemoteControlRequest, now = Date.now()): boolean {
+    const expiry = new Date(request.expiresAt).getTime();
+    return !Number.isFinite(expiry) || expiry <= now;
   }
 
   private async requireActive(roomSlug: string, sessionId: string): Promise<ActiveRemoteControlGrant> {

@@ -30,6 +30,7 @@ export type HelperBootstrap = {
 type Action = 'request' | 'approve' | 'deny' | 'stop' | 'renew' | 'reopen';
 
 const NOTICE_MS = 5_000;
+const REQUEST_RECOVERY_POLL_MS = 1_000;
 
 function requestSummaryIsUsable(value: RemoteControlRequestSummary, room: string): boolean {
   return (
@@ -217,6 +218,45 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
       lkRoom.off(RoomEvent.DataReceived, handleData);
     };
   }, [iAmController, lkRoom, localIdentity, outgoingRequest, participantToken, receiveClipboardUpdate, room, session, showNotice]);
+
+  // The addressed LiveKit message above remains the fast path. Polling only
+  // while there is no Remote Control state gives the intended Sharer a bounded
+  // recovery path if that wake-up packet was missed. The API exposes a request
+  // only to the exact Sharer, so other joined browsers always receive null.
+  useEffect(() => {
+    if (!localIdentity || session || incomingRequest || outgoingRequest) return;
+    let mounted = true;
+    let recovering = false;
+
+    const recoverPendingRequest = async () => {
+      if (recovering) return;
+      recovering = true;
+      try {
+        const { request } = await api.getPendingRemoteControlRequest(room, participantToken);
+        if (
+          !mounted ||
+          !request ||
+          !requestSummaryIsUsable(request, room) ||
+          request.sharerIdentity !== localIdentity ||
+          Date.parse(request.expiresAt) <= Date.now()
+        )
+          return;
+        setIncomingRequest((current) => (current?.requestId === request.requestId ? current : request));
+      } catch {
+        // This is passive recovery. API Reachability owns any unavailable-server
+        // indication, and the next poll or addressed packet can still recover.
+      } finally {
+        recovering = false;
+      }
+    };
+
+    void recoverPendingRequest();
+    const timer = setInterval(() => void recoverPendingRequest(), REQUEST_RECOVERY_POLL_MS);
+    return () => {
+      mounted = false;
+      clearInterval(timer);
+    };
+  }, [incomingRequest, localIdentity, outgoingRequest, participantToken, room, session]);
 
   // Pending prompts are short-lived server records. Clear their local mirrors at
   // the server-stamped deadline even if an addressed denial packet is lost.

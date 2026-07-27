@@ -16,6 +16,14 @@ export class RemoteControlController {
     return this.remoteControl.requestControl(room, participant, dto.sharerIdentity);
   }
 
+  // Keep this static route ahead of :requestId so Nest never treats "pending"
+  // as an id. The service returns a request only to its exact Sharer.
+  @UseGuards(ParticipantGuard)
+  @Get('requests/pending')
+  async getPendingRequest(@Param('room') room: string, @Participant() participant: CallParticipant) {
+    return this.remoteControl.getPendingRequest(room, participant);
+  }
+
   @UseGuards(ParticipantGuard)
   @Get('requests/:requestId')
   async getRequest(@Param('room') room: string, @Param('requestId') requestId: string, @Participant() participant: CallParticipant) {

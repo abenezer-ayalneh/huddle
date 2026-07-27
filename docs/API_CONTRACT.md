@@ -372,13 +372,45 @@ identities are rejected. Only one pending request or active session may own a
 room. A current screen-share track returns
 `REMOTE_CONTROL_PRESENT_ACTIVE`. After success, the Controller sends the
 server-issued `requestId` to the Sharer over topic `huddle:remote-control`; that
-packet wakes the prompt but grants nothing.
+packet is the low-latency prompt wake-up but grants nothing. A missed packet
+does not lose the request: joined browsers also privately recover their own
+pending request through the target-only endpoint below.
+
+### GET /rooms/:room/remote-control/requests/pending _(participant)_
+
+Returns the room's current, unexpired request only when the caller is its exact
+Sharer. Controllers and all other participants receive `null`, so every joined
+browser may use this as a short-lived polling fallback without exposing a
+pending consent request room-wide.
+
+**Response 200:**
+
+```json
+{ "request": null }
+```
+
+or:
+
+```json
+{
+  "request": {
+    "requestId": "cm...",
+    "room": "abz-mnpq-rfk",
+    "sharerIdentity": "ada-ab12",
+    "sharerName": "Ada",
+    "controllerIdentity": "bo-cd34",
+    "controllerName": "Bo",
+    "requestedAt": "2026-07-10T12:00:00.000Z",
+    "expiresAt": "2026-07-10T12:00:30.000Z"
+  }
+}
+```
 
 ### GET /rooms/:room/remote-control/requests/:requestId _(participant)_
 
 Only the target Sharer or requesting Controller may recover this display-safe
-request. The Sharer's client calls it after receiving a request notification so
-forged data packets cannot invent identities or consent copy.
+request. The Sharer's client calls it after receiving the addressed wake-up
+packet so forged data packets cannot invent identities or consent copy.
 
 **Response 200:** the same request summary returned by request creation.
 

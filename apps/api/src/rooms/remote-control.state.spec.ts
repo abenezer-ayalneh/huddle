@@ -41,6 +41,7 @@ describe('RemoteControlStateService', () => {
   it('does not let a guessed request id consume the room pending request', async () => {
     const state = new RemoteControlStateService(new FakeRedis() as unknown as Redis);
     expect(await state.createPending(pending())).toBe(true);
+    expect((await state.getPendingForRoom('room-1'))?.requestId).toBe('req-1');
     expect(await state.consumePending('room-1', 'guessed')).toBeUndefined();
     expect((await state.getPending('room-1', 'req-1'))?.requestId).toBe('req-1');
     expect((await state.consumePending('room-1', 'req-1'))?.requestId).toBe('req-1');
