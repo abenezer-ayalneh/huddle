@@ -1,6 +1,11 @@
 import { ArgumentsHost, BadRequestException, ForbiddenException, ServiceUnavailableException } from '@nestjs/common';
+import * as Sentry from '@sentry/nestjs';
 import { FaultFilter } from './fault.filter';
 import { FaultCode, faultBody } from './faults';
+
+jest.mock('@sentry/nestjs', () => ({
+  captureException: jest.fn(),
+}));
 
 // Capture what the filter writes back: the HTTP status and the JSON body.
 function mockHost(): { host: ArgumentsHost; sent: () => { status: number; body: unknown } } {
@@ -28,6 +33,10 @@ describe('FaultFilter', () => {
     jest.spyOn(filter['logger'], 'debug').mockImplementation(() => undefined);
   });
 
+  beforeEach(() => {
+    jest.mocked(Sentry.captureException).mockClear();
+  });
+
   it('shapes an exception carrying a faultBody into the envelope', () => {
     const { host, sent } = mockHost();
     filter.catch(new ForbiddenException(faultBody(FaultCode.NOT_HOST, 'You are not the host')), host);
@@ -45,11 +54,29 @@ describe('FaultFilter', () => {
     const checks = { postgres: 'ok', redis: 'down' };
     filter.catch(new ServiceUnavailableException({ status: 'unavailable', checks }), host);
     expect(sent()).toEqual({ status: 503, body: { status: 'unavailable', checks } });
+    expect(Sentry.captureException).toHaveBeenCalledWith(
+      expect.any(ServiceUnavailableException),
+      expect.objectContaining({
+        tags: { 'fault.code': 'INTERNAL', 'http.status_code': '503' },
+      }),
+    );
   });
 
   it('turns an unknown (non-HTTP) error into an opaque 500 INTERNAL', () => {
     const { host, sent } = mockHost();
     filter.catch(new Error('boom: secret connection string'), host);
     expect(sent()).toEqual({ status: 500, body: { code: 'INTERNAL', message: 'Internal server error', statusCode: 500 } });
+    expect(Sentry.captureException).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: { 'fault.code': 'INTERNAL', 'http.status_code': '500' },
+      }),
+    );
+  });
+
+  it('does not report expected 4xx domain outcomes to Sentry', () => {
+    const { host } = mockHost();
+    filter.catch(new ForbiddenException(faultBody(FaultCode.NOT_HOST, 'You are not the host')), host);
+    expect(Sentry.captureException).not.toHaveBeenCalled();
   });
 });

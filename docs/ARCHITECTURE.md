@@ -142,6 +142,18 @@ The native app exposes a user-triggered, sanitized diagnostics copy action for
 beta support (version, macOS, architecture, permission state, and connection
 state only). It has no telemetry or automatic issue submission.
 
+## Error tracking
+
+Sentry observes the browser, Next.js server/edge runtimes, and NestJS API.
+Next.js request hooks and React error boundaries capture uncaught web faults;
+the API's existing global `FaultFilter` sends only 5xx faults, preserving the
+Fault/Domain Outcome split. All SDKs are disabled when their DSN is blank.
+
+Before delivery, Huddle removes user data, headers, cookies, bodies, queries,
+console breadcrumbs, and room/session identifiers. Performance tracing and
+Session Replay are disabled. The Control Agent is outside this integration and
+retains the user-triggered sanitized-diagnostics flow above. See ADR 0027.
+
 Remote Control and Present are mutually exclusive. The API checks for a Present
 track on request and approval; the web disables Present for every participant
 while Remote Control metadata exists. Recording remains allowed, with an
@@ -165,6 +177,10 @@ explicit approval warning that the room-visible desktop may be recorded.
   - `remote_control_session` — metadata-only attended-control audit: participant
     and agent identities/names, status, start/end/renewal timestamps, and end
     reason. It never stores input, clipboard, screenshots, frames, or secrets.
+- **Phase 9:** Redis holds waiting-room Knocks and call-scoped Direct Rejoin
+  Grants. A grant binds the signed-in account to the Room Code, active LiveKit
+  room SID, stable participant identity, and opaque grant ID. It has no database
+  row and cannot become standing access to a later call.
 - Media is now stored too (Phase 8): recordings live in **MinIO** (S3-compatible
   object store), not in Postgres — the DB only holds the recording metadata above.
 
@@ -193,11 +209,15 @@ explicit approval warning that the room-visible desktop may be recorded.
   **Google** as an optional social provider (wired only when its env is set).
 - Two independent authorities, deliberately kept separate:
   - **Session** (BetterAuth cookie) — "who is signed in". Required to _create_,
-    _list_, or _rejoin_ a room you own (`AuthGuard`). Read with `auth.api.getSession`.
+    _list_, or host-rejoin a room you own, and to exercise a Guest's Direct
+    Rejoin Grant (`AuthGuard`). Read with `auth.api.getSession`.
   - **Host key** (per-room secret, `x-host-key`) — "are you this room's host".
     Authorizes in-call host actions (admit/deny/mute/remove) and is independent of
     the session, so a guest is never trusted via the token's role claim
     (`HostGuard`, now backed by the persisted room).
+  - **Direct Rejoin Grant** (Redis) — "was this signed-in Guest admitted to this
+    active call". It survives departure, uses one stable LiveKit identity, and is
+    revoked by host Remove or the matching `room_finished` SID (ADR 0028).
 - Cross-origin in dev: web is `:3000`, API is `:3001`. CORS runs with
   `credentials: true` and the client sends `credentials: "include"` so the session
   cookie travels. The auth routes read the raw request body, so body parsing is

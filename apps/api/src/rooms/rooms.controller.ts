@@ -35,6 +35,20 @@ export class RoomsController {
     return this.rooms.hostJoin(room, host);
   }
 
+  // A signed-in Guest who was admitted to the current call can check and use
+  // their account-bound Direct Rejoin Grant without creating another Knock.
+  @UseGuards(AuthGuard)
+  @Get(':room/rejoin')
+  directRejoinEligibility(@SessionUser() guest: AuthUser, @Param('room') room: string) {
+    return this.rooms.directRejoinEligibility(room, guest);
+  }
+
+  @UseGuards(AuthGuard)
+  @Post(':room/rejoin')
+  directRejoin(@SessionUser() guest: AuthUser, @Param('room') room: string) {
+    return this.rooms.directRejoin(room, guest);
+  }
+
   // --- Public room info (for a guest landing on the link) ---
   @Get(':room')
   getPublic(@Param('room') room: string) {
@@ -47,7 +61,7 @@ export class RoomsController {
   @UseGuards(OptionalAuthGuard)
   @Post(':room/knock')
   knock(@Param('room') room: string, @OptionalSessionUser() user: AuthUser | null, @Body() dto: KnockDto) {
-    return this.rooms.knock(room, user?.name ?? dto.name, user?.image);
+    return this.rooms.knock(room, user?.name ?? dto.name, user?.image, user?.id);
   }
 
   @Get(':room/knock/:knockId')

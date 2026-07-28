@@ -36,9 +36,20 @@ export class WebhookController {
     }
 
     if (event.event === 'participant_joined' && event.room?.name) {
-      await this.livekit.stampStartedAt(event.room.name);
-      if (event.participant?.identity) {
-        await this.remoteControl.onParticipantJoined(event.room.name, event.participant.identity);
+      const identity = event.participant?.identity;
+      const directRejoin = this.livekit.directRejoinMetadata(event.participant?.metadata);
+      const validDirectRejoin =
+        !directRejoin || (identity != null && (await this.rooms.isDirectRejoinParticipantValid(event.room.name, event.room.sid, identity, directRejoin)));
+
+      if (!validDirectRejoin && identity) {
+        // A token from a removed Guest or a finished room instance must not
+        // recreate admission merely because its JWT has not reached its TTL.
+        await this.livekit.removeParticipant(event.room.name, identity);
+      } else {
+        await this.livekit.stampStartedAt(event.room.name);
+        if (identity) {
+          await this.remoteControl.onParticipantJoined(event.room.name, identity);
+        }
       }
     }
 
@@ -51,7 +62,7 @@ export class WebhookController {
     }
 
     if (event.event === 'room_finished' && event.room?.name) {
-      await this.rooms.onRoomFinished(event.room.name);
+      await this.rooms.onRoomFinished(event.room.name, event.room.sid);
       await this.remoteControl.onRoomFinished(event.room.name);
     }
 

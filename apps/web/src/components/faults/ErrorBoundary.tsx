@@ -1,6 +1,7 @@
 'use client';
 
-import { Component, type ReactNode } from 'react';
+import * as Sentry from '@sentry/nextjs';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 
 // A scoped React error boundary for wrapping volatile in-call widgets
 // (docs/adr/0018). A render crash inside `children` is caught here and replaced
@@ -25,8 +26,13 @@ export default class ErrorBoundary extends Component<Props, State> {
     return { error };
   }
 
-  componentDidCatch(error: Error): void {
-    // Client faults log to console only — no client→server reporting (docs/adr/0019).
+  componentDidCatch(error: Error, info: ErrorInfo): void {
+    Sentry.withScope((scope) => {
+      scope.setTag('error.boundary', 'scoped');
+      if (this.props.label) scope.setTag('error.boundary.label', this.props.label);
+      scope.setContext('react', { componentStack: info.componentStack });
+      Sentry.captureException(error);
+    });
     console.error(`[ErrorBoundary${this.props.label ? ` ${this.props.label}` : ''}]`, error);
     this.props.onError?.(error);
   }

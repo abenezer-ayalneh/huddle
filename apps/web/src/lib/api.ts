@@ -45,6 +45,14 @@ export type KnockStatusResult = {
   muteOnEntry?: boolean;
 };
 
+export type GuestJoinResult = {
+  room: string;
+  identity: string;
+  token: string;
+  livekitUrl: string;
+  muteOnEntry: boolean;
+};
+
 export type PendingKnock = {
   knockId: string;
   name: string;
@@ -166,6 +174,13 @@ export const api = {
 
   // Public info shown to a guest landing on a room link.
   getPublicRoom: (room: string) => request<PublicRoom>(`/rooms/${encodeURIComponent(room)}`),
+
+  directRejoinEligibility: (room: string) => request<{ eligible: boolean }>(`/rooms/${encodeURIComponent(room)}/rejoin`),
+
+  directRejoin: (room: string) =>
+    request<GuestJoinResult>(`/rooms/${encodeURIComponent(room)}/rejoin`, {
+      method: 'POST',
+    }),
 
   knock: (room: string, name: string) =>
     request<{ knockId: string }>(`/rooms/${encodeURIComponent(room)}/knock`, {

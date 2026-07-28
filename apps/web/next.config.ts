@@ -1,3 +1,4 @@
+import { withSentryConfig } from '@sentry/nextjs';
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
@@ -6,18 +7,25 @@ const nextConfig: NextConfig = {
   // See infra/docker-compose.prod.yml and docs/SETUP.md (Phase 9 deploy).
   output: 'standalone',
   allowedDevOrigins: ['localhost', 'local-huddle.abenezer-ayalneh.dev'],
-  // Turbopack development chunk filenames are reused while source changes.
-  // The public Cloudflare test tunnel must not cache those mutable assets or a
-  // second physical device can keep running a stale call client for hours.
-  async headers() {
-    if (process.env.NODE_ENV !== 'development') return [];
-    return [
-      {
-        source: '/_next/static/:path*',
-        headers: [{ key: 'Cache-Control', value: 'no-store, max-age=0' }],
-      },
-    ];
-  },
 };
 
-export default nextConfig;
+const canUploadSourceMaps = Boolean(process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_ORG && process.env.SENTRY_PROJECT_WEB);
+
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT_WEB,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  telemetry: false,
+  silent: true,
+  widenClientFileUpload: canUploadSourceMaps,
+  sourcemaps: {
+    disable: !canUploadSourceMaps,
+    deleteSourcemapsAfterUpload: true,
+  },
+  webpack: {
+    treeshake: {
+      removeDebugLogging: true,
+      removeTracing: true,
+    },
+  },
+});

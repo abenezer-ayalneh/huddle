@@ -16,6 +16,7 @@ Decisions and rationale. Update this doc when a choice changes.
 | State store     | Redis                                                                       | Required for LiveKit multi-node; safe default.                                  |
 | Packaging       | npm or pnpm workspaces (monorepo)                                           | `apps/web`, `apps/api`, optional `packages/*`.                                  |
 | Containers      | Docker + docker compose                                                     | Run LiveKit + Redis locally and in prod.                                        |
+| Error tracking  | Sentry (`@sentry/nextjs`, `@sentry/nestjs`)                                 | Privacy-scrubbed web/API faults; no native-agent telemetry.                     |
 | Target platform | Web browsers; macOS first for Remote Control                                | Calls stay browser-based; only Sharers need the native helper.                  |
 
 ## Why these
@@ -47,6 +48,13 @@ the desktop, and Core Graphics Accessibility APIs to apply approved input. It is
 distributed as a Developer ID signed and notarized beta app; Windows and Linux
 are outside v1.
 
+**Sentry error tracking.** The browser, Next.js server/edge runtimes, and NestJS
+API report unexpected errors to separate Sentry projects. Expected 4xx Domain
+Outcomes stay quiet, performance tracing and Session Replay are disabled, and a
+local scrubber removes request/user data and room-scoped identifiers before
+delivery. The Control Agent retains its no-telemetry boundary. See
+`docs/adr/0027-sentry-error-tracking.md`.
+
 ## Notable constraints
 
 - **WebRTC needs UDP + TURN.** Self-hosting means exposing the right ports and
@@ -64,6 +72,8 @@ are outside v1.
 - Additional native platforms for Remote Control (Windows/Linux).
 - Rich/binary clipboard transfer, file transfer, remote audio, and unattended
   access. Plain-text Clipboard Sharing is an attended Remote Control capability.
-- CI/CD, IaC, observability stack — add once the app runs end to end.
+- IaC and metrics dashboards — add when the deployment needs them. Error
+  tracking and structured logs are now present; Sentry intentionally covers the
+  web/API only.
 
 When you introduce any of these, append a row above and a short rationale here.

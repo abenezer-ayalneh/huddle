@@ -153,6 +153,35 @@ Edit `.env.prod` and set, at minimum:
 
 `.env.prod` is gitignored — never commit it.
 
+### Sentry error tracking
+
+Create one Sentry project for Next.js and one for NestJS, then set:
+
+```dotenv
+NEXT_PUBLIC_SENTRY_DSN=<web project DSN>
+SENTRY_WEB_DSN=<web project DSN>
+SENTRY_API_DSN=<API project DSN>
+SENTRY_ENVIRONMENT=production
+SENTRY_RELEASE=<deployed Git commit SHA>
+```
+
+The public web DSN is baked into the browser bundle, so changing it requires a
+web rebuild. `SENTRY_WEB_DSN` covers Next.js server/edge errors and
+`SENTRY_API_DSN` covers NestJS. Blank values disable the corresponding SDK.
+
+For readable minified web stacks, set `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and
+`SENTRY_PROJECT_WEB` in the gitignored `.env.prod`. The production Compose build
+passes the auth token to the web Dockerfile through an ephemeral BuildKit secret
+mount, uploads matching source maps, and deletes them after upload. Compose
+explicitly clears the token from the API runtime. Never prefix it with
+`NEXT_PUBLIC_` or commit it.
+
+Huddle reports unexpected React/Next.js faults, API bootstrap failures, and API
+5xx responses. It does not report expected 4xx Domain Outcomes. PII, performance
+tracing, and Session Replay are disabled; request/user data and room-scoped
+identifiers are scrubbed before delivery. The Control Agent remains
+telemetry-free. See ADR 0027.
+
 ### Verification Email Delivery (SMTP) — required for email/password signups
 
 New local accounts must confirm their address before they can sign in

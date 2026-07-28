@@ -117,14 +117,18 @@ optional waiting room.
       (role=host metadata, roomAdmin grant) + a per-room `hostKey`.
 - [x] **Waiting room** — guests knock (`POST /rooms/:room/knock`) and poll;
       host admits/denies. Guests can only join rooms a host created.
+- [x] **Direct Rejoin** — an admitted signed-in Guest keeps a Redis grant for
+      the active call and can re-enter after Leave or disconnection without a
+      second Knock; host Remove or `room_finished` revokes it (ADR 0028).
 - [x] **Mute** and **remove** a participant (host-only, `x-host-key` authorized).
 - [x] **Webhook receiver** (`POST /livekit/webhook`, signature-verified) — drops
       a room's in-memory state on `room_finished`.
 
 > **Model change:** rooms are now **managed**. The Phase 1 public `POST /token`
 > was removed because it would let anyone bypass the waiting room; tokens are now
-> minted only by the managed-room flow. Host authority is enforced server-side
-> via `hostKey` (never trusted from the token's role claim).
+> minted only by the managed-room flow. Direct Rejoin remains server-authorized,
+> account-bound, and limited to the exact LiveKit room SID. Host authority is
+> enforced server-side via `hostKey` (never trusted from the token's role claim).
 >
 > **State** lives in-memory in the API process (single-node). Moving it to Redis
 > is Phase 9 hardening. Backend: `apps/api/src/rooms/*`. Frontend: lobby
@@ -212,9 +216,14 @@ the user; see `docs/adr/0004-deploy-topology-single-vps.md` and
 - [x] **Knock state → Redis** — `apps/api/src/rooms/rooms.state.ts` is now
       Redis-backed (`ioredis`, `RedisModule`) with a 1h **TTL**; survives API
       restart, stale knocks self-expire. API stays single-instance.
+- [x] **Direct Rejoin Grants → Redis** — signed-in admission records call-scoped
+      authority keyed by account and room SID, with stable identity replacement,
+      host-removal token revocation, and SID-safe webhook cleanup (ADR 0028).
 - [x] **Observability** — API `/health` + `/ready` (DB+Redis), structured JSON
       logs (`LOG_FORMAT=json`), LiveKit Prometheus endpoint (`prometheus_port`),
-      compose healthchecks + `restart: always`. No dashboards yet.
+      compose healthchecks + `restart: always`, and privacy-scrubbed Sentry error
+      tracking for browser/Next.js/NestJS faults. No metrics dashboards yet;
+      the Control Agent deliberately remains telemetry-free (ADR 0027).
 - [x] **Prod config layout** — `infra/docker-compose.prod.yml` override (Caddy,
       containerized web/api via Dockerfiles, prod LiveKit, `restart: always`);
       internal stores bound to `127.0.0.1` in the base; plus `.env.prod.example`.

@@ -29,8 +29,9 @@ table while the contract is small; `API_CONTRACT.md` is the source of truth the
 two copies track.
 
 The same filter handles observability: **5xx Faults log at error** (stack +
-context, via the existing JSON logger); **4xx Domain Outcomes stay quiet**
-(debug/none) so normal rejections don't drown the logs.
+context, via the existing JSON logger) and are sent to the privacy-scrubbed
+Sentry API project; **4xx Domain Outcomes stay quiet** (debug/none) so normal
+rejections don't drown the logs or issue tracker. See ADR 0027.
 
 ## Considered Options
 

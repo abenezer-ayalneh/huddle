@@ -39,8 +39,8 @@ Request to Record that the host approves. A guest may be **anonymous** or
 **signed-in**: an anonymous guest types a display name during the Device Check,
 while a signed-in guest's name comes from their account and is never typed (the
 server derives it from the session, the same way a host's name does). Signed-in
-status changes only where the name comes from — a signed-in non-owner is still a
-Guest who must knock.
+status does not make a non-owner a Host: a signed-in Guest must knock on their
+first entry to each call, then may use a [[Direct Rejoin Grant]] for that call.
 _Avoid_: Attendee, viewer, visitor
 
 **Room Code**:
@@ -66,8 +66,14 @@ _Avoid_: Lobby (lobby is the app's home/landing page, a different thing), queue
 
 **Admit / Deny**:
 The host's decision on a knock. Admit mints the guest's join token; deny ends the
-knock. Delivered to the waiting guest via polling.
+knock. For a signed-in Guest, Admit also creates a [[Direct Rejoin Grant]].
 _Avoid_: Accept/reject, approve/decline, let in
+
+**Direct Rejoin Grant**:
+The call-scoped permission that lets an admitted signed-in Guest re-enter the
+same ongoing call without another Knock. It survives disconnection and Leave,
+and ends when the host Removes the connected Guest or the call ends.
+_Avoid_: Membership, remembered token, reconnect token, standing access
 
 **Withdraw**:
 A guest cancelling their own pending knock before the host decides.

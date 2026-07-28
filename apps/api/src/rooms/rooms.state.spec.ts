@@ -51,4 +51,49 @@ describe('RoomStateService', () => {
       knockId: b.knockId,
     });
   });
+
+  it('stores Direct Rejoin Grants by account and stable participant identity', async () => {
+    const grant = await state.addDirectRejoinGrant({
+      room: 'standup',
+      roomSid: 'RM_current',
+      userId: 'user-ada',
+      identity: 'ada-stable',
+    });
+
+    await expect(state.getDirectRejoinGrant('standup', 'user-ada')).resolves.toEqual(grant);
+    await expect(state.getDirectRejoinGrantByIdentity('standup', 'ada-stable')).resolves.toEqual(grant);
+  });
+
+  it('revokes a Direct Rejoin Grant through its participant identity', async () => {
+    await state.addDirectRejoinGrant({
+      room: 'standup',
+      roomSid: 'RM_current',
+      userId: 'user-ada',
+      identity: 'ada-stable',
+    });
+
+    await expect(state.revokeDirectRejoinGrantByIdentity('standup', 'ada-stable')).resolves.toBeDefined();
+    await expect(state.getDirectRejoinGrant('standup', 'user-ada')).resolves.toBeUndefined();
+  });
+
+  it('clears only Direct Rejoin Grants belonging to the finished room SID', async () => {
+    await state.addDirectRejoinGrant({
+      room: 'standup',
+      roomSid: 'RM_old',
+      userId: 'user-ada',
+      identity: 'ada-old',
+    });
+    await state.addDirectRejoinGrant({
+      room: 'standup',
+      roomSid: 'RM_new',
+      userId: 'user-bo',
+      identity: 'bo-new',
+    });
+
+    await state.clearDirectRejoinGrants('standup', 'RM_old');
+    await expect(state.getDirectRejoinGrant('standup', 'user-ada')).resolves.toBeUndefined();
+    await expect(state.getDirectRejoinGrant('standup', 'user-bo')).resolves.toMatchObject({
+      roomSid: 'RM_new',
+    });
+  });
 });

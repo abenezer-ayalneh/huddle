@@ -10,6 +10,7 @@ export const NET_TIMEOUT = 'NET_TIMEOUT';
 
 // Server codes the client reacts to specifically.
 export const SESSION_EXPIRED = 'SESSION_EXPIRED';
+export const DIRECT_REJOIN_NOT_ALLOWED = 'DIRECT_REJOIN_NOT_ALLOWED';
 
 // The standard error envelope, also used for client-minted transport faults
 // (statusCode 0 means "no response").

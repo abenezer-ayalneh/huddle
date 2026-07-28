@@ -1,5 +1,6 @@
 'use client'; // Error boundaries must be Client Components.
 
+import * as Sentry from '@sentry/nextjs';
 import { useEffect } from 'react';
 
 // Route-level render-crash fallback (docs/adr/0018). Catches anything that
@@ -8,7 +9,9 @@ import { useEffect } from 'react';
 // root is handled by global-error.tsx instead.
 export default function Error({ error, unstable_retry }: { error: Error & { digest?: string }; unstable_retry: () => void }) {
   useEffect(() => {
-    // Client faults log to console only (docs/adr/0019).
+    Sentry.captureException(error, {
+      tags: { 'error.boundary': 'route' },
+    });
     console.error('[route error]', error);
   }, [error]);
 

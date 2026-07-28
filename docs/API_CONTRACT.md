@@ -42,10 +42,11 @@ Two classes share the envelope but get different UX (see `CONTEXT.md` →
 | `INTERNAL`                            | 500     | Fault          | unhandled / misconfigured server error           | Reload          |
 | `VALIDATION`                          | 400     | Fault          | `ValidationPipe` rejected the body (client bug)  | (generic)       |
 | `NOT_HOST`                            | 401/403 | Domain Outcome | host action without a valid `x-host-key`         | (tailored)      |
-| `NOT_PARTICIPANT`                     | 401     | Domain Outcome | missing/invalid `x-participant-token` for room   | (tailored)      |
+| `NOT_PARTICIPANT`                     | 401/404 | Domain Outcome | invalid participant token or disconnected target | (tailored)      |
 | `ROOM_NOT_FOUND`                      | 404     | Domain Outcome | unknown room (guest link, host-token)            | (tailored)      |
 | `KNOCK_NOT_FOUND`                     | 404     | Domain Outcome | unknown / expired / withdrawn knock              | (tailored)      |
 | `NAME_REQUIRED`                       | 400     | Domain Outcome | knock with no display name                       | (inline)        |
+| `DIRECT_REJOIN_NOT_ALLOWED`           | 403     | Domain Outcome | no active call-scoped rejoin grant for account   | Ask to join     |
 | `RECORDING_IN_PROGRESS`               | 409     | Domain Outcome | start/approve while one is already active        | (tailored)      |
 | `NOT_RECORDING_OWNER`                 | 403     | Domain Outcome | `stop-by-participant` you didn't start           | (tailored)      |
 | `RECORDING_NOT_READY`                 | 409     | Domain Outcome | download before the recording is `completed`     | (tailored)      |
@@ -196,6 +197,25 @@ Public room info for a guest landing on a shared link. Does **not** leak the hos
 
 **Response 200:** `{ "room", "scheduledStart" }`. **404** if unknown.
 
+### GET /rooms/:room/rejoin _(session)_
+
+Checks whether the signed-in account has a **Direct Rejoin Grant** for the
+current LiveKit room instance. No token is minted by this passive check.
+
+**Response 200:** `{ "eligible": boolean }`. **401** if not signed in; **404** if
+the Managed Room does not exist.
+
+### POST /rooms/:room/rejoin _(session)_
+
+Mints a fresh guest token for an eligible signed-in account after the Device
+Check. The grant is revalidated against the current LiveKit room SID both before
+and after minting.
+
+**Response 200:** `{ "room", "identity", "token", "livekitUrl", "muteOnEntry" }`.
+The identity is stable for the grant, so a newer tab/device replaces the older
+connection. **401** if not signed in; **403 `DIRECT_REJOIN_NOT_ALLOWED`** when
+the grant was revoked, the call ended, or eligibility changed during minting.
+
 ### POST /rooms/:room/knock
 
 Guest requests admission to a managed room.
@@ -229,7 +249,9 @@ List pending knocks. Header `x-host-key` required.
 ### POST /rooms/:room/knocks/:knockId/deny _(host)_
 
 Host decision. Header `x-host-key` required. **Response 200:** `{ "status" }`.
-Admit mints the guest's join token (delivered via the guest's poll).
+Admit mints the guest's join token (delivered via the guest's poll). When the
+Knock belongs to a signed-in Guest, Admit also creates an account-bound Direct
+Rejoin Grant for the active LiveKit room SID. Anonymous admission is unchanged.
 
 ### POST /rooms/:room/mute _(host)_
 
@@ -254,7 +276,9 @@ never unmutes anyone. The state is stored in the LiveKit room metadata.
 
 ### DELETE /rooms/:room/participants/:identity _(host)_
 
-Remove (kick) a participant. Header `x-host-key`. **Response 200:** `{ "ok": true }`.
+Remove (kick) a connected participant. Header `x-host-key`. **Response 200:**
+`{ "ok": true }`. A matching Direct Rejoin Grant and already issued participant
+tokens are revoked first. Remove is not a ban: the Guest may Knock again.
 
 ### POST /rooms/:room/recordings _(host)_
 
@@ -586,8 +610,10 @@ recordings). Requires a BetterAuth session.
 
 Receive & verify LiveKit server events (signed with the API key). Verified with
 `WebhookReceiver`. On `room_finished`, the API drops that room's **ephemeral
-knocks** and ends any Remote Control grant (the room record itself is persistent
-since Phase 7 and is kept). On
+knocks**, clears Direct Rejoin Grants for the finished room SID, and ends any
+Remote Control grant (the room record itself is persistent since Phase 7 and is
+kept). A `participant_joined` carrying Direct Rejoin metadata is removed when
+its opaque grant or room SID no longer matches server state. On
 `egress_started/updated/ended` (Phase 8) it advances the matching recording's
 status and captures the file's size/duration. **Response 200** always (ack);
 invalid signatures → **401**.

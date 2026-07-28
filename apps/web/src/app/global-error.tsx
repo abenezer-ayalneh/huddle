@@ -1,5 +1,6 @@
 'use client'; // Error boundaries must be Client Components.
 
+import * as Sentry from '@sentry/nextjs';
 import { useEffect } from 'react';
 
 // Last-resort boundary for a crash in the root layout itself (docs/adr/0018).
@@ -7,6 +8,9 @@ import { useEffect } from 'react';
 // rely on the app's fonts/providers. Kept deliberately minimal and self-contained.
 export default function GlobalError({ error, unstable_retry }: { error: Error & { digest?: string }; unstable_retry: () => void }) {
   useEffect(() => {
+    Sentry.captureException(error, {
+      tags: { 'error.boundary': 'global' },
+    });
     console.error('[global error]', error);
   }, [error]);
 

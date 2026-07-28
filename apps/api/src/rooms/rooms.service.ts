@@ -3,7 +3,7 @@ import type { Room } from '@prisma/client';
 import { FaultCode, faultBody } from '../common/faults';
 import type { AuthUser } from '../auth/auth.guard';
 import { makeIdentity } from './identity';
-import { LivekitService } from './livekit.service';
+import { LivekitService, type DirectRejoinTokenMetadata } from './livekit.service';
 import { RoomRepository } from './rooms.repo';
 import { Knock, RoomStateService } from './rooms.state';
 
@@ -33,6 +33,14 @@ export interface KnockStatusResult {
   // When admitted, whether the room is muted-on-entry so the guest connects
   // with their microphone off.
   muteOnEntry?: boolean;
+}
+
+export interface GuestJoinResult {
+  room: string;
+  identity: string;
+  token: string;
+  livekitUrl: string;
+  muteOnEntry: boolean;
 }
 
 @Injectable()
@@ -88,14 +96,59 @@ export class RoomsService {
   // required here. The Avatar is optional and only present for signed-in guests
   // whose account has an image; it is captured now so admit can mint it into the
   // token without access to the guest's session.
-  async knock(slug: string, guestName: string | undefined, guestImage?: string | null): Promise<{ knockId: string }> {
+  async knock(slug: string, guestName: string | undefined, guestImage?: string | null, guestUserId?: string): Promise<{ knockId: string }> {
     await this.requireRoom(slug);
     const name = guestName?.trim();
     if (!name) {
       throw new BadRequestException(faultBody(FaultCode.NAME_REQUIRED, 'A display name is required to knock.'));
     }
-    const knock = await this.state.addKnock(slug, name, guestImage);
+    const knock = await this.state.addKnock(slug, name, guestImage, guestUserId);
     return { knockId: knock.knockId };
+  }
+
+  async directRejoinEligibility(slug: string, guest: AuthUser): Promise<{ eligible: boolean }> {
+    await this.requireRoom(slug);
+    const grant = await this.state.getDirectRejoinGrant(slug, guest.id);
+    if (!grant) return { eligible: false };
+    const roomSid = await this.livekit.getRoomSid(slug);
+    if (roomSid !== grant.roomSid) {
+      await this.state.removeDirectRejoinGrant(grant);
+      return { eligible: false };
+    }
+    return { eligible: true };
+  }
+
+  async directRejoin(slug: string, guest: AuthUser): Promise<GuestJoinResult> {
+    await this.requireRoom(slug);
+    const grant = await this.requireDirectRejoinGrant(slug, guest.id);
+    const roomSid = await this.livekit.getRoomSid(slug);
+    if (roomSid !== grant.roomSid) {
+      await this.state.removeDirectRejoinGrant(grant);
+      throw this.directRejoinNotAllowed();
+    }
+
+    const token = await this.livekit.mintToken({
+      room: slug,
+      identity: grant.identity,
+      name: guest.name,
+      image: guest.image,
+      directRejoin: { grantId: grant.grantId, roomSid: grant.roomSid },
+    });
+
+    // Minting is asynchronous. Re-check both authorities before returning so a
+    // concurrent host Remove or room_finished cannot release a stale token.
+    const [latestGrant, latestRoomSid] = await Promise.all([this.state.getDirectRejoinGrant(slug, guest.id), this.livekit.getRoomSid(slug)]);
+    if (latestGrant?.grantId !== grant.grantId || latestRoomSid !== grant.roomSid) {
+      throw this.directRejoinNotAllowed();
+    }
+
+    return {
+      room: slug,
+      identity: grant.identity,
+      token,
+      livekitUrl: this.livekit.livekitUrl,
+      muteOnEntry: await this.livekit.getMuteOnEntry(slug),
+    };
   }
 
   // Guest withdraws their request (cancelled before being admitted).
@@ -136,12 +189,29 @@ export class RoomsService {
     const knock = await this.requireKnock(slug, knockId);
     if (knock.status === 'pending') {
       const identity = makeIdentity(knock.name);
-      const token = await this.livekit.mintToken({
-        room: slug,
-        identity,
-        name: knock.name,
-        image: knock.image,
-      });
+      const roomSid = knock.userId ? await this.ensureLivekitRoom(slug) : null;
+      const directRejoinGrant =
+        knock.userId && roomSid
+          ? await this.state.addDirectRejoinGrant({
+              room: slug,
+              roomSid,
+              userId: knock.userId,
+              identity,
+            })
+          : null;
+      let token: string;
+      try {
+        token = await this.livekit.mintToken({
+          room: slug,
+          identity,
+          name: knock.name,
+          image: knock.image,
+          directRejoin: directRejoinGrant ? { grantId: directRejoinGrant.grantId, roomSid: directRejoinGrant.roomSid } : undefined,
+        });
+      } catch (error) {
+        if (directRejoinGrant) await this.state.removeDirectRejoinGrant(directRejoinGrant);
+        throw error;
+      }
       await this.state.resolveKnock(knock, 'admitted', { identity, token });
     }
     return { status: knock.status };
@@ -173,14 +243,27 @@ export class RoomsService {
   }
 
   async remove(slug: string, identity: string) {
+    const participant = await this.livekit.getConnectedParticipant(slug, identity);
+    if (!participant) {
+      throw new NotFoundException(faultBody(FaultCode.NOT_PARTICIPANT, 'Participant is no longer connected'));
+    }
+    await this.state.revokeDirectRejoinGrantByIdentity(slug, identity);
     await this.livekit.removeParticipant(slug, identity);
     return { ok: true };
   }
 
   // Called from the verified LiveKit webhook when a room ends. The room record
-  // is persistent and kept; we just drop its now-stale waiting-room knocks.
-  async onRoomFinished(slug: string): Promise<void> {
+  // is persistent and kept; we drop ephemeral knocks and only the Direct Rejoin
+  // Grants that belong to the finished LiveKit room instance.
+  async onRoomFinished(slug: string, roomSid?: string): Promise<void> {
     await this.state.clearKnocks(slug);
+    if (roomSid) await this.state.clearDirectRejoinGrants(slug, roomSid);
+  }
+
+  async isDirectRejoinParticipantValid(slug: string, roomSid: string, identity: string, metadata: DirectRejoinTokenMetadata): Promise<boolean> {
+    if (metadata.roomSid !== roomSid) return false;
+    const grant = await this.state.getDirectRejoinGrantByIdentity(slug, identity);
+    return grant?.grantId === metadata.grantId && grant.roomSid === roomSid;
   }
 
   private async mintHostJoin(room: Room, host: AuthUser): Promise<HostJoinResult> {
@@ -225,5 +308,19 @@ export class RoomsService {
     const knock = await this.state.getKnock(slug, knockId);
     if (!knock) throw new NotFoundException(faultBody(FaultCode.KNOCK_NOT_FOUND, 'Unknown or expired knock'));
     return knock;
+  }
+
+  private async ensureLivekitRoom(slug: string): Promise<string> {
+    return (await this.livekit.getRoomSid(slug)) ?? this.livekit.createRoom(slug);
+  }
+
+  private async requireDirectRejoinGrant(slug: string, userId: string) {
+    const grant = await this.state.getDirectRejoinGrant(slug, userId);
+    if (!grant) throw this.directRejoinNotAllowed();
+    return grant;
+  }
+
+  private directRejoinNotAllowed(): ForbiddenException {
+    return new ForbiddenException(faultBody(FaultCode.DIRECT_REJOIN_NOT_ALLOWED, 'Direct rejoin is no longer available. Ask the host to join.'));
   }
 }

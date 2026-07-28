@@ -16,6 +16,10 @@ export interface Knock {
   knockId: string;
   room: string;
   name: string;
+  // Present only when the guest was signed in while knocking. This is captured
+  // from the BetterAuth session, never from the request body, and is used to
+  // create a Direct Rejoin Grant when the host admits the guest.
+  userId?: string;
   // The guest's Avatar URL, resolved server-side from their session at knock time
   // (docs/adr/0016). Carried here until admit, when it is minted into the token
   // metadata. Absent for anonymous guests and accounts without a picture.
@@ -25,6 +29,15 @@ export interface Knock {
   // Populated once the host admits the guest.
   identity?: string;
   token?: string;
+}
+
+export interface DirectRejoinGrant {
+  grantId: string;
+  room: string;
+  roomSid: string;
+  userId: string;
+  identity: string;
+  createdAt: number;
 }
 
 // How long a knock lives before Redis evicts it. Comfortably longer than a guest
@@ -43,12 +56,22 @@ export class RoomStateService {
   private indexKey(room: string): string {
     return `huddle:knocks:${room}`;
   }
+  private directRejoinKey(room: string, userId: string): string {
+    return `huddle:direct-rejoin:${room}:${userId}`;
+  }
+  private directRejoinIdentityKey(room: string, identity: string): string {
+    return `huddle:direct-rejoin-identity:${room}:${identity}`;
+  }
+  private directRejoinIndexKey(room: string): string {
+    return `huddle:direct-rejoin-users:${room}`;
+  }
 
-  async addKnock(room: string, name: string, image?: string | null): Promise<Knock> {
+  async addKnock(room: string, name: string, image?: string | null, userId?: string): Promise<Knock> {
     const knock: Knock = {
       knockId: randomUUID(),
       room,
       name,
+      userId,
       image: image ?? null,
       status: 'pending',
       requestedAt: Date.now(),
@@ -115,6 +138,72 @@ export class RoomStateService {
       await this.redis.del(...ids.map((id) => this.knockKey(room, id)));
     }
     await this.redis.del(this.indexKey(room));
+  }
+
+  // Direct Rejoin Grants are call-scoped authority, not durable membership.
+  // They intentionally have no clock TTL: the matching LiveKit room_finished
+  // event ends them, while room-SID validation rejects stale state if a webhook
+  // is delayed or missed.
+  async addDirectRejoinGrant(params: { room: string; roomSid: string; userId: string; identity: string }): Promise<DirectRejoinGrant> {
+    const previous = await this.getDirectRejoinGrant(params.room, params.userId);
+    if (previous) {
+      await this.redis.del(this.directRejoinIdentityKey(params.room, previous.identity));
+    }
+
+    const grant: DirectRejoinGrant = {
+      grantId: randomUUID(),
+      room: params.room,
+      roomSid: params.roomSid,
+      userId: params.userId,
+      identity: params.identity,
+      createdAt: Date.now(),
+    };
+    await this.redis.set(this.directRejoinKey(params.room, params.userId), JSON.stringify(grant));
+    await this.redis.set(this.directRejoinIdentityKey(params.room, params.identity), params.userId);
+    await this.redis.sadd(this.directRejoinIndexKey(params.room), params.userId);
+    return grant;
+  }
+
+  async getDirectRejoinGrant(room: string, userId: string): Promise<DirectRejoinGrant | undefined> {
+    const raw = await this.redis.get(this.directRejoinKey(room, userId));
+    if (!raw) return undefined;
+    const grant = JSON.parse(raw) as DirectRejoinGrant;
+    return grant.room === room && grant.userId === userId ? grant : undefined;
+  }
+
+  async getDirectRejoinGrantByIdentity(room: string, identity: string): Promise<DirectRejoinGrant | undefined> {
+    const userId = await this.redis.get(this.directRejoinIdentityKey(room, identity));
+    if (!userId) return undefined;
+    const grant = await this.getDirectRejoinGrant(room, userId);
+    return grant?.identity === identity ? grant : undefined;
+  }
+
+  async removeDirectRejoinGrant(grant: DirectRejoinGrant): Promise<void> {
+    const current = await this.getDirectRejoinGrant(grant.room, grant.userId);
+    if (current?.grantId !== grant.grantId) return;
+    await this.redis.del(this.directRejoinKey(grant.room, grant.userId), this.directRejoinIdentityKey(grant.room, grant.identity));
+    await this.redis.srem(this.directRejoinIndexKey(grant.room), grant.userId);
+  }
+
+  async revokeDirectRejoinGrantByIdentity(room: string, identity: string): Promise<DirectRejoinGrant | undefined> {
+    const grant = await this.getDirectRejoinGrantByIdentity(room, identity);
+    if (!grant) return undefined;
+    await this.removeDirectRejoinGrant(grant);
+    return grant;
+  }
+
+  // A Room Code may later back a new LiveKit room instance. Remove only grants
+  // for the SID that actually finished so a delayed webhook cannot revoke the
+  // new call's admission state.
+  async clearDirectRejoinGrants(room: string, roomSid: string): Promise<void> {
+    const userIds = await this.redis.smembers(this.directRejoinIndexKey(room));
+    if (userIds.length === 0) return;
+    const raws = await this.redis.mget(userIds.map((userId) => this.directRejoinKey(room, userId)));
+    const grants = raws
+      .filter((raw): raw is string => raw != null)
+      .map((raw) => JSON.parse(raw) as DirectRejoinGrant)
+      .filter((grant) => grant.roomSid === roomSid);
+    await Promise.all(grants.map((grant) => this.removeDirectRejoinGrant(grant)));
   }
 
   private async writeKnock(knock: Knock): Promise<void> {

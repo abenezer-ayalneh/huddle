@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { SentryModule } from '@sentry/nestjs/setup';
 import { join } from 'node:path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -10,6 +11,7 @@ import { RoomsModule } from './rooms/rooms.module';
 
 @Module({
   imports: [
+    SentryModule.forRoot(),
     // Load the repo-root .env (single source of truth — see
     // docs/adr/0001-livekit-secret-single-source.md).
     ConfigModule.forRoot({

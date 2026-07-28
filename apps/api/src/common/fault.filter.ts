@@ -1,4 +1,5 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import * as Sentry from '@sentry/nestjs';
 import type { Response } from 'express';
 import { FaultCode } from './faults';
 
@@ -21,6 +22,12 @@ export class FaultFilter implements ExceptionFilter {
     if (normalized.status >= 500) {
       // 5xx Faults: log loudly with the original stack for diagnosis.
       const code = normalized.passthrough ? FaultCode.INTERNAL : normalized.envelope.code;
+      Sentry.captureException(exception, {
+        tags: {
+          'fault.code': code,
+          'http.status_code': String(normalized.status),
+        },
+      });
       this.logger.error(`${code} ${normalized.status}`, exception instanceof Error ? exception.stack : String(exception));
     } else {
       // 4xx Domain Outcomes / client faults are expected — keep the logs quiet.

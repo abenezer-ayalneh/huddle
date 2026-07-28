@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, api } from '@/lib/api';
 import PreJoinScreen from '@/components/call/PreJoinScreen';
+import { DIRECT_REJOIN_NOT_ALLOWED } from '@/lib/faultCodes';
 import CallStage from './CallStage';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { Centered } from './ui';
@@ -20,6 +21,8 @@ type Connection = { token: string; livekitUrl: string };
 //                  unmounted, so the camera/mic stream is released while idle.
 //   4. admitted  — re-acquire the chosen devices and hand off to <CallStage>,
 //                  which skips its own PreJoin because we pass the choices in.
+// A signed-in Guest with a Direct Rejoin Grant still completes the Device Check,
+// but its submit action mints a fresh token instead of creating another Knock.
 export default function GuestGate({
   room,
   signedInName,
@@ -35,36 +38,43 @@ export default function GuestGate({
   onLeave: () => void;
   onError: (message: string) => void;
 }) {
-  const [phase, setPhase] = useState<'precheck' | 'check' | 'knocking' | 'waiting' | 'denied'>('precheck');
+  const [phase, setPhase] = useState<'precheck' | 'check' | 'knocking' | 'rejoining' | 'waiting' | 'denied'>('precheck');
   const [choices, setChoices] = useState<LocalUserChoices | null>(null);
   const [knockId, setKnockId] = useState<string | null>(null);
   const [connection, setConnection] = useState<Connection | null>(null);
+  const [rejoinEligible, setRejoinEligible] = useState(false);
+  const [entryVersion, setEntryVersion] = useState(0);
   // Set when the host admits us into a room that has Mute on Entry on, so we
   // connect with the mic off.
   const [startMuted, setStartMuted] = useState(false);
 
-  // Precheck: the room must exist before we ever ask for camera/mic, so a guest
-  // never grants permission for a dead room. 404 ends the flow immediately.
+  // Precheck: the room must exist before we ever ask for camera/mic. A signed-in
+  // Guest also checks their Direct Rejoin Grant before we choose the Device
+  // Check copy and submit behavior.
   useEffect(() => {
     let active = true;
-    api
-      .getPublicRoom(room)
-      .then(() => {
+    async function precheck() {
+      try {
+        await api.getPublicRoom(room);
         if (!active) return;
+        const eligible = signedInName ? await api.directRejoinEligibility(room) : { eligible: false };
+        if (!active) return;
+        setRejoinEligible(eligible.eligible);
         setPhase('check');
-      })
-      .catch((e) => {
+      } catch (e) {
         if (!active) return;
         if (e instanceof ApiError && e.status === 404) {
           onError("That room doesn't exist yet. Ask the host to create it.");
         } else {
           onError("Couldn't reach the server. Is the API running?");
         }
-      });
+      }
+    }
+    void precheck();
     return () => {
       active = false;
     };
-  }, [room, onError]);
+  }, [room, signedInName, onError, entryVersion]);
 
   // Device Check complete → send the knock, carrying the entered name. This runs
   // from a button click (not an effect), so it can't double-fire under
@@ -77,11 +87,27 @@ export default function GuestGate({
       setChoices(userChoices);
       setPhase('knocking');
       try {
+        if (rejoinEligible) {
+          setPhase('rejoining');
+          const res = await api.directRejoin(room);
+          setStartMuted(res.muteOnEntry);
+          setConnection({ token: res.token, livekitUrl: res.livekitUrl });
+          return;
+        }
         const res = await api.knock(room, userChoices.username);
         setKnockId(res.knockId);
         setPhase('waiting');
       } catch (e) {
         knockedRef.current = false;
+        if (rejoinEligible && e instanceof ApiError && e.code === DIRECT_REJOIN_NOT_ALLOWED) {
+          // The call ended or the host removed us after the eligibility check.
+          // Do not silently create a Knock: return to a normal Device Check so
+          // the Guest explicitly chooses "Ask to join".
+          setRejoinEligible(false);
+          setChoices(null);
+          setPhase('check');
+          return;
+        }
         if (e instanceof ApiError && e.status === 404) {
           onError("That room doesn't exist yet. Ask the host to create it.");
         } else {
@@ -89,7 +115,7 @@ export default function GuestGate({
         }
       }
     },
-    [room, onError],
+    [room, onError, rejoinEligible],
   );
 
   // Poll the host's decision once we have a knock.
@@ -137,6 +163,20 @@ export default function GuestGate({
     onLeave();
   }, [knockId, room, onLeave]);
 
+  // LiveKit has already exhausted its transparent reconnect attempts when this
+  // fires. Keep the Guest on the room route, release the old CallStage, and
+  // re-check the server-side grant before showing a fresh Device Check.
+  const recoverFromDisconnect = useCallback(() => {
+    knockedRef.current = false;
+    setConnection(null);
+    setChoices(null);
+    setKnockId(null);
+    setStartMuted(false);
+    setRejoinEligible(false);
+    setPhase('precheck');
+    setEntryVersion((version) => version + 1);
+  }, []);
+
   // Admitted: re-acquire the chosen devices and enter the call. CallStage skips
   // its own PreJoin because we hand it the choices made before the knock.
   if (connection && choices) {
@@ -148,6 +188,7 @@ export default function GuestGate({
         initialChoices={choices}
         startMuted={startMuted}
         onLeave={onLeave}
+        onDisconnected={recoverFromDisconnect}
         onError={onError}
       />
     );
@@ -179,15 +220,15 @@ export default function GuestGate({
         onSubmit={submitCheck}
         // A denied or missing camera/mic never blocks the knock — Device
         // Recovery (docs/adr/0023) handles it in place on the Device Check.
-        heading="Join meeting"
-        subheading={`Check your camera and mic, then ask to join “${room}”.`}
-        submitLabel="Ask to join"
+        heading={rejoinEligible ? 'Rejoin meeting' : 'Join meeting'}
+        subheading={rejoinEligible ? `Check your camera and mic, then rejoin “${room}”.` : `Check your camera and mic, then ask to join “${room}”.`}
+        submitLabel={rejoinEligible ? 'Rejoin call' : 'Ask to join'}
         requireName={!signedInName}
       />
     );
   }
 
-  // precheck / knocking / waiting
+  // precheck / knocking / rejoining / waiting
   return (
     <Centered>
       {phase === 'waiting' ? (
@@ -197,7 +238,7 @@ export default function GuestGate({
       ) : (
         <div className="flex flex-col items-center gap-3">
           <LoadingSpinner className="size-12" />
-          <p className="text-white/60">Requesting to join…</p>
+          <p className="text-white/60">{phase === 'rejoining' ? 'Rejoining call…' : 'Requesting to join…'}</p>
         </div>
       )}
     </Centered>

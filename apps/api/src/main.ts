@@ -1,3 +1,5 @@
+import './instrument';
+import * as Sentry from '@sentry/nestjs';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
@@ -75,4 +77,10 @@ async function bootstrap() {
   const port = config.get<number>('API_PORT') ?? 3001;
   await app.listen(port);
 }
-void bootstrap();
+void bootstrap().catch(async (error: unknown) => {
+  Sentry.captureException(error, {
+    tags: { 'failure.phase': 'bootstrap' },
+  });
+  await Sentry.flush(2000);
+  process.exitCode = 1;
+});

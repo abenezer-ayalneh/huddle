@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # Production image for the Next.js frontend (standalone output). Build from the
 # REPO ROOT so the pnpm workspace manifests are in context:
 #   docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml build web
@@ -15,10 +16,21 @@ COPY apps/web apps/web
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_LIVEKIT_URL
 ARG NEXT_PUBLIC_AUTH_URL
+ARG NEXT_PUBLIC_SENTRY_DSN
+ARG SENTRY_ORG
+ARG SENTRY_PROJECT_WEB
+ARG SENTRY_RELEASE
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
     NEXT_PUBLIC_LIVEKIT_URL=$NEXT_PUBLIC_LIVEKIT_URL \
-    NEXT_PUBLIC_AUTH_URL=$NEXT_PUBLIC_AUTH_URL
-RUN pnpm --filter @huddle/web build
+    NEXT_PUBLIC_AUTH_URL=$NEXT_PUBLIC_AUTH_URL \
+    NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN \
+    SENTRY_ORG=$SENTRY_ORG \
+    SENTRY_PROJECT_WEB=$SENTRY_PROJECT_WEB \
+    SENTRY_RELEASE=$SENTRY_RELEASE
+# The optional Sentry token is exposed only to this build instruction. BuildKit
+# never stores it in an image layer or runtime environment.
+RUN --mount=type=secret,id=sentry_auth_token,env=SENTRY_AUTH_TOKEN,required=false \
+    pnpm --filter @huddle/web build
 
 FROM node:20-alpine AS run
 WORKDIR /app

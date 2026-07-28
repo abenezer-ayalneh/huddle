@@ -16,6 +16,11 @@ export interface ConnectedParticipant {
   role?: string;
 }
 
+export interface DirectRejoinTokenMetadata {
+  grantId: string;
+  roomSid: string;
+}
+
 export interface RemoteControlRoomState {
   sessionId: string;
   status: 'awaiting-agent' | 'active';
@@ -96,12 +101,24 @@ export class LivekitService {
   // optional `image` is the participant's Avatar URL (docs/adr/0016): resolved
   // server-side from the session, carried in metadata so every client can render
   // it; omitted from the metadata when absent (anonymous guest, no picture).
-  async mintToken(opts: { room: string; identity: string; name: string; host?: boolean; image?: string | null }): Promise<string> {
+  async mintToken(opts: {
+    room: string;
+    identity: string;
+    name: string;
+    host?: boolean;
+    image?: string | null;
+    directRejoin?: DirectRejoinTokenMetadata;
+  }): Promise<string> {
     const at = new AccessToken(this.apiKey, this.apiSecret, {
       identity: opts.identity,
       name: opts.name,
       ttl: '1h',
-      metadata: JSON.stringify({ role: opts.host ? 'host' : 'guest', avatarUrl: opts.image ?? undefined }),
+      metadata: JSON.stringify({
+        role: opts.host ? 'host' : 'guest',
+        avatarUrl: opts.image ?? undefined,
+        directRejoinGrantId: opts.directRejoin?.grantId,
+        directRejoinRoomSid: opts.directRejoin?.roomSid,
+      }),
     });
     at.addGrant({
       roomJoin: true,
@@ -156,12 +173,20 @@ export class LivekitService {
     return at.toJwt();
   }
 
-  async createRoom(name: string): Promise<void> {
-    await this.svc.createRoom({ name });
+  async createRoom(name: string): Promise<string> {
+    const room = await this.svc.createRoom({ name });
+    return room.sid;
+  }
+
+  async getRoomSid(name: string): Promise<string | null> {
+    const [room] = await this.svc.listRooms([name]);
+    return room?.sid ?? null;
   }
 
   async removeParticipant(room: string, identity: string): Promise<void> {
-    await this.svc.removeParticipant(room, identity);
+    await this.svc.removeParticipant(room, identity, {
+      revokeTokenTs: BigInt(Math.floor(Date.now() / 1000)),
+    });
   }
 
   async disconnectControlAgent(room: string, identity: string): Promise<void> {
@@ -180,6 +205,13 @@ export class LivekitService {
       name: participant.name || participant.identity,
       role: typeof metadata.role === 'string' ? metadata.role : undefined,
     };
+  }
+
+  directRejoinMetadata(metadata?: string): DirectRejoinTokenMetadata | null {
+    const parsed = this.parseMetadata(metadata);
+    return typeof parsed.directRejoinGrantId === 'string' && typeof parsed.directRejoinRoomSid === 'string'
+      ? { grantId: parsed.directRejoinGrantId, roomSid: parsed.directRejoinRoomSid }
+      : null;
   }
 
   async hasActiveScreenShare(room: string): Promise<boolean> {

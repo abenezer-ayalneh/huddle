@@ -41,6 +41,13 @@ services:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
         NEXT_PUBLIC_LIVEKIT_URL: ${NEXT_PUBLIC_LIVEKIT_URL}
         NEXT_PUBLIC_AUTH_URL: ${NEXT_PUBLIC_AUTH_URL}
+        NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
+        SENTRY_ORG: ${SENTRY_ORG:-}
+        SENTRY_PROJECT_WEB: ${SENTRY_PROJECT_WEB:-}
+        SENTRY_RELEASE: ${SENTRY_RELEASE:-}
+      secrets:
+        - source: sentry_auth_token
+          target: sentry_auth_token
     restart: always
     environment:
       NODE_ENV: production
@@ -48,6 +55,9 @@ services:
       # PORT; the ports mapping below uses the same value so they can't drift.
       PORT: '${WEB_PORT:-3000}'
       HOSTNAME: '0.0.0.0' # Next standalone must bind all interfaces (not just localhost)
+      SENTRY_WEB_DSN: '${SENTRY_WEB_DSN:-}'
+      SENTRY_ENVIRONMENT: '${SENTRY_ENVIRONMENT:-production}'
+      SENTRY_RELEASE: '${SENTRY_RELEASE:-}'
     # Published on localhost so a HOST-installed reverse proxy (e.g. a global
     # Caddy) can reach it. Harmless when the containerized `caddy` service is used
     # instead (it reaches `web` by service name). Never bound to a public iface.
@@ -72,6 +82,9 @@ services:
     environment:
       NODE_ENV: production
       LOG_FORMAT: json # structured JSON logs in prod (logging/json.logger.ts)
+      # SENTRY_AUTH_TOKEN exists only for the web image build. Override the
+      # env_file value so the build credential never enters the API runtime.
+      SENTRY_AUTH_TOKEN: ''
     # Published on localhost for a host-installed reverse proxy (see `web` above).
     # ${API_HOST_PORT} is the host port Caddy proxies to (default 3002); the
     # container side is the app's internal ${API_PORT} (default 3001) — the same
@@ -114,3 +127,7 @@ services:
 volumes:
   caddy-data:
   caddy-config:
+
+secrets:
+  sentry_auth_token:
+    environment: SENTRY_AUTH_TOKEN

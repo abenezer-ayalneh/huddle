@@ -15,8 +15,9 @@ import { Centered } from './ui';
 // Role router for a managed room (Phase 6). Role is derived from the host
 // session, never the URL: whoever created the room in the lobby has its token +
 // hostKey + name in sessionStorage and connects directly to the host panel;
-// everyone else is a guest who must knock and be admitted (GuestGate). Keeping
-// role out of the URL means a shared link is just the Room Code.
+// everyone else is a guest handled by GuestGate. First entry requires a Knock;
+// an admitted signed-in Guest may have a call-scoped Direct Rejoin Grant.
+// Keeping role out of the URL means a shared link is just the Room Code.
 export default function RoomClient({ room }: { room: string }) {
   const router = useRouter();
   const { data: session, isPending: sessionPending } = useSession();

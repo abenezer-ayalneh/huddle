@@ -63,6 +63,29 @@ GOOGLE_CLIENT_SECRET=...
 > `"<key>: <secret>"` matching the other two. `infra/livekit.yaml` has no keys
 > block. See `docs/adr/0001-livekit-secret-single-source.md`.
 
+### Optional local Sentry error tracking
+
+Create separate Sentry projects for the web app (Next.js) and API (NestJS), then
+copy the web DSN into `apps/web/.env.local`:
+
+```dotenv
+NEXT_PUBLIC_SENTRY_DSN=https://...@...ingest...sentry.io/...
+SENTRY_WEB_DSN=https://...@...ingest...sentry.io/...
+SENTRY_ENVIRONMENT=development
+```
+
+Put the API project DSN in the repo-root `.env`:
+
+```dotenv
+SENTRY_API_DSN=https://...@...ingest...sentry.io/...
+SENTRY_ENVIRONMENT=development
+```
+
+Blank DSNs disable the SDKs. Huddle sends unexpected web faults and API 5xx
+only; 4xx Domain Outcomes remain quiet. It disables PII, performance tracing,
+and Session Replay, and scrubs request/user data plus room-scoped identifiers.
+The Control Agent never sends Sentry telemetry. See ADR 0027.
+
 ## 2. Start LiveKit + Redis + Postgres + MinIO + Egress
 
 ```bash

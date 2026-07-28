@@ -36,7 +36,8 @@ crash in the call _itself_ ends the call. Nothing in between drops you.
 - The call view gains several small boundaries with inline fallbacks; new volatile
   widgets are expected to bring their own boundary.
 - A crashed panel shows a contained "this panel crashed" state while audio/video
-  keep running — the call survives partial UI failure.
+  keep running — the call survives partial UI failure. The boundary reports the
+  crash to the privacy-scrubbed web Sentry project (ADR 0027).
 - Only a crash in the media/stage core ends the call, and it routes into the
   existing connecting/reconnecting/disconnected UI rather than a toast.
 - Slightly more component scaffolding and more fallbacks to design and test; the

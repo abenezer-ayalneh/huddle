@@ -1,7 +1,7 @@
 'use client';
 
 import { LiveKitRoom, RoomAudioRenderer, useChat, type LocalUserChoices, type TrackReferenceOrPlaceholder } from '@livekit/components-react';
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useBackgroundCall } from '@/components/call/useBackgroundCall';
 import { usePictureInPicture } from '@/components/call/usePictureInPicture';
 import ChatPanel from '@/components/call/ChatPanel';
@@ -31,6 +31,7 @@ export default function CallStage({
   connection,
   displayName,
   onLeave,
+  onDisconnected,
   onError,
   overlay,
   initialChoices,
@@ -42,6 +43,9 @@ export default function CallStage({
   connection: Connection;
   displayName: string;
   onLeave: () => void;
+  // Optional Guest recovery path after LiveKit exhausts automatic reconnect.
+  // Intentional Leave continues to use onLeave.
+  onDisconnected?: () => void;
   onError: (message: string) => void;
   overlay?: ReactNode;
   initialChoices?: LocalUserChoices;
@@ -52,11 +56,18 @@ export default function CallStage({
 }) {
   const [choices, setChoices] = useState<LocalUserChoices | null>(initialChoices ?? null);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+  const intentionalLeave = useRef(false);
 
   const confirmLeave = useCallback(() => {
+    intentionalLeave.current = true;
     setShowLeaveDialog(false);
     onLeave();
   }, [onLeave]);
+
+  const handleDisconnected = useCallback(() => {
+    if (intentionalLeave.current) return;
+    (onDisconnected ?? onLeave)();
+  }, [onDisconnected, onLeave]);
 
   // Back-gesture intercept (Android OS back button / Safari swipe): once in the
   // call, trap the history pop and surface the Leave confirmation instead of
@@ -99,7 +110,7 @@ export default function CallStage({
         connect
         video={choices.videoEnabled ? { deviceId: choices.videoDeviceId } : false}
         audio={startMuted || !choices.audioEnabled ? false : { deviceId: choices.audioDeviceId }}
-        onDisconnected={onLeave}
+        onDisconnected={handleDisconnected}
         onError={(e) => onError(`Lost connection to the call: ${e.message}`)}
         style={{ height: '100dvh' }}
         className="bg-dotgrid"

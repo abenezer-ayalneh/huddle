@@ -45,7 +45,9 @@ const bo: AuthUser = { id: 'user-bo', name: 'Bo', email: 'bo@x.dev' };
 describe('RoomsService', () => {
   let repo: FakeRoomRepo;
   let state: RoomStateService;
-  let livekit: jest.Mocked<Pick<LivekitService, 'createRoom' | 'mintToken' | 'getMuteOnEntry'>> & {
+  let livekit: jest.Mocked<
+    Pick<LivekitService, 'createRoom' | 'mintToken' | 'getMuteOnEntry' | 'getRoomSid' | 'getConnectedParticipant' | 'removeParticipant'>
+  > & {
     livekitUrl: string;
   };
   let service: RoomsService;
@@ -55,9 +57,16 @@ describe('RoomsService', () => {
     state = new RoomStateService(new FakeRedis() as unknown as Redis);
     livekit = {
       livekitUrl: 'ws://localhost:7880',
-      createRoom: jest.fn().mockResolvedValue(undefined),
+      createRoom: jest.fn().mockResolvedValue('RM_current'),
       mintToken: jest.fn().mockResolvedValue('jwt-token'),
       getMuteOnEntry: jest.fn().mockResolvedValue(false),
+      getRoomSid: jest.fn().mockResolvedValue('RM_current'),
+      getConnectedParticipant: jest.fn().mockResolvedValue({
+        identity: 'bo-stable',
+        name: 'Bo',
+        role: 'guest',
+      }),
+      removeParticipant: jest.fn().mockResolvedValue(undefined),
     };
     service = new RoomsService(repo as unknown as RoomRepository, state, livekit as unknown as LivekitService);
   });
@@ -118,14 +127,20 @@ describe('RoomsService', () => {
   it("carries a signed-in guest's Avatar from knock into the admit token, and exposes it on the knock list (docs/adr/0016)", async () => {
     const { room } = await service.createRoom(ada, {});
     const avatar = 'https://lh3.googleusercontent.com/a/guest.jpg';
-    const { knockId } = await service.knock(room, 'Bo', avatar);
+    const { knockId } = await service.knock(room, 'Bo', avatar, bo.id);
 
     // Host sees the Avatar beside the pending guest.
     const { knocks } = await service.listKnocks(room);
     expect(knocks).toEqual([expect.objectContaining({ knockId, name: 'Bo', image: avatar })]);
 
     await service.admit(room, knockId);
-    expect(livekit.mintToken).toHaveBeenLastCalledWith(expect.objectContaining({ room, name: 'Bo', image: avatar }));
+    const admittedTokenInput = livekit.mintToken.mock.calls.at(-1)?.[0];
+    expect(admittedTokenInput).toMatchObject({
+      room,
+      name: 'Bo',
+      image: avatar,
+    });
+    expect(admittedTokenInput?.directRejoin).toMatchObject({ roomSid: 'RM_current' });
   });
 
   it('an anonymous guest (no Avatar) admits with a null image and no metadata leak', async () => {
@@ -157,5 +172,96 @@ describe('RoomsService', () => {
     await expect(service.knockStatus(room, knockId)).rejects.toThrow(NotFoundException);
     // Room still exists (persistent) — a fresh knock succeeds.
     await expect(service.knock(room, 'Cy')).resolves.toHaveProperty('knockId');
+  });
+
+  it('lets the admitted signed-in account rejoin with its stable identity and current profile', async () => {
+    const { room } = await service.createRoom(ada, {});
+    const { knockId } = await service.knock(room, bo.name, null, bo.id);
+    await service.admit(room, knockId);
+    const admitted = await service.knockStatus(room, knockId);
+    const updatedBo: AuthUser = {
+      ...bo,
+      name: 'Bo Updated',
+      image: 'https://example.com/bo-new.jpg',
+    };
+    livekit.getMuteOnEntry.mockResolvedValue(true);
+
+    await expect(service.directRejoinEligibility(room, updatedBo)).resolves.toEqual({ eligible: true });
+    const rejoined = await service.directRejoin(room, updatedBo);
+
+    expect(rejoined.identity).toBe(admitted.identity);
+    expect(rejoined.muteOnEntry).toBe(true);
+    const rejoinTokenInput = livekit.mintToken.mock.calls.at(-1)?.[0];
+    expect(rejoinTokenInput).toMatchObject({
+      room,
+      identity: admitted.identity,
+      name: updatedBo.name,
+      image: updatedBo.image,
+    });
+    expect(rejoinTokenInput?.directRejoin).toMatchObject({ roomSid: 'RM_current' });
+  });
+
+  it('does not create Direct Rejoin eligibility for an anonymous admission or another account', async () => {
+    const { room } = await service.createRoom(ada, {});
+    const { knockId } = await service.knock(room, 'Anonymous');
+    await service.admit(room, knockId);
+
+    await expect(service.directRejoinEligibility(room, bo)).resolves.toEqual({ eligible: false });
+    await expect(service.directRejoin(room, bo)).rejects.toThrow(ForbiddenException);
+  });
+
+  it('revokes Direct Rejoin when the host removes the connected guest but still permits a new Knock', async () => {
+    const { room } = await service.createRoom(ada, {});
+    const { knockId } = await service.knock(room, bo.name, null, bo.id);
+    await service.admit(room, knockId);
+    const { identity } = await service.knockStatus(room, knockId);
+    livekit.getConnectedParticipant.mockResolvedValueOnce({
+      identity: identity!,
+      name: bo.name,
+      role: 'guest',
+    });
+
+    await service.remove(room, identity!);
+
+    await expect(service.directRejoinEligibility(room, bo)).resolves.toEqual({ eligible: false });
+    await expect(service.directRejoin(room, bo)).rejects.toThrow(ForbiddenException);
+    await expect(service.knock(room, bo.name, null, bo.id)).resolves.toHaveProperty('knockId');
+    expect(livekit.removeParticipant).toHaveBeenCalledWith(room, identity);
+  });
+
+  it('does not revoke an away Guest because Remove is connected-participant-only', async () => {
+    const { room } = await service.createRoom(ada, {});
+    const { knockId } = await service.knock(room, bo.name, null, bo.id);
+    await service.admit(room, knockId);
+    const { identity } = await service.knockStatus(room, knockId);
+    livekit.getConnectedParticipant.mockResolvedValueOnce(null);
+
+    await expect(service.remove(room, identity!)).rejects.toThrow(NotFoundException);
+    await expect(service.directRejoinEligibility(room, bo)).resolves.toEqual({ eligible: true });
+  });
+
+  it('clears a grant only when its exact LiveKit room SID finishes', async () => {
+    const { room } = await service.createRoom(ada, {});
+    const { knockId } = await service.knock(room, bo.name, null, bo.id);
+    await service.admit(room, knockId);
+
+    await service.onRoomFinished(room, 'RM_old');
+    await expect(service.directRejoinEligibility(room, bo)).resolves.toEqual({ eligible: true });
+
+    await service.onRoomFinished(room, 'RM_current');
+    await expect(service.directRejoinEligibility(room, bo)).resolves.toEqual({ eligible: false });
+  });
+
+  it('does not return a token when the grant disappears during minting', async () => {
+    const { room } = await service.createRoom(ada, {});
+    const { knockId } = await service.knock(room, bo.name, null, bo.id);
+    await service.admit(room, knockId);
+    livekit.mintToken.mockImplementationOnce(async () => {
+      const grant = await state.getDirectRejoinGrant(room, bo.id);
+      await state.removeDirectRejoinGrant(grant!);
+      return 'stale-token';
+    });
+
+    await expect(service.directRejoin(room, bo)).rejects.toThrow(ForbiddenException);
   });
 });
