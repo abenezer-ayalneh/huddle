@@ -26,6 +26,8 @@ model User {
   sessions      Session[]
   accounts      Account[]
   rooms         Room[]
+  cloudStorageConnections CloudStorageConnection[]
+  recordingRecipients     RecordingRecipient[]
 
   @@map("user")
 }
@@ -118,9 +120,97 @@ model Recording {
   error      String?
   startedAt  DateTime  @default(now())
   endedAt    DateTime?
+  // The hard deadline for the temporary MP4 in MinIO. `localDeleteAfter` can
+  // become earlier after verified cloud delivery; the metadata row remains.
+  localExpiresAt       DateTime?
+  localDeleteAfter     DateTime?
+  localDeletedAt       DateTime?
+  // Captured at Recording start. A Drive connection created later cannot alter
+  // this call's consent availability after participants have joined.
+  driveShareAvailable  Boolean   @default(false)
+  deliveryWarningSentAt DateTime?
+  finalWarningSentAt    DateTime?
+  delivery              RecordingDelivery?
+  recipients            RecordingRecipient[]
 
   @@index([roomId])
+  @@index([localDeleteAfter])
+  @@index([localExpiresAt])
   @@map("recording")
+}
+
+// A Host's optional external destination. Google Drive is the only provider in
+// this release, but the provider discriminator keeps the data boundary ready
+// for a future provider without giving the browser any provider credentials.
+model CloudStorageConnection {
+  id                    String   @id @default(cuid())
+  userId                String
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider              String   @default("google_drive")
+  providerEmail         String?
+  encryptedRefreshToken String?
+  driveFolderId         String?
+  // connected | action_required | disconnected
+  status                String   @default("connected")
+  disconnectedAt        DateTime?
+  // Optional, once per connected destination. A replacement connection gets a
+  // fresh explicit choice without re-running a prior account's backfill.
+  backfillRequestedAt   DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@unique([userId, provider])
+  @@map("cloud_storage_connection")
+}
+
+// Durable job and result projection for an MP4's cloud delivery. The worker
+// owns the lease fields; resumable session URLs are encrypted before storage.
+model RecordingDelivery {
+  id                      String    @id @default(cuid())
+  recordingId             String    @unique
+  recording               Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  provider                String    @default("google_drive")
+  // queued | uploading | action_required | delivered | expired_undelivered
+  status                  String    @default("queued")
+  attempts                Int       @default(0)
+  nextAttemptAt           DateTime  @default(now())
+  leaseOwner              String?
+  leaseUntil              DateTime?
+  encryptedUploadSession  String?
+  uploadOffsetBytes       BigInt    @default(0)
+  driveFileId             String?
+  driveUrl                String?
+  deliveredAt             DateTime?
+  lastError               String?
+  actionNotifiedAt        DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  @@index([status, nextAttemptAt])
+  @@index([leaseUntil])
+  @@map("recording_delivery")
+}
+
+// Evidence of a signed-in participant's final consent to receive a particular
+// Recording. The email is a snapshot used only for the Drive permission call.
+model RecordingRecipient {
+  id           String    @id @default(cuid())
+  recordingId  String
+  recording    Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email        String
+  name         String?
+  consentedAt  DateTime  @default(now())
+  // pending | shared | failed
+  status       String    @default("pending")
+  permissionId String?
+  error        String?
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([recordingId, userId])
+  @@index([recordingId, status])
+  @@map("recording_recipient")
 }
 
 // Metadata-only audit history for attended Remote Control (docs/adr/0024).

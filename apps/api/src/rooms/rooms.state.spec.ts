@@ -96,4 +96,26 @@ describe('RoomStateService', () => {
       roomSid: 'RM_new',
     });
   });
+
+  it('keeps recording-share consent scoped to one LiveKit call and clears it at room_finished', async () => {
+    await state.addRecordingShareConsent({
+      room: 'standup',
+      roomSid: 'RM_current',
+      userId: 'user-ada',
+      identity: 'ada-stable',
+      accountBinding: 'opaque-proof',
+    });
+    await state.addRecordingShareConsent({
+      room: 'standup',
+      roomSid: 'RM_next',
+      userId: 'user-bo',
+      identity: 'bo-stable',
+      accountBinding: 'other-proof',
+    });
+
+    await expect(state.getRecordingShareConsentByIdentity('standup', 'RM_current', 'ada-stable')).resolves.toMatchObject({ userId: 'user-ada' });
+    await state.clearRecordingShareConsents('standup', 'RM_current');
+    await expect(state.getRecordingShareConsentByIdentity('standup', 'RM_current', 'ada-stable')).resolves.toBeUndefined();
+    await expect(state.getRecordingShareConsentByIdentity('standup', 'RM_next', 'bo-stable')).resolves.toMatchObject({ userId: 'user-bo' });
+  });
 });

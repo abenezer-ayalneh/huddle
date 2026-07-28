@@ -183,12 +183,12 @@ describe('RemoteControlService', () => {
   it('returns the current pending request only to its exact Sharer', async () => {
     state.getPendingForRoom.mockResolvedValue(pendingRequest());
 
-    await expect(service.getPendingRequest(room.slug, sharer)).resolves.toEqual({
-      request: expect.objectContaining({
+    await expect(service.getPendingRequest(room.slug, sharer)).resolves.toMatchObject({
+      request: {
         requestId: 'request-id',
         sharerIdentity: sharer.identity,
         controllerIdentity: controller.identity,
-      }),
+      },
     });
     expect(state.releasePending).not.toHaveBeenCalled();
   });

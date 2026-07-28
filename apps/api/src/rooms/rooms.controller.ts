@@ -85,6 +85,15 @@ export class RoomsController {
     return this.recordings.stopAsParticipant(room, participant);
   }
 
+  // Final, explicit consent for a signed-in participant to receive eligible
+  // recordings through the Host's private Google Drive file. Both a session and
+  // their exact LiveKit token are required; anonymous Guests cannot opt in.
+  @UseGuards(AuthGuard, ParticipantGuard)
+  @Post(':room/recording-share-consent')
+  recordingShareConsent(@Param('room') room: string, @SessionUser() user: AuthUser, @Participant() participant: CallParticipant) {
+    return this.recordings.giveRecordingShareConsent(room, user, participant);
+  }
+
   // --- Host-only endpoints (x-host-key) ---
   @UseGuards(HostGuard)
   @Get(':room/knocks')

@@ -173,7 +173,14 @@ explicit approval warning that the room-visible desktop may be recorded.
     (owner). Rooms now **survive an API restart**; knocks do not.
   - `recording` (**Phase 8**) — one row per egress job: `egressId`, `roomId`,
     `status` (`starting`→`active`→`completed`/`failed`), `objectKey` (path in the
-    S3 bucket), `sizeBytes?`, `durationMs?`. Lifecycle is webhook-driven.
+    S3 bucket), `sizeBytes?`, `durationMs?`, and local-expiry/deletion times.
+    Lifecycle is webhook-driven; metadata survives local-object deletion.
+  - `cloud_storage_connection` — one encrypted optional Google Drive connection
+    per Host account; it is distinct from BetterAuth Google sign-in.
+  - `recording_delivery` — leased/retryable Google resumable-upload state and
+    verified Drive identity; its refresh/session secrets are encrypted at rest.
+  - `recording_recipient` — a per-Recording snapshot of an eligible
+    participant's consent and Drive permission outcome.
   - `remote_control_session` — metadata-only attended-control audit: participant
     and agent identities/names, status, start/end/renewal timestamps, and end
     reason. It never stores input, clipboard, screenshots, frames, or secrets.
@@ -183,6 +190,8 @@ explicit approval warning that the room-visible desktop may be recorded.
   row and cannot become standing access to a later call.
 - Media is now stored too (Phase 8): recordings live in **MinIO** (S3-compatible
   object store), not in Postgres — the DB only holds the recording metadata above.
+  ADR-0029 makes the MinIO object a temporary Local Recording Copy rather than
+  indefinite storage.
 
 ## Recording (Phase 8)
 
@@ -198,6 +207,16 @@ explicit approval warning that the room-visible desktop may be recorded.
   admit/mute/remove), not the session. Downloads are **proxied** through the
   host-authorized API — bucket credentials never reach the browser. See
   `docs/adr/0003-recording-egress-minio.md`.
+- **Retention and delivery:** completed MP4s have a hard configured local
+  deadline (168 hours by default). A separate `recording-worker` process from
+  the API image leases one delivery at a time in PostgreSQL, heartbeats while it
+  range-reads MinIO into 8 MiB Google Drive resumable chunks, and only shortens
+  retention after exact-size/non-trashed Drive verification. It deletes MinIO
+  objects, never metadata or Drive files. See ADR-0029.
+- **Participant sharing:** Drive starts private. A signed-in non-Host can make a
+  final call-scoped opt-in while a Drive-enabled Recording is active. The API
+  binds their session to an opaque HMAC proof in the LiveKit token and creates
+  only a per-file reader permission for recordings they actually overlap.
 
 ## Accounts & auth (Phase 7)
 

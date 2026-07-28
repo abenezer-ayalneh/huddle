@@ -25,7 +25,7 @@ signal on `:7880` so a reverse proxy can reach them.
                           │                          ──▶ 127.0.0.1:7880  (livekit)  │
    Browser ──WebRTC UDP──────────────────────────────▶ livekit media :50000-50200/udp
    Browser ──TURN/TLS───────────────────────────────▶ livekit TURN :3478,:5349     │
-                          │   api ──▶ minio (S3)  ◀── egress uploads MP4 (Docker net)│
+                          │   api/recording-worker ──▶ minio (S3) ◀── egress uploads MP4 │
                           └─────────────────────────────────────────────────────────┘
 ```
 
@@ -150,6 +150,13 @@ Edit `.env.prod` and set, at minimum:
   set one to `localhost`; see [ADR-0003](./adr/0003-recording-egress-minio.md)).
 - **SMTP** (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`) —
   **required in production.** See the next subsection.
+- **Recording retention:** set `RECORDING_LOCAL_RETENTION_HOURS=168` and
+  `RECORDING_DELIVERED_RETENTION_HOURS=24` unless your retention policy requires
+  shorter values. The second value must not exceed the first. Generate
+  `CLOUD_CREDENTIALS_ENCRYPTION_KEY` with `openssl rand -base64 32`; it encrypts
+  Google refresh tokens and resumable-upload URLs at rest. Set a separate
+  `PARTICIPANT_ACCOUNT_BINDING_SECRET` if you do not want the LiveKit secret to
+  be the compatible HMAC fallback.
 
 `.env.prod` is gitignored — never commit it.
 
@@ -469,13 +476,50 @@ If media fails to connect, see Troubleshooting below.
 
 ---
 
-## 11. Optional: Google sign-in
+## 11. Optional: Google sign-in and Google Drive delivery
 
 Set `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` in `.env.prod`
 (console.cloud.google.com → Credentials → OAuth client). Authorized redirect
 URI: `https://huddle-api.abenezer-ayalneh.dev/api/auth/callback/google`.
 Rebuild/restart `api` and `web` after changing env (NEXT*PUBLIC*\* are build-time
 for `web`).
+
+Google Drive delivery reuses the same Google OAuth client credentials but is a
+separate explicit Host connection; it does not grant Drive access during Google
+sign-in. Add this additional authorized redirect URI in Google Cloud and set it
+in `.env.prod`:
+
+```dotenv
+GOOGLE_DRIVE_REDIRECT_URI=https://huddle-api.example.com/storage-connections/google-drive/callback
+CLOUD_CREDENTIALS_ENCRYPTION_KEY=<openssl rand -base64 32 output>
+```
+
+Configure the consent screen for the narrow `drive.file` scope and test with a
+Google test project before production. The worker creates a private `Huddle
+Recordings` folder and per-file reader permissions only; do not request broad
+Drive scope, a folder picker, or a public-link configuration.
+
+## 11.1 Recording retention rollout
+
+Deploy additively: migrate, preview, then start the worker. The first worker
+cycle gives every existing completed local recording a full configured grace
+period from deployment; it does not calculate expiry from an old `endedAt`.
+
+```bash
+docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
+  --env-file .env.prod run --rm api pnpm --filter @huddle/api prisma:deploy
+docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
+  --env-file .env.prod run --rm api node dist/recording-retention-preview.js
+docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
+  --env-file .env.prod up -d api recording-worker
+```
+
+The preview prints `affectedObjects` and `bytes` before cleanup begins. Stopping
+`recording-worker` pauses both Drive upload and deletion. Once a local MP4 is
+deleted it cannot be restored from MinIO; metadata and a verified Drive link
+remain. A live acceptance pass needs explicit approval and a Google test project
+with a real Egress MP4, a participant opt-in, worker restart, revoked
+credentials, and observed MinIO space reclamation.
 
 ---
 

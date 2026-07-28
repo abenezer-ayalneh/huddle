@@ -49,6 +49,10 @@ export class WebhookController {
         await this.livekit.stampStartedAt(event.room.name);
         if (identity) {
           await this.remoteControl.onParticipantJoined(event.room.name, identity);
+          // Keep older webhook test doubles (and a rolling deploy where the API
+          // briefly receives webhooks before this feature has booted) harmless.
+          const onParticipantJoined = (this.recordings as Partial<RecordingsService>).onParticipantJoined;
+          if (onParticipantJoined) await onParticipantJoined.call(this.recordings, event.room.name, event.room.sid, identity);
         }
       }
     }

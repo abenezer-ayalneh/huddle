@@ -51,6 +51,9 @@ Two classes share the envelope but get different UX (see `CONTEXT.md` →
 | `NOT_RECORDING_OWNER`                 | 403     | Domain Outcome | `stop-by-participant` you didn't start           | (tailored)      |
 | `RECORDING_NOT_READY`                 | 409     | Domain Outcome | download before the recording is `completed`     | (tailored)      |
 | `RECORDING_NOT_FOUND`                 | 404     | Domain Outcome | unknown recording for the room                   | (tailored)      |
+| `RECORDING_EXPIRED`                   | 410     | Domain Outcome | local MP4 was deleted after retention expiry     | (tailored)      |
+| `RECORDING_SHARE_UNAVAILABLE`         | 409     | Domain Outcome | Drive was not enabled at recording start         | (tailored)      |
+| `RECORDING_SHARE_NOT_ALLOWED`         | 403     | Domain Outcome | anonymous, Host, or mismatched-account consent   | (tailored)      |
 | `DOWNLOAD_TOKEN_INVALID`              | 401     | Domain Outcome | missing/expired/forged recording download token  | (native)        |
 | `REMOTE_CONTROL_IN_PROGRESS`          | 409     | Domain Outcome | a request/session already owns the room          | (tailored)      |
 | `REMOTE_CONTROL_NOT_FOUND`            | 404     | Domain Outcome | unknown, consumed, or expired request/session    | (tailored)      |
@@ -285,7 +288,8 @@ tokens are revoked first. Remove is not a ban: the Guest may Knock again.
 Start a room-composite recording. Header `x-host-key`. One active recording per
 room → **409** if one is already running. **Response 200:** a `RecordingSummary`
 (`{ id, status, filename, sizeBytes, durationMs, startedAt, endedAt, error,
-downloadable, downloadToken }`) with `status: "starting"`.
+localExpiresAt, localDeletedAt, deliveryStatus, driveUrl, deliveredAt,
+recipientShares, downloadable, downloadToken }`) with `status: "starting"`.
 
 - `downloadToken` — a short-lived signed token (docs/adr/0022), non-null only
   once `status: "completed"`. The client builds the download URL from it:
@@ -310,7 +314,8 @@ token from the recording's summary (docs/adr/0022), **not** the `x-host-key`
 header — so this can be a plain `<a download>` navigation and the browser
 downloads it natively with its own progress UI. **401** (`DOWNLOAD_TOKEN_INVALID`)
 if the token is missing, expired, or forged. The file is proxied from MinIO
-through the API; bucket credentials never reach the browser.
+through the API; bucket credentials never reach the browser. **410**
+(`RECORDING_EXPIRED`) if a formerly valid local object has passed retention.
 
 ### Request to Record _(docs/adr/0011)_
 
@@ -337,6 +342,18 @@ didn't start the active recording). **Response 200:** the updated
 
 While a recording is active the room metadata carries `recording: true` (the
 **Recording Indicator**), so every client shows the recording state in real time.
+It also carries opaque `recordingId` and `recordingShareAvailable` values and
+clears both when the Recording ends.
+
+### POST /rooms/:room/recording-share-consent _(session + participant)_
+
+Make final, forward-only Drive recipient consent for the caller. Requires both a
+BetterAuth session cookie and the caller's `x-participant-token`; no body.
+Available only to a signed-in non-Host participant who is currently present and
+whose token's opaque account proof matches the session. **200:** `{ "ok": true }`.
+Anonymous Guests, Hosts, mismatched accounts, an inactive recording, or a
+recording whose Drive connection was not present at start are rejected. This
+creates no public link or folder permission.
 
 ## Remote Control _(post-Phase 9; docs/adr/0024)_
 
@@ -605,6 +622,21 @@ recordings). Requires a BetterAuth session.
 - `room` is the owning Room Code. The download is authorized by each recording's
   signed `downloadToken` (docs/adr/0022), so no `hostKey` travels in this
   response. **401** if not signed in.
+
+### Google Drive storage connection _(session)_
+
+| Method | Path                                         | Result                                                                                                             |
+| ------ | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| GET    | `/storage-connections/google-drive`          | connection state (never OAuth secrets)                                                                             |
+| POST   | `/storage-connections/google-drive`          | `{ authorizationUrl }` for explicit OAuth connect                                                                  |
+| GET    | `/storage-connections/google-drive/callback` | consumes one-time Redis state, then redirects to `/recordings`                                                     |
+| DELETE | `/storage-connections/google-drive`          | best-effort revokes Huddle access; never deletes Drive files                                                       |
+| POST   | `/storage-connections/google-drive/backfill` | makes the one optional backfill for this connection; queues retained local completed recordings without recipients |
+
+The connect flow requests offline access and `drive.file` only. There is one
+connection per Host, separate from Google sign-in. `RecordingSummary.deliveryStatus`
+is `not_configured | queued | uploading | action_required | delivered |
+expired_undelivered`; a Drive URL is supplied only after verified delivery.
 
 ### POST /livekit/webhook
 

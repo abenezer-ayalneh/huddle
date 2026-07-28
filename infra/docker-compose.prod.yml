@@ -99,6 +99,30 @@ services:
       minio:
         condition: service_healthy
 
+  # Single-concurrency Drive delivery + retention worker. It uses the exact API
+  # image and env, but has no public port; PostgreSQL leases protect restart or
+  # accidental overlap. Stopping it pauses uploads/deletion rather than changing
+  # retention state in the API web process.
+  recording-worker:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    restart: always
+    command: node dist/recording-worker.js
+    env_file:
+      - ../.env.prod
+    environment:
+      NODE_ENV: production
+      LOG_FORMAT: json
+      SENTRY_AUTH_TOKEN: ''
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      minio:
+        condition: service_healthy
+
   # --- LiveKit: prod config (external IP, TURN/TLS, metrics) ---
   livekit:
     restart: always

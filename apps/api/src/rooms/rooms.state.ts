@@ -40,6 +40,18 @@ export interface DirectRejoinGrant {
   createdAt: number;
 }
 
+// Recording Share Consent is call-instance scoped. It is never durable
+// membership: room_finished clears it, and a later room with the same Room Code
+// starts with no participant sharing authority.
+export interface RecordingShareConsent {
+  room: string;
+  roomSid: string;
+  userId: string;
+  identity: string;
+  accountBinding: string;
+  consentedAt: number;
+}
+
 // How long a knock lives before Redis evicts it. Comfortably longer than a guest
 // would wait in the lobby, short enough that abandoned knocks don't pile up.
 const KNOCK_TTL_SECONDS = 60 * 60; // 1 hour
@@ -64,6 +76,15 @@ export class RoomStateService {
   }
   private directRejoinIndexKey(room: string): string {
     return `huddle:direct-rejoin-users:${room}`;
+  }
+  private recordingShareConsentKey(room: string, roomSid: string, userId: string): string {
+    return `huddle:recording-share-consent:${room}:${roomSid}:${userId}`;
+  }
+  private recordingShareConsentIdentityKey(room: string, roomSid: string, identity: string): string {
+    return `huddle:recording-share-consent-identity:${room}:${roomSid}:${identity}`;
+  }
+  private recordingShareConsentIndexKey(room: string, roomSid: string): string {
+    return `huddle:recording-share-consent-users:${room}:${roomSid}`;
   }
 
   async addKnock(room: string, name: string, image?: string | null, userId?: string): Promise<Knock> {
@@ -204,6 +225,49 @@ export class RoomStateService {
       .map((raw) => JSON.parse(raw) as DirectRejoinGrant)
       .filter((grant) => grant.roomSid === roomSid);
     await Promise.all(grants.map((grant) => this.removeDirectRejoinGrant(grant)));
+  }
+
+  async addRecordingShareConsent(params: Omit<RecordingShareConsent, 'consentedAt'>): Promise<RecordingShareConsent> {
+    const previous = await this.getRecordingShareConsent(params.room, params.roomSid, params.userId);
+    if (previous && previous.identity !== params.identity) {
+      await this.redis.del(this.recordingShareConsentIdentityKey(params.room, params.roomSid, previous.identity));
+    }
+    const consent: RecordingShareConsent = { ...params, consentedAt: Date.now() };
+    await this.redis.set(this.recordingShareConsentKey(params.room, params.roomSid, params.userId), JSON.stringify(consent));
+    await this.redis.set(this.recordingShareConsentIdentityKey(params.room, params.roomSid, params.identity), params.userId);
+    await this.redis.sadd(this.recordingShareConsentIndexKey(params.room, params.roomSid), params.userId);
+    return consent;
+  }
+
+  async getRecordingShareConsent(room: string, roomSid: string, userId: string): Promise<RecordingShareConsent | undefined> {
+    const raw = await this.redis.get(this.recordingShareConsentKey(room, roomSid, userId));
+    if (!raw) return undefined;
+    const consent = JSON.parse(raw) as RecordingShareConsent;
+    return consent.room === room && consent.roomSid === roomSid && consent.userId === userId ? consent : undefined;
+  }
+
+  async getRecordingShareConsentByIdentity(room: string, roomSid: string, identity: string): Promise<RecordingShareConsent | undefined> {
+    const userId = await this.redis.get(this.recordingShareConsentIdentityKey(room, roomSid, identity));
+    if (!userId) return undefined;
+    const consent = await this.getRecordingShareConsent(room, roomSid, userId);
+    return consent?.identity === identity ? consent : undefined;
+  }
+
+  async listRecordingShareConsents(room: string, roomSid: string): Promise<RecordingShareConsent[]> {
+    const userIds = await this.redis.smembers(this.recordingShareConsentIndexKey(room, roomSid));
+    if (userIds.length === 0) return [];
+    const consents = await Promise.all(userIds.map((userId) => this.getRecordingShareConsent(room, roomSid, userId)));
+    return consents.filter((consent): consent is RecordingShareConsent => consent != null);
+  }
+
+  async clearRecordingShareConsents(room: string, roomSid: string): Promise<void> {
+    const consents = await this.listRecordingShareConsents(room, roomSid);
+    const keys = consents.flatMap((consent) => [
+      this.recordingShareConsentKey(room, roomSid, consent.userId),
+      this.recordingShareConsentIdentityKey(room, roomSid, consent.identity),
+    ]);
+    if (keys.length > 0) await this.redis.del(...keys);
+    await this.redis.del(this.recordingShareConsentIndexKey(room, roomSid));
   }
 
   private async writeKnock(knock: Knock): Promise<void> {

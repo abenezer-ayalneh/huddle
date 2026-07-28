@@ -28,27 +28,23 @@ export function useRecording({ room, token, isHost, hostKey }: { room: string; t
 
   // The room-wide Recording Indicator: a flag in the room metadata (set by the
   // API on start, cleared by the egress webhook on end). Visible to everyone.
-  const recordingActive = useMemo(() => {
-    if (!metadata) return false;
+  const recordingMetadata = useMemo(() => {
+    if (!metadata) return {};
     try {
-      return (JSON.parse(metadata) as { recording?: unknown }).recording === true;
+      return JSON.parse(metadata) as { recording?: unknown; recordingStartedAt?: unknown; recordingId?: unknown; recordingShareAvailable?: unknown };
     } catch {
-      return false;
+      return {};
     }
   }, [metadata]);
+
+  const recordingActive = recordingMetadata.recording === true;
 
   // When the recording started (server-stamped, ms epoch), for the live timer in
   // the Recording Indicator. Stamped alongside the flag, so it propagates to
   // every client the same way and is correct even for someone who joined late.
-  const recordingStartedAt = useMemo(() => {
-    if (!metadata) return null;
-    try {
-      const v = (JSON.parse(metadata) as { recordingStartedAt?: unknown }).recordingStartedAt;
-      return typeof v === 'number' ? v : null;
-    } catch {
-      return null;
-    }
-  }, [metadata]);
+  const recordingStartedAt = typeof recordingMetadata.recordingStartedAt === 'number' ? recordingMetadata.recordingStartedAt : null;
+  const recordingId = typeof recordingMetadata.recordingId === 'string' ? recordingMetadata.recordingId : null;
+  const recordingShareAvailable = recordingMetadata.recordingShareAvailable === true;
 
   const [phase, setPhase] = useState<RequestPhase>('idle');
   const [incoming, setIncoming] = useState<IncomingRecordRequest | null>(null);
@@ -199,6 +195,8 @@ export function useRecording({ room, token, isHost, hostKey }: { room: string; t
   return {
     recordingActive,
     recordingStartedAt,
+    recordingId,
+    recordingShareAvailable,
     iAmRecorder,
     phase,
     busy,

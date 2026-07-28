@@ -1,4 +1,4 @@
-import { CreateBucketCommand, GetObjectCommand, HeadBucketCommand, S3Client } from '@aws-sdk/client-s3';
+import { CreateBucketCommand, DeleteObjectCommand, GetObjectCommand, HeadBucketCommand, S3Client } from '@aws-sdk/client-s3';
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Readable } from 'node:stream';
@@ -115,5 +115,25 @@ export class StorageService {
       size: res.ContentLength,
       contentType: res.ContentType,
     };
+  }
+
+  // Drive's resumable uploader requests a deterministic byte range at a time.
+  // Keeping those reads server-side means neither MinIO credentials nor a
+  // presigned object URL are exposed to Google or the browser.
+  async getObjectRange(key: string, start: number, endInclusive: number): Promise<{ body: Readable; size?: number }> {
+    const res = await this.client.send(
+      new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        Range: `bytes=${start}-${endInclusive}`,
+      }),
+    );
+    return { body: res.Body as Readable, size: res.ContentLength };
+  }
+
+  // S3/MinIO deletion is idempotent. The worker marks the database row only
+  // after this call succeeds so a temporary object-store failure is retried.
+  async deleteObject(key: string): Promise<void> {
+    await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
   }
 }

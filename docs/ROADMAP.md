@@ -184,6 +184,20 @@ LiveKit Egress to record/export sessions; storage target.
 - [x] **Download** — finished recordings are listed (in-call panel **and** the
       host dashboard) and downloaded; the file is **proxied through the
       host-authorized API**, so bucket credentials never reach the browser.
+- [ ] **Retention + private Drive delivery enhancement** — implementation,
+      mocked validation, and deploy wiring are complete; a Google test-project
+      live acceptance pass remains required. Completed local MP4s
+      have a configurable 168-hour hard cap (24-hour post-delivery safety copy);
+      an API-image, single-concurrency leased worker uploads to an optional
+      Host-connected private Google Drive folder, then reclaims MinIO while
+      preserving metadata/Drive links. Hosts can explicitly backfill retained
+      media; encrypted OAuth/resumable state, exact-size verification, retry,
+      action-required notices, and a cleanup-preview command are included.
+- [ ] **Consent-based recipient delivery** — implementation is complete; live
+      Drive permission/notification acceptance remains required. Only signed-in non-Hosts can make
+      final, call-scoped consent during a Drive-enabled Recording. Matching
+      account proof and actual recording overlap are required; Drive grants are
+      per-file reader permissions, never folder/public sharing. See ADR-0029.
 
 > **Storage model:** a new `egress` (headless-Chrome compositor) and `minio`
 > service join the stack. The S3 upload target is built from the API's env and
@@ -191,6 +205,8 @@ LiveKit Egress to record/export sessions; storage target.
 > The API talks to MinIO on two endpoints — host-facing (`localhost:9000`) for
 > reads, and the in-network one (`minio:9000`) it passes to Egress for uploads.
 > See `docs/adr/0003-recording-egress-minio.md`.
+> Retention and Google Drive delivery are a Phase 8 enhancement; Phase 11's
+> scope and status are unchanged. See `docs/adr/0029-recording-retention-google-drive-delivery.md`.
 >
 > Verified: the start → egress-webhook → completed → download round-trip against
 > live LiveKit Egress + MinIO, plus 6 unit tests. Recording real A/V content

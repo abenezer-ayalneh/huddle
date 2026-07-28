@@ -12,6 +12,7 @@ import PresentationToast from '@/components/call/PresentationToast';
 import PreJoinScreen from '@/components/call/PreJoinScreen';
 import RecordingIndicator from '@/components/call/RecordingIndicator';
 import RecordingToast from '@/components/call/RecordingToast';
+import RecordingShareConsent from '@/components/call/RecordingShareConsent';
 import RemoteControlStatus from '@/components/call/RemoteControlStatus';
 import RemoteControlSurface from '@/components/call/RemoteControlSurface';
 import RemoteControlToast from '@/components/call/RemoteControlToast';
@@ -257,6 +258,15 @@ function CallView({
       <ErrorBoundary label="Call toasts" fallback={null}>
         <div className="pointer-events-none absolute inset-x-0 top-14 z-30 flex flex-col items-center gap-2">
           <RecordingIndicator active={recording.recordingActive} startedAt={recording.recordingStartedAt} />
+          {recording.recordingActive && recording.recordingId && (
+            <RecordingShareConsent
+              key={recording.recordingId}
+              room={room}
+              participantToken={token}
+              isHost={isHost}
+              available={recording.recordingShareAvailable}
+            />
+          )}
           <RemoteControlToast
             incoming={remoteControl.incomingRequest}
             outgoing={remoteControl.outgoingRequest}

@@ -49,6 +49,10 @@ export class RoomRepository {
     return this.prisma.room.findUnique({ where: { slug } });
   }
 
+  findById(id: string): Promise<Room | null> {
+    return this.prisma.room.findUnique({ where: { id } });
+  }
+
   // The host's UPCOMING scheduled meetings only: those with a future start time.
   // Instant meetings (no scheduledStart) and past ones are intentionally omitted
   // — the lobby list exists solely to get back into a not-yet-started meeting.

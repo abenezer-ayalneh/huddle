@@ -11,6 +11,7 @@ export interface CallParticipant {
   identity: string;
   name: string;
   role?: string;
+  accountBinding?: string;
   // Present on requests resolved from a LiveKit JWT. Optional keeps this
   // lightweight value object compatible with existing service unit tests that
   // construct participants directly.
@@ -41,6 +42,7 @@ export class ParticipantGuard implements CanActivate {
       identity: claims.identity,
       name: claims.name || claims.identity,
       role: claims.role,
+      accountBinding: claims.accountBinding,
       tokenExpiresAt: claims.tokenExpiresAt,
     };
     return true;

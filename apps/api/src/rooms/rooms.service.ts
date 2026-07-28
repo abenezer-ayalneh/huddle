@@ -132,6 +132,7 @@ export class RoomsService {
       identity: grant.identity,
       name: guest.name,
       image: guest.image,
+      accountUserId: guest.id,
       directRejoin: { grantId: grant.grantId, roomSid: grant.roomSid },
     });
 
@@ -206,6 +207,7 @@ export class RoomsService {
           identity,
           name: knock.name,
           image: knock.image,
+          accountUserId: knock.userId,
           directRejoin: directRejoinGrant ? { grantId: directRejoinGrant.grantId, roomSid: directRejoinGrant.roomSid } : undefined,
         });
       } catch (error) {
@@ -257,7 +259,10 @@ export class RoomsService {
   // Grants that belong to the finished LiveKit room instance.
   async onRoomFinished(slug: string, roomSid?: string): Promise<void> {
     await this.state.clearKnocks(slug);
-    if (roomSid) await this.state.clearDirectRejoinGrants(slug, roomSid);
+    if (roomSid) {
+      await this.state.clearDirectRejoinGrants(slug, roomSid);
+      await this.state.clearRecordingShareConsents(slug, roomSid);
+    }
   }
 
   async isDirectRejoinParticipantValid(slug: string, roomSid: string, identity: string, metadata: DirectRejoinTokenMetadata): Promise<boolean> {
@@ -275,6 +280,7 @@ export class RoomsService {
       name: host.name,
       host: true,
       image: host.image,
+      accountUserId: host.id,
     });
     return {
       room: room.slug,

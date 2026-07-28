@@ -406,9 +406,28 @@ output), hard mute / lockdown (this never revokes the right to speak)
 The single composited capture of a managed room — the same grid + mixed audio a
 participant sees — produced as one MP4 per session by LiveKit Egress. There is
 at most one active Recording per room at a time. The resulting file always
-belongs to the room (the host's account) and is only ever downloaded by the
-host, regardless of who started it.
+belongs to the room (the host's account). The Host controls its local download
+and optional Cloud Destination; a non-Host receives Drive access only after
+their own [[Recording Share Consent]], regardless of who started it.
 _Avoid_: Capture, session record, tape
+
+**Local Recording Copy**:
+The temporary MP4 stored by Huddle for a completed Recording. It has a fixed
+expiry and may be deleted sooner after verified Cloud Destination delivery; the
+Recording's metadata remains after deletion.
+_Avoid_: Archive, permanent copy, backup
+
+**Cloud Destination**:
+The one optional external storage account a Host explicitly connects for future
+Recording delivery. It is separate from sign-in and owned by the Host account.
+_Avoid_: Synced drive, shared folder, public storage
+
+**Recording Share Consent**:
+A signed-in non-Host participant's explicit, final choice to receive eligible
+Recordings in the Host's Cloud Destination. It is limited to the current call,
+starts from the moment of consent, and ends when that call ends. Anonymous
+Guests cannot give it.
+_Avoid_: Recording permission, audience membership, folder access
 
 **Request to Record**:
 A non-host participant's in-call request for permission to record. Any

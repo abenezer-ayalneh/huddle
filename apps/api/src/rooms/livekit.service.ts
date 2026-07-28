@@ -1,5 +1,6 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { AccessToken, RoomServiceClient, TokenVerifier, TrackSource, WebhookReceiver, type WebhookEvent } from 'livekit-server-sdk';
 
 export interface ParticipantClaims {
@@ -7,6 +8,9 @@ export interface ParticipantClaims {
   name?: string;
   room?: string;
   role?: string;
+  // Opaque account proof: safe to carry in LiveKit metadata, but cannot be
+  // reversed into an account ID or email by another participant.
+  accountBinding?: string;
   tokenExpiresAt: number;
 }
 
@@ -14,6 +18,7 @@ export interface ConnectedParticipant {
   identity: string;
   name: string;
   role?: string;
+  accountBinding?: string;
 }
 
 export interface DirectRejoinTokenMetadata {
@@ -43,6 +48,7 @@ export class LivekitService {
   // for admin REST calls and egress.
   readonly livekitUrl: string;
   private readonly httpUrl: string;
+  private readonly accountBindingSecret: string;
 
   private _svc?: RoomServiceClient;
   private _webhook?: WebhookReceiver;
@@ -61,6 +67,10 @@ export class LivekitService {
     this.apiSecret = apiSecret;
     this.livekitUrl = publicLivekitUrl;
     this.httpUrl = livekitUrl.replace(/^ws/, 'http');
+    // The explicit secret lets operators rotate account-binding authority
+    // independently. The LiveKit secret remains a safe compatibility fallback
+    // for existing installations until they configure the new setting.
+    this.accountBindingSecret = this.config.get<string>('PARTICIPANT_ACCOUNT_BINDING_SECRET') || apiSecret;
   }
 
   private get svc(): RoomServiceClient {
@@ -89,6 +99,7 @@ export class LivekitService {
         name: claims.name,
         room: claims.video?.room,
         role: typeof metadata.role === 'string' ? metadata.role : undefined,
+        accountBinding: typeof metadata.accountBinding === 'string' ? metadata.accountBinding : undefined,
         tokenExpiresAt: typeof claims.exp === 'number' ? claims.exp * 1000 : 0,
       };
     } catch {
@@ -107,6 +118,7 @@ export class LivekitService {
     name: string;
     host?: boolean;
     image?: string | null;
+    accountUserId?: string;
     directRejoin?: DirectRejoinTokenMetadata;
   }): Promise<string> {
     const at = new AccessToken(this.apiKey, this.apiSecret, {
@@ -116,6 +128,7 @@ export class LivekitService {
       metadata: JSON.stringify({
         role: opts.host ? 'host' : 'guest',
         avatarUrl: opts.image ?? undefined,
+        accountBinding: opts.accountUserId ? this.accountBindingFor(opts.accountUserId) : undefined,
         directRejoinGrantId: opts.directRejoin?.grantId,
         directRejoinRoomSid: opts.directRejoin?.roomSid,
       }),
@@ -129,6 +142,17 @@ export class LivekitService {
       roomAdmin: opts.host ?? false,
     });
     return at.toJwt();
+  }
+
+  accountBindingFor(userId: string): string {
+    return createHmac('sha256', this.accountBindingSecret).update(userId).digest('base64url');
+  }
+
+  matchesAccountBinding(userId: string, proof?: string): boolean {
+    if (!proof) return false;
+    const expected = Buffer.from(this.accountBindingFor(userId));
+    const received = Buffer.from(proof);
+    return expected.length === received.length && timingSafeEqual(expected, received);
   }
 
   // A narrowly scoped token for the native macOS Control Agent. It is visible to
@@ -204,7 +228,21 @@ export class LivekitService {
       identity: participant.identity,
       name: participant.name || participant.identity,
       role: typeof metadata.role === 'string' ? metadata.role : undefined,
+      accountBinding: typeof metadata.accountBinding === 'string' ? metadata.accountBinding : undefined,
     };
+  }
+
+  async listConnectedParticipants(room: string): Promise<ConnectedParticipant[]> {
+    const participants = await this.svc.listParticipants(room);
+    return participants.map((participant) => {
+      const metadata = this.parseMetadata(participant.metadata);
+      return {
+        identity: participant.identity,
+        name: participant.name || participant.identity,
+        role: typeof metadata.role === 'string' ? metadata.role : undefined,
+        accountBinding: typeof metadata.accountBinding === 'string' ? metadata.accountBinding : undefined,
+      };
+    });
   }
 
   directRejoinMetadata(metadata?: string): DirectRejoinTokenMetadata | null {
@@ -276,7 +314,23 @@ export class LivekitService {
         meta.recordingStartedAt = Date.now();
       } else {
         delete meta.recordingStartedAt;
+        delete meta.recordingId;
+        delete meta.recordingShareAvailable;
       }
+      return true;
+    });
+  }
+
+  // `recordingId` is opaque and only correlates the UI consent action to the
+  // active server-side record. Whether sharing is available is projected at
+  // Recording start, so a Drive connection created mid-call cannot silently
+  // change a participant's consent choice.
+  async setRecordingState(room: string, state: { recordingId: string; recordingShareAvailable: boolean }): Promise<void> {
+    await this.mutateRoomMetadata(room, (meta) => {
+      meta.recording = true;
+      meta.recordingStartedAt = Date.now();
+      meta.recordingId = state.recordingId;
+      meta.recordingShareAvailable = state.recordingShareAvailable;
       return true;
     });
   }

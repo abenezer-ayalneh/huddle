@@ -91,6 +91,12 @@ export type RecordingSummary = {
   startedAt: string;
   endedAt: string | null;
   error: string | null;
+  localExpiresAt: string | null;
+  localDeletedAt: string | null;
+  deliveryStatus: 'not_configured' | 'queued' | 'uploading' | 'action_required' | 'delivered' | 'expired_undelivered';
+  driveUrl: string | null;
+  deliveredAt: string | null;
+  recipientShares: { pending: number; shared: number; failed: number; failures: string[] };
   downloadable: boolean;
   // Absolute, ready-to-use download URL when the recording is `completed`; null
   // otherwise. Carries a short-lived signed token (docs/adr/0022) so a plain
@@ -104,6 +110,14 @@ export type RecordingSummary = {
 // no host key travels in this response.
 export type MyRecording = RecordingSummary & {
   room: string;
+};
+
+export type GoogleDriveConnection = {
+  connected: boolean;
+  status: 'connected' | 'action_required' | 'disconnected';
+  providerEmail: string | null;
+  connectedAt: string | null;
+  backfillAvailable: boolean;
 };
 
 // Wire shape: the server sends a downloadToken (not a URL — it doesn't assume its
@@ -222,6 +236,14 @@ export const api = {
     return { recordings: recordings.map((r) => ({ ...toRecordingSummary(r, r.room), room: r.room })) };
   },
 
+  googleDriveConnection: () => request<GoogleDriveConnection>('/storage-connections/google-drive'),
+
+  beginGoogleDriveConnection: () => request<{ authorizationUrl: string }>('/storage-connections/google-drive', { method: 'POST', surfaceFault: true }),
+
+  disconnectGoogleDrive: () => request<{ ok: true }>('/storage-connections/google-drive', { method: 'DELETE', surfaceFault: true }),
+
+  backfillGoogleDrive: () => request<{ queued: number }>('/storage-connections/google-drive/backfill', { method: 'POST', surfaceFault: true }),
+
   // --- Recording (host-only) ---
   startRecording: async (room: string, hostKey: string): Promise<RecordingSummary> => {
     const r = await request<RecordingWire>(`/rooms/${encodeURIComponent(room)}/recordings`, { method: 'POST', hostKey });
@@ -259,6 +281,13 @@ export const api = {
     });
     return toRecordingSummary(r, room);
   },
+
+  recordingShareConsent: (room: string, participantToken: string) =>
+    request<{ ok: true }>(`/rooms/${encodeURIComponent(room)}/recording-share-consent`, {
+      method: 'POST',
+      headers: { 'x-participant-token': participantToken },
+      surfaceFault: true,
+    }),
 
   // --- Attended Remote Control (docs/adr/0024) ---
   requestRemoteControl: (room: string, sharerIdentity: string, participantToken: string) =>
