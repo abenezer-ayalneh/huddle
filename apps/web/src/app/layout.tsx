@@ -18,6 +18,9 @@ const rajdhani = Rajdhani({
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://huddle.abenezer-ayalneh.dev';
+// Search Console issues this value for its optional URL-prefix verification
+// method. It is a public ownership token, so it may be exposed in page metadata.
+const googleSiteVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION?.trim();
 const siteName = 'Huddle';
 const siteTitle = 'Huddle - Self-hosted video conferencing on LiveKit';
 const siteDescription =
@@ -46,6 +49,7 @@ export const metadata: Metadata = {
   description: siteDescription,
   applicationName: siteName,
   category: 'communication',
+  verification: googleSiteVerification ? { google: googleSiteVerification } : undefined,
   alternates: {
     canonical: '/',
   },

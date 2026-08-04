@@ -42,6 +42,82 @@ seven days, so do not treat Path A as a durable customer-facing launch.
       Google reviewer can use, plus a short English demo video of the complete Drive
       authorization flow.
 
+### Resolve the homepage ownership finding before resubmitting
+
+Google has found the public Huddle homepage, but it will not treat page text,
+HTTPS, or a DNS record for email delivery as proof that the Google Cloud project
+operator owns the domain. The durable fix is a Google Search Console **Domain
+property** for the root domain. It covers Huddle and every other subdomain, and
+does not require rebuilding the application.
+
+1. In [Google Search Console](https://search.google.com/search-console), use
+   the Google account that owns the Huddle Cloud project, or one that can add
+   that account as an Owner. Select **Add property** → **Domain**, then enter
+   exactly:
+
+   ```text
+   abenezer-ayalneh.dev
+   ```
+
+   Do not enter `https://` or `huddle.` for this preferred method.
+
+2. Copy the `google-site-verification=...` TXT value shown by Search Console.
+   In the authoritative DNS provider, add it without replacing the existing
+   Brevo/SPF TXT records:
+
+   | Field   | Value                                                              |
+   | ------- | ------------------------------------------------------------------ |
+   | Type    | `TXT`                                                              |
+   | Name    | `@` (the zone root)                                                |
+   | Content | The exact `google-site-verification=...` value from Search Console |
+   | TTL     | Auto/default                                                       |
+
+   A TXT record is never proxied. Keep the record after Search Console accepts
+   it; removing it revokes the ownership proof.
+
+3. Return to Search Console and select **Verify**. If a different Google
+   account performed this step, add the Cloud project account as a **verified
+   Owner** in Search Console before continuing.
+4. In **Google Auth Platform → Branding**, ensure the authorized domain is
+   `abenezer-ayalneh.dev`, then use these exact public URLs:
+
+   ```text
+   Homepage: https://huddle.abenezer-ayalneh.dev
+   Privacy policy: https://huddle.abenezer-ayalneh.dev/privacy
+   Terms of service: https://huddle.abenezer-ayalneh.dev/terms
+   ```
+
+   The homepage already identifies Huddle and its operator, describes the
+   product, and links to the same public privacy policy and terms pages. The
+   Search Console ownership proof is the missing requirement.
+
+5. Respond to the Google verification email to confirm the ownership fix, then
+   submit the verification request once. Do not change the homepage domain to a
+   different site merely to bypass this finding.
+
+#### Fallback: Search Console URL-prefix meta tag
+
+Use this only when DNS access is temporarily unavailable. In Search Console add
+the exact URL-prefix property `https://huddle.abenezer-ayalneh.dev/`, choose the
+HTML tag method, and set the issued token in the production `.env.prod`:
+
+```dotenv
+NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION=the-token-value-only
+```
+
+The Docker build forwards this public token into Huddle's root metadata as
+`<meta name="google-site-verification" ...>`. Rebuild the web image, then verify
+that the tag is visible before clicking Search Console's Verify button:
+
+```bash
+docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
+  --env-file .env.prod up -d --build --no-deps web
+curl -fsSL https://huddle.abenezer-ayalneh.dev | rg 'google-site-verification'
+```
+
+This fallback verifies only the submitted Huddle URL prefix. Replace it with
+the root-domain DNS method when DNS access is available.
+
 ### Procedure
 
 #### Step 1: Confirm the active Google project and client
