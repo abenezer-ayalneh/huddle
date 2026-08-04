@@ -184,6 +184,18 @@ function SignIn() {
           </button>
         </div>
 
+        <p className="text-xs leading-5 text-white/40">
+          By signing in or creating an account, you agree to the{' '}
+          <Link href="/terms" className="text-white/60 underline decoration-white/20 underline-offset-2 transition-colors hover:text-cyan">
+            Terms of Service
+          </Link>{' '}
+          and acknowledge the{' '}
+          <Link href="/privacy" className="text-white/60 underline decoration-white/20 underline-offset-2 transition-colors hover:text-cyan">
+            Privacy Policy
+          </Link>
+          .
+        </p>
+
         <p className="text-xs text-white/45">Have a meeting link? Just open it — you don&apos;t need an account to join.</p>
       </div>
 

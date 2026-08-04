@@ -52,7 +52,6 @@ export const metadata: Metadata = {
   keywords: [
     'Huddle',
     'self-hosted video conferencing',
-    'open source video conferencing',
     'LiveKit',
     'WebRTC video calls',
     'browser video meeting',

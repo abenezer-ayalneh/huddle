@@ -67,6 +67,19 @@ export default async function DownloadsPage() {
           </div>
         </div>
       </section>
+      <footer className="border-t border-white/10 px-5 py-8 text-sm text-white/45 sm:px-8">
+        <nav className="mx-auto flex max-w-6xl flex-wrap gap-x-5 gap-y-2" aria-label="Downloads footer navigation">
+          <Link href="/privacy" className="transition-colors hover:text-cyan">
+            Privacy Policy
+          </Link>
+          <Link href="/terms" className="transition-colors hover:text-cyan">
+            Terms of Service
+          </Link>
+          <a href="https://abenezer-ayalneh.dev/contact" className="transition-colors hover:text-cyan">
+            Contact
+          </a>
+        </nav>
+      </footer>
     </main>
   );
 }

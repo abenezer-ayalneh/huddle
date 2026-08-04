@@ -73,7 +73,7 @@ const jsonLd = [
         name: 'What does Huddle cost?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'Huddle is free and open. You run it on your own server, with no per-seat pricing or vendor subscription.',
+          text: 'The official Huddle service currently has no subscription fee. A self-hosted operator remains responsible for its own infrastructure and provider costs.',
         },
       },
     ],
@@ -287,6 +287,29 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      <footer className="border-t border-white/10 bg-white/[0.018] px-5 py-8 sm:px-8">
+        <div className="mx-auto flex max-w-7xl flex-col gap-5 text-sm text-white/45 sm:flex-row sm:items-center sm:justify-between">
+          <Link href="/" className="flex items-center gap-3 transition-colors hover:text-white" aria-label="Huddle home">
+            <HuddleIcon className="size-7" />
+            <span>Huddle · Operated by Abenezer Ayalneh</span>
+          </Link>
+          <nav className="flex flex-wrap gap-x-5 gap-y-2" aria-label="Footer navigation">
+            <Link href="/privacy" className="transition-colors hover:text-cyan">
+              Privacy Policy
+            </Link>
+            <Link href="/terms" className="transition-colors hover:text-cyan">
+              Terms of Service
+            </Link>
+            <Link href="/downloads" className="transition-colors hover:text-cyan">
+              Downloads
+            </Link>
+            <a href="https://abenezer-ayalneh.dev/contact" className="transition-colors hover:text-cyan">
+              Contact
+            </a>
+          </nav>
+        </div>
+      </footer>
 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
     </main>
