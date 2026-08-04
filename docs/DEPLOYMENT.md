@@ -499,7 +499,14 @@ Google test project before production. The worker creates a private `Huddle
 Recordings` folder and per-file reader permissions only; do not request broad
 Drive scope, a folder picker, or a public-link configuration.
 
+If Google blocks a Drive connection because the OAuth app is still in Testing,
+follow [the Google Drive OAuth access runbook](./RUNBOOK_GOOGLE_DRIVE_OAUTH_ACCESS.md).
+
 ## 11.1 Recording retention rollout
+
+For the complete production procedure, including the required build-before-worker
+guard, preview review, verification, rollback, and Google Drive acceptance
+test, use [the recording-retention deployment runbook](./RUNBOOK_RECORDING_RETENTION_DEPLOYMENT.md).
 
 Deploy additively: migrate, preview, then start the worker. The first worker
 cycle gives every existing completed local recording a full configured grace
@@ -507,11 +514,15 @@ period from deployment; it does not calculate expiry from an old `endedAt`.
 
 ```bash
 docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
-  --env-file .env.prod run --rm api pnpm --filter @huddle/api prisma:deploy
+  --env-file .env.prod stop recording-worker
 docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
-  --env-file .env.prod run --rm api node dist/recording-retention-preview.js
+  --env-file .env.prod build api recording-worker
 docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
-  --env-file .env.prod up -d api recording-worker
+  --env-file .env.prod run --rm --no-deps --entrypoint node api node_modules/prisma/build/index.js migrate deploy
+docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
+  --env-file .env.prod run --rm --no-deps --entrypoint node api dist/recording-retention-preview.js
+docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
+  --env-file .env.prod up -d --no-deps --force-recreate api recording-worker
 ```
 
 The preview prints `affectedObjects` and `bytes` before cleanup begins. Stopping
