@@ -1,4 +1,4 @@
-import { Controller, Delete, Get, Post, Query, Res, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Get, HttpException, Logger, Post, Query, Res, UseGuards } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Response } from 'express';
 import { AuthGuard, SessionUser, type AuthUser } from '../auth/auth.guard';
@@ -7,6 +7,8 @@ import { StorageConnectionsService } from './storage-connections.service';
 
 @Controller('storage-connections/google-drive')
 export class StorageConnectionsController {
+  private readonly logger = new Logger(StorageConnectionsController.name);
+
   constructor(
     private readonly connections: StorageConnectionsService,
     private readonly delivery: RecordingDeliveryService,
@@ -32,7 +34,8 @@ export class StorageConnectionsController {
       const userId = await this.connections.completeGoogleDrive(state, code);
       await this.delivery.resumeActionRequired(userId);
       return res.redirect(`${webOrigin}/recordings?drive=connected`);
-    } catch {
+    } catch (error) {
+      this.logGoogleDriveCallbackFailure(error);
       return res.redirect(`${webOrigin}/recordings?drive=error`);
     }
   }
@@ -48,5 +51,18 @@ export class StorageConnectionsController {
   @Post('backfill')
   async backfill(@SessionUser() user: AuthUser) {
     return this.delivery.queueBackfill(user.id);
+  }
+
+  private logGoogleDriveCallbackFailure(error: unknown): void {
+    // The browser only receives a generic outcome. Keep detailed diagnostics in
+    // server logs, while only logging known-safe configuration/OAuth messages.
+    if (error instanceof HttpException) {
+      this.logger.warn(`Google Drive OAuth callback failed (HTTP ${error.getStatus()}): ${error.message}`);
+      return;
+    }
+
+    const code = typeof error === 'object' && error !== null && 'code' in error && typeof error.code === 'string' ? ` (${error.code})` : '';
+    const name = error instanceof Error ? error.name : 'UnknownError';
+    this.logger.warn(`Google Drive OAuth callback failed: ${name}${code}`);
   }
 }

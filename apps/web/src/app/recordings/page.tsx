@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Download, ExternalLink, HardDrive, Unplug, UploadCloud } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api, type GoogleDriveConnection, type MyRecording } from '@/lib/api';
 import { useSession } from '@/lib/auth-client';
@@ -13,6 +14,7 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 // instant meetings. Session-gated; each row downloads via its own host key.
 export default function RecordingsPage() {
   const { data: session, isPending } = useSession();
+  const searchParams = useSearchParams();
   const [recordings, setRecordings] = useState<MyRecording[] | null>(null);
   const [connection, setConnection] = useState<GoogleDriveConnection | null>(null);
   const [busy, setBusy] = useState<'connect' | 'disconnect' | 'backfill' | null>(null);
@@ -55,6 +57,12 @@ export default function RecordingsPage() {
           <LoadingSpinner className="mx-auto size-10" />
         ) : (
           <>
+            {searchParams.get('drive') === 'error' && (
+              <p role="alert" className="rounded-lg border border-amber-200/30 bg-amber-200/10 px-3 py-2 text-sm text-amber-100">
+                Google Drive could not be connected. Your Drive files were not changed. Check the local API log for the reason, then start a new connection
+                attempt.
+              </p>
+            )}
             <section aria-labelledby="drive-heading" className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="flex gap-3">
