@@ -1,20 +1,28 @@
 import type { Metadata } from 'next';
-import { Exo_2, Rajdhani } from 'next/font/google';
+import localFont from 'next/font/local';
 import FaultLayer from '@/components/faults/FaultLayer';
 import './globals.css';
 
-// Exo 2: geometric, futuristic display face for headings and brand.
-const exo2 = Exo_2({
+// The site's display and UI typefaces are vendored so production builds do not
+// require access to Google Fonts. The files in ./fonts are the Latin subsets
+// covered by their adjacent OFL notices.
+const exo2 = localFont({
+  src: './fonts/exo-2-latin-variable.woff2',
   variable: '--font-exo2',
-  subsets: ['latin'],
+  display: 'swap',
+  weight: '100 900',
 });
 
-// Rajdhani: techy, open sans for body and UI. Non-variable, so weights are
-// declared explicitly.
-const rajdhani = Rajdhani({
+const rajdhani = localFont({
+  src: [
+    { path: './fonts/rajdhani-latin-300.woff2', weight: '300' },
+    { path: './fonts/rajdhani-latin-400.woff2', weight: '400' },
+    { path: './fonts/rajdhani-latin-500.woff2', weight: '500' },
+    { path: './fonts/rajdhani-latin-600.woff2', weight: '600' },
+    { path: './fonts/rajdhani-latin-700.woff2', weight: '700' },
+  ],
   variable: '--font-rajdhani',
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
+  display: 'swap',
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://huddle.abenezer-ayalneh.dev';

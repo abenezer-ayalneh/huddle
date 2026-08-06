@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Download, ExternalLink, HardDrive, Unplug, UploadCloud } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { api, type GoogleDriveConnection, type MyRecording } from '@/lib/api';
 import { useSession } from '@/lib/auth-client';
 import IconLink from '@/components/IconLink';
@@ -13,6 +13,14 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 // scheduled meetings, this is the only place to reach recordings of past and
 // instant meetings. Session-gated; each row downloads via its own host key.
 export default function RecordingsPage() {
+  return (
+    <Suspense fallback={<RecordingsFallback />}>
+      <RecordingsContent />
+    </Suspense>
+  );
+}
+
+function RecordingsContent() {
   const { data: session, isPending } = useSession();
   const searchParams = useSearchParams();
   const [recordings, setRecordings] = useState<MyRecording[] | null>(null);
@@ -213,6 +221,16 @@ export default function RecordingsPage() {
             )}
           </>
         )}
+      </div>
+    </main>
+  );
+}
+
+function RecordingsFallback() {
+  return (
+    <main className="flex flex-1 items-start justify-center p-6 md:items-center">
+      <div className="glass-strong flex w-full max-w-2xl justify-center rounded-2xl p-8 shadow-[0_8px_60px_oklch(0_0_0/0.5)]">
+        <LoadingSpinner className="size-10" />
       </div>
     </main>
   );
