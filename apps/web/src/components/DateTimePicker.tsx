@@ -84,7 +84,7 @@ export default function DateTimePicker({
         {children ?? 'Pick a date & time'}
       </PopoverTrigger>
 
-      <PopoverContent className="w-auto p-0" align="start">
+      <PopoverContent className="lobby-date-picker w-auto p-0" align="start">
         <Calendar mode="single" selected={selectedDay} onSelect={setSelectedDay} disabled={{ before: today }} />
 
         <div className="border-t border-border px-3 py-3">
@@ -122,7 +122,7 @@ export default function DateTimePicker({
             type="button"
             disabled={!selectedDay || disabled}
             onClick={handleConfirm}
-            className="flex items-center justify-center gap-2 w-full rounded-lg bg-magenta px-4 py-2 font-display font-semibold text-sm tracking-wide text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+            className="lobby-primary-button lobby-primary-button-full"
           >
             {disabled && <LoadingSpinner className="h-3.5 w-3.5" />}
             {!disabled && 'Schedule'}

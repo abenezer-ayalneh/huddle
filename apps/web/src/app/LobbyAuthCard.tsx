@@ -52,8 +52,7 @@ function oauthErrorMessage(code: string): string {
 }
 
 // Shared input styling for the auth form.
-const inputClass =
-  'w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2.5 text-white outline-none transition-colors placeholder:text-white/40 focus:border-cyan/60 focus:ring-2 focus:ring-cyan/30';
+const inputClass = 'lobby-input';
 
 function SignIn() {
   const callbackURL = typeof window !== 'undefined' ? `${window.location.origin}/lobby` : undefined;
@@ -118,10 +117,11 @@ function SignIn() {
 
   return (
     <>
-      <div className="space-y-5">
-        <div className="space-y-1">
-          <h2 className="font-display text-2xl font-semibold text-white">{mode === 'signup' ? 'Create your account' : 'Welcome back'}</h2>
-          <p className="text-sm text-white/55">
+      <div className="lobby-auth">
+        <div className="lobby-panel-heading">
+          <p className="lobby-panel-eyebrow">HOST ACCESS</p>
+          <h2>{mode === 'signup' ? 'Create your account' : 'Welcome back'}</h2>
+          <p>
             {mode === 'signup' ? 'Create an account to host or schedule a meeting.' : 'Sign in to host or schedule a meeting.'}
           </p>
         </div>
@@ -131,27 +131,37 @@ function SignIn() {
             e.preventDefault();
             submit();
           }}
-          className="space-y-3"
+          className="lobby-form"
         >
           {mode === 'signup' && (
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Display name" autoComplete="name" className={inputClass} />
+            <div className="lobby-field">
+              <label htmlFor="lobby-name">Display name</label>
+              <input id="lobby-name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" className={inputClass} />
+            </div>
           )}
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" autoComplete="email" className={inputClass} />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password (8+ characters)"
-            autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-            className={inputClass}
-          />
+          <div className="lobby-field">
+            <label htmlFor="lobby-email">Email</label>
+            <input id="lobby-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" className={inputClass} />
+          </div>
+          <div className="lobby-field">
+            <label htmlFor="lobby-password">Password</label>
+            <input
+              id="lobby-password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="At least 8 characters"
+              autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+              className={inputClass}
+            />
+          </div>
 
-          {error && <p className="text-sm text-magenta">{error}</p>}
+          {error && <p className="lobby-form-error">{error}</p>}
 
           <button
             type="submit"
             disabled={!canSubmit}
-            className="neon-magenta flex items-center justify-center gap-2 w-full rounded-lg bg-magenta px-4 py-2.5 font-display font-semibold tracking-wide text-white transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+            className="lobby-primary-button lobby-primary-button-full"
           >
             {busy && <LoadingSpinner className="h-4 w-4" />}
             {!busy && (mode === 'signup' ? 'Create account' : 'Sign in')}
@@ -164,12 +174,12 @@ function SignIn() {
             setMode(mode === 'signin' ? 'signup' : 'signin');
             setError(null);
           }}
-          className="text-sm text-white/55 underline-offset-2 transition-colors hover:text-cyan hover:underline"
+          className="lobby-text-action"
         >
           {mode === 'signin' ? 'Need an account? Create one' : 'Already have an account? Sign in'}
         </button>
 
-        <div className="border-t border-white/10 pt-4">
+        <div className="lobby-auth-divider">
           <button
             type="button"
             disabled={busy}
@@ -177,30 +187,30 @@ function SignIn() {
               setBusy(true);
               signIn.social({ provider: 'google', callbackURL, errorCallbackURL: callbackURL });
             }}
-            className="flex items-center justify-center gap-2 w-full rounded-lg border border-white/15 bg-white/5 px-4 py-2.5 font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50 disabled:cursor-not-allowed disabled:opacity-40"
+            className="lobby-secondary-button lobby-secondary-button-full"
           >
             {busy && <LoadingSpinner className="h-4 w-4" />}
             {!busy && 'Continue with Google'}
           </button>
         </div>
 
-        <p className="text-xs leading-5 text-white/40">
+        <p className="lobby-legal-copy">
           By signing in or creating an account, you agree to the{' '}
-          <Link href="/terms" className="text-white/60 underline decoration-white/20 underline-offset-2 transition-colors hover:text-cyan">
+          <Link href="/terms">
             Terms of Service
           </Link>{' '}
           and acknowledge the{' '}
-          <Link href="/privacy" className="text-white/60 underline decoration-white/20 underline-offset-2 transition-colors hover:text-cyan">
+          <Link href="/privacy">
             Privacy Policy
           </Link>
           .
         </p>
 
-        <p className="text-xs text-white/45">Have a meeting link? Just open it — you don&apos;t need an account to join.</p>
+        <p className="lobby-guest-note">Have a meeting link? Open it directly. You do not need an account to join.</p>
       </div>
 
       <AlertDialog open={verificationEmail !== null} onOpenChange={(open) => !open && closeVerificationDialog()}>
-        <AlertDialogContent>
+        <AlertDialogContent className="lobby-dialog">
           <AlertDialogHeader>
             <AlertDialogMedia className="bg-cyan/15 text-cyan">
               <MailCheck />
@@ -280,21 +290,22 @@ function HostDashboard({ userName, onSignOut }: { userName: string; onSignOut: (
   }
 
   return (
-    <div className="space-y-6">
-      <header className="flex items-center justify-between">
+    <div className="lobby-dashboard">
+      <header className="lobby-dashboard-header">
         <div>
-          <h2 className="font-display text-2xl font-semibold text-white">Dashboard</h2>
-          <p className="text-sm text-white/55">Signed in as {userName}</p>
+          <p className="lobby-panel-eyebrow">HOST CONSOLE</p>
+          <h2>Your rooms</h2>
+          <p>Signed in as {userName}</p>
         </div>
-        <IconButton icon={LogOut} label="Sign out" className="text-white/70 hover:bg-white/15 hover:text-white" onClick={onSignOut} />
+        <IconButton icon={LogOut} label="Sign out" className="lobby-icon-button" onClick={onSignOut} />
       </header>
 
-      <div className="flex gap-3">
+      <div className="lobby-room-actions">
         <button
           type="button"
           onClick={handleInstant}
           disabled={busy}
-          className="neon-magenta flex flex-1 items-center justify-center gap-2 rounded-lg bg-magenta px-4 py-2.5 font-display font-semibold tracking-wide text-white transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+          className="lobby-primary-button"
         >
           {busy ? <LoadingSpinner className="h-4 w-4" /> : <Play className="h-4 w-4" />}
           {!busy && 'Instant'}
@@ -303,7 +314,7 @@ function HostDashboard({ userName, onSignOut }: { userName: string; onSignOut: (
         <DateTimePicker
           onSchedule={handleSchedule}
           disabled={busy}
-          triggerClassName="flex flex-1 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/5 px-4 py-2.5 font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50 disabled:opacity-40"
+          triggerClassName="lobby-secondary-button"
         >
           <span>Schedule</span>
           <Calendar size={16} />
@@ -312,8 +323,8 @@ function HostDashboard({ userName, onSignOut }: { userName: string; onSignOut: (
 
       <MeetingList rooms={rooms} onStart={startRoom} />
 
-      <Link href="/recordings" className="block text-sm text-white/55 underline-offset-2 transition-colors hover:text-cyan hover:underline">
-        View past recordings →
+      <Link href="/recordings" className="lobby-recordings-link">
+        View past recordings
       </Link>
     </div>
   );
@@ -322,15 +333,14 @@ function HostDashboard({ userName, onSignOut }: { userName: string; onSignOut: (
 function MeetingList({ rooms, onStart }: { rooms: RoomSummary[] | null; onStart: (slug: string) => void }) {
   if (rooms === null) return null;
   if (rooms.length === 0) {
-    return <p className="text-sm text-white/45">No upcoming scheduled meetings.</p>;
+    return <p className="lobby-empty-state">No upcoming scheduled meetings.</p>;
   }
   return (
-    <div className="space-y-2">
-      <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/55">
-        <span className="h-3 w-0.5 rounded-full bg-gradient-to-b from-magenta to-cyan" />
+    <div className="lobby-meeting-list">
+      <h3>
         Upcoming meetings
       </h3>
-      <ul className="divide-y divide-white/10">
+      <ul>
         {rooms.map((r) => (
           <MeetingRow key={r.room} room={r} onStart={() => onStart(r.room)} />
         ))}
@@ -364,17 +374,17 @@ function MeetingRow({ room, onStart }: { room: RoomSummary; onStart: () => void 
   }
 
   return (
-    <li className="py-3">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="truncate font-medium text-white/90">{room.scheduledStart ? new Date(room.scheduledStart).toLocaleString() : 'Anytime'}</p>
-          <p className="font-mono text-xs text-cyan/80">{room.room}</p>
+    <li className="lobby-meeting-row">
+      <div className="lobby-meeting-row-content">
+        <div className="lobby-meeting-meta">
+          <p>{room.scheduledStart ? new Date(room.scheduledStart).toLocaleString() : 'Anytime'}</p>
+          <p>{room.room}</p>
         </div>
-        <div className="flex shrink-0 gap-1">
+        <div className="lobby-meeting-actions">
           <IconButton
             icon={copied ? Check : Copy}
             label={copied ? 'Copied!' : 'Copy meeting link'}
-            className="text-white/70 hover:bg-white/15 hover:text-white"
+            className="lobby-icon-button"
             onClick={copy}
             disabled={starting}
           />
@@ -382,7 +392,7 @@ function MeetingRow({ room, onStart }: { room: RoomSummary; onStart: () => void 
             type="button"
             disabled={starting}
             onClick={handleStart}
-            className="inline-flex items-center justify-center gap-1.5 h-8 w-8 rounded-md bg-cyan text-black transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current/30 disabled:opacity-50 disabled:pointer-events-none"
+            className="lobby-start-button"
             aria-label="Start meeting"
             title="Start meeting"
           >
