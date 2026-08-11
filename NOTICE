@@ -1,0 +1,24 @@
+Huddle
+Copyright 2026 Abenezer Ayalneh
+
+Huddle is distributed under the Apache License, Version 2.0. See LICENSE.
+
+Third-party attribution
+
+The web application uses third-party software whose own licenses continue to
+apply. Direct dependency manifests and lockfiles are the authoritative version
+and license inventory. The principal runtime families include:
+
+* Next.js, React, TypeScript, Tailwind CSS, and related tooling under their
+  respective MIT or other package licenses.
+* LiveKit client and React components, including livekit-client, under the
+  Apache-2.0 license.
+* lucide-react icons under the ISC license.
+* Better Auth, NestJS, Prisma, AWS SDK, Sentry, and related server packages
+  under their respective package licenses.
+* Archivo, Archivo Black, and IBM Plex Mono font files vendored in
+  apps/web/src/app/fonts/ under the SIL Open Font License, Version 1.1.
+
+This notice is a human-readable starting inventory, not a replacement for each
+dependency's license file. Run the ownership/dependency audit documented in
+docs/OWNERSHIP_AND_DEPENDENCY_AUDIT.md when dependencies change.

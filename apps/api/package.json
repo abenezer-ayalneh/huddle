@@ -4,7 +4,7 @@
   "description": "Huddle token + room service (NestJS)",
   "author": "",
   "private": true,
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
   "scripts": {
     "build": "nest build",
     "typecheck": "tsc --noEmit -p tsconfig.json",

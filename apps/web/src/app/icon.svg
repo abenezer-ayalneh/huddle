@@ -1,7 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <circle cx="32" cy="4" r="8" fill="#d946a8"/>
-  <circle cx="60" cy="32" r="8" fill="#5ce0d6"/>
-  <circle cx="32" cy="60" r="8" fill="#d946a8"/>
-  <circle cx="4" cy="32" r="8" fill="#5ce0d6"/>
-  <polygon points="27,24 27,40 41,32" fill="white" opacity="0.92"/>
+  <circle cx="32" cy="10" r="7" fill="#8D2676"/>
+  <circle cx="54" cy="32" r="7" fill="#F3B01C"/>
+  <circle cx="32" cy="54" r="7" fill="#8D2676"/>
+  <circle cx="10" cy="32" r="7" fill="#F3B01C"/>
+  <polygon points="27,23 27,41 43,32" fill="#FAF4E9"/>
+  <polygon points="30,26 30,38 40,32" fill="#141414"/>
 </svg>

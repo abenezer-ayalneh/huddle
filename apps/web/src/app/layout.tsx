@@ -4,24 +4,28 @@ import FaultLayer from '@/components/faults/FaultLayer';
 import './globals.css';
 
 // The site's display and UI typefaces are vendored so production builds do not
-// require access to Google Fonts. The files in ./fonts are the Latin subsets
-// covered by their adjacent OFL notices.
-const exo2 = localFont({
-  src: './fonts/exo-2-latin-variable.woff2',
-  variable: '--font-exo2',
+// require access to Google Fonts. The files in ./fonts are Latin subsets from
+// the OFL-licensed Archivo and IBM Plex Mono families.
+const archivoBlack = localFont({
+  src: './fonts/archivo-black-latin.woff2',
+  variable: '--font-archivo-black',
   display: 'swap',
-  weight: '100 900',
+  weight: '400',
 });
 
-const rajdhani = localFont({
+const archivo = localFont({
+  src: './fonts/archivo-latin-variable.woff2',
+  variable: '--font-archivo',
+  display: 'swap',
+  weight: '400 700',
+});
+
+const plexMono = localFont({
   src: [
-    { path: './fonts/rajdhani-latin-300.woff2', weight: '300' },
-    { path: './fonts/rajdhani-latin-400.woff2', weight: '400' },
-    { path: './fonts/rajdhani-latin-500.woff2', weight: '500' },
-    { path: './fonts/rajdhani-latin-600.woff2', weight: '600' },
-    { path: './fonts/rajdhani-latin-700.woff2', weight: '700' },
+    { path: './fonts/ibm-plex-mono-latin-400.woff2', weight: '400' },
+    { path: './fonts/ibm-plex-mono-latin-500.woff2', weight: '500' },
   ],
-  variable: '--font-rajdhani',
+  variable: '--font-plex-mono',
   display: 'swap',
 });
 
@@ -32,19 +36,32 @@ const googleSiteVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION?
 const siteName = 'Huddle';
 const siteTitle = 'Huddle - Self-hosted video conferencing on LiveKit';
 const siteDescription =
-  'Huddle is a self-hosted, browser-based video conferencing app built on LiveKit. Hosts schedule or start instant meetings; guests join from a shared link through a waiting room, with no account or install. Screen share, in-call chat, recording, and host controls included.';
+  'Huddle is self-hosted browser meeting software for teams that want to review, decide, and work together in a room they control. Try the capacity-limited evaluation demo or deploy your own stack.';
+
+const themeBootstrap = `(() => {
+  try {
+    const saved = window.localStorage.getItem('huddle-theme');
+    const theme = saved === 'light' || saved === 'dark'
+      ? saved
+      : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.dataset.theme = theme;
+  } catch {
+    document.documentElement.dataset.theme = 'light';
+  }
+})();`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   manifest: '/site.webmanifest',
   icons: {
     icon: [
-      { url: '/favicon.ico', sizes: 'any' },
-      { url: '/logo.svg', type: 'image/svg+xml' },
-      { url: '/favicon-32x32.png', type: 'image/png', sizes: '32x32' },
-      { url: '/favicon-16x16.png', type: 'image/png', sizes: '16x16' },
+      { url: '/logo.svg?v=3', type: 'image/svg+xml', media: '(prefers-color-scheme: light)' },
+      { url: '/favicon-dark.svg?v=3', type: 'image/svg+xml', media: '(prefers-color-scheme: dark)' },
+      { url: '/favicon-32x32.png?v=3', type: 'image/png', sizes: '32x32', media: '(prefers-color-scheme: light)' },
+      { url: '/favicon-dark-32x32.png?v=3', type: 'image/png', sizes: '32x32', media: '(prefers-color-scheme: dark)' },
+      { url: '/favicon-16x16.png?v=3', type: 'image/png', sizes: '16x16', media: '(prefers-color-scheme: light)' },
+      { url: '/favicon-dark-16x16.png?v=3', type: 'image/png', sizes: '16x16', media: '(prefers-color-scheme: dark)' },
     ],
-    shortcut: '/favicon.ico',
     apple: '/apple-touch-icon.png',
   },
   title: {
@@ -118,9 +135,12 @@ export default function RootLayout({
 }>) {
   return (
     // Dark-only: the cyberpunk aesthetic (neon glows, glass, dot-grid) depends
-    // on a dark base, so `.dark` is applied statically rather than tracking the
-    // system preference.
-    <html lang="en" className={`dark ${exo2.variable} ${rajdhani.variable} h-full antialiased`}>
+    // on a dark base for legacy app routes. The landing reads the separate
+    // data-theme attribute and can follow the system preference.
+    <html lang="en" className={`dark ${archivoBlack.variable} ${archivo.variable} ${plexMono.variable} h-full antialiased`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
+      </head>
       <body className="bg-dotgrid min-h-full flex flex-col">
         {children}
         {/* App-wide Fault surfaces: the quiet reachability banner + the Fault

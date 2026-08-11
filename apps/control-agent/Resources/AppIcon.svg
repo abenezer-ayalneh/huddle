@@ -4,29 +4,26 @@
       <stop stop-color="#2B2138"/>
       <stop offset="1" stop-color="#12101E"/>
     </linearGradient>
-    <radialGradient id="magenta-glow" cx="0" cy="0" r="1" gradientTransform="translate(240 180) rotate(45) scale(640)">
-      <stop stop-color="#D946A8" stop-opacity=".3"/>
-      <stop offset="1" stop-color="#D946A8" stop-opacity="0"/>
+    <radialGradient id="purple-glow" cx="0" cy="0" r="1" gradientTransform="translate(240 180) rotate(45) scale(640)">
+      <stop stop-color="#8D2676" stop-opacity=".36"/>
+      <stop offset="1" stop-color="#8D2676" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="cyan-glow" cx="0" cy="0" r="1" gradientTransform="translate(806 846) rotate(-135) scale(560)">
-      <stop stop-color="#5CE0D6" stop-opacity=".24"/>
-      <stop offset="1" stop-color="#5CE0D6" stop-opacity="0"/>
+    <radialGradient id="yellow-glow" cx="0" cy="0" r="1" gradientTransform="translate(806 846) rotate(-135) scale(560)">
+      <stop stop-color="#F3B01C" stop-opacity=".22"/>
+      <stop offset="1" stop-color="#F3B01C" stop-opacity="0"/>
     </radialGradient>
-    <filter id="shadow" x="268" y="266" width="542" height="566" filterUnits="userSpaceOnUse">
-      <feDropShadow dx="0" dy="24" stdDeviation="18" flood-color="#000" flood-opacity=".52"/>
-    </filter>
   </defs>
   <rect x="36" y="36" width="952" height="952" rx="224" fill="#151120"/>
   <rect x="36" y="36" width="952" height="952" rx="224" fill="url(#background)"/>
-  <rect x="36" y="36" width="952" height="952" rx="224" fill="url(#magenta-glow)"/>
-  <rect x="36" y="36" width="952" height="952" rx="224" fill="url(#cyan-glow)"/>
+  <rect x="36" y="36" width="952" height="952" rx="224" fill="url(#purple-glow)"/>
+  <rect x="36" y="36" width="952" height="952" rx="224" fill="url(#yellow-glow)"/>
   <rect x="52" y="52" width="920" height="920" rx="208" stroke="#fff" stroke-opacity=".1" stroke-width="8"/>
-  <circle cx="512" cy="190" r="70" fill="#D946A8"/>
-  <circle cx="834" cy="512" r="70" fill="#5CE0D6"/>
-  <circle cx="512" cy="834" r="70" fill="#D946A8"/>
-  <circle cx="190" cy="512" r="70" fill="#5CE0D6"/>
-  <g filter="url(#shadow)">
-    <path d="M344 314v445l112-118 85 174 92-45-84-171 166-14-371-271Z" fill="#fff"/>
-    <path d="m456 641 85 174 92-45-84-171" stroke="#12101E" stroke-opacity=".32" stroke-width="15" stroke-linejoin="round"/>
+  <g transform="translate(192 192) scale(10)">
+    <circle cx="32" cy="10" r="7" fill="#8D2676"/>
+    <circle cx="54" cy="32" r="7" fill="#F3B01C"/>
+    <circle cx="32" cy="54" r="7" fill="#8D2676"/>
+    <circle cx="10" cy="32" r="7" fill="#F3B01C"/>
+    <polygon points="27,23 27,41 43,32" fill="#FAF4E9"/>
+    <polygon points="30,26 30,38 40,32" fill="#141414"/>
   </g>
 </svg>

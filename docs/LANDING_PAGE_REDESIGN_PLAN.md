@@ -38,9 +38,10 @@ later approval phase.
 - Put an accessible sun/moon icon button inside a top-center sticky, floating,
   translucent pill navigation. Desktop includes section links, GitHub, and
   Deploy; mobile uses a disclosure menu and preserves theme/Deploy access.
-- Preserve the four-dot/play Huddle geometry but recolor all web marks,
-  favicons, manifest icons, and social previews. Leave the native Control Agent
-  icon and UI untouched.
+- Rebuild the four-signal/play Huddle geometry with a canvas-safe ring and a
+  contrast-backed center control. Apply it to every web mark, favicon, manifest
+  icon, social preview, and native Control Agent app-icon variant; leave the
+  Control Agent UI itself untouched.
 - Use structured 8-12px frames, selective pills, flat color fields, large
   sentence-case headlines, and three routed "signal handoff" lines. Do not use
   grain, scanlines, neon glow, generic card grids, or decorative gradients.

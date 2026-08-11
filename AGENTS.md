@@ -25,8 +25,9 @@ mute/unmute, leave call. Screen share, chat, recording, and scheduling are
 
 Phase 10 Remote Control is an explicit exception to the MVP scope: it is an
 attended, room-scoped feature using the native macOS Control Agent. Keep its
-consent, identity binding, 30-minute renewal, and no-clipboard/file/audio
-exclusions intact; do not turn it into unattended access.
+consent, identity binding, 30-minute renewal, bounded ephemeral plain-text
+Clipboard Sharing, and file/audio/unattended-access exclusions intact; do not
+turn it into unattended access.
 
 ## Target stack
 

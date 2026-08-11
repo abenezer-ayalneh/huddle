@@ -234,13 +234,14 @@ export default function TermsPage() {
 
       <LegalSection id="ownership" title="Ownership and software licenses">
         <p>
-          Huddle, its visual identity, website, documentation, and service software are protected by intellectual-property law. Except for the limited right to
-          use the official service under these Terms, no rights are granted to Huddle names, marks, designs, code, or content.
+          Huddle, its visual identity, website, documentation, and service software are protected by intellectual-property law. The Huddle source repository is
+          released under the Apache License, Version 2.0, subject to the license and NOTICE files distributed with the relevant code. Huddle names, marks,
+          designs, website content, and the official evaluation deployment remain separately protected.
         </p>
         <p>
-          These Terms are a service agreement, not a source-code or redistribution license. Any right to copy, modify, distribute, or self-host Huddle code must
-          come from a separate license included with the relevant software. Public visibility of a repository or downloadable artifact does not by itself grant
-          a license. Third-party components remain governed by their own licenses.
+          These Terms are a service agreement, not a replacement for the Apache-2.0 source license. Any right to copy, modify, distribute, or self-host Huddle
+          code comes from the applicable license included with that software. Third-party components remain governed by their own licenses. The official
+          deployment is a capacity-limited evaluation demo, not a promise of hosted production service or availability.
         </p>
         <p>
           If you voluntarily provide feedback, you grant us a perpetual, worldwide, royalty-free right to use it without restriction or compensation, provided

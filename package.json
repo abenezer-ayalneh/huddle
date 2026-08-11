@@ -2,6 +2,7 @@
   "name": "huddle",
   "version": "0.0.0",
   "private": true,
+  "license": "Apache-2.0",
   "description": "Self-hosted, browser-based video conferencing on LiveKit.",
   "engines": {
     "node": ">=20"

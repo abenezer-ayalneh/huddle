@@ -4,6 +4,26 @@ Self-hosted, browser-based video conferencing (a Google Meet–style product) bu
 on LiveKit. This glossary fixes the language used across `apps/web`, `apps/api`,
 and the docs so the same concept always has the same name.
 
+## Public surfaces
+
+**Landing Page**:
+The public, long-form Huddle page at `/`. It explains the self-hosted product,
+demonstrates the illustrative Signal Handoff story, links to deployment and the
+capacity-limited official evaluation demo, and exposes Room Code entry. It is a
+marketing and orientation surface, not the authenticated Host workflow.
+_Avoid_: Lobby, dashboard, hosted service
+
+**Lobby**:
+The operational app home at `/lobby`. Signed-in Hosts create or schedule Managed
+Rooms there; Guests use shared Room Code links and do not need to visit it first.
+_Avoid_: Landing Page, waiting room
+
+**Live Demo**:
+The official, capacity-limited deployment used to evaluate the implemented Huddle
+workflow. It is not a hosted subscription service or a production availability
+commitment; operators must deploy their own stack for production use.
+_Avoid_: free hosted service, SaaS plan, production guarantee
+
 ## Language
 
 ### Rooms & roles

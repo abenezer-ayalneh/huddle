@@ -1,6 +1,6 @@
 ---
 name: Huddle Web
-description: A dark neon switchboard for self-hosted meetings, visible authority, and attended control.
+description: A scoped Signal Handoff landing surface beside the legacy Neon Switchboard application routes.
 colors:
   command-magenta: 'oklch(0.66 0.27 350)'
   consent-cyan: 'oklch(0.82 0.15 200)'
@@ -125,11 +125,11 @@ components:
 
 **Creative North Star: "The Neon Switchboard"**
 
-Huddle is a dark operator surface for real-time work. The visual system should feel technical, cinematic, and controlled: a quiet violet-black room holds the meeting while Command Magenta and Consent Cyan behave like purposeful signals on a switchboard. The interface is expressive enough to feel like Huddle, but never so decorative that media, consent, recovery, or Host authority becomes harder to read.
+Huddle's application routes remain a dark operator surface for real-time work. The public landing surface is now a separate Signal Handoff world: warm editorial fields explain how a meeting becomes shared work, while code-native meeting scenes keep authority and consent concrete. The landing is expressive, but never so decorative that product truth or deployment boundaries become harder to read.
 
 Marketing surfaces may open the visual world with orbital imagery, dot lattices, and spacious type. Operative surfaces compress that same world into glass panels, concise status rails, clipped media tiles, and compact controls. Depth is layered and structural; neon is reserved for priority, focus, active state, and acknowledgement.
 
-The system is intentionally dark-only. It rejects light themes, pastel SaaS styling, and generic rounded-card dashboards that would erase Huddle's operator character.
+The legacy application system is intentionally dark-only. The landing surface is the approved exception: it supports light cream and dark chocolate themes through scoped tokens so the public page can follow a visitor's preference without migrating the call UI.
 
 **Key Characteristics:**
 
@@ -251,7 +251,7 @@ Standard controls use gently curved 7.2–12px corners. Panels and dialogs use 1
 
 Live media uses a distinct cut-corner silhouette: 16px diagonal cuts at the top-left and bottom-right. The outer frame paints a magenta-to-cyan bezel around the same clipped inner surface. Active speakers receive a rotating conic border and a restrained scanline layer.
 
-The Huddle mark is a four-signal ring around a white play triangle. Use the supplied asset; do not redraw, recolor, or replace it with a generic video-camera glyph when it serves as the brand mark.
+The Huddle mark is a four-signal ring around a single two-layer play glyph. Every signal stays inside the canvas safety margin, and the opposing foreground/backing treatment keeps the play glyph visible on both light and dark surfaces without a cluttering center disc. Use the supplied asset; do not redraw, recolor, or replace it with a generic video-camera glyph when it serves as the brand mark.
 
 ### Named Rules
 
@@ -308,6 +308,36 @@ Remote Control status is a full-width strong-glass rail beneath the stage, with 
 Blocking decisions use a centered Deep Popover panel over a 60% black backdrop with subtle blur. Faults use compact strong-glass toasts with a destructive icon and a cyan recovery action. Passive server reachability uses a quiet top-center status pill rather than a disruptive toast.
 
 ## Do's and Don'ts
+
+## Scoped landing direction: Signal Handoff
+
+The public `/` route uses the Signal Handoff direction from
+`docs/LANDING_PAGE_REDESIGN_PLAN.md`. It is a Persuade surface for agencies and
+small teams collaborating with clients.
+
+- **Palette:** light `#F6EEDB` / `#141414` with purple `#8D2676`, yellow
+  `#F3B01C`, and red `#EE342F`; dark `#1A0F0F` / `#FAF4E9` with the same signal
+  roles. Tokens are scoped under `.landing-shell` and `data-theme`.
+- **Typography:** Archivo Black for display, Archivo for body/UI, and IBM Plex
+  Mono for Room Codes, routes, timers, and technical labels. Font files are
+  vendored under `src/app/fonts/` with the OFL notice.
+- **Composition:** 8–12px frames, selective pills, flat fields, large
+  sentence-case headlines, a floating top-center navigation, and three routed
+  signal lines. The chosen first viewport is left promise + action/Room Code
+  entry + right code-native meeting scene.
+- **Proof:** fictional portraits are labeled illustrative; meeting scenes are
+  built with React markup. Do not replace product proof with fabricated
+  screenshots or customer claims.
+- **Motion:** the four-stage Meet → Present → Approve → Collaborate story
+  auto-advances only until a visitor interacts and stops under reduced motion.
+- **Boundaries:** the landing may describe Apache-2.0 self-hosted software and
+  the official capacity-limited evaluation demo. It must not imply a hosted
+  subscription service, customer adoption, compliance certification, or
+  production availability guarantee.
+
+The remaining application surfaces keep the legacy dark Neon Switchboard rules
+above. The shared Huddle mark and native Control Agent app icon use the approved
+cross-product brand geometry without migrating the rest of those surfaces.
 
 ### Do:
 

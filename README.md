@@ -27,8 +27,11 @@ room — no account needed.
 - **Recording** — host-toggled room-composite recording via LiveKit Egress to
   self-hosted MinIO (S3), downloaded back through the host-authorized API.
 - **Attended Remote Control** — Sharer-approved, room-scoped mouse/keyboard
-  control through a signed macOS Control Agent; no unattended access,
-  clipboard, file transfer, or desktop audio.
+  control through a signed macOS Control Agent; bounded ephemeral plain-text
+  Clipboard Sharing; no unattended access, file transfer, or desktop audio.
+- **Licensing and demo** — Apache-2.0 self-hosted software. The official
+  deployment is a capacity-limited evaluation demo; operators provide their own
+  infrastructure and provider costs for production use.
 - **Deploy hardening** — Caddy TLS front door, embedded TURN, Redis-backed knock
   state, `/health` + `/ready`, JSON logs, and a production compose override.
 

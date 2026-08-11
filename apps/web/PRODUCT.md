@@ -85,16 +85,17 @@ replacement.
   recordings, or audit records.
 - Unattended access, support codes outside a room, rich or binary clipboard
   transfer, files, desktop audio, and Windows or Linux Control Agents are out of
-  scope. The macOS Control Agent is the only native companion; the meeting
-  itself remains browser-based.
+  scope. Bounded plain-text Clipboard Sharing is ephemeral and room-scoped. The
+  macOS Control Agent is the only native companion; the meeting itself remains
+  browser-based.
 - Live WebRTC behavior, physical macOS permissions, signed Control Agent
   releases, and external-provider integrations require real-device or
   account-bound acceptance. Source, tests, and builds alone do not establish
   those outcomes.
-- The public licensing model is undecided. The repository currently has no root
-  license, so future work must not describe Huddle as open source or preserve a
-  "free and open" claim as confirmed product truth until licensing is explicitly
-  established.
+- Huddle is released under the Apache-2.0 license. Third-party dependencies keep
+  their own licenses and attribution requirements. The official deployment is a
+  capacity-limited evaluation demo, not a hosted subscription service; operators
+  provide their own infrastructure and provider costs for production use.
 
 ## Brand Commitments
 
@@ -117,12 +118,12 @@ Visual styling decisions belong in `DESIGN.md`, not in this product record.
 - Current web behavior and copy: `apps/web/src/app/`,
   `apps/web/src/components/`, and `apps/web/src/lib/`.
 - Existing Huddle assets: `apps/web/public/logo.svg`,
-  `apps/web/public/landing-hero.png`,
-  `apps/web/public/landing-orbit.png`,
-  `apps/web/public/landing-control.png`, and the application icon and social
+  the illustrative portrait set under
+  `apps/web/public/landing-portraits/`, and the application icon and social
   preview files under `apps/web/public/` and `apps/web/src/app/`.
 - The repository declares `https://huddle.abenezer-ayalneh.dev` as a live demo
-  URL, but this init did not perform live deployment acceptance.
+  URL for the capacity-limited evaluation deployment; this init did not perform
+  live deployment acceptance.
 - The repository has implementation, automated checks, and documented manual
   verification notes. It does not provide confirmed customer testimonials,
   customer logos, adoption figures, independent benchmarks, or complete
