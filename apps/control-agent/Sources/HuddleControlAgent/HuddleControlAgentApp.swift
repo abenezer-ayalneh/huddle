@@ -29,7 +29,14 @@ final class AgentModel: ObservableObject {
     let updater = AgentUpdater()
 
     var appVersion: String { (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String) ?? "0.0.0" }
-    var releaseChannelURL: URL { URL(string: (Bundle.main.object(forInfoDictionaryKey: "ControlAgentReleaseChannelURL") as? String) ?? "https://github.com/abenezer-ayalneh/huddle/releases/download/control-agent-beta")! }
+    var releaseChannelURL: URL? {
+        guard let value = Bundle.main.object(forInfoDictionaryKey: "ControlAgentReleaseChannelURL") as? String,
+              !value.isEmpty,
+              let url = URL(string: value),
+              url.scheme == "https"
+        else { return nil }
+        return url
+    }
     var updatePublicKey: String { (Bundle.main.object(forInfoDictionaryKey: "ControlAgentUpdatePublicKey") as? String) ?? "" }
 
     func accept(_ descriptor: BootstrapDescriptor) {
@@ -110,17 +117,19 @@ final class AgentModel: ObservableObject {
     }
 
     private func begin(_ descriptor: BootstrapDescriptor) async {
-        switch await releaseChecker.check(currentVersion: appVersion, channelURL: releaseChannelURL, publicKeyBase64: updatePublicKey) {
-        case let .required(version, notes):
-            updateNotice = "Update required before Remote Control can start (version \(version))."
-            error = "Install the required Control Agent update, then return to Huddle."
-            NSWorkspace.shared.open(notes)
-            return
-        case let .available(version, notes):
-            updateNotice = "A newer Control Agent (\(version)) is available."
-            NSWorkspace.shared.open(notes)
-        case .current, .unavailable:
-            break
+        if let releaseChannelURL {
+            switch await releaseChecker.check(currentVersion: appVersion, channelURL: releaseChannelURL, publicKeyBase64: updatePublicKey) {
+            case let .required(version, notes):
+                updateNotice = "Update required before Remote Control can start (version \(version))."
+                error = "Install the required Control Agent update, then return to Huddle."
+                NSWorkspace.shared.open(notes)
+                return
+            case let .available(version, notes):
+                updateNotice = "A newer Control Agent (\(version)) is available."
+                NSWorkspace.shared.open(notes)
+            case .current, .unavailable:
+                break
+            }
         }
 
         guard ServerTrustStore.shared.isTrusted(descriptor.apiOrigin) else {

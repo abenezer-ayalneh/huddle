@@ -1,10 +1,11 @@
 /* eslint-disable react/no-unescaped-entities -- Long-form legal prose is more readable with normal punctuation. */
 import type { Metadata } from 'next';
 import LegalPage, { LegalCallout, LegalSection, type LegalTocItem } from '@/components/legal/LegalPage';
+import { publicConfig } from '@/lib/public-config';
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
-  description: 'The rules for using the official Huddle service, meetings, recordings, and attended Remote Control.',
+  description: 'A template for using this Huddle deployment, meetings, recordings, and attended Remote Control.',
   alternates: { canonical: '/terms' },
 };
 
@@ -35,26 +36,24 @@ export default function TermsPage() {
       kind="terms"
       eyebrow="Terms · Shared responsibility"
       title="Clear rules for a room you control."
-      description="These Terms define the boundary between the official Huddle service, the people who host and join meetings, attended Remote Control, and independently operated self-hosted deployments."
+      description="This template defines the boundary between this Huddle deployment, the people who host and join meetings, and attended Remote Control."
       updatedAt="August 4, 2026"
       toc={toc}
     >
       <LegalSection id="agreement" title="Agreement and scope">
         <p>
-          These Terms of Service ("Terms") are a binding agreement between you and <strong>Abenezer Ayalneh</strong> ("Huddle," "we," "us," or "our") for access
-          to the official Huddle website and service at <strong>huddle.abenezer-ayalneh.dev</strong>, its API, and the Huddle Control Agent distributed from
-          that service.
+          These Terms of Service ("Terms") are intended to govern access to the Huddle website and service at <strong>{publicConfig.siteUrl}</strong>, its API,
+          and any Control Agent distributed by this deployment. The operator is <strong>{publicConfig.operatorName}</strong> ("we," "us," or "our").
         </p>
         <p>
-          By creating an account, joining or hosting a meeting, downloading or using the Control Agent, or otherwise using the official service, you agree to
+          By creating an account, joining or hosting a meeting, downloading or using the Control Agent, or otherwise using this deployment, you agree to
           these Terms and acknowledge the Privacy Policy. If you use Huddle for an organization, you confirm that you have authority to bind that organization.
           If you do not agree, do not use the service.
         </p>
-        <LegalCallout title="Self-hosted does not mean centrally operated">
+        <LegalCallout title="Operator review required">
           <p>
-            A third party may run its own Huddle deployment. That operator—not the operator of the official Huddle site—controls that instance and is
-            responsible for its users, infrastructure, policies, retention, security, and legal compliance. These Terms govern only the official service unless
-            the third-party operator expressly adopts them under its own name.
+            Huddle is self-hosted software. This is an operator-adaptable template, not legal advice. Before relying on it, the operator must review, adapt, and
+            adopt it for the applicable jurisdiction, its users, infrastructure, policies, retention, security, and legal obligations.
           </p>
         </LegalCallout>
       </LegalSection>
@@ -66,7 +65,7 @@ export default function TermsPage() {
           Google Drive recording delivery, and attended macOS Remote Control.
         </p>
         <p>
-          The official service is currently offered without a subscription fee. We may add, remove, limit, or change features, providers, capacity, or
+          This deployment is currently offered without a subscription fee. We may add, remove, limit, or change features, providers, capacity, or
           availability and may introduce paid features later with notice before charges apply. We do not promise that every feature will be available in every
           browser, device, country, or self-hosted deployment.
         </p>
@@ -121,8 +120,8 @@ export default function TermsPage() {
           </li>
           <li>deliver malware, destructive commands, credential-harvesting material, spam, or denial-of-service traffic;</li>
           <li>use Remote Control for unattended access, covert monitoring, theft, fraud, or access outside the active meeting and approved session;</li>
-          <li>misrepresent Huddle, the official operator, or a self-hosted deployment as endorsed, certified, secure, or compliant when it is not; or</li>
-          <li>resell or commercially exploit the official service without written permission.</li>
+          <li>misrepresent Huddle or this deployment as endorsed, certified, secure, or compliant when it is not; or</li>
+          <li>resell or commercially exploit this deployment without the operator's written permission.</li>
         </ul>
         <p>
           We may investigate suspected abuse and preserve relevant records. Security research must avoid personal data, disruption, persistence, social
@@ -140,7 +139,7 @@ export default function TermsPage() {
         <p>
           You represent that you have the rights and permissions needed to provide Your Content and permit this processing. You are responsible for deciding
           whether Huddle is appropriate for confidential, regulated, export-controlled, health, financial, employment, educational, or other sensitive
-          information. The official service is not offered under a special data-processing, business-associate, archival, or regulated-industry agreement unless
+          information. This deployment is not offered under a special data-processing, business-associate, archival, or regulated-industry agreement unless
           we sign one separately.
         </p>
         <p>
@@ -226,9 +225,8 @@ export default function TermsPage() {
           distribution, updates, abuse response, accessibility, retention, privacy notices, user terms, and compliance with applicable law.
         </p>
         <p>
-          You must not reuse these Terms or the Privacy Policy in a way that identifies Abenezer Ayalneh as the operator of your deployment or suggests that he
-          controls your data. You must not remove or alter Huddle branding in a manner that falsely attributes your policies, security, support, or service
-          quality to the official operator.
+          You must not present this template as legal advice or as a substitute for an operator's own legal review. The deployment operator remains responsible
+          for its policies, security, support, data handling, and service quality.
         </p>
       </LegalSection>
 
@@ -267,7 +265,7 @@ export default function TermsPage() {
 
       <LegalSection id="disclaimers" title="Disclaimers">
         <p>
-          To the maximum extent permitted by law, the official service, Control Agent, downloads, and documentation are provided{' '}
+          To the maximum extent permitted by law, this deployment, its Control Agent, downloads, and documentation are provided{' '}
           <strong>"as is" and "as available."</strong> We disclaim implied warranties of merchantability, fitness for a particular purpose, title,
           non-infringement, uninterrupted availability, error-free operation, compatibility, data preservation, and security.
         </p>
@@ -287,7 +285,7 @@ export default function TermsPage() {
           participant conduct; or actions taken through Remote Control, even if advised that such harm was possible.
         </p>
         <p>
-          To the maximum extent permitted by law, our total liability arising from or related to the official service or these Terms will not exceed the greater
+          To the maximum extent permitted by law, our total liability arising from or related to this deployment or these Terms will not exceed the greater
           of the amount you paid us for the service during the 12 months before the event giving rise to the claim or <strong>USD 50</strong>. This limit does
           not apply where liability cannot lawfully be limited, including liability arising from fraud or willful misconduct where applicable.
         </p>
@@ -318,15 +316,15 @@ export default function TermsPage() {
         </p>
         <p>
           If any provision is unenforceable, it will be limited to the minimum extent necessary and the remaining provisions will continue. Failure to enforce a
-          provision is not a waiver. You may not assign these Terms without our consent; we may assign them as part of a transfer of the official service with
-          appropriate notice. These Terms and the Privacy Policy are the entire agreement for the official service unless we sign a separate agreement with you.
+          provision is not a waiver. You may not assign these Terms without our consent; we may assign them as part of a transfer of this deployment with
+          appropriate notice. These Terms and the Privacy Policy are the entire agreement for this deployment unless we sign a separate agreement with you.
         </p>
       </LegalSection>
 
       <LegalSection id="contact" title="Contact">
         <p>
-          Send questions, legal notices, security reports, or account-deletion requests to <strong>Abenezer Ayalneh</strong> through the{' '}
-          <a href="https://abenezer-ayalneh.dev/contact">developer contact page</a>. Include "Huddle" and the nature of the request, but do not send passwords,
+          Send questions, legal notices, security reports, or account-deletion requests to <strong>{publicConfig.operatorName}</strong> through the{' '}
+          <a href={publicConfig.operatorContactUrl}>operator contact page</a>. Include "Huddle" and the nature of the request, but do not send passwords,
           Host keys, meeting tokens, Control Agent links, Google tokens, or other secrets.
         </p>
       </LegalSection>

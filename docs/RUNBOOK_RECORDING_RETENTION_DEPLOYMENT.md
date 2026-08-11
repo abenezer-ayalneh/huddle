@@ -60,9 +60,8 @@ use [the Google Drive OAuth access runbook](./RUNBOOK_GOOGLE_DRIVE_OAUTH_ACCESS.
 ### Procedure
 
 Run all commands below from the repository root on the production VPS. These
-commands assume host-installed Caddy; keep `--scale caddy=0` only where a full
-stack update is required. If this deployment uses the containerized Caddy,
-omit that flag.
+commands use the Compose `caddy` service; keep it running as part of every full
+stack update.
 
 #### Step 1: Check the release and stop any pre-existing worker
 

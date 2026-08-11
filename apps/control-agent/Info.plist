@@ -23,7 +23,7 @@
 	<key>LSUIElement</key>
 	<false/>
 	<key>ControlAgentReleaseChannelURL</key>
-	<string>https://github.com/abenezer-ayalneh/huddle/releases/download/control-agent-beta</string>
+	<string></string>
 	<key>ControlAgentUpdatePublicKey</key>
 	<string></string>
 	<key>CFBundleURLTypes</key>

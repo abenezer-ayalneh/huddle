@@ -6,7 +6,10 @@ const nextConfig: NextConfig = {
   // Docker image can run `node server.js` without the full node_modules tree.
   // See infra/docker-compose.prod.yml and docs/SETUP.md (Phase 9 deploy).
   output: 'standalone',
-  allowedDevOrigins: ['localhost', 'local-huddle.abenezer-ayalneh.dev'],
+  allowedDevOrigins: (process.env.NEXT_ALLOWED_DEV_ORIGINS ?? '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean),
 };
 
 const canUploadSourceMaps = Boolean(process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_ORG && process.env.SENTRY_PROJECT_WEB);

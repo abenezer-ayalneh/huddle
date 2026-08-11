@@ -1,6 +1,8 @@
 import LandingPageClient from './LandingPageClient';
+import Script from 'next/script';
+import { publicConfig } from '@/lib/public-config';
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://huddle.abenezer-ayalneh.dev';
+const { siteUrl, operatorName, operatorContactUrl, projectRepositoryUrl } = publicConfig;
 
 const jsonLd = [
   {
@@ -11,7 +13,7 @@ const jsonLd = [
     applicationSubCategory: 'Self-hosted video conferencing',
     operatingSystem: 'Web',
     url: siteUrl,
-    codeRepository: 'https://github.com/abenezer-ayalneh/huddle',
+    codeRepository: projectRepositoryUrl,
     license: 'https://www.apache.org/licenses/LICENSE-2.0',
     description:
       'Huddle is self-hosted browser meeting software for teams that want to review, decide, and work together in a room they control.',
@@ -23,8 +25,8 @@ const jsonLd = [
       'Attended, room-scoped Remote Control through a macOS Control Agent',
       'Docker Compose deployment on a VPS or Docker host',
     ],
-    author: { '@type': 'Person', name: 'Abenezer Ayalneh', url: 'https://abenezer-ayalneh.dev' },
-    publisher: { '@type': 'Person', name: 'Abenezer Ayalneh', url: 'https://abenezer-ayalneh.dev' },
+    author: { '@type': 'Person', name: operatorName, url: operatorContactUrl },
+    publisher: { '@type': 'Person', name: operatorName, url: operatorContactUrl },
   },
   {
     '@context': 'https://schema.org',
@@ -32,7 +34,7 @@ const jsonLd = [
     name: 'Huddle',
     url: siteUrl,
     inLanguage: 'en',
-    publisher: { '@type': 'Person', name: 'Abenezer Ayalneh', url: 'https://abenezer-ayalneh.dev' },
+    publisher: { '@type': 'Person', name: operatorName, url: operatorContactUrl },
   },
   {
     '@context': 'https://schema.org',
@@ -50,8 +52,8 @@ const jsonLd = [
       },
       {
         '@type': 'Question',
-        name: 'What does the Huddle evaluation demo provide?',
-        acceptedAnswer: { '@type': 'Answer', text: 'The official deployment is a capacity-limited evaluation environment for trying the full meeting shape; it is not a hosted subscription service.' },
+        name: 'Is Huddle a hosted subscription service?',
+        acceptedAnswer: { '@type': 'Answer', text: 'No. Huddle is self-hosted software: each operator runs it on infrastructure they control and sets their own service policies.' },
       },
       {
         '@type': 'Question',
@@ -66,7 +68,9 @@ export default function LandingPage() {
   return (
     <>
       <LandingPageClient />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <Script id="huddle-json-ld" type="application/ld+json" strategy="beforeInteractive">
+        {JSON.stringify(jsonLd)}
+      </Script>
     </>
   );
 }

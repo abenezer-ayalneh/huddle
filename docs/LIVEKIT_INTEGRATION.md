@@ -42,8 +42,9 @@ LIVEKIT_API_SECRET=<random-long-secret>
 LIVEKIT_URL=ws://localhost:7880        # wss://... in production
 ```
 
-The frontend only needs the **public** WebSocket URL (`NEXT_PUBLIC_LIVEKIT_URL`),
-never the secret.
+The frontend receives the public WebSocket URL in server-minted room responses;
+it never receives a LiveKit secret. Production derives that WSS URL from
+`LIVEKIT_DOMAIN` while API/Egress use the internal Docker service URL.
 
 ## Token minting (backend, NestJS) — reference shape
 
@@ -120,7 +121,7 @@ handler in NestJS when that phase arrives — out of scope for the MVP.
 
 ## Gotchas checklist
 
-- [ ] Frontend uses `NEXT_PUBLIC_LIVEKIT_URL`; secret stays server-only.
+- [ ] Frontend receives the server-selected public LiveKit URL; secret stays server-only.
 - [ ] Token `room` and `identity` are set server-side, not trusted from client.
 - [ ] UDP media range + TURN are reachable end to end.
 - [ ] `wss://` (not `ws://`) anywhere that isn't `localhost`.

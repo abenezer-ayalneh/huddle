@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
+import Script from 'next/script';
 import FaultLayer from '@/components/faults/FaultLayer';
+import { publicConfig } from '@/lib/public-config';
 import './globals.css';
 
 // The site's display and UI typefaces are vendored so production builds do not
@@ -29,7 +31,7 @@ const plexMono = localFont({
   display: 'swap',
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://huddle.abenezer-ayalneh.dev';
+const { siteUrl, operatorName, operatorContactUrl } = publicConfig;
 // Search Console issues this value for its optional URL-prefix verification
 // method. It is a public ownership token, so it may be exposed in page metadata.
 const googleSiteVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION?.trim();
@@ -90,9 +92,9 @@ export const metadata: Metadata = {
     'meeting recording',
     'video call app',
   ],
-  authors: [{ name: 'Abenezer Ayalneh', url: 'https://abenezer-ayalneh.dev' }],
-  creator: 'Abenezer Ayalneh',
-  publisher: 'Abenezer Ayalneh',
+  authors: [{ name: operatorName, url: operatorContactUrl }],
+  creator: operatorName,
+  publisher: operatorName,
   openGraph: {
     type: 'website',
     locale: 'en_US',
@@ -139,7 +141,9 @@ export default function RootLayout({
     // data-theme attribute and can follow the system preference.
     <html lang="en" className={`dark ${archivoBlack.variable} ${archivo.variable} ${plexMono.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
+        <Script id="theme-bootstrap" strategy="beforeInteractive">
+          {themeBootstrap}
+        </Script>
       </head>
       <body className="bg-dotgrid min-h-full flex flex-col">
         {children}

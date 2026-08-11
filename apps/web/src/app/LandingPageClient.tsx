@@ -18,8 +18,9 @@ import LandingJoinForm from './LandingJoinForm';
 import LandingStory from '@/components/landing/LandingStory';
 import LandingThemeProvider, { useLandingTheme } from '@/components/landing/LandingThemeProvider';
 import { LandingHeroScene, LandingMeetingCanvas, LandingWordmark } from '@/components/landing/LandingProductScene';
+import { publicConfig } from '@/lib/public-config';
 
-const repositoryUrl = 'https://github.com/abenezer-ayalneh/huddle';
+const { projectRepositoryUrl: repositoryUrl, operatorContactUrl } = publicConfig;
 const deploymentUrl = `${repositoryUrl}/blob/main/docs/DEPLOYMENT.md`;
 
 function GithubLogo({ className }: { className?: string }) {
@@ -128,7 +129,7 @@ export default function LandingPageClient() {
                 <Link href="/lobby" className="landing-secondary-button"><Play className="size-4 fill-current" /> Try the demo</Link>
               </div>
               <LandingJoinForm />
-              <p className="landing-hero-note"><span>Apache-2.0</span> self-hosted software · the official deployment is a capacity-limited evaluation demo.</p>
+              <p className="landing-hero-note"><span>Apache-2.0</span> self-hosted software · operated on infrastructure you control.</p>
             </div>
             <LandingHeroScene />
           </div>
@@ -230,7 +231,7 @@ export default function LandingPageClient() {
         </section>
 
         <section id="demo" className="landing-section landing-close-section" aria-labelledby="close-title">
-          <div className="landing-container landing-close-layout"><div><span className="landing-mono-label">EVALUATION DEMO</span><h2 id="close-title">Try the full shape. Own what comes next.</h2><p>The official deployment is a capacity-limited evaluation environment, not a hosted subscription service. Deploy your own Huddle when the room belongs to your team.</p></div><div className="landing-close-actions"><Link href="/lobby" className="landing-primary-button">Try the demo <ArrowRight className="size-5" /></Link><a href={deploymentUrl} target="_blank" rel="noreferrer" className="landing-secondary-button">Deploy your own</a><Link href="#join" className="landing-text-link">Join a room <ArrowDownRight className="size-4" /></Link></div></div>
+          <div className="landing-container landing-close-layout"><div><span className="landing-mono-label">DEPLOYMENT</span><h2 id="close-title">Try the full shape. Own what comes next.</h2><p>This deployment is operated independently. Deploy your own Huddle when the room belongs to your team.</p></div><div className="landing-close-actions"><Link href="/lobby" className="landing-primary-button">Open Huddle <ArrowRight className="size-5" /></Link><a href={deploymentUrl} target="_blank" rel="noreferrer" className="landing-secondary-button">Deploy your own</a><Link href="#join" className="landing-text-link">Join a room <ArrowDownRight className="size-4" /></Link></div></div>
         </section>
 
         <section className="landing-section landing-faq-section" aria-labelledby="faq-title">
@@ -243,7 +244,7 @@ export default function LandingPageClient() {
           </div></div>
         </section>
 
-        <footer className="landing-footer"><div className="landing-container landing-footer-inner"><Link href="#top" className="landing-footer-brand"><HuddleIcon className="size-7" /><span>Huddle · self-hosted meeting software</span></Link><div className="landing-footer-links"><a href={repositoryUrl} target="_blank" rel="noreferrer">GitHub</a><Link href="/downloads">Downloads</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><a href="https://abenezer-ayalneh.dev/contact" target="_blank" rel="noreferrer">Contact</a></div><p>Apache-2.0 · illustrative portraits and product scenes are fictional.</p></div></footer>
+        <footer className="landing-footer"><div className="landing-container landing-footer-inner"><Link href="#top" className="landing-footer-brand"><HuddleIcon className="size-7" /><span>Huddle · self-hosted meeting software</span></Link><div className="landing-footer-links"><a href={repositoryUrl} target="_blank" rel="noreferrer">Repository</a><Link href="/downloads">Downloads</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><a href={operatorContactUrl} target="_blank" rel="noreferrer">Contact</a></div><p>Apache-2.0 · illustrative portraits and product scenes are fictional.</p></div></footer>
       </main>
     </LandingThemeProvider>
   );

@@ -5,7 +5,7 @@ set -euo pipefail
 # unnotarized public beta, but the immutable updater archive and appcast are
 # signed with the local Sparkle Ed25519 key in the login Keychain.
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-REPOSITORY="${GITHUB_REPOSITORY:-abenezer-ayalneh/huddle}"
+REPOSITORY="${GITHUB_REPOSITORY:?GITHUB_REPOSITORY is required}"
 TAG="${CONTROL_AGENT_FREE_BETA_TAG:-control-agent-free-beta}"
 KEYCHAIN_ACCOUNT="${CONTROL_AGENT_FREE_BETA_KEYCHAIN_ACCOUNT:-huddle-control-agent-free-beta}"
 DMG="$ROOT/dist/Huddle-Control-Agent-macos-arm64.dmg"

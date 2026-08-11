@@ -37,6 +37,9 @@ fi
 if [[ -n "${CONTROL_AGENT_UPDATE_PUBLIC_KEY:-}" ]]; then
   /usr/libexec/PlistBuddy -c "Set :ControlAgentUpdatePublicKey $CONTROL_AGENT_UPDATE_PUBLIC_KEY" "$APP/Contents/Info.plist"
 fi
+if [[ -n "${CONTROL_AGENT_RELEASE_CHANNEL_URL:-}" ]]; then
+  /usr/libexec/PlistBuddy -c "Set :ControlAgentReleaseChannelURL $CONTROL_AGENT_RELEASE_CHANNEL_URL" "$APP/Contents/Info.plist"
+fi
 if [[ -n "${SPARKLE_UPDATE_PUBLIC_KEY:-}" ]]; then
   /usr/libexec/PlistBuddy -c "Set :SUPublicEDKey $SPARKLE_UPDATE_PUBLIC_KEY" "$APP/Contents/Info.plist"
 fi

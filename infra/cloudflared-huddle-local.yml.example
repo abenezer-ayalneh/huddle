@@ -6,10 +6,10 @@ tunnel: <huddle-local-tunnel-uuid>
 credentials-file: /Users/abeni/.cloudflared/<huddle-local-tunnel-uuid>.json
 
 ingress:
-  - hostname: local-huddle.abenezer-ayalneh.dev
+  - hostname: local-huddle.example.test
     service: http://localhost:3000
-  - hostname: local-huddle-api.abenezer-ayalneh.dev
+  - hostname: local-huddle-api.example.test
     service: http://localhost:3001
-  - hostname: local-huddle-livekit.abenezer-ayalneh.dev
+  - hostname: local-huddle-livekit.example.test
     service: http://localhost:7880
   - service: http_status:404

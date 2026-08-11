@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
+import { publicConfig } from '@/lib/public-config';
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://huddle.abenezer-ayalneh.dev';
+const { siteUrl } = publicConfig;
 
 // Dynamic sitemap. Public product and policy pages are indexable; meeting rooms,
 // the host lobby, and the recordings dashboard are private/session-oriented and

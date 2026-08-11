@@ -8,6 +8,7 @@ import { HealthController } from './health/health.controller';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
 import { RoomsModule } from './rooms/rooms.module';
+import { validateEnvironment } from './config/validate-env';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { RoomsModule } from './rooms/rooms.module';
       isGlobal: true,
       envFilePath: join(__dirname, '..', '..', '..', '.env'),
       expandVariables: true,
+      validate: validateEnvironment,
     }),
     PrismaModule,
     RedisModule,

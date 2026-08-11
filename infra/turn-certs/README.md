@@ -1,6 +1,6 @@
 # TURN TLS certificates (production)
 
-LiveKit's embedded TURN/TLS (see `infra/livekit.prod.yaml`) needs a TLS cert for
+LiveKit's optional embedded TURN/TLS (configured through `TURN_ENABLED`) needs a TLS cert for
 your TURN domain. Drop the PEM files here before bringing up the prod stack:
 
 ```

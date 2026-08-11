@@ -4,7 +4,8 @@ import { ArrowLeft, ExternalLink, ShieldCheck } from 'lucide-react';
 import HuddleIcon from '@/components/HuddleIcon';
 import ControlAgentDownloads from '@/components/ControlAgentDownloads';
 import { getControlAgentRelease } from '@/lib/controlAgentRelease';
-import { CONTROL_AGENT_ISSUES_URL, CONTROL_AGENT_RELEASES_URL } from '@/lib/controlAgentReleaseShared';
+import { CONTROL_AGENT_RELEASE } from '@/lib/controlAgentReleaseShared';
+import { publicConfig } from '@/lib/public-config';
 
 export const metadata: Metadata = {
   title: 'Control Agent downloads',
@@ -34,7 +35,7 @@ export default async function DownloadsPage() {
         <p className="mt-6 max-w-2xl text-lg leading-8 text-white/65">
           {hasVerifiedSignedRelease
             ? 'The Control Agent is a signed, notarized macOS companion. It shares one entire selected physical display — including the menu bar, Dock, desktop, all windows, and the agent — only after the Sharer approves Remote Control in the room and confirms locally.'
-            : 'The Apple-Silicon no-cost beta is an unnotarized macOS companion. It shares one entire selected physical display — including the menu bar, Dock, desktop, all windows, and the agent — only after the Sharer approves Remote Control in the room and confirms locally.'}
+            : 'This deployment has not configured a verified Control Agent release. Remote Control downloads are unavailable until the operator completes that signed-release setup.'}
         </p>
         <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-white/55">
           <span className="inline-flex items-center gap-2 rounded-full border border-cyan/25 bg-cyan/10 px-3 py-1.5 text-cyan">
@@ -50,21 +51,21 @@ export default async function DownloadsPage() {
           <p className="mt-3 max-w-3xl text-sm leading-7 text-white/55">
             {hasVerifiedSignedRelease
               ? 'Every signed beta artifact is published with a SHA-256 checksum and a signed release manifest. The agent checks for required updates before redeeming a new session; it never installs updates silently.'
-              : 'The no-cost beta publishes a SHA-256 checksum but has no Apple notarization or signed update manifest. It never installs updates silently; install a newer build only from this downloads page.'}
+              : 'Downloads are intentionally disabled rather than falling back to an unsigned or unrelated artifact.'}
           </p>
-          <div className="mt-5 flex flex-wrap gap-4 text-sm">
+          {CONTROL_AGENT_RELEASE ? <div className="mt-5 flex flex-wrap gap-4 text-sm">
             <a
-              href={release?.releaseNotesUrl ?? CONTROL_AGENT_RELEASES_URL}
+              href={release?.releaseNotesUrl ?? CONTROL_AGENT_RELEASE.releasesUrl}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-2 text-cyan hover:text-white"
             >
               <ExternalLink className="size-4" /> Release notes
             </a>
-            <a href={CONTROL_AGENT_ISSUES_URL} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-cyan hover:text-white">
+            <a href={CONTROL_AGENT_RELEASE.issuesUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-cyan hover:text-white">
               <ExternalLink className="size-4" /> Report a beta problem
             </a>
-          </div>
+          </div> : null}
         </div>
       </section>
       <footer className="border-t border-white/10 px-5 py-8 text-sm text-white/45 sm:px-8">
@@ -75,7 +76,7 @@ export default async function DownloadsPage() {
           <Link href="/terms" className="transition-colors hover:text-cyan">
             Terms of Service
           </Link>
-          <a href="https://abenezer-ayalneh.dev/contact" className="transition-colors hover:text-cyan">
+          <a href={publicConfig.operatorContactUrl} className="transition-colors hover:text-cyan">
             Contact
           </a>
         </nav>

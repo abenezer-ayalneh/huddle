@@ -129,7 +129,7 @@ Create [`infra/deploy.sh`](../infra/deploy.sh). Keeping the deploy logic in the 
 # Production deploy, run on the VPS by GitHub Actions (or by hand).
 # Pulls main, rebuilds web/api, migrates the DB, health-checks the API.
 # Safe to re-run. Assumes .env.prod and turn-certs/*.pem already exist (untracked,
-# so `git reset --hard` leaves them alone) and a HOST Caddy is the front door.
+# so `git reset --hard` leaves them alone). Compose Caddy is the front door.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."   # repo root, regardless of where this is invoked from
@@ -143,8 +143,11 @@ git fetch --prune origin
 git reset --hard origin/main
 echo "==> Now at: $(git rev-parse --short HEAD)"
 
-echo "==> Building images and starting the stack (host Caddy stays the front door)"
-$COMPOSE up -d --build --scale caddy=0
+echo "==> Validating production configuration"
+node scripts/validate-production-env.mjs --env .env.prod
+
+echo "==> Building images and starting the stack"
+$COMPOSE up -d --build
 
 echo "==> Applying database migrations"
 $COMPOSE exec -T api node node_modules/prisma/build/index.js migrate deploy
@@ -153,7 +156,8 @@ echo "==> Pruning dangling images"
 docker image prune -f
 
 echo "==> Health check"
-curl -fsS "${HEALTH_URL:-https://huddle-api.abenezer-ayalneh.dev/health}"
+API_DOMAIN="$(node -e 'const fs=require("fs"); const line=fs.readFileSync(".env.prod","utf8").split(/\\r?\\n/).find((item)=>item.startsWith("API_DOMAIN=")); if (!line) process.exit(1); process.stdout.write(line.slice("API_DOMAIN=".length).trim())')"
+curl -fsS "https://${API_DOMAIN}/health"
 echo
 echo "==> Deploy complete."
 ```
@@ -170,10 +174,9 @@ git add infra/deploy.sh
 
 > **Why `git reset --hard` is safe here:** `.env.prod` and `infra/turn-certs/*.pem`
 > are untracked/gitignored, and `reset --hard` only touches _tracked_ files — so
-> your secrets and TURN certs survive. The committed `livekit.prod.yaml` and
-> `huddle.caddy` already hold this deployment's real hostnames/values, so resetting
-> them to `origin/main` is correct. **Rule: edit prod config in the repo and commit
-> it — never hand-edit those tracked files on the box,** or a deploy will revert them.
+> your secrets and TURN certs survive. Production hostnames and operator metadata
+> live only in gitignored `.env.prod`; the deploy preflight validates them after
+> reset. **Rule: edit `.env.prod` deliberately on the box and never commit it.**
 
 #### Step 6: Add the deploy workflow
 
@@ -264,9 +267,9 @@ pauses for your approval — click **Review deployments → Approve**.
 
 - [ ] In the Actions tab, the latest **CI** run is green and a **Deploy** run followed it.
 - [ ] The Deploy log shows the new short SHA at `==> Now at:` matching `git rev-parse --short HEAD` of `main`.
-- [ ] `curl -fsS https://huddle-api.abenezer-ayalneh.dev/health` → `{"status":"ok"}`.
-- [ ] `curl -fsS https://huddle-api.abenezer-ayalneh.dev/ready` → 200 with `{"postgres":"ok","redis":"ok"}`.
-- [ ] On the VPS, `docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml ps` shows `web`, `api`, `livekit`, `postgres`, `redis`, `minio` up; **`caddy` is NOT running** (host Caddy is the front door — `--scale caddy=0`).
+- [ ] `curl -fsS "https://${API_DOMAIN}/health"` → `{"status":"ok"}`.
+- [ ] `curl -fsS "https://${API_DOMAIN}/ready"` → 200 with `{"postgres":"ok","redis":"ok"}`.
+- [ ] On the VPS, `docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml ps` shows `caddy`, `web`, `api`, `livekit`, `postgres`, `redis`, and `minio` up.
 - [ ] A quick smoke test in the browser: open the app, create a room, two-way A/V (per DEPLOYMENT.md §9).
 
 ---
@@ -280,7 +283,7 @@ pauses for your approval — click **Review deployments → Approve**.
 | `ssh: handshake failed` / `Permission denied (publickey)`           | `VPS_SSH_KEY` truncated, wrong user, or public key not in `authorized_keys` | Re-paste the **full** private key (incl. BEGIN/END lines); verify Step 2's test SSH works                                                     |
 | `permission denied while trying to connect to the Docker daemon`    | deploy user not in `docker` group                                           | `sudo usermod -aG docker <deploy_user>` on the VPS, then re-login                                                                             |
 | `git reset --hard` fails / detached or diverged                     | someone hand-committed on the box                                           | On the VPS: `git fetch origin && git reset --hard origin/main` manually, then re-run                                                          |
-| Local edits to `livekit.prod.yaml`/`huddle.caddy` keep disappearing | those files are tracked; `reset --hard` reverts them                        | Make the change in the repo, commit, push — don't edit tracked files on the box                                                               |
+| Production configuration fails before startup                         | `.env.prod` is incomplete or malformed                                      | Run `pnpm config:validate:prod` on the VPS and correct the reported variable or TURN certificate path                                         |
 | Job times out during build                                          | small VPS, cold Docker cache                                                | Raise `command_timeout`; or adopt the GHCR "Variant" so the VPS only pulls prebuilt images                                                    |
 | `prisma migrate deploy` fails                                       | DB unreachable or bad migration                                             | Check `... logs postgres`; never edit applied migrations — add a new one                                                                      |
 | Caddy returns `502` after deploy                                    | `web`/`api` not published on localhost, or env typo                         | `ss -ltnp                                                                                                                                     | grep -E '3001 | 3002'`; check `... logs api web` (see DEPLOYMENT.md Troubleshooting) |
@@ -299,7 +302,7 @@ cd /home/huddle
 git fetch origin
 git reset --hard <previous_good_sha>
 docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
-  --env-file .env.prod up -d --build --scale caddy=0
+  --env-file .env.prod up -d --build
 ```
 
 > **Migrations don't auto-roll-back.** If the bad deploy added a destructive

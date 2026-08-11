@@ -8,7 +8,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VERSION="${AGENT_VERSION:-0.1.2}"
 BUILD_VERSION="${AGENT_BUILD_VERSION:-3}"
-REPOSITORY="${GITHUB_REPOSITORY:-abenezer-ayalneh/huddle}"
+REPOSITORY="${GITHUB_REPOSITORY:?GITHUB_REPOSITORY is required}"
 CHANNEL_TAG="${CONTROL_AGENT_FREE_BETA_TAG:-control-agent-free-beta}"
 KEYCHAIN_ACCOUNT="${CONTROL_AGENT_FREE_BETA_KEYCHAIN_ACCOUNT:-huddle-control-agent-free-beta}"
 DMG="$ROOT/dist/Huddle-Control-Agent-macos-arm64.dmg"

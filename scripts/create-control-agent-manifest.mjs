@@ -20,12 +20,12 @@ const artifact = (architecture) => {
 const manifest = {
   schemaVersion: 1,
   channel: 'beta',
-  keyId: process.env.AGENT_UPDATE_KEY_ID ?? 'control-agent-beta-1',
+  keyId: requiredEnv('AGENT_UPDATE_KEY_ID'),
   version,
   minimumSupportedVersion: process.env.AGENT_MINIMUM_SUPPORTED_VERSION ?? version,
   minimumMacOS: '13.0',
   releasedAt: new Date().toISOString(),
-  releaseNotesUrl: process.env.AGENT_RELEASE_NOTES_URL ?? `https://github.com/abenezer-ayalneh/huddle/releases/tag/control-agent-v${version}`,
+  releaseNotesUrl: requiredEnv('AGENT_RELEASE_NOTES_URL'),
   downloads: {
     arm64: artifact('arm64'),
     x86_64: artifact('x86_64'),
@@ -39,3 +39,9 @@ const key = createPrivateKey({ key: Buffer.from(privateKeyBase64, 'base64'), for
 const signature = sign(null, data, key).toString('base64');
 writeFileSync(resolve(output, 'release-manifest.json'), data);
 writeFileSync(resolve(output, 'release-manifest.sig'), `${signature}\n`);
+
+function requiredEnv(name) {
+  const value = process.env[name]?.trim();
+  if (!value) throw new Error(`${name} is required`);
+  return value;
+}

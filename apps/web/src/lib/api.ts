@@ -3,8 +3,9 @@
 import { emitFault } from './faults';
 import { FaultError, httpFetch, isFaultError, readFault } from './http';
 import type { RemoteControlSession } from './controlProtocol';
+import { publicConfig } from './public-config';
 
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+export const API_URL = publicConfig.apiUrl;
 
 // Host join: what a signed-in host needs to connect to LiveKit and run the
 // room. Returned by both create (new room) and host-token (rejoin own room).

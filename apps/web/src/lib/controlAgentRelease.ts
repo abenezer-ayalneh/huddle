@@ -1,5 +1,5 @@
 import { createPublicKey, verify } from 'node:crypto';
-import { CONTROL_AGENT_RELEASE_CHANNEL_URL } from './controlAgentReleaseShared';
+import { CONTROL_AGENT_RELEASE } from './controlAgentReleaseShared';
 import type { ControlAgentRelease, ControlAgentReleaseManifest } from './controlAgentReleaseShared';
 export type { ControlAgentRelease, ControlAgentReleaseManifest } from './controlAgentReleaseShared';
 
@@ -56,17 +56,17 @@ function verifyManifest(bytes: Uint8Array, signature: Uint8Array, publicKeyBase6
 }
 
 export async function getControlAgentRelease(): Promise<ControlAgentRelease | null> {
+  if (!CONTROL_AGENT_RELEASE) return null;
   try {
-    const manifestResponse = await fetch(`${CONTROL_AGENT_RELEASE_CHANNEL_URL}/release-manifest.json`, { next: { revalidate: 3600 } });
-    const signatureResponse = await fetch(`${CONTROL_AGENT_RELEASE_CHANNEL_URL}/release-manifest.sig`, { next: { revalidate: 3600 } });
+    const manifestResponse = await fetch(`${CONTROL_AGENT_RELEASE.channelUrl}/release-manifest.json`, { next: { revalidate: 3600 } });
+    const signatureResponse = await fetch(`${CONTROL_AGENT_RELEASE.channelUrl}/release-manifest.sig`, { next: { revalidate: 3600 } });
     if (!manifestResponse.ok || !signatureResponse.ok) return null;
     const bytes = new Uint8Array(await manifestResponse.arrayBuffer());
     const manifestText = new TextDecoder().decode(bytes);
     const manifest = JSON.parse(manifestText) as unknown;
     if (!isManifest(manifest)) return null;
     const signature = new Uint8Array(await signatureResponse.arrayBuffer());
-    const publicKey = process.env.CONTROL_AGENT_UPDATE_PUBLIC_KEY ?? process.env.NEXT_PUBLIC_CONTROL_AGENT_UPDATE_PUBLIC_KEY ?? '';
-    return { ...manifest, verified: publicKey.length > 0 && verifyManifest(bytes, signature, publicKey) };
+    return { ...manifest, verified: verifyManifest(bytes, signature, CONTROL_AGENT_RELEASE.updatePublicKey) };
   } catch {
     return null;
   }

@@ -9,8 +9,8 @@
   },
   "packageManager": "pnpm@10.32.1",
   "scripts": {
-    "dev:web": "pnpm --filter @huddle/web dev",
-    "dev:api": "pnpm --filter @huddle/api start:dev",
+    "dev:web": "node scripts/with-env.mjs .env -- pnpm --filter @huddle/web dev",
+    "dev:api": "node scripts/with-env.mjs .env -- pnpm --filter @huddle/api start:dev",
     "dev:tunnel:web": "node scripts/with-env.mjs .env .env.tunnel.local -- pnpm --filter @huddle/web dev",
     "dev:tunnel:api": "node scripts/with-env.mjs .env .env.tunnel.local -- pnpm --filter @huddle/api start:dev",
     "infra:up": "docker compose -f infra/docker-compose.yml --env-file .env --profile dev-egress-fix up -d",
@@ -21,9 +21,11 @@
     "tunnel:validate": "cloudflared tunnel --config ~/.cloudflared/huddle-local.yml ingress validate",
     "lint": "pnpm -r lint",
     "format:write": "prettier --ignore-unknown --write .",
-    "build": "pnpm -r build",
+    "build": "node scripts/with-env.mjs .env -- pnpm -r build",
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test",
+    "test:config": "node --test scripts/validate-production-env.test.mjs",
+    "config:validate:prod": "node scripts/validate-production-env.mjs --env .env.prod",
     "prepare": "husky"
   },
   "devDependencies": {

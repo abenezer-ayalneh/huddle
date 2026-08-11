@@ -121,9 +121,8 @@ Visual styling decisions belong in `DESIGN.md`, not in this product record.
   the illustrative portrait set under
   `apps/web/public/landing-portraits/`, and the application icon and social
   preview files under `apps/web/public/` and `apps/web/src/app/`.
-- The repository declares `https://huddle.abenezer-ayalneh.dev` as a live demo
-  URL for the capacity-limited evaluation deployment; this init did not perform
-  live deployment acceptance.
+- Deployment URLs and public operator identity are supplied from the validated
+  environment contract; this init did not perform live deployment acceptance.
 - The repository has implementation, automated checks, and documented manual
   verification notes. It does not provide confirmed customer testimonials,
   customer logos, adoption figures, independent benchmarks, or complete

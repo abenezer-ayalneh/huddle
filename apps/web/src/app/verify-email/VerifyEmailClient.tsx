@@ -7,8 +7,9 @@ import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import HuddleIcon from '@/components/HuddleIcon';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { publicConfig } from '@/lib/public-config';
 
-const AUTH_URL = process.env.NEXT_PUBLIC_AUTH_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+const AUTH_URL = publicConfig.authUrl;
 const MIN_LOADING_MS = 700;
 
 export default function VerifyEmailClient() {

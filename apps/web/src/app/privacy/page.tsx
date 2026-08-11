@@ -1,6 +1,7 @@
 /* eslint-disable react/no-unescaped-entities -- Long-form legal prose is more readable with normal punctuation. */
 import type { Metadata } from 'next';
 import LegalPage, { LegalCallout, LegalSection, type LegalTocItem } from '@/components/legal/LegalPage';
+import { publicConfig } from '@/lib/public-config';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
@@ -31,26 +32,24 @@ export default function PrivacyPage() {
       kind="privacy"
       eyebrow="Privacy · Data boundaries"
       title="Privacy, without vague edges."
-      description="This policy explains what the official Huddle deployment processes, where meeting data travels, what is stored, and which choices remain with Hosts, Guests, and self-hosting operators."
+      description="This template explains what this Huddle deployment processes, where meeting data travels, what is stored, and which choices remain with Hosts, Guests, and its operator."
       updatedAt="August 4, 2026"
       toc={toc}
     >
       <LegalSection id="scope" title="Scope and operator">
         <p>
-          This Privacy Policy applies to the official Huddle website and service at <strong>huddle.abenezer-ayalneh.dev</strong>, its API, and the Huddle
-          Control Agent distributed from that service. The official deployment is operated by <strong>Abenezer Ayalneh</strong> ("Huddle," "we," "us," or
-          "our").
+          This Privacy Policy applies to the Huddle website and service at <strong>{publicConfig.siteUrl}</strong>, its API, and any Control Agent distributed
+          by this deployment. This deployment is operated by <strong>{publicConfig.operatorName}</strong> ("we," "us," or "our").
         </p>
-        <LegalCallout title="A note for self-hosted deployments">
+        <LegalCallout title="Operator review required">
           <p>
-            Huddle is self-hosted software. If you use Huddle through another person or organization, that deployment operator—not the operator of the official
-            Huddle site—decides how its server, logs, retention settings, integrations, and backups are managed. Ask that operator for its privacy notice.
-            Operators should replace or adapt this policy before making their deployment available to others.
+            Huddle is self-hosted software. This is an operator-adaptable template, not legal advice. Before making this deployment available to others, the
+            operator must review, adapt, and adopt it for the applicable jurisdiction, actual infrastructure, retention settings, integrations, and backups.
           </p>
         </LegalCallout>
         <p>
-          This policy covers information processed by the official deployment. It does not govern the independent practices of meeting Hosts, other
-          participants, Google, Sentry, an email provider, GitHub, your browser, your device, or a third-party Huddle operator.
+          This policy covers information processed by this deployment. It does not govern the independent practices of meeting Hosts, other participants,
+          Google, Sentry, an email provider, GitHub, your browser, or your device.
         </p>
       </LegalSection>
 
@@ -199,7 +198,7 @@ export default function PrivacyPage() {
             people admitted to the meeting. Recording and Remote Control status are intentionally visible room-wide.
           </li>
           <li>
-            <strong>Service infrastructure.</strong> The official deployment's LiveKit, Postgres, Redis, MinIO, API, and web services process data under the
+            <strong>Service infrastructure.</strong> This deployment's LiveKit, Postgres, Redis, MinIO, API, and web services process data under the
             operator's control.
           </li>
           <li>
@@ -218,7 +217,7 @@ export default function PrivacyPage() {
             investigate fraud or abuse, or defend legal rights.
           </li>
           <li>
-            <strong>Business transition.</strong> If operation of the official service is transferred, relevant information may transfer with it subject to this
+            <strong>Business transition.</strong> If operation of this deployment is transferred, relevant information may transfer with it subject to this
             policy, applicable law, and notice where required.
           </li>
         </ul>
@@ -239,7 +238,7 @@ export default function PrivacyPage() {
       <LegalSection id="retention" title="Retention and deletion">
         <ul>
           <li>
-            <strong>Accounts, rooms, and metadata</strong> remain while needed to operate the account and official service, resolve disputes, secure the system,
+            <strong>Accounts, rooms, and metadata</strong> remain while needed to operate the account and this deployment, resolve disputes, secure the system,
             and meet legal obligations. Account-related rooms and metadata are designed to be removed when the account is deleted, subject to backups and
             records we must retain.
           </li>
@@ -261,7 +260,7 @@ export default function PrivacyPage() {
             are not retained as audit data.
           </li>
           <li>
-            <strong>Diagnostic events and server logs</strong> are retained for a limited operational period according to the official deployment's Sentry and
+            <strong>Diagnostic events and server logs</strong> are retained for a limited operational period according to this deployment's Sentry and
             infrastructure settings.
           </li>
           <li>
@@ -288,7 +287,7 @@ export default function PrivacyPage() {
           <li>request access, correction, deletion, restriction, objection, or portability where applicable law provides those rights.</li>
         </ul>
         <p>
-          The official deployment does not currently provide a self-service account-deletion button. Submit a privacy request through the contact method below.
+          This deployment does not currently provide a self-service account-deletion button. Submit a privacy request through the contact method below.
           We may need to verify your identity before acting. If another organization operates the Huddle deployment you use, direct your request to that
           operator.
         </p>
@@ -312,7 +311,7 @@ export default function PrivacyPage() {
 
       <LegalSection id="transfers" title="International processing">
         <p>
-          The official deployment, its configured providers, and meeting participants may be located in different countries. As a result, information may be
+          This deployment, its configured providers, and meeting participants may be located in different countries. As a result, information may be
           processed outside your country, where privacy laws may differ. Where required, the operator will use an appropriate legal mechanism and safeguards for
           cross-border processing. A self-hosted operator selects its own hosting region and providers.
         </p>
@@ -320,7 +319,7 @@ export default function PrivacyPage() {
 
       <LegalSection id="children" title="Children">
         <p>
-          The official Huddle service is not directed to children under 16, and children under 16 may not create Host accounts. If a meeting organizer permits a
+          This Huddle deployment is not directed to children under 16, and children under 16 may not create Host accounts. If a meeting organizer permits a
           minor to participate, the organizer is responsible for obtaining any consent required by law and for avoiding inappropriate Recording or Remote
           Control. Contact us if you believe a child provided account information without valid authorization.
         </p>
@@ -336,8 +335,8 @@ export default function PrivacyPage() {
 
       <LegalSection id="contact" title="Contact">
         <p>
-          For questions or requests about the official deployment, contact <strong>Abenezer Ayalneh</strong> through the{' '}
-          <a href="https://abenezer-ayalneh.dev/contact">developer contact page</a>. Include "Huddle privacy" in your message and identify the account email or
+          For questions or requests about this deployment, contact <strong>{publicConfig.operatorName}</strong> through the{' '}
+          <a href={publicConfig.operatorContactUrl}>operator contact page</a>. Include "Huddle privacy" in your message and identify the account email or
           meeting context relevant to your request without sending passwords, Host keys, meeting tokens, Control Agent links, or other secrets.
         </p>
       </LegalSection>

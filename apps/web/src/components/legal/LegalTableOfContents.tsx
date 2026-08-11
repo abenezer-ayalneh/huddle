@@ -50,34 +50,54 @@ export default function LegalTableOfContents({ title, toc }: LegalTableOfContent
     };
   }, [toc]);
 
-  return (
-    <aside className="lg:sticky lg:top-0 lg:z-10 lg:max-h-dvh lg:self-start lg:overflow-y-auto lg:pr-2" aria-label={`${title} contents`}>
-      <p className="font-mono text-xs font-semibold uppercase tracking-[0.18em] text-white/45">On this page</p>
-      <ol className="mt-5 grid gap-1 border-l border-white/10">
-        {toc.map((item, index) => {
-          const isActive = item.id === activeId;
+  const activeIndex = Math.max(
+    0,
+    toc.findIndex((item) => item.id === activeId),
+  );
+  const activeItem = toc[activeIndex];
+  const contents = (mobile = false) => (
+    <ol className="legal-contents-list">
+      {toc.map((item, index) => {
+        const isActive = item.id === activeId;
 
-          return (
-            <li key={item.id}>
-              <a
-                href={`#${item.id}`}
-                aria-current={isActive ? 'location' : undefined}
-                onClick={() => setActiveId(item.id)}
-                className={`group -ml-px flex gap-3 border-l px-4 py-2 text-sm leading-5 transition-colors ${
-                  isActive
-                    ? 'border-cyan bg-cyan/10 font-medium text-white shadow-[inset_0_1px_0_oklch(1_0_0/0.04)]'
-                    : 'border-transparent text-white/50 hover:border-cyan/40 hover:bg-white/[0.035] hover:text-cyan'
-                }`}
-              >
-                <span className={`font-mono text-[0.68rem] transition-colors ${isActive ? 'text-cyan' : 'text-white/25 group-hover:text-cyan/60'}`}>
-                  {String(index + 1).padStart(2, '0')}
-                </span>
-                <span>{item.label}</span>
-              </a>
-            </li>
-          );
-        })}
-      </ol>
+        return (
+          <li key={item.id}>
+            <a
+              href={`#${item.id}`}
+              aria-current={isActive ? 'location' : undefined}
+              onClick={(event) => {
+                setActiveId(item.id);
+                if (mobile) event.currentTarget.closest('details')?.removeAttribute('open');
+              }}
+              className={isActive ? 'is-active' : undefined}
+            >
+              <span>{String(index + 1).padStart(2, '0')}</span>
+              <span>{item.label}</span>
+            </a>
+          </li>
+        );
+      })}
+    </ol>
+  );
+
+  return (
+    <aside className="legal-contents" aria-label={`${title} contents`}>
+      <div className="legal-contents-desktop">
+        <p className="legal-mono-label">On this page</p>
+        {contents()}
+      </div>
+      <details className="legal-contents-mobile">
+        <summary>
+          <span>
+            <span className="legal-mono-label">Contents</span>
+            <strong>{activeItem?.label ?? 'Sections'}</strong>
+          </span>
+          <span className="legal-contents-count">
+            {String(activeIndex + 1).padStart(2, '0')} / {String(toc.length).padStart(2, '0')}
+          </span>
+        </summary>
+        {contents(true)}
+      </details>
     </aside>
   );
 }

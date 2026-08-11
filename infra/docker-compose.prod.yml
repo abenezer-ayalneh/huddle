@@ -38,9 +38,16 @@ services:
       dockerfile: apps/web/Dockerfile
       args:
         # NEXT_PUBLIC_* are baked at build time (they ship to the browser).
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-        NEXT_PUBLIC_LIVEKIT_URL: ${NEXT_PUBLIC_LIVEKIT_URL}
-        NEXT_PUBLIC_AUTH_URL: ${NEXT_PUBLIC_AUTH_URL}
+        NEXT_PUBLIC_SITE_URL: https://${APP_DOMAIN:?APP_DOMAIN is required}
+        NEXT_PUBLIC_API_URL: https://${API_DOMAIN:?API_DOMAIN is required}
+        NEXT_PUBLIC_AUTH_URL: https://${API_DOMAIN:?API_DOMAIN is required}
+        NEXT_PUBLIC_OPERATOR_NAME: ${OPERATOR_NAME:?OPERATOR_NAME is required}
+        NEXT_PUBLIC_OPERATOR_CONTACT_URL: ${OPERATOR_CONTACT_URL:?OPERATOR_CONTACT_URL is required}
+        NEXT_PUBLIC_PROJECT_REPOSITORY_URL: ${PROJECT_REPOSITORY_URL:?PROJECT_REPOSITORY_URL is required}
+        NEXT_PUBLIC_CONTROL_AGENT_RELEASE_CHANNEL_URL: ${CONTROL_AGENT_RELEASE_CHANNEL_URL:-}
+        NEXT_PUBLIC_CONTROL_AGENT_RELEASES_URL: ${CONTROL_AGENT_RELEASES_URL:-}
+        NEXT_PUBLIC_CONTROL_AGENT_ISSUES_URL: ${CONTROL_AGENT_ISSUES_URL:-}
+        NEXT_PUBLIC_CONTROL_AGENT_UPDATE_PUBLIC_KEY: ${CONTROL_AGENT_UPDATE_PUBLIC_KEY:-}
         NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ${NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION:-}
         NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
         SENTRY_ORG: ${SENTRY_ORG:-}
@@ -83,6 +90,11 @@ services:
     environment:
       NODE_ENV: production
       LOG_FORMAT: json # structured JSON logs in prod (logging/json.logger.ts)
+      WEB_ORIGIN: https://${APP_DOMAIN:?APP_DOMAIN is required}
+      BETTER_AUTH_URL: https://${API_DOMAIN:?API_DOMAIN is required}
+      GOOGLE_DRIVE_REDIRECT_URI: https://${API_DOMAIN:?API_DOMAIN is required}/storage-connections/google-drive/callback
+      LIVEKIT_URL: ws://livekit:7880
+      LIVEKIT_PUBLIC_URL: wss://${LIVEKIT_DOMAIN:?LIVEKIT_DOMAIN is required}
       # SENTRY_AUTH_TOKEN exists only for the web image build. Override the
       # env_file value so the build credential never enters the API runtime.
       SENTRY_AUTH_TOKEN: ''
@@ -115,6 +127,11 @@ services:
     environment:
       NODE_ENV: production
       LOG_FORMAT: json
+      WEB_ORIGIN: https://${APP_DOMAIN:?APP_DOMAIN is required}
+      BETTER_AUTH_URL: https://${API_DOMAIN:?API_DOMAIN is required}
+      GOOGLE_DRIVE_REDIRECT_URI: https://${API_DOMAIN:?API_DOMAIN is required}/storage-connections/google-drive/callback
+      LIVEKIT_URL: ws://livekit:7880
+      LIVEKIT_PUBLIC_URL: wss://${LIVEKIT_DOMAIN:?LIVEKIT_DOMAIN is required}
       SENTRY_AUTH_TOKEN: ''
     depends_on:
       postgres:
@@ -127,11 +144,33 @@ services:
   # --- LiveKit: prod config (external IP, TURN/TLS, metrics) ---
   livekit:
     restart: always
-    # node-ip is omitted so LiveKit auto-detects the public IP (use_external_ip
-    # in the prod config). Pin it with --node-ip ${LIVEKIT_NODE_IP} if needed.
-    command: --config /etc/livekit.yaml
+    # Empty command restores the image default; LiveKit reads LIVEKIT_CONFIG.
+    command: []
+    environment:
+      LIVEKIT_KEYS: ${LIVEKIT_KEYS:?LIVEKIT_KEYS is required}
+      LIVEKIT_CONFIG: |
+        port: 7880
+        rtc:
+          tcp_port: 7881
+          port_range_start: 50000
+          port_range_end: 50200
+          use_external_ip: true
+        redis:
+          address: redis:6379
+        turn:
+          enabled: ${TURN_ENABLED:-false}
+          domain: ${TURN_DOMAIN:-}
+          tls_port: 5349
+          cert_file: /etc/livekit/turn/cert.pem
+          key_file: /etc/livekit/turn/key.pem
+        prometheus_port: 6789
+        webhook:
+          api_key: ${LIVEKIT_API_KEY:?LIVEKIT_API_KEY is required}
+          urls:
+            - http://api:3001/livekit/webhook
+        logging:
+          level: info
     volumes:
-      - ./livekit.prod.yaml:/etc/livekit.yaml:ro
       - ./turn-certs:/etc/livekit/turn:ro # provision cert.pem/key.pem here
     ports:
       - '3478:3478/udp' # TURN/UDP

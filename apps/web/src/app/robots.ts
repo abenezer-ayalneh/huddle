@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
+import { publicConfig } from '@/lib/public-config';
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://huddle.abenezer-ayalneh.dev';
+const { siteUrl } = publicConfig;
 
 // Robots policy: public informational pages are indexable. /rooms/* are private
 // meeting URLs that crawlers must not enumerate, and /lobby plus /recordings are

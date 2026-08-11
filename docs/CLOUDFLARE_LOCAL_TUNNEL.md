@@ -1,7 +1,7 @@
 # Cloudflare Local Tunnel
 
 Use this when you want to test the locally hosted Huddle app from another device
-with real HTTPS/WSS URLs on `abenezer-ayalneh.dev`.
+with real HTTPS/WSS URLs on a domain you control.
 
 This is **not** the production deployment. Cloudflare Tunnel fronts the web app,
 API, and LiveKit signal endpoint, but LiveKit media still travels directly to
@@ -18,9 +18,9 @@ References:
 
 | Hostname                                    | Local service          |
 | ------------------------------------------- | ---------------------- |
-| `local-huddle.abenezer-ayalneh.dev`         | Next.js web `:3000`    |
-| `local-huddle-api.abenezer-ayalneh.dev`     | NestJS API `:3001`     |
-| `local-huddle-livekit.abenezer-ayalneh.dev` | LiveKit signal `:7880` |
+| `local-huddle.example.test`                 | Next.js web `:3000`    |
+| `local-huddle-api.example.test`             | NestJS API `:3001`     |
+| `local-huddle-livekit.example.test`         | LiveKit signal `:7880` |
 
 ## One-time Setup
 
@@ -53,16 +53,16 @@ cp infra/cloudflared-huddle-local.yml.example ~/.cloudflared/huddle-local.yml
 Route the three hostnames to the tunnel:
 
 ```bash
-cloudflared tunnel --config ~/.cloudflared/huddle-local.yml route dns huddle-local local-huddle.abenezer-ayalneh.dev
-cloudflared tunnel --config ~/.cloudflared/huddle-local.yml route dns huddle-local local-huddle-api.abenezer-ayalneh.dev
-cloudflared tunnel --config ~/.cloudflared/huddle-local.yml route dns huddle-local local-huddle-livekit.abenezer-ayalneh.dev
+cloudflared tunnel --config ~/.cloudflared/huddle-local.yml route dns huddle-local local-huddle.example.test
+cloudflared tunnel --config ~/.cloudflared/huddle-local.yml route dns huddle-local local-huddle-api.example.test
+cloudflared tunnel --config ~/.cloudflared/huddle-local.yml route dns huddle-local local-huddle-livekit.example.test
 ```
 
 Validate the config:
 
 ```bash
 pnpm tunnel:validate
-cloudflared tunnel --config ~/.cloudflared/huddle-local.yml ingress rule https://local-huddle.abenezer-ayalneh.dev
+cloudflared tunnel --config ~/.cloudflared/huddle-local.yml ingress rule https://local-huddle.example.test
 ```
 
 ## Run
@@ -79,7 +79,7 @@ pnpm tunnel:run
 Then open:
 
 ```text
-https://local-huddle.abenezer-ayalneh.dev
+https://local-huddle.example.test
 ```
 
 ## Smoke Test
@@ -110,6 +110,6 @@ pnpm infra:tunnel:down
   `cloudflared tunnel --config ~/.cloudflared/huddle-local.yml route dns`
   command with `--overwrite-dns` before the tunnel name after confirming it is
   safe to replace, for example:
-  `cloudflared tunnel --config ~/.cloudflared/huddle-local.yml route dns --overwrite-dns huddle-local local-huddle.abenezer-ayalneh.dev`.
+  `cloudflared tunnel --config ~/.cloudflared/huddle-local.yml route dns --overwrite-dns huddle-local local-huddle.example.test`.
 - The tunnel is intentionally open while running. Stop `cloudflared` when you are
   done testing.

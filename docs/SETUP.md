@@ -30,7 +30,6 @@ LIVEKIT_API_SECRET=<paste generated secret>
 LIVEKIT_KEYS=devkey: <paste the same generated secret>
 LIVEKIT_URL=ws://localhost:7880
 LIVEKIT_NODE_IP=<your LAN IP, e.g. 192.168.1.100>   # macOS: ipconfig getifaddr en0
-NEXT_PUBLIC_LIVEKIT_URL=ws://localhost:7880
 API_PORT=3001
 WEB_ORIGIN=http://localhost:3000
 ```
@@ -154,7 +153,7 @@ pnpm dev:web        # Next.js dev server
 
 ## 6b. Test from other LAN devices with HTTPS
 
-For cross-device local testing with your `abenezer-ayalneh.dev` domain, use the
+For cross-device local testing with a domain you control, use the
 manual Cloudflare Tunnel runbook:
 [`docs/CLOUDFLARE_LOCAL_TUNNEL.md`](./CLOUDFLARE_LOCAL_TUNNEL.md).
 
@@ -286,9 +285,9 @@ over the Docker network.
 cp .env.prod.example .env.prod   # then edit: domains, secrets, ACME_EMAIL
 ```
 
-Edit `infra/livekit.prod.yaml`: set the TURN `domain` and the webhook
-`api_key` (your `LIVEKIT_API_KEY` — LiveKit does not interpolate env here).
-Provision TURN TLS certs into `infra/turn-certs/` (see its README).
+Set `TURN_ENABLED=true` and `TURN_DOMAIN` only when enabling TURN; provision
+its TLS certs into `infra/turn-certs/` (see its README). Production Compose
+renders the LiveKit webhook key from `LIVEKIT_API_KEY`.
 
 ### 4. Build & run
 

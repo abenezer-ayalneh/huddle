@@ -125,11 +125,11 @@ components:
 
 **Creative North Star: "The Neon Switchboard"**
 
-Huddle's application routes remain a dark operator surface for real-time work. The public landing surface is now a separate Signal Handoff world: warm editorial fields explain how a meeting becomes shared work, while code-native meeting scenes keep authority and consent concrete. The landing is expressive, but never so decorative that product truth or deployment boundaries become harder to read.
+Huddle's application routes remain a dark operator surface for real-time work. The public landing and legal-document surfaces use a separate Signal Handoff world: warm editorial fields explain how a meeting becomes shared work, while dossier-like policy pages make responsibility and data boundaries readable. The public surfaces are expressive, but never so decorative that product truth or deployment boundaries become harder to read.
 
 Marketing surfaces may open the visual world with orbital imagery, dot lattices, and spacious type. Operative surfaces compress that same world into glass panels, concise status rails, clipped media tiles, and compact controls. Depth is layered and structural; neon is reserved for priority, focus, active state, and acknowledgement.
 
-The legacy application system is intentionally dark-only. The landing surface is the approved exception: it supports light cream and dark chocolate themes through scoped tokens so the public page can follow a visitor's preference without migrating the call UI.
+The legacy application system is intentionally dark-only. Signal Handoff is the approved public-surface exception: the landing and legal dossiers support light cream and dark chocolate themes through scoped tokens so they can follow a visitor's preference without migrating the call UI.
 
 **Key Characteristics:**
 
@@ -309,11 +309,13 @@ Blocking decisions use a centered Deep Popover panel over a 60% black backdrop w
 
 ## Do's and Don'ts
 
-## Scoped landing direction: Signal Handoff
+## Scoped public direction: Signal Handoff
 
 The public `/` route uses the Signal Handoff direction from
 `docs/LANDING_PAGE_REDESIGN_PLAN.md`. It is a Persuade surface for agencies and
-small teams collaborating with clients.
+small teams collaborating with clients. The `/privacy` and `/terms` routes use
+the same direction as Read surfaces: long-form legal dossiers for people who
+need to find, understand, and compare the deployment's boundaries.
 
 - **Palette:** light `#F6EEDB` / `#141414` with purple `#8D2676`, yellow
   `#F3B01C`, and red `#EE342F`; dark `#1A0F0F` / `#FAF4E9` with the same signal
@@ -323,8 +325,10 @@ small teams collaborating with clients.
   vendored under `src/app/fonts/` with the OFL notice.
 - **Composition:** 8–12px frames, selective pills, flat fields, large
   sentence-case headlines, a floating top-center navigation, and three routed
-  signal lines. The chosen first viewport is left promise + action/Room Code
-  entry + right code-native meeting scene.
+  signal lines. The landing's chosen first viewport is left promise +
+  action/Room Code entry + right code-native meeting scene. Legal dossiers use
+  a compact floating Huddle/Privacy/Terms navigator, an asymmetric document
+  masthead, a sticky numbered contents rail, and a long reading column.
 - **Proof:** fictional portraits are labeled illustrative; meeting scenes are
   built with React markup. Do not replace product proof with fabricated
   screenshots or customer claims.

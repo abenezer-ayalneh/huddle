@@ -221,13 +221,14 @@ the user; see `docs/adr/0004-deploy-topology-single-vps.md` and
 `docs/adr/0005-knock-state-to-redis.md`.
 
 - [x] **LiveKit multi-node-capable, run as one node** — Redis-backed shared room
-      state; `infra/livekit.prod.yaml` sets `rtc.use_external_ip` and documents
+      state; production `LIVEKIT_CONFIG` sets `rtc.use_external_ip` and documents
       adding a second SFU node with its own public UDP range. Media reaches the
       owning node directly; the front door only fronts signal/WSS.
 - [x] **Caddy front door + TLS** — `infra/Caddyfile` + `caddy` service in the
       prod override; automatic Let's Encrypt certs; reverse-proxies HTTPS/WSS to
       `web`, `api`, and the LiveKit signal endpoint per-subdomain.
-- [x] **TURN** — LiveKit's **embedded TURN/TLS** enabled in `livekit.prod.yaml`
+- [x] **TURN** — LiveKit's optional **embedded TURN/TLS** configured through
+      `TURN_ENABLED`/`TURN_DOMAIN`
       (cert dir `infra/turn-certs/`); no standalone coturn.
 - [x] **Knock state → Redis** — `apps/api/src/rooms/rooms.state.ts` is now
       Redis-backed (`ioredis`, `RedisModule`) with a 1h **TTL**; survives API
