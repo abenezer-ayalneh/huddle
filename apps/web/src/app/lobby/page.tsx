@@ -19,7 +19,7 @@ export default function LobbyPage() {
         <div className="lobby-container lobby-layout">
           <section className="lobby-intro" aria-labelledby="lobby-title">
             <p className="lobby-kicker">YOUR HUDDLE</p>
-            <h1 id="lobby-title">Your room is ready.</h1>
+            <h1 id="lobby-title">Meetings, reimagined.</h1>
             <p className="lobby-lede">Host a meeting, set a time, and share one link with everyone who needs to be there.</p>
             <div className="lobby-entry-note">
               <span>Guest entry</span>
