@@ -52,9 +52,9 @@ export default function DeviceRecoveryDialog({
 
   return (
     <AlertDialog open={target !== null} onOpenChange={(o) => !o && onClose()}>
-      <AlertDialogContent>
+      <AlertDialogContent className="prejoin-recovery-dialog">
         <AlertDialogHeader>
-          <AlertDialogMedia className="bg-magenta/15 text-magenta">
+          <AlertDialogMedia className="prejoin-recovery-media">
             <content.Icon />
           </AlertDialogMedia>
           <AlertDialogTitle>{content.title}</AlertDialogTitle>
@@ -62,23 +62,21 @@ export default function DeviceRecoveryDialog({
         </AlertDialogHeader>
 
         {content.steps && (
-          <ol className="space-y-2 text-sm text-white/80">
+          <ol className="prejoin-recovery-steps">
             {content.steps.map((step, i) => (
-              <li key={i} className="flex gap-2.5">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/10 text-[11px] font-semibold text-white/70">
-                  {i + 1}
-                </span>
-                <span className="pt-0.5">{step}</span>
+              <li key={i}>
+                <span>{i + 1}</span>
+                <span>{step}</span>
               </li>
             ))}
           </ol>
         )}
 
-        {content.closingLine && <p className="text-xs text-white/50">{content.closingLine}</p>}
+        {content.closingLine && <p className="prejoin-recovery-closing">{content.closingLine}</p>}
 
         <AlertDialogFooter>
-          <AlertDialogCancel>Close</AlertDialogCancel>
-          <AlertDialogAction onClick={onTryAgain}>
+          <AlertDialogCancel className="prejoin-recovery-secondary">Close</AlertDialogCancel>
+          <AlertDialogAction className="prejoin-recovery-primary" onClick={onTryAgain}>
             <RefreshCw className="h-4 w-4" />
             {actionLabel}
           </AlertDialogAction>
@@ -110,13 +108,13 @@ function buildContent({ cause, device, Label, lower }: { cause: FailureCause; de
       return {
         Icon: device === 'camera' ? Video : Mic,
         title: `Your ${lower} is busy`,
-        body: `Another app — like Zoom, FaceTime, Teams, or your ${lower} app — may be using your ${lower}. Close it, then try again.`,
+        body: `Another app, like Zoom, FaceTime, Teams, or your ${lower} app, may be using your ${lower}. Close it, then try again.`,
       };
     case 'notfound':
       return {
         Icon: device === 'camera' ? VideoOff : MicOff,
         title: `No ${lower} found`,
-        body: `We couldn't find a ${lower}. Connect one and we'll pick it up automatically — or just join without it.`,
+        body: `We couldn't find a ${lower}. Connect one and we'll pick it up automatically. You can also join without it.`,
       };
     default:
       return {

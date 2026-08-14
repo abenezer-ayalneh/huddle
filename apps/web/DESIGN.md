@@ -131,6 +131,14 @@ Marketing surfaces may open the visual world with orbital imagery, dot lattices,
 
 The legacy application system is intentionally dark-only. Signal Handoff is the approved public-surface exception: the landing and legal dossiers support light cream and dark chocolate themes through scoped tokens so they can follow a visitor's preference without migrating the call UI.
 
+**System Notice Exception:** Non-blocking system feedback is a single global
+Signal Handoff family, even over legacy application routes. Faults, API
+Reachability, and Call Connection use the saved light/dark preference, flat
+warm frames, structural shadows, and purple/yellow/red semantic accents. This
+exception does not migrate the route background, media stage, or in-call
+controls; consent and authority request prompts remain in their dedicated call
+tray.
+
 **Key Characteristics:**
 
 - Dark violet-black canvases with restrained magenta and cyan signal color.

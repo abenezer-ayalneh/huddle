@@ -2,24 +2,30 @@
 
 import { useConnectionState } from '@livekit/components-react';
 import { ConnectionState } from 'livekit-client';
+import { useEffect } from 'react';
+import { setCallConnectionNotice } from '@/lib/systemNotices';
 
-// Replaces LiveKit's ConnectionStateToast. A glass HUD chip, top-center, shown
-// only while the connection is not healthy.
+// Bridges LiveKit's call-local lifecycle into the root system-notice stack.
+// The stack owns rendering so API Reachability, Faults, and Call Connection use
+// one global newest-first family without conflating their source semantics.
 export default function ConnectionStatus() {
   const state = useConnectionState();
 
-  if (state === ConnectionState.Connected) return null;
+  useEffect(() => {
+    if (state === ConnectionState.Connected) {
+      setCallConnectionNotice(null);
+      return;
+    }
 
-  const text = state === ConnectionState.Connecting ? 'Connecting…' : state === ConnectionState.Reconnecting ? 'Reconnecting…' : 'Disconnected';
+    setCallConnectionNotice(
+      state === ConnectionState.Connecting
+        ? { message: 'Connecting…', tone: 'progress' }
+        : state === ConnectionState.Reconnecting
+          ? { message: 'Reconnecting…', tone: 'progress' }
+          : { message: 'Disconnected', tone: 'error' },
+    );
+  }, [state]);
 
-  const dotClass = state === ConnectionState.Reconnecting ? 'bg-magenta' : state === ConnectionState.Disconnected ? 'bg-destructive' : 'bg-cyan';
-
-  return (
-    <div className="pointer-events-none absolute inset-x-0 top-4 z-30 flex justify-center">
-      <div className="glass-strong flex items-center gap-2 rounded-full px-4 py-1.5 font-mono text-xs uppercase tracking-[0.18em] text-white/90">
-        <span className={`h-2 w-2 animate-pulse rounded-full ${dotClass}`} />
-        {text}
-      </div>
-    </div>
-  );
+  useEffect(() => () => setCallConnectionNotice(null), []);
+  return null;
 }

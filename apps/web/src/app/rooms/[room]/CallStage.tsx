@@ -22,6 +22,7 @@ import ErrorBoundary from '@/components/faults/ErrorBoundary';
 import { usePresentation } from '@/components/call/usePresentation';
 import { useRecording } from '@/components/call/useRecording';
 import { useRemoteControl } from '@/components/call/useRemoteControl';
+import { setCallNoticeTrayOffset } from '@/lib/systemNotices';
 import LeaveConfirmDialog from './LeaveConfirmDialog';
 import { Centered } from './ui';
 
@@ -99,6 +100,7 @@ export default function CallStage({
         heading="Ready to join?"
         subheading="Check your camera and mic before you go live."
         submitLabel="Join call"
+        roomName={room}
       />
     );
   }
@@ -255,8 +257,8 @@ function CallView({
         onPopOut={pipSupported ? () => (pipActive ? exitPip() : enterPip()) : undefined}
         pipActive={pipActive}
       />
-      <ErrorBoundary label="Call toasts" fallback={null}>
-        <div className="pointer-events-none absolute inset-x-0 top-14 z-30 flex flex-col items-center gap-2">
+      <CallNoticeTray>
+        <ErrorBoundary label="Call toasts" fallback={null}>
           <RecordingIndicator active={recording.recordingActive} startedAt={recording.recordingStartedAt} />
           {recording.recordingActive && recording.recordingId && (
             <RecordingShareConsent
@@ -294,8 +296,8 @@ function CallView({
             onDecline={presentation.declinePresentation}
             onDismissOutcome={presentation.dismissOutcome}
           />
-        </div>
-      </ErrorBoundary>
+        </ErrorBoundary>
+      </CallNoticeTray>
       <CallTimer />
       <ConnectionStatus />
       <AgentLaunchDialog bootstrap={remoteControl.helperBootstrap} onReopen={remoteControl.reopenAgent} onDismiss={remoteControl.dismissHelperBootstrap} />
@@ -305,6 +307,33 @@ function CallView({
           renders the real tiles. */}
       <video ref={pipVideoRef} autoPlay playsInline muted className="pointer-events-none fixed bottom-0 right-0 -z-10 h-px w-px opacity-0" />
     </>
+  );
+}
+
+function CallNoticeTray({ children }: { children: ReactNode }) {
+  const trayRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const tray = trayRef.current;
+    if (!tray) return;
+
+    // The tray begins 56px below the call stage. Reporting its rendered height
+    // lets the global system stack follow actual consent/request content rather
+    // than guessing at one fixed prompt height.
+    const updateOffset = () => setCallNoticeTrayOffset(tray.getBoundingClientRect().height ? tray.getBoundingClientRect().height + 56 : 0);
+    updateOffset();
+    const observer = new ResizeObserver(updateOffset);
+    observer.observe(tray);
+    return () => {
+      observer.disconnect();
+      setCallNoticeTrayOffset(0);
+    };
+  }, []);
+
+  return (
+    <div ref={trayRef} className="pointer-events-none absolute inset-x-0 top-14 z-30 flex flex-col items-center gap-2">
+      {children}
+    </div>
   );
 }
 

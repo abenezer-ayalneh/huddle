@@ -17,22 +17,15 @@ export default function LobbyHeader() {
             <span>Huddle</span>
           </Link>
         </div>
-        <div className="lobby-header-main">
-          <div className="lobby-header-actions">
-            <Link href="/" className="lobby-back-link">
-              About Huddle
-            </Link>
-            <button
-              type="button"
-              className="lobby-theme-button"
-              aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
-              aria-pressed={theme === 'dark'}
-              onClick={toggleTheme}
-            >
-              {theme === 'light' ? <Moon className="size-4" /> : <Sun className="size-4" />}
-            </button>
-          </div>
-        </div>
+        <button
+          type="button"
+          className="lobby-theme-button"
+          aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
+          aria-pressed={theme === 'dark'}
+          onClick={toggleTheme}
+        >
+          {theme === 'light' ? <Moon className="size-4" /> : <Sun className="size-4" />}
+        </button>
       </div>
     </header>
   );

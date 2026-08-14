@@ -224,6 +224,7 @@ export default function GuestGate({
         subheading={rejoinEligible ? `Check your camera and mic, then rejoin “${room}”.` : `Check your camera and mic, then ask to join “${room}”.`}
         submitLabel={rejoinEligible ? 'Rejoin call' : 'Ask to join'}
         requireName={!signedInName}
+        roomName={room}
       />
     );
   }

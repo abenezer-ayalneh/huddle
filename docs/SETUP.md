@@ -34,6 +34,10 @@ API_PORT=3001
 WEB_ORIGIN=http://localhost:3000
 ```
 
+Local CORS accepts the equivalent loopback origins (`127.0.0.1` and `::1`) on
+the same port automatically. For a custom local hostname or tunnel, set
+`WEB_ORIGIN` to a comma-separated list of exact origins and restart the API.
+
 For **Phase 7 (accounts + scheduling)** also set:
 
 ```

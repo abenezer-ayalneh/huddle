@@ -8,6 +8,7 @@ import { json } from 'express';
 import { AppModule } from './app.module';
 import { getAuth } from './auth/auth';
 import { FaultFilter } from './common/fault.filter';
+import { getCorsOrigins } from './config/cors';
 import { makeLogger } from './logging/json.logger';
 
 async function bootstrap() {
@@ -28,7 +29,7 @@ async function bootstrap() {
   // headers) before our auth middleware terminates the response. credentials:true
   // so the BetterAuth session cookie is sent on cross-origin fetches.
   app.enableCors({
-    origin: config.get<string>('WEB_ORIGIN') ?? 'http://localhost:3000',
+    origin: getCorsOrigins(config.get<string>('WEB_ORIGIN'), config.get<string>('NODE_ENV')),
     credentials: true,
   });
 

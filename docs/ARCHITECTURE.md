@@ -239,9 +239,12 @@ explicit approval warning that the room-visible desktop may be recorded.
     revoked by host Remove or the matching `room_finished` SID (ADR 0028).
 - Cross-origin in dev: web is `:3000`, API is `:3001`. CORS runs with
   `credentials: true` and the client sends `credentials: "include"` so the session
-  cookie travels. The auth routes read the raw request body, so body parsing is
-  configured per-route in `main.ts` (raw for `/api/auth`, JSON elsewhere — the
-  JSON parser also captures raw bytes for the LiveKit webhook signature).
+  cookie travels. Local HTTP loopback aliases (`localhost`, `127.0.0.1`, and
+  `::1`) are accepted on the configured web port; custom or tunnel origins use
+  a comma-separated `WEB_ORIGIN` allowlist. The auth routes read the raw request
+  body, so body parsing is configured per-route in `main.ts` (raw for
+  `/api/auth`, JSON elsewhere — the JSON parser also captures raw bytes for the
+  LiveKit webhook signature).
 
 ## Scaling path (document now, build later)
 

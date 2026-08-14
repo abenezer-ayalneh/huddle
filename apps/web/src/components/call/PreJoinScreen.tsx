@@ -1,12 +1,14 @@
 'use client';
 
 import type { LocalUserChoices } from '@livekit/components-react';
-import { ChevronDown, Mic, MicOff, Video, VideoOff } from 'lucide-react';
+import { ChevronDown, Mic, MicOff, Moon, Sun, Video, VideoOff } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { loadDevicePreferences, saveDevicePreference, saveDevicePreferences } from '@/lib/devicePreferences';
 import { classifyMediaError, type FailureCause, type RecoveryDevice } from '@/lib/deviceRecovery';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import HuddleIcon from '@/components/HuddleIcon';
+import LandingThemeProvider, { useLandingTheme } from '@/components/landing/LandingThemeProvider';
 import DeviceAlertBadge from './DeviceAlertBadge';
 import DeviceRecoveryDialog, { type RecoveryTarget } from './DeviceRecoveryDialog';
 import { useMediaPermissions } from './useMediaPermissions';
@@ -18,31 +20,42 @@ type Defaults = {
   audioEnabled?: boolean;
 };
 
-// Custom pre-join (replaces LiveKit's <PreJoin>). The camera self-preview fills
-// the screen; a floating glass cluster holds the name field, device pickers,
-// mic/cam toggles and the join button. On submit it releases the preview
-// devices and returns the LocalUserChoices the call will connect with.
-//
-// Device Recovery (docs/adr/0023): a blocked / busy / missing camera or mic is a
-// Domain Outcome, not a Fault. It is handled here in place — an alert badge on
-// the affected toggle opens a recovery dialog — never escalated to onError.
-export default function PreJoinScreen({
-  defaults = {},
-  onSubmit,
-  submitLabel,
-  heading = 'Ready to join?',
-  subheading,
-  requireName = false,
-  children,
-}: {
+type PreJoinScreenProps = {
   defaults?: Defaults;
   onSubmit: (choices: LocalUserChoices) => void;
   submitLabel: string;
   heading?: string;
   subheading?: string;
   requireName?: boolean;
+  roomName?: string;
   children?: ReactNode;
-}) {
+};
+
+// Custom pre-join (replaces LiveKit's <PreJoin>). The camera self-preview is a
+// private workspace beside the device controls. On submit it releases the
+// preview devices and returns the LocalUserChoices the call will connect with.
+//
+// Device Recovery (docs/adr/0023): a blocked / busy / missing camera or mic is a
+// Domain Outcome, not a Fault. It is handled here in place — an alert badge on
+// the affected toggle opens a recovery dialog — never escalated to onError.
+export default function PreJoinScreen(props: PreJoinScreenProps) {
+  return (
+    <LandingThemeProvider>
+      <PreJoinExperience {...props} />
+    </LandingThemeProvider>
+  );
+}
+
+function PreJoinExperience({
+  defaults = {},
+  onSubmit,
+  submitLabel,
+  heading = 'Ready to join?',
+  subheading,
+  requireName = false,
+  roomName,
+  children,
+}: PreJoinScreenProps) {
   const [username, setUsername] = useState(defaults.username ?? '');
   const [videoEnabled, setVideoEnabled] = useState(defaults.videoEnabled ?? true);
   const [audioEnabled, setAudioEnabled] = useState(defaults.audioEnabled ?? true);
@@ -314,77 +327,104 @@ export default function PreJoinScreen({
   }, [canJoin, submitting, stopStream, onSubmit, username, videoEnabled, audioEnabled, videoDeviceId, audioDeviceId]);
 
   return (
-    <main className="bg-dotgrid relative flex flex-1 items-center justify-center overflow-hidden">
-      {/* Full-screen preview / placeholder. */}
-      <div className="absolute inset-0">
-        {videoEnabled && !videoCause ? (
-          <video ref={videoRef} autoPlay playsInline muted className={`h-full w-full object-cover opacity-90 ${mirror ? '-scale-x-100' : ''}`} />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <VideoOff className="h-16 w-16 text-white/15" />
-          </div>
-        )}
-        {/* Vignette so the floating controls stay legible over any frame. */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/50" />
+    <main className="prejoin-shell">
+      <PreJoinHeader />
+      <div className="prejoin-route prejoin-route-one" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+      </div>
+      <div className="prejoin-route prejoin-route-two" aria-hidden="true">
+        <i />
+        <i />
+        <i />
       </div>
 
-      <div className="absolute left-6 top-6 z-10">
-        <Brand />
-      </div>
-
-      {/* Floating control cluster. */}
-      <div className="glass-strong relative z-10 m-4 w-full max-w-md rounded-2xl p-6 shadow-[0_8px_60px_oklch(0_0_0/0.6)]">
-        <div className="space-y-1 text-center">
-          <h1 className="font-display text-2xl font-semibold text-white">{heading}</h1>
-          {subheading && <p className="text-sm text-white/60">{subheading}</p>}
-        </div>
-
-        <div className="mt-5 space-y-3">
-          {requireName && (
-            <input
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && submit()}
-              placeholder="Your name"
-              autoFocus
-              className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2.5 text-white outline-none transition-colors placeholder:text-white/40 focus:border-cyan/60 focus:ring-2 focus:ring-cyan/30"
-            />
-          )}
-
-          <div className="flex items-center justify-center gap-3">
-            <ToggleButton
-              on={audioEnabled}
-              onIcon={Mic}
-              offIcon={MicOff}
-              label={audioCause ? 'Allow microphone access' : `${audioEnabled ? 'Mic on' : 'Mic off'} (${mod}D)`}
-              alert={!!audioCause}
-              onClick={audioCause ? () => void reRequest('microphone') : toggleAudio}
-            />
-            <ToggleButton
-              on={videoEnabled}
-              onIcon={Video}
-              offIcon={VideoOff}
-              label={videoCause ? 'Allow camera access' : `${videoEnabled ? 'Camera on' : 'Camera off'} (${mod}E)`}
-              alert={!!videoCause}
-              onClick={videoCause ? () => void reRequest('camera') : toggleVideo}
-            />
+      <div className="prejoin-container prejoin-layout">
+        <section className="prejoin-intro" aria-labelledby="prejoin-heading">
+          <p className="prejoin-kicker">Device check</p>
+          <h1 id="prejoin-heading">{heading}</h1>
+          {subheading && <p className="prejoin-lede">{subheading}</p>}
+          <div className="prejoin-private-note">
+            <span>Private preview</span>
+            <p>Your camera preview stays on this device until you join the call.</p>
           </div>
 
-          <DeviceSelect icon={Video} value={videoDeviceId} devices={videoDevices} fallbackLabel="Camera" blocked={!!videoCause} onChange={changeCamera} />
-          <DeviceSelect icon={Mic} value={audioDeviceId} devices={audioDevices} fallbackLabel="Microphone" blocked={!!audioCause} onChange={changeMic} />
+          <div className="prejoin-task-panel">
+            <div className="prejoin-panel-heading">
+              <p>Call setup</p>
+              <h2>Choose your devices.</h2>
+            </div>
 
-          <button
-            type="button"
-            onClick={submit}
-            disabled={!canJoin || submitting}
-            className="neon-magenta flex items-center justify-center gap-2 mt-1 w-full rounded-lg bg-magenta px-4 py-2.5 font-display font-semibold tracking-wide text-white transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
-          >
-            {submitting && <LoadingSpinner className="h-4 w-4" />}
-            {!submitting && submitLabel}
-          </button>
+            <div className="prejoin-form">
+              {requireName && (
+                <label className="prejoin-field" htmlFor="prejoin-name">
+                  <span>Your name</span>
+                  <input
+                    id="prejoin-name"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && submit()}
+                    placeholder="Your name"
+                    autoFocus
+                    className="prejoin-input"
+                  />
+                </label>
+              )}
 
-          {children}
-        </div>
+              <div className="prejoin-device-toggles" aria-label="Camera and microphone controls">
+                <ToggleButton
+                  on={audioEnabled}
+                  onIcon={Mic}
+                  offIcon={MicOff}
+                  label={audioCause ? 'Allow microphone access' : `${audioEnabled ? 'Microphone on' : 'Microphone off'} (${mod}D)`}
+                  name="Microphone"
+                  shortcut={`${mod}D`}
+                  alert={!!audioCause}
+                  onClick={audioCause ? () => void reRequest('microphone') : toggleAudio}
+                />
+                <ToggleButton
+                  on={videoEnabled}
+                  onIcon={Video}
+                  offIcon={VideoOff}
+                  label={videoCause ? 'Allow camera access' : `${videoEnabled ? 'Camera on' : 'Camera off'} (${mod}E)`}
+                  name="Camera"
+                  shortcut={`${mod}E`}
+                  alert={!!videoCause}
+                  onClick={videoCause ? () => void reRequest('camera') : toggleVideo}
+                />
+              </div>
+
+              <DeviceSelect icon={Video} value={videoDeviceId} devices={videoDevices} fallbackLabel="Camera" blocked={!!videoCause} onChange={changeCamera} />
+              <DeviceSelect icon={Mic} value={audioDeviceId} devices={audioDevices} fallbackLabel="Microphone" blocked={!!audioCause} onChange={changeMic} />
+
+              <button type="button" onClick={submit} disabled={!canJoin || submitting} className="prejoin-primary-button">
+                {submitting && <LoadingSpinner className="h-4 w-4" />}
+                {!submitting && submitLabel}
+              </button>
+
+              {children}
+            </div>
+          </div>
+        </section>
+
+        <section className="prejoin-preview-panel" aria-label="Camera preview">
+          <header className="prejoin-preview-header">
+            <span>Preview</span>
+            {roomName && <strong>Room code: {roomName}</strong>}
+          </header>
+          <div className="prejoin-preview-stage">
+            {videoEnabled && !videoCause ? (
+              <video ref={videoRef} autoPlay playsInline muted className={`prejoin-video ${mirror ? 'prejoin-video-mirrored' : ''}`} />
+            ) : (
+              <div className="prejoin-preview-off">
+                <VideoOff aria-hidden="true" />
+                <p>{videoCause ? 'Camera access needs attention' : 'Camera is off'}</p>
+              </div>
+            )}
+          </div>
+          <p className="prejoin-preview-caption">You control when your camera and microphone go live.</p>
+        </section>
       </div>
 
       <DeviceRecoveryDialog
@@ -397,13 +437,32 @@ export default function PreJoinScreen({
   );
 }
 
-function Brand() {
+function PreJoinHeader() {
+  const { theme, toggleTheme } = useLandingTheme();
+  const ThemeIcon = theme === 'light' ? Moon : Sun;
+
   return (
-    <Link href="/" aria-label="Huddle home" className="inline-flex rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60">
-      <span className="font-display text-xl font-bold tracking-[0.25em] text-white">
-        HUD<span className="text-magenta text-glow-magenta">DLE</span>
-      </span>
-    </Link>
+    <header className="prejoin-header">
+      <div className="prejoin-header-inner">
+        <div className="prejoin-brand-shell">
+          <Link href="/" aria-label="Huddle home" className="prejoin-brand">
+            <HuddleIcon className="prejoin-brand-icon" aria-hidden="true" />
+            <span>Huddle</span>
+          </Link>
+        </div>
+        <div className="prejoin-header-actions">
+          <button
+            type="button"
+            className="prejoin-theme-button"
+            aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
+            aria-pressed={theme === 'dark'}
+            onClick={toggleTheme}
+          >
+            <ThemeIcon className="size-4" aria-hidden="true" />
+          </button>
+        </div>
+      </div>
+    </header>
   );
 }
 
@@ -412,6 +471,8 @@ function ToggleButton({
   onIcon: OnIcon,
   offIcon: OffIcon,
   label,
+  name,
+  shortcut,
   onClick,
   alert = false,
 }: {
@@ -419,6 +480,8 @@ function ToggleButton({
   onIcon: typeof Mic;
   offIcon: typeof Mic;
   label: string;
+  name: string;
+  shortcut: string;
   onClick: () => void;
   alert?: boolean;
 }) {
@@ -432,11 +495,15 @@ function ToggleButton({
       aria-pressed={on}
       title={label}
       aria-label={label}
-      className={`relative flex h-12 w-12 items-center justify-center rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 [&>svg]:h-5 [&>svg]:w-5 ${
-        showOff ? 'bg-magenta/15 text-magenta ring-1 ring-magenta/40 hover:bg-magenta/25' : 'bg-cyan/15 text-cyan ring-1 ring-cyan/40 hover:bg-cyan/25'
-      }`}
+      className={`prejoin-device-toggle ${showOff ? 'is-off' : 'is-on'} ${alert ? 'has-alert' : ''}`}
     >
-      <Icon />
+      <Icon className="prejoin-device-toggle-icon" aria-hidden="true" />
+      <span className="prejoin-device-toggle-copy">
+        <strong>{name}</strong>
+        <small>
+          {showOff ? (alert ? 'Allow access' : 'Off') : 'On'} <kbd>{shortcut}</kbd>
+        </small>
+      </span>
       {alert && <DeviceAlertBadge />}
     </button>
   );
@@ -460,27 +527,31 @@ function DeviceSelect({
   onChange: (id: string) => void;
 }) {
   return (
-    <div className="relative flex items-center">
-      <Icon className="pointer-events-none absolute left-3 h-4 w-4 text-white/50" />
-      <select
-        value={blocked ? '' : value}
-        onChange={(e) => onChange(e.target.value)}
-        disabled={blocked || devices.length === 0}
-        className="w-full appearance-none rounded-lg border border-white/15 bg-white/5 py-2.5 pl-9 pr-9 text-sm text-white/90 outline-none transition-colors focus:border-cyan/60 focus:ring-2 focus:ring-cyan/30 disabled:opacity-50"
-      >
-        {blocked ? (
-          <option value="">Permission blocked</option>
-        ) : devices.length === 0 ? (
-          <option value="">{fallbackLabel} unavailable</option>
-        ) : (
-          devices.map((d, i) => (
-            <option key={d.deviceId} value={d.deviceId} className="bg-card">
-              {d.label || `${fallbackLabel} ${i + 1}`}
-            </option>
-          ))
-        )}
-      </select>
-      <ChevronDown className="pointer-events-none absolute right-3 h-4 w-4 text-white/50" />
-    </div>
+    <label className="prejoin-select-field">
+      <span>{fallbackLabel}</span>
+      <div className="prejoin-select-wrap">
+        <Icon className="pointer-events-none prejoin-select-icon" aria-hidden="true" />
+        <select
+          value={blocked ? '' : value}
+          onChange={(e) => onChange(e.target.value)}
+          disabled={blocked || devices.length === 0}
+          aria-label={`${fallbackLabel} device`}
+          className="prejoin-select"
+        >
+          {blocked ? (
+            <option value="">Permission blocked</option>
+          ) : devices.length === 0 ? (
+            <option value="">{fallbackLabel} unavailable</option>
+          ) : (
+            devices.map((d, i) => (
+              <option key={d.deviceId} value={d.deviceId}>
+                {d.label || `${fallbackLabel} ${i + 1}`}
+              </option>
+            ))
+          )}
+        </select>
+        <ChevronDown className="pointer-events-none prejoin-select-chevron" aria-hidden="true" />
+      </div>
+    </label>
   );
 }

@@ -15,11 +15,13 @@ import type { Fault } from './faultCodes';
 // never a toast.
 // ---------------------------------------------------------------------------
 let reachable = true;
+let reachabilityChangedAt = 0;
 const reachListeners = new Set<() => void>();
 
 export function setReachable(next: boolean): void {
   if (reachable === next) return;
   reachable = next;
+  reachabilityChangedAt = Date.now();
   reachListeners.forEach((l) => l());
 }
 
@@ -34,11 +36,22 @@ export function useApiReachable(): boolean {
   );
 }
 
+export function useApiReachabilityChangedAt(): number {
+  return useSyncExternalStore(
+    (cb) => {
+      reachListeners.add(cb);
+      return () => reachListeners.delete(cb);
+    },
+    () => reachabilityChangedAt,
+    () => 0,
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Fault toast queue — user-initiated faults only. Dedup by code with a short
 // cooldown so a down-server burst (or a polling loop) shows once, not N times.
 // ---------------------------------------------------------------------------
-export type ActiveFault = Fault & { id: number };
+export type ActiveFault = Fault & { id: number; activatedAt: number };
 
 const COOLDOWN_MS = 4000;
 let faults: ActiveFault[] = [];
@@ -56,7 +69,7 @@ export function emitFault(fault: Fault): void {
   const now = Date.now();
   if (now - (lastEmittedAt.get(fault.code) ?? 0) < COOLDOWN_MS) return;
   lastEmittedAt.set(fault.code, now);
-  faults = [...faults.filter((f) => f.code !== fault.code), { ...fault, id: nextId++ }];
+  faults = [...faults.filter((f) => f.code !== fault.code), { ...fault, id: nextId++, activatedAt: now }];
   notifyFaults();
 }
 
