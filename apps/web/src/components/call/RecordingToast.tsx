@@ -1,6 +1,7 @@
 'use client';
 
-import { Check, Loader2, X } from 'lucide-react';
+import { Check, X } from 'lucide-react';
+import LoadingSpinner from '@/components/LoadingSpinner';
 import type { IncomingRecordRequest, RecordOutcome } from './useRecording';
 
 // Request to Record prompts (docs/adr/0011), styled like PresentationToast:
@@ -45,7 +46,7 @@ export default function RecordingToast({
     return (
       <Toast>
         <span className="flex items-center gap-2 text-sm text-white/90">
-          <Loader2 className="h-4 w-4 animate-spin text-cyan" />
+          <LoadingSpinner aria-hidden="true" className="h-4 w-4" />
           Waiting for the host to approve recording…
         </span>
         <ToastButton onClick={onCancel} variant="decline">

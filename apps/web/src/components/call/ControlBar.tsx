@@ -2,22 +2,9 @@
 
 import { useRoomContext, useTrackToggle } from '@livekit/components-react';
 import { Track } from 'livekit-client';
-import {
-  Circle,
-  Loader2,
-  Mic,
-  MicOff,
-  Video,
-  VideoOff,
-  MonitorUp,
-  MonitorOff,
-  MessageSquare,
-  PhoneOff,
-  PictureInPicture2,
-  Square,
-  type LucideIcon,
-} from 'lucide-react';
+import { Circle, Mic, MicOff, Video, VideoOff, MonitorUp, MonitorOff, MessageSquare, PhoneOff, PictureInPicture2, Square, type LucideIcon } from 'lucide-react';
 import { useState } from 'react';
+import LoadingSpinner from '@/components/LoadingSpinner';
 import { classifyMediaError, type FailureCause, type RecoveryDevice } from '@/lib/deviceRecovery';
 import MergedControlButton, { DeviceMenuContent, type DeviceSection } from './MergedControlButton';
 import DeviceRecoveryDialog, { type RecoveryTarget } from './DeviceRecoveryDialog';
@@ -253,7 +240,7 @@ function RecordButton({ mode, busy, onClick }: { mode: 'request' | 'pending' | '
         onClick={onClick}
         className="relative flex h-8 w-8 items-center justify-center rounded-full bg-white/8 text-white/70 ring-1 ring-white/10 transition-all hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 sm:h-11 sm:w-11 [&>svg]:h-4 [&>svg]:w-4 sm:[&>svg]:h-5 sm:[&>svg]:w-5"
       >
-        <Loader2 className="animate-spin" />
+        <LoadingSpinner aria-hidden="true" />
       </button>
     );
   }

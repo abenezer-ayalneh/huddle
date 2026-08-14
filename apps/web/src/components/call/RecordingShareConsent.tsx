@@ -1,7 +1,8 @@
 'use client';
 
-import { Check, Loader2 } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { useState } from 'react';
+import LoadingSpinner from '@/components/LoadingSpinner';
 import { useSession } from '@/lib/auth-client';
 import { api } from '@/lib/api';
 
@@ -45,7 +46,7 @@ export default function RecordingShareConsent({
         }}
         className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-cyan px-3 py-1.5 text-xs font-semibold text-black transition hover:brightness-110 disabled:opacity-60"
       >
-        {state === 'sending' ? <Loader2 className="size-3.5 animate-spin" aria-hidden="true" /> : <Check className="size-3.5" aria-hidden="true" />}
+        {state === 'sending' ? <LoadingSpinner className="size-3.5" aria-hidden="true" /> : <Check className="size-3.5" aria-hidden="true" />}
         {state === 'sending' ? 'Saving…' : 'I consent'}
       </button>
     </div>

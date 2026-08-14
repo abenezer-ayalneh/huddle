@@ -1,6 +1,7 @@
 'use client';
 
-import { Check, Loader2, X } from 'lucide-react';
+import { Check, X } from 'lucide-react';
+import LoadingSpinner from '@/components/LoadingSpinner';
 import type { IncomingRequest, OutgoingRequest, PresentationOutcome } from './usePresentation';
 
 export default function PresentationToast({
@@ -42,7 +43,7 @@ export default function PresentationToast({
     return (
       <Toast>
         <span className="flex items-center gap-2 text-sm text-white/90">
-          <Loader2 className="h-4 w-4 animate-spin text-cyan" />
+          <LoadingSpinner aria-hidden="true" className="h-4 w-4" />
           Waiting for <strong className="text-cyan">{outgoing.presenterName}</strong> to respond…
         </span>
         <ToastButton onClick={onCancel} variant="decline">

@@ -1,7 +1,8 @@
 'use client';
 
-import { AlertTriangle, Loader2, RotateCw, WifiOff, X } from 'lucide-react';
+import { AlertTriangle, RotateCw, WifiOff, X } from 'lucide-react';
 import type { CSSProperties } from 'react';
+import LoadingSpinner from '@/components/LoadingSpinner';
 import { dismissFault, useApiReachabilityChangedAt, useApiReachable, useFaults, type ActiveFault } from '@/lib/faults';
 import { recoveryActionFor, type RecoveryAction } from '@/lib/faultCodes';
 import { useCallNoticeState } from '@/lib/systemNotices';
@@ -70,11 +71,15 @@ export default function SystemNoticeStack() {
 
 function SystemNoticeRow({ notice }: { notice: SystemNotice }) {
   const action = notice.fault ? recoveryActionFor(notice.fault.code) : 'none';
-  const Icon = notice.tone === 'progress' ? Loader2 : notice.tone === 'error' ? WifiOff : AlertTriangle;
+  const Icon = notice.tone === 'error' ? WifiOff : AlertTriangle;
 
   return (
     <div role={notice.fault ? 'alert' : 'status'} className={`system-notice system-notice--${notice.tone} pointer-events-auto`}>
-      <Icon aria-hidden="true" className={notice.tone === 'progress' ? 'system-notice__icon system-notice__icon--progress' : 'system-notice__icon'} />
+      {notice.tone === 'progress' ? (
+        <LoadingSpinner aria-hidden="true" className="system-notice__icon" />
+      ) : (
+        <Icon aria-hidden="true" className="system-notice__icon" />
+      )}
       <span className="system-notice__message">{notice.message}</span>
       {action !== 'none' && <RecoveryButton action={action} />}
       {notice.fault && (

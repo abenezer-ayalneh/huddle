@@ -1,6 +1,7 @@
 'use client';
 
-import { Check, Loader2, MousePointer2, X } from 'lucide-react';
+import { Check, MousePointer2, X } from 'lucide-react';
+import LoadingSpinner from '@/components/LoadingSpinner';
 import type { RemoteControlRequestSummary } from '@/lib/api';
 import type { RemoteControlNotice } from './useRemoteControl';
 
@@ -61,7 +62,7 @@ export default function RemoteControlToast({
   if (outgoing)
     return (
       <div role="status" className="pointer-events-auto rounded-full bg-black/75 px-4 py-2 text-sm text-white/85 ring-1 ring-cyan/35">
-        <Loader2 className="mr-2 inline h-4 w-4 animate-spin text-cyan" />
+        <LoadingSpinner aria-hidden="true" className="mr-2 inline h-4 w-4" />
         Waiting for {outgoing.sharerName} to approve Remote Control…
       </div>
     );

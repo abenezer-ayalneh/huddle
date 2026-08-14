@@ -2741,6 +2741,10 @@ html[data-theme='dark'] .landing-shell {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .loading-spinner__motion {
+    display: none;
+  }
+
   .cyber-frame-active,
   .knock-border-spin::before,
   .pulse-ring::before,
@@ -5150,14 +5154,6 @@ html[data-theme='dark'] .system-notice-stack {
   color: var(--system-notice-red);
 }
 
-.system-notice--progress .system-notice__icon {
-  color: var(--system-notice-yellow);
-}
-
-.system-notice__icon--progress {
-  animation: system-notice-spin 900ms linear infinite;
-}
-
 .system-notice__message {
   min-width: 0;
   flex: 1;
@@ -5229,12 +5225,6 @@ html[data-theme='dark'] .system-notice-stack {
   }
 }
 
-@keyframes system-notice-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 @media (max-width: 639px) {
   .system-notice {
     min-height: 48px;
@@ -5252,8 +5242,7 @@ html[data-theme='dark'] .system-notice-stack {
     transition: none;
   }
 
-  .system-notice,
-  .system-notice__icon--progress {
+  .system-notice {
     animation: none;
   }
 }
