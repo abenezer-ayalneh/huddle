@@ -29,15 +29,33 @@ requireText(
   'Remote Control',
   'illustrative portraits',
   'IntersectionObserver',
-  'aria-current={isActive ? \'location\' : undefined}',
+  "aria-current={isActive ? 'location' : undefined}",
+  'HuddleBrandThemeHeader',
 );
+requireFile('apps/web/src/components/HuddleBrandThemeHeader.tsx');
 requireText(
-  'apps/web/src/components/landing/LandingStory.tsx',
-  'data-testid="landing-story"',
-  'role="tablist"',
-  'prefers-reduced-motion',
-  'data-stage',
+  'apps/web/src/components/HuddleBrandThemeHeader.tsx',
+  'useLandingTheme',
+  "aria-pressed={theme === 'dark'}",
+  "Switch to ${theme === 'light' ? 'dark' : 'light'} theme",
 );
+for (const relativePath of [
+  'apps/web/src/app/LandingPageClient.tsx',
+  'apps/web/src/components/legal/LegalNavigation.tsx',
+  'apps/web/src/app/lobby/LobbyHeader.tsx',
+  'apps/web/src/components/call/PreJoinScreen.tsx',
+]) {
+  requireText(relativePath, 'HuddleBrandThemeHeader');
+}
+for (const [relativePath, localThemeClass] of [
+  ['apps/web/src/app/LandingPageClient.tsx', 'landing-theme-button'],
+  ['apps/web/src/components/legal/LegalNavigation.tsx', 'legal-theme-button'],
+  ['apps/web/src/app/lobby/LobbyHeader.tsx', 'lobby-theme-button'],
+  ['apps/web/src/components/call/PreJoinScreen.tsx', 'prejoin-theme-button'],
+]) {
+  assert.doesNotMatch(read(relativePath), new RegExp(localThemeClass));
+}
+requireText('apps/web/src/components/landing/LandingStory.tsx', 'data-testid="landing-story"', 'role="tablist"', 'prefers-reduced-motion', 'data-stage');
 requireText('apps/web/src/app/LandingJoinForm.tsx', 'export function roomFromInput', 'Room code or meeting link');
 requireText(
   'apps/web/src/app/globals.css',
@@ -77,6 +95,10 @@ for (const obsoleteAsset of ['landing-hero.png', 'landing-orbit.png', 'landing-c
   assert.equal(fs.existsSync(path.join(repositoryRoot, 'apps/web/public', obsoleteAsset)), false, `${obsoleteAsset} is obsolete`);
 }
 
-assert.equal(fs.existsSync(path.join(repositoryRoot, 'apps/web/src/app/favicon.ico')), false, 'The App Router favicon route would override theme-aware favicon metadata.');
+assert.equal(
+  fs.existsSync(path.join(repositoryRoot, 'apps/web/src/app/favicon.ico')),
+  false,
+  'The App Router favicon route would override theme-aware favicon metadata.',
+);
 
 console.log('Landing contract checks passed.');

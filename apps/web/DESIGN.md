@@ -303,6 +303,8 @@ Buttons are tactile and decisive: compact silhouettes, visible pressed movement,
 
 Marketing navigation is quiet until action is required: Rajdhani labels, High Signal at reduced opacity, and no default underline. Hover raises text toward full white. The rightmost task action uses a translucent bordered button. Route-level Huddle marks and wordmarks always link home and retain visible cyan keyboard focus.
 
+`HuddleBrandThemeHeader` is the required shared control for every interactive public header: Landing, Legal, Lobby, and Device Check. It owns the home-linked Huddle brand island and the single standalone theme-ring button; route owners retain their semantic landmarks and may supply navigation or menu slots. Passive footer marks, Downloads, verification, and illustrative meeting-scene marks remain independent and must not be replaced with this control.
+
 ### Video Tiles
 
 Video tiles are the signature live component. They use the cut-corner gradient frame, dark letterboxing, and `object-contain` for both camera and screen media so faces and shared frames are never cropped. The participant name sits in a compact black glass pill at bottom-left; active state appears as the animated bezel plus a small cyan monospace `LIVE` HUD at top-right. Pin sits top-left and Request Control sits bottom-right so controls do not collide.
