@@ -34,7 +34,7 @@ export default function RecordingIndicator({ active, startedAt }: { active: bool
 
   if (!active) return null;
   return (
-    <div className="pointer-events-none flex items-center gap-2 rounded-full bg-red-500/15 px-3 py-1.5 text-xs font-medium text-red-300 ring-1 ring-red-500/40 backdrop-blur-sm animate-in fade-in slide-in-from-top-2 duration-200">
+    <div className="signal-call-recording-indicator pointer-events-none flex items-center gap-2 rounded-full bg-red-500/15 px-3 py-1.5 text-xs font-medium text-red-300 ring-1 ring-red-500/40 backdrop-blur-sm animate-in fade-in slide-in-from-top-2 duration-200">
       <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
       Recording
       {startedAt != null && <span className="tabular-nums text-red-300/80">{formatElapsed(now - startedAt)}</span>}

@@ -123,28 +123,27 @@ components:
 
 ## Overview
 
-**Creative North Star: "The Neon Switchboard"**
+**Creative North Stars: "The Neon Switchboard" and "Signal Handoff"**
 
-Huddle's application routes remain a dark operator surface for real-time work. The public landing and legal-document surfaces use a separate Signal Handoff world: warm editorial fields explain how a meeting becomes shared work, while dossier-like policy pages make responsibility and data boundaries readable. The public surfaces are expressive, but never so decorative that product truth or deployment boundaries become harder to read.
+Legacy application routes remain a dark operator surface for real-time work. Public landing and legal-document surfaces use Signal Handoff: warm editorial fields explain how a meeting becomes shared work, while dossier-like policy pages make responsibility and data boundaries readable. The active call workspace (`/rooms/[room]`) is the approved Operate-surface extension of Signal Handoff: warm framed workspace chrome protects a deliberately dark, media-first stage.
 
-Marketing surfaces may open the visual world with orbital imagery, dot lattices, and spacious type. Operative surfaces compress that same world into glass panels, concise status rails, clipped media tiles, and compact controls. Depth is layered and structural; neon is reserved for priority, focus, active state, and acknowledgement.
+Marketing surfaces may open the visual world with orbital imagery, dot lattices, and spacious type. Signal Handoff operating surfaces use flat warm frames, structural purple shadows, concise state rails, and compact controls. The call stage follows the saved light/dark preference around its media field; media itself remains dark so faces, screens, consent, and authority remain easy to read.
 
-The legacy application system is intentionally dark-only. Signal Handoff is the approved public-surface exception: the landing and legal dossiers support light cream and dark chocolate themes through scoped tokens so they can follow a visitor's preference without migrating the call UI.
+The legacy application system is intentionally dark-only outside the scoped call workspace. Signal Handoff supports light cream and dark chocolate themes through scoped tokens, without migrating unrelated application routes.
 
 **System Notice Exception:** Non-blocking system feedback is a single global
 Signal Handoff family, even over legacy application routes. Faults, API
 Reachability, and Call Connection use the saved light/dark preference, flat
 warm frames, structural shadows, and purple/yellow/red semantic accents. This
-exception does not migrate the route background, media stage, or in-call
-controls; consent and authority request prompts remain in their dedicated call
-tray.
+feedback family remains separate from the call's interactive consent and
+authority prompts, which stay in their dedicated call tray.
 
 **Key Characteristics:**
 
-- Dark violet-black canvases with restrained magenta and cyan signal color.
-- Exo 2 gives headings and decisive actions geometric authority; Rajdhani keeps dense UI open and legible.
-- Frosted glass, hairline borders, and directional shadows organize layers without turning every panel into a floating card.
-- Cut-corner media frames and room-wide state rails make live content and authority visibly distinct.
+- Legacy dark routes use violet-black canvases with restrained magenta and cyan signal color; the call workspace uses warm cream/chocolate fields with purple, yellow, and red signal roles.
+- Archivo Black gives headings and decisive actions authority; Archivo keeps dense UI open and legible; IBM Plex Mono communicates Room Codes, timers, and technical state.
+- Flat frames, hairlines, and structural purple shadows organize layers without turning every panel into a floating card.
+- A dark media field and room-wide state rails make live content and authority visibly distinct.
 - Strong keyboard focus, visible system status, responsive call layouts, and reduced-motion fallbacks are part of the visual language.
 
 ## Colors
@@ -349,15 +348,47 @@ need to find, understand, and compare the deployment's boundaries.
   subscription service, customer adoption, compliance certification, or
   production availability guarantee.
 
-The remaining application surfaces keep the legacy dark Neon Switchboard rules
-above. The shared Huddle mark and native Control Agent app icon use the approved
-cross-product brand geometry without migrating the rest of those surfaces.
+All application surfaces other than the active call workspace keep the legacy
+dark Neon Switchboard rules above. The shared Huddle mark and native Control
+Agent app icon use the approved cross-product brand geometry without migrating
+the rest of those surfaces.
+
+## Scoped in-call direction: Signal Handoff workspace
+
+The active `/rooms/[room]` route is an **Operate** surface. It preserves every
+media, consent, and authority behavior while replacing legacy neon/glass chrome
+with a warm framed workspace. It inherits the saved `data-theme` preference but
+adds a compact top-rail control to change that shared preference.
+
+- **Palette:** light uses cream `#F6EEDB`, ink `#141414`, purple authority
+  `#8D2676`, yellow focus/signal `#F3B01C`, and critical red `#EE342F`; dark
+  uses chocolate `#1A0F0F`, warm white `#FAF4E9`, and the corresponding lighter
+  signals. The media well stays chocolate/near-black in both themes.
+- **Typography:** Archivo Black owns decisive labels, Archivo owns controls and
+  consent copy, and IBM Plex Mono is limited to the Room Code, timer, and live
+  technical state.
+- **Composition:** media owns the center. A compact room/time/theme rail uses
+  the top gutter when unobscured; an open Host drawer retains the same theme
+  control in its header, while a closed Host trigger retains a right-side lane
+  so the room rail truncates rather than collides. Interactive consent remains
+  in the measured top tray, flat Chat and Host drawers dock at the edges, and a
+  framed bottom dock holds circular immediate controls. Presentation, Pin, and
+  Remote Control retain their existing stage precedence and filmstrip/grid
+  geometry.
+- **States:** purple marks authority and committed actions; yellow marks focus,
+  active state, and recoverable attention; red is reserved for Recording,
+  Stop, and Leave. Device Recovery remains a per-device Domain Outcome;
+  non-blocking system feedback remains global and separate from consent.
+- **Boundaries:** media always uses `object-contain`; full screens and faces are
+  never cropped. Do not cover the protected Remote Control desktop with panels,
+  or turn its persistent below-stage rail into a passive toast. Retain visible
+  focus and reduced-motion fallbacks.
 
 ### Do:
 
-- **Do** preserve the dark-only Operator Background across every route and transient state.
-- **Do** use Command Magenta for decisive authority and Consent Cyan for focus, active state, approval, and recovery.
-- **Do** keep media unobscured, letterboxed with `object-contain`, and framed with the cut-corner live silhouette.
+- **Do** preserve the dark-only Operator Background on legacy routes and use the scoped Signal Handoff palette only on its approved surfaces.
+- **Do** use purple for Signal Handoff authority, yellow for focus/active/recoverable state, and red only for recording/destructive actions.
+- **Do** keep media unobscured and letterboxed with `object-contain`.
 - **Do** retain the Portrait Equal Grid contract: orientation-based, four visible rows, vertical overflow, existing gutters, and a floating local Self-view.
 - **Do** place Remote Control state below focused content and keep participant-scoped Request Control at the tile's bottom-right.
 - **Do** provide visible keyboard focus and remove nonessential animation under `prefers-reduced-motion`.
@@ -365,9 +396,9 @@ cross-product brand geometry without migrating the rest of those surfaces.
 
 ### Don't:
 
-- **Don't** introduce a light theme, pastel SaaS palette, or pale neutral dashboard surface.
-- **Don't** turn the product into a generic grid of interchangeable rounded cards; keep the dot-grid, glass hierarchy, signal color, and live-media geometry purposeful.
-- **Don't** spread neon across resting surfaces or let Command Magenta and Consent Cyan compete on the same action.
+- **Don't** migrate unrelated legacy application routes into the Signal Handoff palette.
+- **Don't** turn the call workspace into a generic grid of interchangeable rounded cards; keep its media-first geometry and framed operational hierarchy purposeful.
+- **Don't** spread neon across resting surfaces or let more than one signal color compete on the same action.
 - **Don't** crop camera faces or screen shares to fill a tile.
 - **Don't** overlay Host controls, Remote Control status, or self-view on critical shared-display content when layout space can hold them.
 - **Don't** use cut corners on ordinary forms, settings rows, or marketing cards.

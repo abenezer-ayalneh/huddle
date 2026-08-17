@@ -56,9 +56,9 @@ export default function ChatPanel({
   return (
     <aside
       ref={panelRef}
-      className="glass-strong absolute inset-y-0 left-0 z-30 flex w-80 max-w-[85vw] flex-col border-r border-white/10 shadow-[8px_0_50px_oklch(0_0_0/0.5)] animate-in slide-in-from-left duration-200"
+      className="signal-call-side-panel signal-call-chat-panel glass-strong absolute inset-y-0 left-0 z-30 flex w-80 max-w-[85vw] flex-col border-r border-white/10 shadow-[8px_0_50px_oklch(0_0_0/0.5)] animate-in slide-in-from-left duration-200"
     >
-      <header className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+      <header className="signal-call-side-panel-header flex items-center justify-between border-b border-white/10 px-5 py-4">
         <span className="font-display text-base font-semibold tracking-wide text-white">Chat</span>
         <button
           type="button"
@@ -71,7 +71,7 @@ export default function ChatPanel({
         </button>
       </header>
 
-      <div ref={listRef} className="flex-1 space-y-3 overflow-y-auto px-5 py-4 text-sm">
+      <div ref={listRef} className="signal-call-chat-messages flex-1 space-y-3 overflow-y-auto px-5 py-4 text-sm">
         {messages.length === 0 ? (
           <p className="text-white/45">No messages yet. Say hello 👋</p>
         ) : (
@@ -89,7 +89,7 @@ export default function ChatPanel({
                 </span>
                 <span
                   className={`max-w-[85%] break-words rounded-2xl px-3 py-2 ${
-                    mine ? 'rounded-br-sm bg-magenta/20 text-white ring-1 ring-magenta/40' : 'rounded-bl-sm bg-white/8 text-white/90 ring-1 ring-white/10'
+                    mine ? 'signal-call-chat-message-mine rounded-br-sm bg-magenta/20 text-white ring-1 ring-magenta/40' : 'signal-call-chat-message rounded-bl-sm bg-white/8 text-white/90 ring-1 ring-white/10'
                   }`}
                 >
                   {m.message}
@@ -105,20 +105,20 @@ export default function ChatPanel({
           e.preventDefault();
           void submit();
         }}
-        className="flex items-center gap-2 border-t border-white/10 p-3"
+        className="signal-call-chat-form flex items-center gap-2 border-t border-white/10 p-3"
       >
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="Type a message…"
-          className="min-w-0 flex-1 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-white outline-none transition-colors placeholder:text-white/40 focus:border-cyan/60 focus:ring-2 focus:ring-cyan/30"
+          className="signal-call-chat-input min-w-0 flex-1 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-white outline-none transition-colors placeholder:text-white/40 focus:border-cyan/60 focus:ring-2 focus:ring-cyan/30"
         />
         <button
           type="submit"
           aria-label="Send message"
           title="Send message"
           disabled={!draft.trim() || isSending}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-magenta text-white transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-40 [&>svg]:h-4 [&>svg]:w-4"
+          className="signal-call-chat-send flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-magenta text-black transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-40 [&>svg]:h-4 [&>svg]:w-4"
         >
           <Send />
         </button>

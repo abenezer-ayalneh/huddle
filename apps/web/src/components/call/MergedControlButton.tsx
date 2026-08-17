@@ -61,7 +61,7 @@ export default function MergedControlButton({
         title={label}
         aria-label={label}
         onClick={onClick}
-        className={`relative flex h-8 w-8 items-center justify-center rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 sm:h-11 sm:w-11 [&>svg]:h-4 [&>svg]:w-4 sm:[&>svg]:h-5 sm:[&>svg]:w-5 ${toneFor(false, true)}`}
+        className={`signal-call-control-button signal-call-device-alert relative flex h-8 w-8 items-center justify-center rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 sm:h-11 sm:w-11 [&>svg]:h-4 [&>svg]:w-4 sm:[&>svg]:h-5 sm:[&>svg]:w-5 ${toneFor(false, true)}`}
       >
         <Icon />
         <DeviceAlertBadge />
@@ -71,7 +71,7 @@ export default function MergedControlButton({
 
   return (
     <Popover open={menuOpen} onOpenChange={setMenuOpen}>
-      <div className="flex items-center">
+      <div className="signal-call-merged-control flex items-center">
         {/* Left: the primary control. */}
         <button
           type="button"
@@ -80,19 +80,19 @@ export default function MergedControlButton({
           aria-pressed={active}
           disabled={disabled}
           onClick={onClick}
-          className={`relative flex h-8 w-8 items-center justify-center rounded-l-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-35 sm:h-11 sm:w-11 [&>svg]:h-4 [&>svg]:w-4 sm:[&>svg]:h-5 sm:[&>svg]:w-5 ${tone}`}
+          className={`signal-call-merged-main relative flex h-8 w-8 items-center justify-center rounded-l-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-35 sm:h-11 sm:w-11 [&>svg]:h-4 [&>svg]:w-4 sm:[&>svg]:h-5 sm:[&>svg]:w-5 ${tone}`}
         >
           <Icon />
         </button>
 
         {/* Separator. */}
-        <div className="h-6 w-px bg-white/15 sm:h-7" />
+        <div className="signal-call-merged-divider h-6 w-px bg-white/15 sm:h-7" />
 
         {/* Right: the chevron menu trigger. */}
         <PopoverTrigger
           title={menuLabel}
           aria-label={menuLabel}
-          className={`relative flex h-8 w-6 items-center justify-center rounded-r-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 sm:h-11 sm:w-7 [&>svg]:h-3.5 [&>svg]:w-3.5 sm:[&>svg]:h-4 sm:[&>svg]:w-4 ${tone}`}
+          className={`signal-call-merged-menu relative flex h-8 w-6 items-center justify-center rounded-r-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 sm:h-11 sm:w-7 [&>svg]:h-3.5 [&>svg]:w-3.5 sm:[&>svg]:h-4 sm:[&>svg]:w-4 ${tone}`}
         >
           <ChevronUp />
         </PopoverTrigger>
@@ -106,7 +106,7 @@ export default function MergedControlButton({
 // caller wraps it in a MergedControlButton's `menu` render.
 export function DeviceMenuContent({ sections, onPick, close }: { sections: DeviceSection[]; onPick: (kind: PreferenceKind) => void; close: () => void }) {
   return (
-    <PopoverContent side="top" sideOffset={14} className="glass-strong w-64 gap-1 rounded-xl p-1.5">
+    <PopoverContent side="top" sideOffset={14} className="signal-call-device-popover glass-strong w-64 gap-1 rounded-xl p-1.5">
       {sections.map((s) => (
         <DeviceList
           key={s.kind}

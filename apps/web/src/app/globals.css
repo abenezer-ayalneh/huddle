@@ -87,9 +87,9 @@ input[type='button'] {
   --popover: oklch(0.19 0.025 285);
   --popover-foreground: oklch(0.97 0.01 250);
 
-  /* Primary = magenta; text on it is near-white. */
+  /* Primary = magenta; its lightness requires a dark foreground at AA. */
   --primary: oklch(0.66 0.27 350);
-  --primary-foreground: oklch(0.99 0 0);
+  --primary-foreground: oklch(0.14 0.02 280);
 
   --secondary: oklch(0.26 0.03 285);
   --secondary-foreground: oklch(0.97 0.01 250);
@@ -117,7 +117,7 @@ input[type='button'] {
   --sidebar: oklch(0.18 0.025 285);
   --sidebar-foreground: oklch(0.97 0.01 250);
   --sidebar-primary: oklch(0.66 0.27 350);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-primary-foreground: oklch(0.14 0.02 280);
   --sidebar-accent: oklch(0.26 0.03 285);
   --sidebar-accent-foreground: oklch(0.97 0.01 250);
   --sidebar-border: oklch(0.92 0.05 320 / 14%);
@@ -300,6 +300,7 @@ input[type='button'] {
   border-radius: inherit;
   background: inherit;
   pointer-events: none;
+  z-index: -1;
 }
 
 /* Slow drift for hero accent blobs. */
@@ -376,6 +377,8 @@ input[type='button'] {
   --landing-red: #ee342f;
   --landing-chocolate: #1a0f0f;
   --landing-warm-white: #faf4e9;
+  --landing-primary-foreground: var(--landing-warm-white);
+  --landing-secondary-foreground: var(--landing-purple);
   --landing-green: #28744e;
   position: relative;
   isolation: isolate;
@@ -405,6 +408,8 @@ html[data-theme='dark'] .landing-shell {
   --landing-red: #ff6b5e;
   --landing-chocolate: #140b0b;
   --landing-warm-white: #fff8ee;
+  --landing-primary-foreground: #140b0b;
+  --landing-secondary-foreground: var(--landing-purple-dark);
   --landing-green: #7ad89f;
 }
 
@@ -660,13 +665,13 @@ html[data-theme='dark'] .huddle-brand-theme-header {
   gap: 7px;
 }
 
-.landing-nav-deploy {
-  color: var(--landing-warm-white);
+.landing-shell .landing-nav-deploy {
+  color: var(--landing-primary-foreground);
   background: var(--landing-purple);
 }
 
-.landing-nav-deploy:hover {
-  color: var(--landing-warm-white);
+.landing-shell .landing-nav-deploy:hover {
+  color: var(--landing-primary-foreground);
   background: var(--landing-purple-dark);
 }
 
@@ -812,23 +817,23 @@ html[data-theme='dark'] .huddle-brand-theme-header {
     transform 140ms ease;
 }
 
-.landing-primary-button {
-  color: var(--landing-warm-white);
+.landing-shell .landing-primary-button {
+  color: var(--landing-primary-foreground);
   background: var(--landing-purple);
 }
 
 .landing-hero-actions .landing-primary-button,
 .landing-hero-actions .landing-primary-button:hover {
-  color: var(--landing-warm-white);
+  color: var(--landing-primary-foreground);
 }
 
 .landing-primary-button:hover {
   background: var(--landing-purple-dark);
 }
 
-.landing-secondary-button {
+.landing-shell .landing-secondary-button {
   border: 1px solid var(--landing-border-strong);
-  color: var(--landing-purple);
+  color: var(--landing-secondary-foreground);
   background: transparent;
 }
 
@@ -1269,7 +1274,7 @@ html[data-theme='dark'] .huddle-brand-theme-header {
   height: 30px;
   border: 0;
   border-radius: 50%;
-  color: #fffaf0;
+  color: #140b0b;
   background: var(--landing-red);
 }
 
@@ -1416,7 +1421,7 @@ html[data-theme='dark'] .huddle-brand-theme-header {
   min-height: 48px;
   padding: 0 13px;
   border: 0;
-  color: var(--landing-faint);
+  color: var(--landing-muted);
   background: transparent;
   cursor: pointer;
   font-size: 13px;
@@ -1432,10 +1437,10 @@ html[data-theme='dark'] .huddle-brand-theme-header {
   background: transparent;
 }
 .landing-story-tab-active {
-  color: var(--landing-purple);
+  color: var(--landing-secondary-foreground);
 }
 .landing-story-tab-active::after {
-  background: var(--landing-purple);
+  background: var(--landing-secondary-foreground);
 }
 .landing-story-tab-dot {
   display: inline-flex;
@@ -1884,7 +1889,7 @@ html[data-theme='dark'] .huddle-brand-theme-header {
 .landing-mini-button-stop {
   margin-top: 18px;
   border-color: var(--landing-red);
-  color: var(--landing-red);
+  color: #ff6b5e;
 }
 .landing-control-exclusions {
   display: flex;
@@ -2172,7 +2177,7 @@ html[data-theme='dark'] .huddle-brand-theme-header {
 }
 .landing-close-actions .landing-secondary-button {
   border-color: #d892c0;
-  color: var(--landing-warm-white);
+  color: var(--landing-primary-foreground);
 }
 .landing-close-actions .landing-secondary-button:hover {
   background: var(--landing-purple-dark);
@@ -2845,6 +2850,8 @@ html[data-theme='dark'] .huddle-brand-theme-header {
   --lobby-yellow: #f3b01c;
   --lobby-red: #ee342f;
   --lobby-warm-white: #faf4e9;
+  --lobby-primary-foreground: var(--lobby-warm-white);
+  --lobby-action-foreground: var(--lobby-purple);
   position: relative;
   isolation: isolate;
   display: flex;
@@ -2871,6 +2878,8 @@ html[data-theme='dark'] .lobby-shell {
   --lobby-yellow: #f3b01c;
   --lobby-red: #ff6b5e;
   --lobby-warm-white: #fff8ee;
+  --lobby-primary-foreground: #140b0b;
+  --lobby-action-foreground: var(--lobby-purple-dark);
 }
 
 .lobby-shell,
@@ -3096,7 +3105,7 @@ html[data-theme='dark'] .lobby-shell {
 
 .lobby-primary-button {
   border: 1px solid var(--lobby-purple);
-  color: var(--lobby-warm-white);
+  color: var(--lobby-primary-foreground);
   background: var(--lobby-purple);
 }
 
@@ -3106,7 +3115,7 @@ html[data-theme='dark'] .lobby-shell {
 
 .lobby-secondary-button {
   border: 1px solid var(--lobby-border-strong);
-  color: var(--lobby-purple);
+  color: var(--lobby-action-foreground);
   background: transparent;
 }
 
@@ -3138,7 +3147,7 @@ html[data-theme='dark'] .lobby-shell {
   width: fit-content;
   padding: 0;
   border: 0;
-  color: var(--lobby-purple);
+  color: var(--lobby-action-foreground);
   background: transparent;
   font-size: 13px;
   font-weight: 700;
@@ -3262,7 +3271,7 @@ html[data-theme='dark'] .lobby-shell {
   width: 32px;
   height: 32px;
   border-color: var(--lobby-purple);
-  color: var(--lobby-warm-white);
+  color: var(--lobby-primary-foreground);
   background: var(--lobby-purple);
   cursor: pointer;
 }
@@ -3372,6 +3381,14 @@ html[data-theme='dark'] .lobby-dialog {
 
 .lobby-date-picker [class*='text-muted-foreground'] {
   color: var(--lobby-muted) !important;
+}
+
+.lobby-date-picker-clear {
+  color: #b42318;
+}
+
+html[data-theme='dark'] .lobby-date-picker-clear {
+  color: #ff6b5e;
 }
 
 .lobby-date-picker select {
@@ -4225,6 +4242,9 @@ html[data-theme='dark'] .legal-shell {
   --prejoin-yellow: #f3b01c;
   --prejoin-red: #ee342f;
   --prejoin-warm-white: #faf4e9;
+  --prejoin-primary-foreground: var(--prejoin-warm-white);
+  --prejoin-secondary-foreground: var(--prejoin-purple);
+  --prejoin-alert-foreground: #b42318;
   position: relative;
   isolation: isolate;
   display: flex;
@@ -4251,6 +4271,9 @@ html[data-theme='dark'] .prejoin-shell {
   --prejoin-yellow: #f3b01c;
   --prejoin-red: #ff6b5e;
   --prejoin-warm-white: #fff8ee;
+  --prejoin-primary-foreground: #140b0b;
+  --prejoin-secondary-foreground: var(--prejoin-purple-dark);
+  --prejoin-alert-foreground: var(--prejoin-red);
 }
 
 .prejoin-shell,
@@ -4487,7 +4510,7 @@ html[data-theme='dark'] .prejoin-shell {
 
 .prejoin-device-toggle.has-alert {
   border-color: color-mix(in srgb, var(--prejoin-red) 62%, var(--prejoin-border));
-  color: var(--prejoin-red);
+  color: var(--prejoin-alert-foreground);
 }
 
 .prejoin-device-toggle-icon {
@@ -4502,7 +4525,7 @@ html[data-theme='dark'] .prejoin-shell {
 }
 
 .prejoin-device-toggle.has-alert .prejoin-device-toggle-icon {
-  color: var(--prejoin-red);
+  color: var(--prejoin-alert-foreground);
 }
 
 .prejoin-device-toggle-copy {
@@ -4523,7 +4546,7 @@ html[data-theme='dark'] .prejoin-shell {
 }
 
 .prejoin-device-toggle.has-alert .prejoin-device-toggle-copy small {
-  color: var(--prejoin-red);
+  color: var(--prejoin-alert-foreground);
 }
 
 .prejoin-device-toggle-copy kbd {
@@ -4577,7 +4600,7 @@ html[data-theme='dark'] .prejoin-shell {
   padding: 12px 16px;
   border: 1px solid var(--prejoin-purple);
   border-radius: 10px;
-  color: var(--prejoin-warm-white);
+  color: var(--prejoin-primary-foreground);
   background: var(--prejoin-purple);
   font-size: 14px;
   font-weight: 700;
@@ -4768,6 +4791,8 @@ html[data-theme='dark'] .prejoin-shell {
   --prejoin-yellow: #f3b01c;
   --prejoin-red: #ee342f;
   --prejoin-warm-white: #faf4e9;
+  --prejoin-primary-foreground: #faf4e9;
+  --prejoin-secondary-foreground: #8d2676;
   border-color: var(--prejoin-border-strong) !important;
   border-radius: 16px !important;
   color: var(--prejoin-ink) !important;
@@ -4790,6 +4815,8 @@ html[data-theme='dark'] .prejoin-recovery-dialog {
   --prejoin-yellow: #f3b01c;
   --prejoin-red: #ff6b5e;
   --prejoin-warm-white: #fff8ee;
+  --prejoin-primary-foreground: #140b0b;
+  --prejoin-secondary-foreground: #e182bc;
 }
 
 .prejoin-recovery-dialog [data-slot='alert-dialog-title'] {
@@ -4857,7 +4884,7 @@ html[data-theme='dark'] .prejoin-recovery-dialog {
 
 .prejoin-recovery-secondary {
   border-color: var(--prejoin-border-strong) !important;
-  color: var(--prejoin-purple) !important;
+  color: var(--prejoin-secondary-foreground) !important;
   background: transparent !important;
 }
 
@@ -4867,7 +4894,7 @@ html[data-theme='dark'] .prejoin-recovery-dialog {
 
 .prejoin-recovery-primary {
   border-color: var(--prejoin-purple) !important;
-  color: var(--prejoin-warm-white) !important;
+  color: var(--prejoin-primary-foreground) !important;
   background: var(--prejoin-purple) !important;
 }
 
@@ -4994,6 +5021,8 @@ html[data-theme='dark'] .prejoin-recovery-dialog {
   --system-notice-purple: #8d2676;
   --system-notice-yellow: #f3b01c;
   --system-notice-red: #ee342f;
+  --system-notice-primary-foreground: #fffaf0;
+  --system-notice-primary-hover: #6f195e;
   top: calc(env(safe-area-inset-top, 0px) + 16px + var(--system-notice-tray-offset, 0px));
   transition: top 180ms ease;
 }
@@ -5006,6 +5035,8 @@ html[data-theme='dark'] .system-notice-stack {
   --system-notice-purple: #c15a9e;
   --system-notice-yellow: #f3b01c;
   --system-notice-red: #ff6b5e;
+  --system-notice-primary-foreground: #140b0b;
+  --system-notice-primary-hover: #e182bc;
 }
 
 .system-notice {
@@ -5062,7 +5093,7 @@ html[data-theme='dark'] .system-notice-stack {
   min-height: 32px;
   gap: 5px;
   padding: 6px 10px;
-  color: #fffaf0;
+  color: var(--system-notice-primary-foreground);
   background: var(--system-notice-purple);
 }
 
@@ -5082,7 +5113,7 @@ html[data-theme='dark'] .system-notice-stack {
 }
 
 .system-notice__action:hover {
-  background: color-mix(in srgb, var(--system-notice-purple) 86%, #141414);
+  background: var(--system-notice-primary-hover);
 }
 
 .system-notice__dismiss:hover {
@@ -5126,5 +5157,723 @@ html[data-theme='dark'] .system-notice-stack {
 
   .system-notice {
     animation: none;
+  }
+}
+
+/* ── Signal Handoff call workspace ────────────────────────────────────────
+   The active call is an Operate surface: a warm, framed workspace around a
+   deliberately dark media field. Everything is scoped here so legacy app
+   routes keep their existing operator styling. */
+.signal-call-shell {
+  --call-bg: #f6eedb;
+  --call-surface: #fffaf0;
+  --call-surface-strong: #f0e4cd;
+  --call-ink: #141414;
+  --call-muted: #62594f;
+  --call-border: #bca88a;
+  --call-purple: #8d2676;
+  --call-purple-deep: #6f195e;
+  --call-yellow: #f3b01c;
+  --call-red: #ee342f;
+  --call-media: #1a0f0f;
+  --call-media-soft: #2a1b19;
+  --call-inverse: #faf4e9;
+  --call-primary-foreground: var(--call-inverse);
+  --call-danger-foreground: #140b0b;
+  --call-shadow: color-mix(in srgb, var(--call-purple) 34%, transparent);
+  position: relative;
+  isolation: isolate;
+  min-height: 100dvh;
+  overflow: hidden;
+  background: var(--call-bg);
+  color: var(--call-ink);
+  font-family: var(--font-archivo), Arial, sans-serif;
+}
+
+html[data-theme='dark'] .signal-call-shell {
+  --call-bg: #1a0f0f;
+  --call-surface: #2a1b19;
+  --call-surface-strong: #33221d;
+  --call-ink: #faf4e9;
+  --call-muted: #d1c1ad;
+  --call-border: #866957;
+  --call-purple: #e182bc;
+  --call-purple-deep: #c15a9e;
+  --call-yellow: #f3b01c;
+  --call-red: #ff6b5e;
+  --call-media: #140b0b;
+  --call-media-soft: #241514;
+  --call-inverse: #fff8ee;
+  --call-primary-foreground: #140b0b;
+  --call-danger-foreground: #140b0b;
+  --call-shadow: color-mix(in srgb, var(--call-purple) 38%, transparent);
+}
+
+.signal-call-shell::before,
+.signal-call-shell::after {
+  position: absolute;
+  right: 0;
+  left: 0;
+  z-index: -1;
+  height: 64px;
+  content: '';
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, transparent 0 12%, var(--call-purple) 12% calc(12% + 1px), transparent calc(12% + 1px) 52%, var(--call-yellow) 52% calc(52% + 1px), transparent calc(52% + 1px) 82%, var(--call-red) 82% calc(82% + 1px), transparent calc(82% + 1px)),
+    var(--call-surface-strong);
+}
+
+.signal-call-shell::before {
+  top: 0;
+  border-bottom: 1px solid var(--call-border);
+}
+
+.signal-call-shell::after {
+  bottom: 0;
+  border-top: 1px solid var(--call-border);
+}
+
+.signal-call-shell .glass-strong {
+  border: 1px solid var(--call-border);
+  background: var(--call-surface);
+  color: var(--call-ink);
+  box-shadow: 6px 7px 0 var(--call-shadow);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.signal-call-shell button:focus-visible,
+.signal-call-shell [role='button']:focus-visible,
+.signal-call-device-popover button:focus-visible,
+.signal-call-dialog button:focus-visible {
+  outline: 2px solid var(--call-yellow, #f3b01c);
+  outline-offset: 3px;
+}
+
+.signal-call-top-rail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.signal-call-timer {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  padding: 5px 8px;
+  border: 1px solid var(--call-border);
+  border-radius: 8px;
+  color: var(--call-ink);
+  background: var(--call-surface);
+  box-shadow: 4px 4px 0 var(--call-shadow);
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+.signal-call-theme-toggle {
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  border: 1px solid var(--call-border);
+  border-radius: 8px;
+  color: var(--call-ink);
+  background: var(--call-surface);
+  box-shadow: 4px 4px 0 var(--call-shadow);
+  transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
+}
+
+.signal-call-theme-toggle:hover {
+  border-color: var(--call-purple);
+  background: color-mix(in srgb, var(--call-purple) 10%, var(--call-surface));
+}
+
+.signal-call-theme-toggle[aria-pressed='true'] {
+  border-color: var(--call-yellow);
+}
+
+/* Media remains a dark, complete-frame live surface. */
+.signal-call-shell .signal-call-tile .cyber-clip,
+.signal-call-shell .signal-call-protected-stage {
+  clip-path: none;
+  border-radius: 12px;
+}
+
+.signal-call-tile-frame.cyber-frame,
+.signal-call-tile-frame.cyber-frame-active {
+  padding: 2px;
+  background: var(--call-ink);
+  box-shadow: 4px 5px 0 var(--call-shadow);
+  animation: none;
+}
+
+.signal-call-tile-frame.cyber-frame-active {
+  background: var(--call-yellow);
+  box-shadow: 4px 5px 0 color-mix(in srgb, var(--call-purple) 55%, transparent);
+}
+
+.signal-call-tile-media {
+  background: var(--call-media) !important;
+}
+
+.signal-call-tile-media.scanlines::after {
+  display: none;
+}
+
+.signal-call-camera-off {
+  background: var(--call-media-soft) !important;
+}
+
+.signal-call-avatar {
+  border: 1px solid color-mix(in srgb, var(--call-yellow) 70%, transparent);
+  background: var(--call-purple) !important;
+  color: var(--call-inverse) !important;
+  box-shadow: none !important;
+}
+
+.signal-call-tile-action {
+  border: 1px solid color-mix(in srgb, var(--call-inverse) 72%, transparent);
+  background: color-mix(in srgb, var(--call-media) 86%, transparent) !important;
+  color: var(--call-inverse) !important;
+  box-shadow: none !important;
+  backdrop-filter: none;
+}
+
+.signal-call-tile-action:hover {
+  background: var(--call-purple) !important;
+  color: var(--call-primary-foreground) !important;
+}
+
+.signal-call-request-control {
+  border-color: var(--call-yellow);
+  color: var(--call-yellow) !important;
+}
+
+.signal-call-request-control:hover {
+  background: var(--call-yellow) !important;
+  color: #141414 !important;
+}
+
+.signal-call-live-signal {
+  color: var(--call-yellow) !important;
+  text-shadow: none;
+}
+
+.signal-call-live-signal > span {
+  background: var(--call-yellow) !important;
+}
+
+.signal-call-tile-name {
+  border: 1px solid color-mix(in srgb, var(--call-inverse) 18%, transparent);
+  background: color-mix(in srgb, var(--call-media) 88%, transparent) !important;
+  color: var(--call-inverse);
+  backdrop-filter: none;
+}
+
+.signal-call-tile-name [class*='text-magenta'] {
+  color: var(--call-red) !important;
+}
+
+.signal-call-tile-name [class*='text-cyan'] {
+  color: var(--call-yellow) !important;
+}
+
+.signal-call-focus-main,
+.signal-call-grid > div:first-child {
+  min-width: 0;
+}
+
+/* Call consent and request notices sit in their own protected top gutter.
+   The rendered tray height is measured in CallStage, so media always starts
+   below it instead of being visually covered by a multi-line decision. */
+.signal-call-grid,
+.signal-call-focus {
+  padding-top: calc(4rem + var(--signal-call-notice-height, 0px)) !important;
+}
+
+@media (min-width: 640px) {
+  .signal-call-grid,
+  .signal-call-focus {
+    padding-top: calc(4.5rem + var(--signal-call-notice-height, 0px)) !important;
+  }
+}
+
+.signal-call-filmstrip {
+  padding: 6px;
+  border: 1px solid var(--call-border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--call-surface) 92%, transparent);
+  box-shadow: 4px 5px 0 var(--call-shadow);
+}
+
+.signal-call-self-view .signal-call-tile-frame {
+  box-shadow: 5px 6px 0 var(--call-purple);
+}
+
+.signal-call-protected-stage,
+.signal-call-switching-stage {
+  background: var(--call-media) !important;
+}
+
+.signal-call-protected-stage > div:first-child,
+.signal-call-switching-stage > div:first-child {
+  display: none;
+}
+
+.signal-call-protected-card {
+  border-radius: 12px !important;
+}
+
+.signal-call-protected-card [class*='text-white'] {
+  color: var(--call-ink) !important;
+}
+
+.signal-call-protected-card [class*='text-cyan'] {
+  color: var(--call-purple) !important;
+}
+
+.signal-call-presenter-shield {
+  background: color-mix(in srgb, var(--call-media) 90%, transparent) !important;
+  backdrop-filter: none;
+}
+
+.signal-call-presenter-control {
+  border: 1px solid var(--call-yellow) !important;
+  background: var(--call-surface) !important;
+  color: var(--call-ink) !important;
+  box-shadow: 3px 4px 0 var(--call-shadow) !important;
+}
+
+.signal-call-presenter-stop {
+  border-color: var(--call-red) !important;
+  background: var(--call-red) !important;
+  color: var(--call-danger-foreground) !important;
+}
+
+/* Bottom action tray: immediate actions remain circular, but sit in a framed dock. */
+.signal-call-control-dock {
+  max-width: calc(100vw - 2rem);
+  border-radius: 12px !important;
+}
+
+.signal-call-controls-divider,
+.signal-call-merged-divider {
+  background: var(--call-border) !important;
+}
+
+.signal-call-control-button,
+.signal-call-record-button,
+.signal-call-merged-main,
+.signal-call-merged-menu,
+.signal-call-device-alert {
+  border: 1px solid var(--call-border) !important;
+  background: transparent !important;
+  color: var(--call-ink) !important;
+  box-shadow: none !important;
+}
+
+.signal-call-control-button:hover,
+.signal-call-record-button:hover,
+.signal-call-merged-main:hover,
+.signal-call-merged-menu:hover {
+  border-color: var(--call-purple) !important;
+  background: color-mix(in srgb, var(--call-purple) 10%, transparent) !important;
+}
+
+.signal-call-control-button[aria-pressed='true'],
+.signal-call-merged-main[aria-pressed='true'] {
+  border-color: var(--call-yellow) !important;
+  background: var(--call-yellow) !important;
+  color: #141414 !important;
+}
+
+.signal-call-control-button[aria-label='Leave call'],
+.signal-call-record-button[aria-pressed='true'] {
+  border-color: var(--call-red) !important;
+  background: var(--call-red) !important;
+  color: var(--call-danger-foreground) !important;
+}
+
+.signal-call-device-alert {
+  border-color: var(--call-red) !important;
+  color: var(--call-red) !important;
+}
+
+.signal-call-mute-reminder {
+  color: var(--call-ink) !important;
+  border-radius: 8px !important;
+}
+
+.signal-call-mute-reminder > span {
+  border-color: var(--call-border) !important;
+  background: var(--call-surface) !important;
+  box-shadow: none !important;
+}
+
+/* Portalled device choices carry their own Signal Handoff surface. */
+.signal-call-device-popover {
+  border: 1px solid #bca88a !important;
+  border-radius: 10px !important;
+  background: #fffaf0 !important;
+  color: #141414 !important;
+  box-shadow: 6px 7px 0 color-mix(in srgb, #8d2676 34%, transparent) !important;
+  backdrop-filter: none !important;
+}
+
+.signal-call-device-popover [class*='text-white'] {
+  color: #141414 !important;
+}
+
+.signal-call-device-popover [class*='text-cyan'] {
+  color: #8d2676 !important;
+}
+
+.signal-call-device-popover button:hover {
+  background: color-mix(in srgb, #8d2676 10%, transparent) !important;
+}
+
+html[data-theme='dark'] .signal-call-device-popover {
+  border-color: #866957 !important;
+  background: #2a1b19 !important;
+  color: #faf4e9 !important;
+  box-shadow: 6px 7px 0 color-mix(in srgb, #e182bc 38%, transparent) !important;
+}
+
+html[data-theme='dark'] .signal-call-device-popover [class*='text-white'] {
+  color: #faf4e9 !important;
+}
+
+html[data-theme='dark'] .signal-call-device-popover [class*='text-cyan'] {
+  color: #e182bc !important;
+}
+
+html[data-theme='dark'] .signal-call-device-popover button:hover {
+  background: color-mix(in srgb, #e182bc 10%, transparent) !important;
+}
+
+/* Chat and host drawers are flat, high-context work surfaces. */
+.signal-call-side-panel {
+  border-color: var(--call-border) !important;
+  border-radius: 0 !important;
+  background: var(--call-surface) !important;
+  color: var(--call-ink) !important;
+  box-shadow: 8px 0 0 var(--call-shadow) !important;
+  backdrop-filter: none !important;
+}
+
+.signal-call-host-panel {
+  box-shadow: -8px 0 0 var(--call-shadow) !important;
+}
+
+.signal-call-side-panel-header,
+.signal-call-chat-form {
+  border-color: var(--call-border) !important;
+  background: var(--call-surface-strong);
+}
+
+.signal-call-side-panel [class*='text-white'] {
+  color: var(--call-ink) !important;
+}
+
+.signal-call-side-panel [class*='text-cyan'],
+.signal-call-side-panel [class*='text-magenta'] {
+  color: var(--call-purple) !important;
+}
+
+.signal-call-side-panel [class*='text-red'] {
+  color: var(--call-red) !important;
+}
+
+.signal-call-side-panel [class*='bg-white'] {
+  background-color: color-mix(in srgb, var(--call-surface-strong) 82%, transparent) !important;
+}
+
+.signal-call-side-panel [class*='bg-cyan'] {
+  background-color: var(--call-yellow) !important;
+  color: #141414 !important;
+}
+
+.signal-call-side-panel [class*='bg-magenta'] {
+  background-color: var(--call-purple) !important;
+  color: var(--call-primary-foreground) !important;
+}
+
+.signal-call-side-panel [class*='border-white'] {
+  border-color: var(--call-border) !important;
+}
+
+.signal-call-side-panel h3 > span:first-child {
+  background: var(--call-purple) !important;
+}
+
+.signal-call-chat-message,
+.signal-call-chat-message-mine {
+  border: 1px solid var(--call-border) !important;
+  color: var(--call-ink) !important;
+  box-shadow: none !important;
+}
+
+.signal-call-chat-message {
+  background: var(--call-surface-strong) !important;
+}
+
+.signal-call-chat-message-mine {
+  border-color: var(--call-purple) !important;
+  background: color-mix(in srgb, var(--call-purple) 13%, var(--call-surface)) !important;
+}
+
+.signal-call-chat-input {
+  border-color: var(--call-border) !important;
+  background: var(--call-surface) !important;
+  color: var(--call-ink) !important;
+}
+
+.signal-call-chat-input::placeholder {
+  color: var(--call-muted) !important;
+}
+
+.signal-call-chat-input:focus {
+  border-color: var(--call-yellow) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--call-yellow) 34%, transparent) !important;
+}
+
+.signal-call-chat-send {
+  border: 1px solid var(--call-purple) !important;
+  background: var(--call-purple) !important;
+  color: var(--call-primary-foreground) !important;
+}
+
+.signal-call-host-toggle {
+  border-radius: 8px !important;
+  color: var(--call-ink) !important;
+}
+
+.signal-call-host-panel-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Consent remains visually distinct from passive system notices. */
+.signal-call-consent-card,
+.signal-call-remote-consent,
+.signal-call-notice-pill {
+  border: 1px solid var(--call-purple) !important;
+  border-radius: 10px !important;
+  background: var(--call-surface) !important;
+  color: var(--call-ink) !important;
+  box-shadow: 7px 8px 0 var(--call-shadow) !important;
+  backdrop-filter: none !important;
+}
+
+.signal-call-consent-card [class*='text-white'],
+.signal-call-remote-consent [class*='text-white'],
+.signal-call-notice-pill [class*='text-white'] {
+  color: var(--call-ink) !important;
+}
+
+.signal-call-consent-card [class*='text-cyan'],
+.signal-call-remote-consent [class*='text-cyan'] {
+  color: var(--call-purple) !important;
+}
+
+.signal-call-consent-action {
+  border: 1px solid var(--call-purple) !important;
+  border-radius: 7px !important;
+  background: var(--call-purple) !important;
+  color: var(--call-primary-foreground) !important;
+  box-shadow: none !important;
+}
+
+.signal-call-consent-action:hover {
+  background: var(--call-purple-deep) !important;
+}
+
+.signal-call-recording-indicator {
+  border: 1px solid var(--call-red) !important;
+  background: color-mix(in srgb, var(--call-red) 14%, var(--call-surface)) !important;
+  color: var(--call-red) !important;
+  box-shadow: 4px 5px 0 color-mix(in srgb, var(--call-red) 26%, transparent);
+  backdrop-filter: none;
+}
+
+.signal-call-recording-indicator > span:first-child {
+  background: var(--call-red) !important;
+}
+
+.signal-call-remote-status {
+  border-color: var(--call-purple) !important;
+  border-radius: 10px !important;
+}
+
+.signal-call-remote-icon {
+  border: 1px solid var(--call-yellow) !important;
+  background: color-mix(in srgb, var(--call-yellow) 16%, transparent) !important;
+  color: var(--call-purple) !important;
+}
+
+.signal-call-remote-title {
+  color: var(--call-ink) !important;
+}
+
+.signal-call-remote-detail {
+  color: var(--call-muted) !important;
+}
+
+.signal-call-remote-status [class*='text-cyan'] {
+  color: var(--call-purple) !important;
+}
+
+.signal-call-remote-action {
+  border: 1px solid var(--call-purple) !important;
+  border-radius: 7px !important;
+  background: var(--call-purple) !important;
+  color: var(--call-primary-foreground) !important;
+}
+
+.signal-call-remote-stop {
+  border-color: var(--call-red) !important;
+  background: var(--call-red) !important;
+  color: var(--call-danger-foreground) !important;
+}
+
+.signal-call-remote-warning {
+  border-color: var(--call-yellow) !important;
+  background: color-mix(in srgb, var(--call-yellow) 16%, transparent) !important;
+  color: var(--call-ink) !important;
+}
+
+.signal-call-control-surface {
+  border-color: var(--call-yellow) !important;
+}
+
+.signal-call-control-surface:not(:focus) > span:first-child {
+  border: 1px solid var(--call-yellow);
+  background: var(--call-surface) !important;
+  color: var(--call-ink) !important;
+  box-shadow: 3px 4px 0 var(--call-shadow);
+}
+
+.signal-call-agent-backdrop {
+  background: color-mix(in srgb, var(--call-media) 72%, transparent) !important;
+}
+
+.signal-call-agent-dialog {
+  border-radius: 12px !important;
+}
+
+.signal-call-agent-dialog [class*='text-white'] {
+  color: var(--call-ink) !important;
+}
+
+.signal-call-agent-dialog [class*='text-cyan'] {
+  color: var(--call-purple) !important;
+}
+
+.signal-call-agent-dialog [class*='bg-white'] {
+  background-color: var(--call-surface-strong) !important;
+}
+
+.signal-call-agent-dialog [class*='bg-cyan'] {
+  border-color: var(--call-purple) !important;
+  background-color: var(--call-purple) !important;
+  color: var(--call-primary-foreground) !important;
+}
+
+.signal-call-agent-dialog button,
+.signal-call-agent-dialog a {
+  border: 1px solid var(--call-border);
+  border-radius: 7px;
+  color: var(--call-ink);
+}
+
+/* Portalled confirmation dialogs receive the same theme without touching all dialogs. */
+.signal-call-dialog {
+  border: 1px solid #bca88a !important;
+  border-radius: 12px !important;
+  background: #fffaf0 !important;
+  color: #141414 !important;
+  box-shadow: 8px 10px 0 color-mix(in srgb, #8d2676 34%, transparent) !important;
+}
+
+.signal-call-dialog [data-slot='alert-dialog-footer'] {
+  border-color: #bca88a !important;
+  background: #f0e4cd !important;
+}
+
+.signal-call-dialog [data-slot='alert-dialog-description'] {
+  color: #62594f !important;
+}
+
+.signal-call-dialog [data-slot='alert-dialog-action'] {
+  border-color: var(--call-purple) !important;
+  background: var(--call-purple) !important;
+  color: var(--call-primary-foreground) !important;
+}
+
+.signal-call-dialog [data-slot='alert-dialog-action'].signal-call-dialog-action-danger {
+  border-color: #ee342f !important;
+  background: #ee342f !important;
+  color: var(--call-danger-foreground) !important;
+}
+
+html[data-theme='dark'] .signal-call-dialog {
+  border-color: #866957 !important;
+  background: #2a1b19 !important;
+  color: #faf4e9 !important;
+  box-shadow: 8px 10px 0 color-mix(in srgb, #e182bc 38%, transparent) !important;
+}
+
+html[data-theme='dark'] .signal-call-dialog [data-slot='alert-dialog-footer'] {
+  border-color: #866957 !important;
+  background: #33221d !important;
+}
+
+html[data-theme='dark'] .signal-call-dialog [data-slot='alert-dialog-description'] {
+  color: #d1c1ad !important;
+}
+
+html[data-theme='dark'] .signal-call-dialog [data-slot='alert-dialog-action'].signal-call-dialog-action-danger {
+  border-color: #ff6b5e !important;
+  background: #ff6b5e !important;
+  color: #140b0b !important;
+}
+
+@media (max-width: 639px) {
+  .signal-call-control-dock {
+    gap: 6px;
+    padding: 7px !important;
+  }
+
+  .signal-call-filmstrip {
+    padding: 4px;
+  }
+
+  .signal-call-side-panel {
+    width: min(20rem, 90vw) !important;
+  }
+
+  .signal-call-consent-card,
+  .signal-call-remote-consent,
+  .signal-call-notice-pill {
+    max-width: calc(100vw - 1.5rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signal-call-theme-toggle,
+  .signal-call-shell .cyber-frame-active,
+  .signal-call-shell .animate-in,
+  .signal-call-shell .animate-pulse,
+  .signal-call-shell .transition,
+  .signal-call-shell .transition-all {
+    animation: none !important;
+    transition: none !important;
   }
 }

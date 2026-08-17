@@ -55,10 +55,10 @@ export default function RemoteControlStatus({
     <section
       aria-label="Remote Control status"
       aria-live="polite"
-      className="glass-strong pointer-events-auto w-full overflow-hidden rounded-xl shadow-[0_12px_36px_oklch(0_0_0/0.35)] ring-1 ring-cyan/30"
+      className="signal-call-remote-status glass-strong pointer-events-auto w-full overflow-hidden rounded-xl shadow-[0_12px_36px_oklch(0_0_0/0.35)] ring-1 ring-cyan/30"
     >
       <div className="flex min-w-0 flex-wrap items-center gap-2 px-3 py-2 sm:flex-nowrap sm:px-4">
-        <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-cyan/12 text-cyan ring-1 ring-cyan/25">
+        <span className="signal-call-remote-icon relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-cyan/12 text-cyan ring-1 ring-cyan/25">
           <MousePointer2 className="h-4 w-4" />
           <span
             className={`absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-[oklch(0.17_0.025_285)] ${active ? 'bg-cyan' : 'animate-pulse bg-amber-300'}`}
@@ -66,8 +66,8 @@ export default function RemoteControlStatus({
         </span>
 
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-white/95">{active ? relationship : waiting}</p>
-          <p className="text-xs text-white/55">{active ? 'Remote Control active' : 'Remote Control approved · desktop not yet shared'}</p>
+          <p className="signal-call-remote-title truncate text-sm font-semibold text-white/95">{active ? relationship : waiting}</p>
+          <p className="signal-call-remote-detail text-xs text-white/55">{active ? 'Remote Control active' : 'Remote Control approved · desktop not yet shared'}</p>
           {iAmSharer && active && (
             <p className="mt-0.5 text-xs text-cyan/80">Clipboard sharing on · plain text copied on this Mac is shared with {session.controllerName}.</p>
           )}
@@ -78,7 +78,7 @@ export default function RemoteControlStatus({
             <button
               type="button"
               onClick={() => setRenewalConfirmationOpen(true)}
-              className="inline-flex h-9 items-center rounded-lg bg-cyan/15 px-3 text-xs font-semibold text-cyan ring-1 ring-cyan/35 transition hover:bg-cyan/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/70"
+              className="signal-call-remote-action inline-flex h-9 items-center rounded-lg bg-cyan/15 px-3 text-xs font-semibold text-cyan ring-1 ring-cyan/35 transition hover:bg-cyan/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/70"
             >
               Reconfirm{minutes <= 5 ? ` · ${minutes}m` : ''}
             </button>
@@ -87,7 +87,7 @@ export default function RemoteControlStatus({
             <button
               type="button"
               onClick={onStop}
-              className="inline-flex h-9 items-center rounded-lg bg-magenta/15 px-3 text-xs font-semibold text-magenta ring-1 ring-magenta/35 transition hover:bg-magenta/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-magenta/70"
+              className="signal-call-remote-action signal-call-remote-stop inline-flex h-9 items-center rounded-lg bg-magenta/15 px-3 text-xs font-semibold text-magenta ring-1 ring-magenta/35 transition hover:bg-magenta/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-magenta/70"
             >
               Stop
             </button>
@@ -96,7 +96,7 @@ export default function RemoteControlStatus({
             <button
               type="button"
               onClick={() => void onCopyReceivedClipboard()}
-              className="inline-flex h-9 items-center rounded-lg bg-cyan/15 px-3 text-xs font-semibold text-cyan ring-1 ring-cyan/35 transition hover:bg-cyan/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/70"
+              className="signal-call-remote-action inline-flex h-9 items-center rounded-lg bg-cyan/15 px-3 text-xs font-semibold text-cyan ring-1 ring-cyan/35 transition hover:bg-cyan/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/70"
             >
               Copy received text
             </button>
@@ -107,7 +107,7 @@ export default function RemoteControlStatus({
       {recordingActive && (
         <div
           role="alert"
-          className="flex items-start gap-2 border-t border-amber-200/15 bg-amber-200/5 px-3 py-2 text-xs text-amber-100/90 sm:items-center sm:px-4"
+          className="signal-call-remote-warning flex items-start gap-2 border-t border-amber-200/15 bg-amber-200/5 px-3 py-2 text-xs text-amber-100/90 sm:items-center sm:px-4"
         >
           <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-200 sm:mt-0" />
           The controlled desktop is visible to the room and may be included in the active Recording.
@@ -115,7 +115,7 @@ export default function RemoteControlStatus({
       )}
 
       <AlertDialog open={renewalConfirmationOpen} onOpenChange={setRenewalConfirmationOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="signal-call-dialog">
           <AlertDialogHeader>
             <AlertDialogTitle>Continue Remote Control?</AlertDialogTitle>
             <AlertDialogDescription>

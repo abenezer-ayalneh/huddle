@@ -83,7 +83,7 @@ function Toast({ children, onClick }: { children: React.ReactNode; onClick?: () 
     <div
       role="status"
       onClick={onClick}
-      className="pointer-events-auto glass-strong flex items-center gap-3 rounded-xl px-4 py-3 shadow-[0_4px_30px_oklch(0_0_0/0.4)] animate-in fade-in slide-in-from-top-2 duration-200"
+      className="signal-call-consent-card pointer-events-auto glass-strong flex items-center gap-3 rounded-xl px-4 py-3 shadow-[0_4px_30px_oklch(0_0_0/0.4)] animate-in fade-in slide-in-from-top-2 duration-200"
     >
       {children}
     </div>
@@ -98,7 +98,7 @@ function ToastButton({ children, onClick, variant }: { children: React.ReactNode
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 ${tone}`}
+      className={`signal-call-consent-action flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 ${tone}`}
     >
       {children}
     </button>

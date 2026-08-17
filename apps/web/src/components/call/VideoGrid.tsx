@@ -19,6 +19,7 @@ export default function VideoGrid({
   onRequestControl,
   remoteControlStatus,
   remoteControlInput,
+  noticeTrayHeight = 0,
 }: {
   // When the local participant is the Presenter, they see their own shared
   // track through the protected local-only PresenterPreview below.
@@ -39,6 +40,9 @@ export default function VideoGrid({
   // own row below stage content so it never covers the published desktop.
   remoteControlStatus?: ReactNode;
   remoteControlInput?: ReactNode;
+  // The interactive consent/request tray reports its real rendered height so
+  // the media stage can reserve space below it instead of sitting underneath.
+  noticeTrayHeight?: number;
 }) {
   const tracks = useTracks(
     [
@@ -124,6 +128,7 @@ export default function VideoGrid({
         localName={localName}
         onRequestControl={onRequestControl}
         statusRail={remoteControlStatus}
+        noticeTrayHeight={noticeTrayHeight}
       />
     );
   }
@@ -140,6 +145,7 @@ export default function VideoGrid({
         localName={localName}
         onRequestControl={onRequestControl}
         statusRail={remoteControlStatus}
+        noticeTrayHeight={noticeTrayHeight}
       />
     );
   }
@@ -170,6 +176,7 @@ export default function VideoGrid({
         onRequestControl={onRequestControl}
         localName={localName}
         statusRail={remoteControlStatus}
+        noticeTrayHeight={noticeTrayHeight}
       />
     );
   }
@@ -183,6 +190,7 @@ export default function VideoGrid({
         localName={localName}
         onRequestControl={onRequestControl}
         statusRail={remoteControlStatus}
+        noticeTrayHeight={noticeTrayHeight}
       />
     );
   }
@@ -196,6 +204,7 @@ export default function VideoGrid({
         onTogglePin={togglePin}
         onRequestControl={onRequestControl}
         statusRail={remoteControlStatus}
+        noticeTrayHeight={noticeTrayHeight}
       />
       {localTrack && <SelfView trackRef={localTrack} corner={selfCorner} onCornerChange={setSelfCorner} fallbackName={localName} />}
     </>
@@ -209,6 +218,7 @@ function EqualGrid({
   onRequestControl,
   statusRail,
   localName,
+  noticeTrayHeight,
 }: {
   cameraTracks: ReturnType<typeof useTracks>;
   activeIdentity: string | undefined;
@@ -217,6 +227,7 @@ function EqualGrid({
   statusRail?: ReactNode;
   // The local participant's known name, applied only to its own tile.
   localName?: string;
+  noticeTrayHeight: number;
 }) {
   const cols = useMemo(() => {
     const n = cameraTracks.length || 1;
@@ -231,7 +242,10 @@ function EqualGrid({
   const portraitVisibleRows = Math.min(cameraTracks.length || 1, 4);
 
   return (
-    <div className="absolute inset-0 flex flex-col p-3 pb-24 sm:p-6 sm:pb-28">
+    <div
+      className="signal-call-grid absolute inset-0 flex flex-col p-3 pb-24 sm:p-6 sm:pb-28"
+      style={{ '--signal-call-notice-height': `${noticeTrayHeight}px` } as CSSProperties}
+    >
       <div className="flex min-h-0 flex-1 items-center justify-center">
         <div
           className="portrait-equal-grid grid h-full w-full gap-3 sm:gap-4"
@@ -265,13 +279,13 @@ function EqualGrid({
 // capture remains hidden from the Sharer (see PresenterPreview below).
 function RemoteControlPlaceholder() {
   return (
-    <div className="cyber-clip relative h-full w-full overflow-hidden bg-[oklch(0.12_0.02_280)]">
+    <div className="signal-call-protected-stage cyber-clip relative h-full w-full overflow-hidden bg-[oklch(0.12_0.02_280)]">
       <div className="absolute inset-0 bg-gradient-to-br from-[oklch(0.2_0.05_320)] to-[oklch(0.13_0.03_265)]" />
       <div className="pointer-events-none absolute -left-16 top-1/4 h-64 w-64 rounded-full bg-magenta/20 blur-3xl" />
       <div className="pointer-events-none absolute -right-12 bottom-1/4 h-72 w-72 rounded-full bg-cyan/15 blur-3xl" />
 
       <div className="absolute inset-0 flex items-center justify-center p-6">
-        <div className="glass-strong flex max-w-sm flex-col items-center gap-4 rounded-2xl px-8 py-7 text-center">
+        <div className="signal-call-protected-card glass-strong flex max-w-sm flex-col items-center gap-4 rounded-2xl px-8 py-7 text-center">
           <div className="neon-cyan flex aspect-square w-16 items-center justify-center rounded-full bg-cyan/15 ring-1 ring-cyan/40">
             <MonitorUp className="h-7 w-7 text-cyan" />
           </div>
@@ -292,7 +306,7 @@ function RemoteControlSwitchingSurface() {
     <div
       aria-live="polite"
       aria-label="Switching display"
-      className="pointer-events-none relative flex h-full w-full items-center justify-center overflow-hidden bg-[oklch(0.08_0.02_230)]"
+      className="signal-call-switching-stage pointer-events-none relative flex h-full w-full items-center justify-center overflow-hidden bg-[oklch(0.08_0.02_230)]"
     >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,oklch(0.22_0.06_230_/_0.55),transparent_62%)]" />
       <div className="relative flex max-w-sm flex-col items-center gap-3 px-6 text-center">
@@ -319,7 +333,7 @@ function PresenterPreview({ trackRef, onStop }: { trackRef: TrackReferenceOrPlac
     <button
       type="button"
       onClick={onStop}
-      className="neon-magenta inline-flex items-center gap-2 rounded-full border border-magenta/70 bg-magenta/15 px-4 py-2 text-sm font-medium text-white transition hover:bg-magenta/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-magenta/80"
+      className="signal-call-presenter-control signal-call-presenter-stop neon-magenta inline-flex items-center gap-2 rounded-full border border-magenta/70 bg-magenta/15 px-4 py-2 text-sm font-medium text-black transition hover:bg-magenta/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-magenta/80"
     >
       <MonitorOff className="h-4 w-4" />
       Stop presenting
@@ -334,14 +348,14 @@ function PresenterPreview({ trackRef, onStop }: { trackRef: TrackReferenceOrPlac
           <button
             type="button"
             onClick={() => setIsRevealed(false)}
-            className="neon-cyan inline-flex items-center gap-2 rounded-full border border-cyan/70 bg-[oklch(0.16_0.04_240_/_0.78)] px-4 py-2 text-sm font-medium text-cyan transition hover:bg-cyan/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/80"
+            className="signal-call-presenter-control neon-cyan inline-flex items-center gap-2 rounded-full border border-cyan/70 bg-[oklch(0.16_0.04_240_/_0.78)] px-4 py-2 text-sm font-medium text-cyan transition hover:bg-cyan/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/80"
           >
             Hide my screen
           </button>
           {stopControl}
         </div>
       ) : (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-[oklch(0.13_0.025_280_/_0.76)] p-6 backdrop-blur-[1px]">
+        <div className="signal-call-presenter-shield absolute inset-0 z-10 flex items-center justify-center bg-[oklch(0.13_0.025_280_/_0.76)] p-6 backdrop-blur-[1px]">
           <div className="flex max-w-md flex-col items-center text-center">
             <p className="font-display text-xl font-semibold text-white sm:text-2xl">You are presenting</p>
             <p className="mt-2 text-sm font-medium text-white/80">This is here to avoid infinite mirroring</p>
@@ -349,7 +363,7 @@ function PresenterPreview({ trackRef, onStop }: { trackRef: TrackReferenceOrPlac
               <button
                 type="button"
                 onClick={() => setIsRevealed(true)}
-                className="neon-cyan inline-flex items-center gap-2 rounded-full border border-cyan/70 bg-cyan/10 px-4 py-2 text-sm font-medium text-cyan transition hover:bg-cyan/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/80"
+                className="signal-call-presenter-control neon-cyan inline-flex items-center gap-2 rounded-full border border-cyan/70 bg-cyan/10 px-4 py-2 text-sm font-medium text-cyan transition hover:bg-cyan/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/80"
               >
                 Show my screen anyway
               </button>

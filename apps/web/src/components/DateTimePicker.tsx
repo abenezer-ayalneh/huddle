@@ -108,7 +108,7 @@ export default function DateTimePicker({
           {summary ? (
             <>
               <span className="text-sm text-muted-foreground">{summary}</span>
-              <button type="button" onClick={handleClear} className="text-xs text-destructive hover:underline">
+              <button type="button" onClick={handleClear} className="lobby-date-picker-clear text-xs hover:underline">
                 Clear
               </button>
             </>

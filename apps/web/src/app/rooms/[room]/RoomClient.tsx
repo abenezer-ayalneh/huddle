@@ -22,6 +22,7 @@ export default function RoomClient({ room }: { room: string }) {
   const router = useRouter();
   const { data: session, isPending: sessionPending } = useSession();
   const [error, setError] = useState<string | null>(null);
+  const [hostPanelOpen, setHostPanelOpen] = useState(true);
 
   const leave = useCallback(() => {
     clearHostSession(room);
@@ -108,11 +109,12 @@ export default function RoomClient({ room }: { room: string }) {
       onError={setError}
       overlay={
         <ErrorBoundary label="Host panel" fallback={null}>
-          <HostPanel room={room} hostKey={host.hostKey} />
+          <HostPanel room={room} hostKey={host.hostKey} onOpenChange={setHostPanelOpen} />
         </ErrorBoundary>
       }
       isHost
       hostKey={host.hostKey}
+      hostPanelOpen={hostPanelOpen}
     />
   );
 }

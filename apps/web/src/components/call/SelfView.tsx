@@ -62,7 +62,7 @@ export default function SelfView({
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       style={delta ? { transform: `translate(${delta.x}px, ${delta.y}px)` } : undefined}
-      className={`absolute z-20 aspect-video w-28 touch-none cursor-grab select-none active:cursor-grabbing sm:w-44 ${CORNER_CLASS[corner]}`}
+      className={`signal-call-self-view absolute z-20 aspect-video w-28 touch-none cursor-grab select-none active:cursor-grabbing sm:w-44 ${CORNER_CLASS[corner]}`}
     >
       <VideoTile trackRef={trackRef} active={false} fallbackName={fallbackName} />
     </div>

@@ -5,6 +5,7 @@ import { Check, Copy, ShieldCheck, UserCheck, UserMinus, UserX, VolumeX, X } fro
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { api, type PendingKnock } from '@/lib/api';
 import IconButton from '@/components/IconButton';
+import CallThemeToggle from '@/components/call/CallThemeToggle';
 import { useDismissOnOutside } from '@/components/call/useDismissOnOutside';
 import RecordingControls from './RecordingControls';
 import { isControlAgentParticipant } from '@/lib/controlProtocol';
@@ -28,7 +29,7 @@ function playDing() {
   }
 }
 
-export default function HostPanel({ room, hostKey }: { room: string; hostKey: string }) {
+export default function HostPanel({ room, hostKey, onOpenChange }: { room: string; hostKey: string; onOpenChange?: (open: boolean) => void }) {
   const participants = useRemoteParticipants();
   const humanParticipants = useMemo(() => participants.filter((participant) => !isControlAgentParticipant(participant)), [participants]);
   const controlAgents = useMemo(() => participants.filter((participant) => isControlAgentParticipant(participant)), [participants]);
@@ -62,10 +63,17 @@ export default function HostPanel({ room, hostKey }: { room: string; hostKey: st
   const [busy, setBusy] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const panelRef = useRef<HTMLElement>(null);
+  const setPanelOpen = useCallback(
+    (nextOpen: boolean) => {
+      setOpen(nextOpen);
+      onOpenChange?.(nextOpen);
+    },
+    [onOpenChange],
+  );
 
   // Close on a press outside the panel or on Escape. The reopen pill only mounts
   // while closed, so unlike chat there is no trigger to exclude.
-  useDismissOnOutside(panelRef, open, () => setOpen(false));
+  useDismissOnOutside(panelRef, open, () => setPanelOpen(false));
 
   const inviteLink = typeof window !== 'undefined' ? `${window.location.origin}/rooms/${encodeURIComponent(room)}` : '';
 
@@ -135,20 +143,21 @@ export default function HostPanel({ room, hostKey }: { room: string; hostKey: st
 
   if (!open) {
     return (
-      <div className="absolute right-4 top-4 z-30">
+      <div className="absolute right-4 top-4 z-30 flex items-center gap-2">
+        <CallThemeToggle />
         <button
           type="button"
           aria-label={`Host controls${knocks.length ? ` (${knocks.length} waiting)` : ''}`}
           title={`Host controls${knocks.length ? ` (${knocks.length} waiting)` : ''}`}
-          onClick={() => setOpen(true)}
-          className={`glass-strong relative flex h-12 items-center gap-2 rounded-full px-4 font-display text-sm font-medium tracking-wide text-white transition-all hover:brightness-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 ${
+          onClick={() => setPanelOpen(true)}
+          className={`signal-call-host-toggle glass-strong relative flex h-12 items-center gap-2 rounded-full px-4 font-display text-sm font-medium tracking-wide text-white transition-all hover:brightness-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 ${
             knocks.length ? 'knock-border-spin' : ''
           }`}
         >
           <ShieldCheck className="h-5 w-5 text-cyan" />
           Host
           {knocks.length > 0 && (
-            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-magenta px-1 text-xs font-semibold text-white">{knocks.length}</span>
+            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-magenta px-1 text-xs font-semibold text-black">{knocks.length}</span>
           )}
         </button>
       </div>
@@ -158,23 +167,26 @@ export default function HostPanel({ room, hostKey }: { room: string; hostKey: st
   return (
     <aside
       ref={panelRef}
-      className="glass-strong absolute inset-y-0 right-0 z-30 flex w-80 max-w-[85vw] flex-col border-l border-white/10 shadow-[-8px_0_50px_oklch(0_0_0/0.5)] animate-in slide-in-from-right duration-200"
+      className="signal-call-side-panel signal-call-host-panel glass-strong absolute inset-y-0 right-0 z-30 flex w-80 max-w-[85vw] flex-col border-l border-white/10 shadow-[-8px_0_50px_oklch(0_0_0/0.5)] animate-in slide-in-from-right duration-200"
     >
-      <header className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+      <header className="signal-call-side-panel-header flex items-center justify-between border-b border-white/10 px-5 py-4">
         <span className="flex items-center gap-2 font-display text-base font-semibold tracking-wide text-white">
           <ShieldCheck className="h-5 w-5 text-cyan" />
           Host controls
         </span>
-        <IconButton
-          icon={X}
-          label="Close host controls"
-          size="sm"
-          className="text-white/60 hover:bg-white/15 hover:text-white"
-          onClick={() => setOpen(false)}
-        />
+        <div className="signal-call-host-panel-actions">
+          <CallThemeToggle />
+          <IconButton
+            icon={X}
+            label="Close host controls"
+            size="sm"
+            className="text-white/60 hover:bg-white/15 hover:text-white"
+            onClick={() => setPanelOpen(false)}
+          />
+        </div>
       </header>
 
-      <div className="flex-1 space-y-6 overflow-y-auto px-5 py-5 text-sm">
+      <div className="signal-call-host-content flex-1 space-y-6 overflow-y-auto px-5 py-5 text-sm">
         <Section title="Invite">
           <div className="flex items-center gap-2">
             <code className="min-w-0 flex-1 truncate rounded-md border border-white/10 bg-white/5 px-2.5 py-1.5 font-mono text-xs text-cyan">{room}</code>
@@ -231,7 +243,7 @@ export default function HostPanel({ room, hostKey }: { room: string; hostKey: st
               disabled={busy === 'mute-on-entry'}
               aria-pressed={muteOnEntry}
               className={`flex-1 rounded-lg px-3 py-2 text-xs font-medium tracking-wide transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50 disabled:opacity-50 ${
-                muteOnEntry ? 'neon-magenta bg-magenta text-white hover:brightness-110' : 'bg-white/10 text-white/90 hover:bg-white/20'
+                muteOnEntry ? 'neon-magenta bg-magenta text-black hover:brightness-110' : 'bg-white/10 text-white/90 hover:bg-white/20'
               }`}
             >
               {muteOnEntry ? 'Muted on entry — allow unmuting' : 'Mute all'}
@@ -309,7 +321,7 @@ function Section({ title, badge, children }: { title: string; badge?: number; ch
         <span className="h-3 w-0.5 rounded-full bg-gradient-to-b from-magenta to-cyan" />
         {title}
         {badge !== undefined && (
-          <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-magenta px-1 text-[10px] font-semibold text-white">{badge}</span>
+          <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-magenta px-1 text-[10px] font-semibold text-black">{badge}</span>
         )}
       </h3>
       {children}

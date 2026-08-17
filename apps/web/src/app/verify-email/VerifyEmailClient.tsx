@@ -73,7 +73,7 @@ export default function VerifyEmailClient() {
         footer={
           <Link
             href="/lobby"
-            className="inline-flex h-9 items-center justify-center rounded-lg bg-magenta px-4 font-display font-semibold text-white transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60"
+            className="inline-flex h-9 items-center justify-center rounded-lg bg-magenta px-4 font-display font-semibold text-black transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60"
           >
             Back to lobby
           </Link>

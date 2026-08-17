@@ -26,7 +26,7 @@ export default function RecordingShareConsent({
   if (!available || isHost || !session || state === 'accepted') return null;
 
   return (
-    <div className="pointer-events-auto glass-strong max-w-md rounded-xl px-4 py-3 shadow-[0_4px_30px_oklch(0_0_0/0.4)] animate-in fade-in slide-in-from-top-2 duration-200">
+    <div className="signal-call-consent-card pointer-events-auto glass-strong max-w-md rounded-xl px-4 py-3 shadow-[0_4px_30px_oklch(0_0_0/0.4)] animate-in fade-in slide-in-from-top-2 duration-200">
       <p className="text-sm font-medium text-white">Get this recording in Google Drive?</p>
       <p className="mt-1 text-xs leading-5 text-white/65">
         If you opt in, Huddle may grant the email on your signed-in account reader access to eligible recordings in the host&apos;s private Drive. This choice
@@ -44,7 +44,7 @@ export default function RecordingShareConsent({
             setState('idle');
           }
         }}
-        className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-cyan px-3 py-1.5 text-xs font-semibold text-black transition hover:brightness-110 disabled:opacity-60"
+        className="signal-call-consent-action mt-3 inline-flex items-center gap-1.5 rounded-lg bg-cyan px-3 py-1.5 text-xs font-semibold text-black transition hover:brightness-110 disabled:opacity-60"
       >
         {state === 'sending' ? <LoadingSpinner className="size-3.5" aria-hidden="true" /> : <Check className="size-3.5" aria-hidden="true" />}
         {state === 'sending' ? 'Saving…' : 'I consent'}

@@ -73,9 +73,9 @@ export default function VideoTile({
   const showAvatar = !!avatarUrl && failedAvatarUrl !== avatarUrl;
 
   return (
-    <div className="group relative h-full w-full min-h-0 min-w-0">
-      <div className={`cyber-clip h-full w-full transition-shadow ${active ? 'cyber-frame-active' : 'cyber-frame'}`}>
-        <div className={`cyber-clip relative h-full w-full overflow-hidden bg-[oklch(0.12_0.02_280)] ${active ? 'scanlines' : ''}`}>
+    <div className="signal-call-tile group relative h-full w-full min-h-0 min-w-0">
+      <div className={`signal-call-tile-frame cyber-clip h-full w-full transition-shadow ${active ? 'cyber-frame-active' : 'cyber-frame'}`}>
+        <div className={`signal-call-tile-media cyber-clip relative h-full w-full overflow-hidden bg-[oklch(0.12_0.02_280)] ${active ? 'scanlines' : ''}`}>
           {showVideo ? (
             <VideoTrack
               trackRef={trackRef}
@@ -88,9 +88,9 @@ export default function VideoTile({
               className={`h-full w-full object-contain ${mirror ? '-scale-x-100' : ''}`}
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[oklch(0.18_0.03_300)] to-[oklch(0.13_0.02_270)]">
+            <div className="signal-call-camera-off flex h-full w-full items-center justify-center bg-gradient-to-br from-[oklch(0.18_0.03_300)] to-[oklch(0.13_0.02_270)]">
               <div
-                className={`flex aspect-square w-[clamp(2.5rem,18%,5rem)] items-center justify-center overflow-hidden rounded-full font-display text-2xl font-semibold text-white/90 ${
+                className={`signal-call-avatar flex aspect-square w-[clamp(2.5rem,18%,5rem)] items-center justify-center overflow-hidden rounded-full font-display text-2xl font-semibold text-white/90 ${
                   active ? 'neon-magenta' : ''
                 } bg-[oklch(0.66_0.27_350_/_0.18)] ring-1 ring-magenta/40`}
               >
@@ -118,7 +118,7 @@ export default function VideoTile({
               type="button"
               onClick={onTogglePin}
               aria-label={pinned ? `Unpin ${label}` : `Pin ${label}`}
-              className="absolute left-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/55 text-white/90 opacity-0 backdrop-blur transition hover:bg-black/75 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
+              className="signal-call-tile-action signal-call-pin absolute left-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/55 text-white/90 opacity-0 backdrop-blur transition hover:bg-black/75 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
             >
               {pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
             </button>
@@ -130,7 +130,7 @@ export default function VideoTile({
               onClick={onRequestControl}
               aria-label={`Request control of ${label}`}
               title={`Request control of ${label}`}
-              className="absolute bottom-2 right-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full bg-cyan/15 text-cyan opacity-0 ring-1 ring-cyan/40 backdrop-blur transition hover:bg-cyan/25 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/70 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
+              className="signal-call-tile-action signal-call-request-control absolute bottom-2 right-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full bg-cyan/15 text-cyan opacity-0 ring-1 ring-cyan/40 backdrop-blur transition hover:bg-cyan/25 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/70 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
             >
               <MousePointer2 className="h-4 w-4" />
             </button>
@@ -138,7 +138,7 @@ export default function VideoTile({
 
           {/* HUD readout — active speaker only. */}
           {active && (
-            <div className="pointer-events-none absolute right-2 top-2 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan/90 text-glow-cyan">
+            <div className="signal-call-live-signal pointer-events-none absolute right-2 top-2 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan/90 text-glow-cyan">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan" />
               live
             </div>
@@ -146,7 +146,7 @@ export default function VideoTile({
 
           {/* Name pill + status. */}
           <div
-            className={`pointer-events-none absolute bottom-2 left-2 flex items-center gap-1.5 rounded-md bg-black/55 px-2 py-1 backdrop-blur ${
+            className={`signal-call-tile-name pointer-events-none absolute bottom-2 left-2 flex items-center gap-1.5 rounded-md bg-black/55 px-2 py-1 backdrop-blur ${
               onRequestControl ? 'max-w-[calc(100%-3.5rem)]' : 'max-w-[calc(100%-1rem)]'
             }`}
           >

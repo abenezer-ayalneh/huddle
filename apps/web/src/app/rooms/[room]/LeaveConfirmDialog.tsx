@@ -14,14 +14,14 @@ import {
 export default function LeaveConfirmDialog({ open, onConfirm, onCancel }: { open: boolean; onConfirm: () => void; onCancel: () => void }) {
   return (
     <AlertDialog open={open} onOpenChange={(o) => !o && onCancel()}>
-      <AlertDialogContent>
+      <AlertDialogContent className="signal-call-dialog">
         <AlertDialogHeader>
           <AlertDialogTitle>Leave meeting?</AlertDialogTitle>
           <AlertDialogDescription>You will be disconnected from the call.</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onCancel}>Cancel</AlertDialogCancel>
-          <AlertDialogAction variant="destructive" onClick={onConfirm} className="bg-destructive text-white hover:bg-destructive/90">
+          <AlertDialogAction variant="destructive" onClick={onConfirm} className="signal-call-dialog-action-danger bg-destructive text-black hover:bg-destructive/90">
             Leave
           </AlertDialogAction>
         </AlertDialogFooter>

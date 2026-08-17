@@ -69,7 +69,7 @@ export default function RecordingControls({ room, hostKey, compact = false }: { 
             icon={Square}
             label="Stop recording"
             size="sm"
-            className="bg-red-500 text-white hover:bg-red-400"
+            className="bg-red-500 text-black hover:bg-red-400"
             disabled={busy}
             onClick={() => stop(active.id)}
           />

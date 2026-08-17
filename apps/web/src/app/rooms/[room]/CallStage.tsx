@@ -19,6 +19,7 @@ import RemoteControlToast from '@/components/call/RemoteControlToast';
 import AgentLaunchDialog from '@/components/call/AgentLaunchDialog';
 import VideoGrid from '@/components/call/VideoGrid';
 import ErrorBoundary from '@/components/faults/ErrorBoundary';
+import LandingThemeProvider from '@/components/landing/LandingThemeProvider';
 import { usePresentation } from '@/components/call/usePresentation';
 import { useRecording } from '@/components/call/useRecording';
 import { useRemoteControl } from '@/components/call/useRemoteControl';
@@ -26,6 +27,16 @@ import { setCallNoticeTrayOffset } from '@/lib/systemNotices';
 import LeaveConfirmDialog from './LeaveConfirmDialog';
 import { Centered } from './ui';
 
+/*
+ * SIGNAL HANDOFF CALL WORKSPACE
+ * THESIS: A live meeting reads as a shared field desk, not a neon control room.
+ * OWN-WORLD: Warm paper frames, dark media wells, purple authority, yellow focus,
+ * and red only for Recording, Stop, and Leave.
+ * STORY: People find the room, the live stage, and the next safe action instantly.
+ * FIRST VIEWPORT: Media owns the center; room time, consent, and side drawers sit
+ * in protected gutters; the immediate action tray anchors the bottom.
+ * FORM: The established Signal Handoff workspace applied to an Operate surface.
+ */
 type Connection = { token: string; livekitUrl: string };
 
 export default function CallStage({
@@ -40,6 +51,7 @@ export default function CallStage({
   startMuted = false,
   isHost = false,
   hostKey,
+  hostPanelOpen = false,
 }: {
   room: string;
   connection: Connection;
@@ -55,6 +67,9 @@ export default function CallStage({
   isHost?: boolean;
   // Present only for the host; lets them approve a Request to Record.
   hostKey?: string;
+  // While the host drawer is open, its own header owns the theme control so
+  // a compact control never sits underneath the high-priority drawer.
+  hostPanelOpen?: boolean;
 }) {
   const [choices, setChoices] = useState<LocalUserChoices | null>(initialChoices ?? null);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
@@ -106,31 +121,34 @@ export default function CallStage({
   }
 
   return (
-    <main className="relative flex-1">
-      <LiveKitRoom
-        token={connection.token}
-        serverUrl={connection.livekitUrl}
-        connect
-        video={choices.videoEnabled ? { deviceId: choices.videoDeviceId } : false}
-        audio={startMuted || !choices.audioEnabled ? false : { deviceId: choices.audioDeviceId }}
-        onDisconnected={handleDisconnected}
-        onError={(e) => onError(`Lost connection to the call: ${e.message}`)}
-        style={{ height: '100dvh' }}
-        className="bg-dotgrid"
-      >
-        <CallView
-          room={room}
+    <LandingThemeProvider>
+      <main className="signal-call-page relative flex-1">
+        <LiveKitRoom
           token={connection.token}
-          displayName={displayName}
-          onLeaveClick={() => setShowLeaveDialog(true)}
-          overlay={overlay}
-          isHost={isHost}
-          hostKey={hostKey}
-        />
-        <RoomAudioRenderer />
-      </LiveKitRoom>
-      <LeaveConfirmDialog open={showLeaveDialog} onConfirm={confirmLeave} onCancel={() => setShowLeaveDialog(false)} />
-    </main>
+          serverUrl={connection.livekitUrl}
+          connect
+          video={choices.videoEnabled ? { deviceId: choices.videoDeviceId } : false}
+          audio={startMuted || !choices.audioEnabled ? false : { deviceId: choices.audioDeviceId }}
+          onDisconnected={handleDisconnected}
+          onError={(e) => onError(`Lost connection to the call: ${e.message}`)}
+          style={{ height: '100dvh' }}
+          className="signal-call-shell"
+        >
+          <CallView
+            room={room}
+            token={connection.token}
+            displayName={displayName}
+            onLeaveClick={() => setShowLeaveDialog(true)}
+            overlay={overlay}
+            isHost={isHost}
+            hostKey={hostKey}
+            hostPanelOpen={hostPanelOpen}
+          />
+          <RoomAudioRenderer />
+        </LiveKitRoom>
+        <LeaveConfirmDialog open={showLeaveDialog} onConfirm={confirmLeave} onCancel={() => setShowLeaveDialog(false)} />
+      </main>
+    </LandingThemeProvider>
   );
 }
 
@@ -142,6 +160,7 @@ function CallView({
   overlay,
   isHost,
   hostKey,
+  hostPanelOpen,
 }: {
   room: string;
   token: string;
@@ -150,9 +169,14 @@ function CallView({
   overlay?: ReactNode;
   isHost: boolean;
   hostKey?: string;
+  hostPanelOpen: boolean;
 }) {
   const { chatMessages, send, isSending } = useChat();
   const [chatOpen, setChatOpen] = useState(false);
+  // The consent/request tray is intentionally separate from system notices. Its
+  // measured height also becomes layout space for the media stage, so a
+  // multi-line approval never obscures the screen or faces it protects.
+  const [noticeTrayHeight, setNoticeTrayHeight] = useState(0);
 
   // Background Call + Picture-in-Picture. VideoGrid reports the feed that owns
   // the main stage; PiP mirrors it into the OS floating window, and the
@@ -233,6 +257,7 @@ function CallView({
             />
           ) : undefined
         }
+        noticeTrayHeight={noticeTrayHeight}
       />
       {/* Scoped boundaries (docs/adr/0018): the chat and the data-message-driven
           overlays are the likely crash sources. A crash in any of them fails to
@@ -257,7 +282,7 @@ function CallView({
         onPopOut={pipSupported ? () => (pipActive ? exitPip() : enterPip()) : undefined}
         pipActive={pipActive}
       />
-      <CallNoticeTray>
+      <CallNoticeTray onHeightChange={setNoticeTrayHeight}>
         <ErrorBoundary label="Call toasts" fallback={null}>
           <RecordingIndicator active={recording.recordingActive} startedAt={recording.recordingStartedAt} />
           {recording.recordingActive && recording.recordingId && (
@@ -298,7 +323,7 @@ function CallView({
           />
         </ErrorBoundary>
       </CallNoticeTray>
-      <CallTimer />
+      <CallTimer hidden={hostPanelOpen} showThemeToggle={!isHost} />
       <ConnectionStatus />
       <AgentLaunchDialog bootstrap={remoteControl.helperBootstrap} onReopen={remoteControl.reopenAgent} onDismiss={remoteControl.dismissHelperBootstrap} />
       {overlay}
@@ -310,7 +335,7 @@ function CallView({
   );
 }
 
-function CallNoticeTray({ children }: { children: ReactNode }) {
+function CallNoticeTray({ children, onHeightChange }: { children: ReactNode; onHeightChange: (height: number) => void }) {
   const trayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -320,18 +345,23 @@ function CallNoticeTray({ children }: { children: ReactNode }) {
     // The tray begins 56px below the call stage. Reporting its rendered height
     // lets the global system stack follow actual consent/request content rather
     // than guessing at one fixed prompt height.
-    const updateOffset = () => setCallNoticeTrayOffset(tray.getBoundingClientRect().height ? tray.getBoundingClientRect().height + 56 : 0);
+    const updateOffset = () => {
+      const height = tray.getBoundingClientRect().height;
+      onHeightChange(height);
+      setCallNoticeTrayOffset(height ? height + 56 : 0);
+    };
     updateOffset();
     const observer = new ResizeObserver(updateOffset);
     observer.observe(tray);
     return () => {
       observer.disconnect();
+      onHeightChange(0);
       setCallNoticeTrayOffset(0);
     };
-  }, []);
+  }, [onHeightChange]);
 
   return (
-    <div ref={trayRef} className="pointer-events-none absolute inset-x-0 top-14 z-30 flex flex-col items-center gap-2">
+    <div ref={trayRef} className="signal-call-notice-tray pointer-events-none absolute inset-x-0 top-14 z-30 flex flex-col items-center gap-2">
       {children}
     </div>
   );

@@ -15,8 +15,8 @@ const sizes = {
 const variants: Record<Variant, string> = {
   ghost: 'hover:bg-white/15',
   subtle: 'bg-white/10 hover:bg-white/20',
-  solid: 'bg-magenta text-white hover:brightness-110',
-  danger: 'bg-destructive/90 text-white hover:bg-destructive',
+  solid: 'bg-magenta text-black hover:brightness-110',
+  danger: 'bg-destructive text-black hover:brightness-110',
 };
 
 // Shared styling so a non-button element (e.g. the IconLink anchor) can look

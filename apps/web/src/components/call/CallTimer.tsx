@@ -3,8 +3,9 @@
 import { useRoomInfo } from '@livekit/components-react';
 import { useEffect, useState } from 'react';
 import { formatDuration } from '@/lib/duration';
+import CallThemeToggle from './CallThemeToggle';
 
-export default function CallTimer() {
+export default function CallTimer({ hidden = false, showThemeToggle = true }: { hidden?: boolean; showThemeToggle?: boolean }) {
   const { metadata } = useRoomInfo();
   // Seed `now` lazily at mount (an allowed impure initializer) so the first
   // paint reflects the real current time; the interval keeps it ticking.
@@ -26,13 +27,18 @@ export default function CallTimer() {
     return () => clearInterval(id);
   }, [startedAt]);
 
-  if (startedAt == null) return null;
+  const duration = startedAt == null ? null : formatDuration(now - startedAt);
+
+  if (hidden || (!duration && !showThemeToggle)) return null;
 
   return (
-    <div className="pointer-events-none absolute left-3 top-3 z-20">
-      <span className="glass-strong pointer-events-auto rounded-lg px-2.5 py-1 text-xs font-medium tabular-nums text-white/80 shadow-lg">
-        {formatDuration(now - startedAt)}
-      </span>
+    <div className="signal-call-top-rail pointer-events-none absolute left-3 top-3 z-20">
+      {duration ? (
+        <span role="timer" aria-label={`Call duration ${duration}`} className="signal-call-timer pointer-events-auto">
+          {duration}
+        </span>
+      ) : null}
+      {showThemeToggle ? <CallThemeToggle /> : null}
     </div>
   );
 }

@@ -165,8 +165,8 @@ export default function ControlBar({
   ];
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex justify-center p-4 sm:p-6">
-      <div className="glass-strong pointer-events-auto flex items-center gap-2 rounded-full px-3 py-2 shadow-[0_8px_40px_oklch(0_0_0/0.5)] sm:gap-3 sm:px-4">
+    <div className="signal-call-controls pointer-events-none absolute inset-x-0 bottom-0 z-20 flex justify-center p-4 sm:p-6">
+      <div className="signal-call-control-dock glass-strong pointer-events-auto flex items-center gap-2 rounded-full px-3 py-2 shadow-[0_8px_40px_oklch(0_0_0/0.5)] sm:gap-3 sm:px-4">
         <div className="relative flex items-center">
           {showMuteReminder && <MuteReminderBubble />}
           <MergedControlButton
@@ -193,7 +193,7 @@ export default function ControlBar({
           menu={(close) => <DeviceMenuContent sections={[{ kind: 'videoinput', label: 'Camera' }]} close={close} onPick={() => ensureOn(cam)} />}
         />
 
-        <span className="mx-1 h-7 w-px bg-white/10" />
+        <span className="signal-call-controls-divider mx-1 h-7 w-px bg-white/10" />
 
         <ControlButton
           icon={iAmPresenting ? MonitorOff : MonitorUp}
@@ -214,7 +214,7 @@ export default function ControlBar({
 
         {recordMode && onRecordClick && <RecordButton mode={recordMode} busy={recordBusy} onClick={onRecordClick} />}
 
-        <span className="mx-1 h-7 w-px bg-white/10" />
+        <span className="signal-call-controls-divider mx-1 h-7 w-px bg-white/10" />
 
         <ControlButton icon={PhoneOff} label="Leave call" leave onClick={onLeave} />
       </div>
@@ -238,7 +238,7 @@ function RecordButton({ mode, busy, onClick }: { mode: 'request' | 'pending' | '
         title="Waiting for the host to approve"
         aria-label="Waiting for the host to approve recording. Cancel request"
         onClick={onClick}
-        className="relative flex h-8 w-8 items-center justify-center rounded-full bg-white/8 text-white/70 ring-1 ring-white/10 transition-all hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 sm:h-11 sm:w-11 [&>svg]:h-4 [&>svg]:w-4 sm:[&>svg]:h-5 sm:[&>svg]:w-5"
+        className="signal-call-record-button relative flex h-8 w-8 items-center justify-center rounded-full bg-white/8 text-white/70 ring-1 ring-white/10 transition-all hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 sm:h-11 sm:w-11 [&>svg]:h-4 [&>svg]:w-4 sm:[&>svg]:h-5 sm:[&>svg]:w-5"
       >
         <LoadingSpinner aria-hidden="true" />
       </button>
@@ -257,8 +257,8 @@ function RecordButton({ mode, busy, onClick }: { mode: 'request' | 'pending' | '
       aria-pressed={recording}
       disabled={busy}
       onClick={onClick}
-      className={`relative flex h-8 w-8 items-center justify-center rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-35 sm:h-11 sm:w-11 [&>svg]:h-4 [&>svg]:w-4 sm:[&>svg]:h-5 sm:[&>svg]:w-5 ${
-        recording ? 'bg-red-500 text-white hover:bg-red-400' : 'bg-white/8 text-white/80 ring-1 ring-white/10 hover:bg-white/15'
+      className={`signal-call-record-button relative flex h-8 w-8 items-center justify-center rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-35 sm:h-11 sm:w-11 [&>svg]:h-4 [&>svg]:w-4 sm:[&>svg]:h-5 sm:[&>svg]:w-5 ${
+        recording ? 'bg-red-500 text-black hover:bg-red-400' : 'bg-white/8 text-white/80 ring-1 ring-white/10 hover:bg-white/15'
       }`}
     >
       <Icon />
@@ -275,7 +275,7 @@ function MuteReminderBubble() {
       role="status"
       className="pointer-events-none absolute bottom-full left-1/2 mb-3 -translate-x-1/2 animate-in fade-in slide-in-from-bottom-1 duration-200"
     >
-      <div className="glass-strong relative whitespace-nowrap rounded-xl px-3 py-1.5 text-xs font-medium text-white/90 shadow-[0_8px_30px_oklch(0_0_0/0.5)]">
+      <div className="signal-call-mute-reminder glass-strong relative whitespace-nowrap rounded-xl px-3 py-1.5 text-xs font-medium text-white/90 shadow-[0_8px_30px_oklch(0_0_0/0.5)]">
         Trying to speak? Your mic is off
         {/* caret: a rotated square sharing the bubble's border + fill */}
         <span className="glass-strong absolute left-1/2 top-full h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-[2px]" />
@@ -304,7 +304,7 @@ function ControlButton({
   onClick?: () => void;
 }) {
   const tone = leave
-    ? 'bg-magenta text-white hover:brightness-110 neon-magenta'
+    ? 'bg-magenta text-black hover:brightness-110 neon-magenta'
     : danger
       ? 'bg-magenta/15 text-magenta ring-1 ring-magenta/40 hover:bg-magenta/25'
       : active
@@ -319,11 +319,11 @@ function ControlButton({
       aria-pressed={active}
       disabled={disabled}
       onClick={onClick}
-      className={`relative flex h-8 w-8 items-center justify-center rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent sm:h-11 sm:w-11 ${tone} [&>svg]:h-4 [&>svg]:w-4 sm:[&>svg]:h-5 sm:[&>svg]:w-5`}
+      className={`signal-call-control-button relative flex h-8 w-8 items-center justify-center rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent sm:h-11 sm:w-11 ${tone} [&>svg]:h-4 [&>svg]:w-4 sm:[&>svg]:h-5 sm:[&>svg]:w-5`}
     >
       <Icon />
       {badge > 0 && (
-        <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-magenta px-1 text-[10px] font-semibold text-white">
+        <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-magenta px-1 text-[10px] font-semibold text-black">
           {badge}
         </span>
       )}

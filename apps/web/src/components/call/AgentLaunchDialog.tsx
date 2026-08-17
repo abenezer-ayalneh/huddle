@@ -52,8 +52,8 @@ export default function AgentLaunchDialog({
     } catch {}
   };
   return (
-    <div role="dialog" aria-modal="true" className="pointer-events-auto fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4">
-      <div className="glass-strong w-full max-w-md space-y-4 rounded-2xl p-6 text-white">
+    <div role="dialog" aria-modal="true" className="signal-call-agent-backdrop pointer-events-auto fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4">
+      <div className="signal-call-agent-dialog glass-strong w-full max-w-md space-y-4 rounded-2xl p-6 text-white">
         <div>
           <h2 className="font-display text-lg font-semibold">Opening the Control Agent</h2>
           <p className="mt-1 text-sm text-white/65">

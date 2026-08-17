@@ -281,7 +281,7 @@ export default function RemoteControlSurface({
         releaseAll();
       }}
       onContextMenu={(event) => event.preventDefault()}
-      className={`absolute inset-0 z-10 touch-none rounded-[inherit] ring-2 ring-inset ${
+      className={`signal-call-control-surface absolute inset-0 z-10 touch-none rounded-[inherit] ring-2 ring-inset ${
         focused ? 'cursor-none ring-cyan/80' : 'cursor-crosshair ring-cyan/30'
       }`}
     >
