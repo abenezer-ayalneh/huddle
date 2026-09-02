@@ -602,8 +602,9 @@ Topic: `huddle:remote-control`; JSON messages carry `v: 1`.
 
 | type                              | sender → recipient         | purpose                                                                        |
 | --------------------------------- | -------------------------- | ------------------------------------------------------------------------------ |
-| `remote-control:request`          | Controller → Sharer        | carries a server-issued request id to wake consent UI                          |
-| `remote-control:denied`           | Sharer → Controller        | transient denial UX after the API decision                                     |
+| `remote-control:request`           | Controller → Sharer        | carries a server-issued request id to wake consent UI                         |
+| `remote-control:denied`            | Sharer → Controller        | transient denial UX after the API decision                                    |
+| `remote-control:agent-unavailable` | Sharer → Controller        | addressed recovery hint when the Control Agent handoff is not detected       |
 | `remote-control:input`            | Controller → Control Agent | `{ sessionId, sequence, event }`; transport only, never authority              |
 | `remote-control:clipboard-copy`   | Controller → Control Agent | `{ sessionId, sequence }`; injects the Sharer's native Copy shortcut           |
 | `remote-control:clipboard-paste`  | Controller → Control Agent | `{ sessionId, sequence, text }`; writes bounded plain text, then injects Paste |
@@ -620,6 +621,13 @@ only from that exact Controller, and sends no content to an HTTP endpoint or
 persistent store. Empty, non-text, rich, binary, and oversized clipboard values
 are rejected whole. There is no file, audio, rich-content, or binary-content
 message in v1.
+
+`remote-control:agent-unavailable` is reliable and carries only the awaiting
+session's `sessionId`. Browsers send it only from the exact Sharer to the exact
+Controller after a best-effort custom-scheme handoff timeout. A receiving
+browser accepts it only when the sender identity, Controller identity, session
+id, and `awaiting-agent` status all match current room metadata; it is a
+transient recovery hint, not proof that the agent is absent.
 
 ### GET /recordings/mine _(session)_
 

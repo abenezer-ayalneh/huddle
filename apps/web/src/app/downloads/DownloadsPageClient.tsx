@@ -5,10 +5,12 @@ import Link from 'next/link';
 import ControlAgentDownloads from '@/components/ControlAgentDownloads';
 import HuddleBrandThemeHeader from '@/components/HuddleBrandThemeHeader';
 import LandingThemeProvider from '@/components/landing/LandingThemeProvider';
+import { getNoCostControlAgentBeta } from '@/lib/controlAgentFreeBeta';
 import type { ControlAgentRelease } from '@/lib/controlAgentReleaseShared';
 
 type DownloadsPageClientProps = {
   release: ControlAgentRelease | null;
+  repositoryUrl: string;
   operatorContactUrl: string;
   releaseNotesFallbackUrl: string | null;
   issuesUrl: string | null;
@@ -32,8 +34,9 @@ function DownloadsNavigation() {
   );
 }
 
-export default function DownloadsPageClient({ release, operatorContactUrl, releaseNotesFallbackUrl, issuesUrl }: DownloadsPageClientProps) {
+export default function DownloadsPageClient({ release, repositoryUrl, operatorContactUrl, releaseNotesFallbackUrl, issuesUrl }: DownloadsPageClientProps) {
   const hasVerifiedSignedRelease = release?.verified === true;
+  const hasNoCostBeta = !hasVerifiedSignedRelease && getNoCostControlAgentBeta(repositoryUrl) !== null;
 
   return (
     <LandingThemeProvider>
@@ -56,7 +59,9 @@ export default function DownloadsPageClient({ release, operatorContactUrl, relea
               <p className="downloads-lede">
                 {hasVerifiedSignedRelease
                   ? 'The Control Agent is a signed, notarized macOS companion. It shares one entire selected physical display — including the menu bar, Dock, desktop, all windows, and the agent — only after the Sharer approves Remote Control in the room and confirms locally.'
-                  : 'This deployment has not configured a verified Control Agent release. Remote Control downloads are unavailable until the operator completes that signed-release setup.'}
+                  : hasNoCostBeta
+                    ? 'The Apple Silicon Control Agent beta is available now. It is ad-hoc signed and unnotarized: verify its published checksum, then use macOS Privacy & Security → Open Anyway. A signed, notarized two-architecture channel is still being prepared.'
+                    : 'This deployment has not configured a verified Control Agent release. Remote Control downloads are unavailable until the operator completes that signed-release setup.'}
               </p>
               <div className="downloads-boundary-line">
                 <ShieldCheck className="size-5" aria-hidden="true" />
@@ -80,7 +85,7 @@ export default function DownloadsPageClient({ release, operatorContactUrl, relea
               </dl>
             </div>
 
-            <ControlAgentDownloads release={release} />
+            <ControlAgentDownloads release={release} repositoryUrl={repositoryUrl} />
           </div>
         </section>
 
@@ -94,7 +99,9 @@ export default function DownloadsPageClient({ release, operatorContactUrl, relea
               <p>
                 {hasVerifiedSignedRelease
                   ? 'Every signed beta artifact is published with a SHA-256 checksum and a signed release manifest. The agent checks for required updates before redeeming a new session; it never installs updates silently.'
-                  : 'Downloads are intentionally disabled rather than falling back to an unsigned or unrelated artifact.'}
+                  : hasNoCostBeta
+                    ? 'This public Apple Silicon beta is a deliberate, limited fallback. Its DMG has a published SHA-256 checksum, but it is not Developer ID-signed, notarized, or substituted into the trusted release channel.'
+                    : 'Downloads are intentionally disabled rather than falling back to an unsigned or unrelated artifact.'}
               </p>
               {releaseNotesFallbackUrl || issuesUrl ? (
                 <div className="downloads-integrity-links">

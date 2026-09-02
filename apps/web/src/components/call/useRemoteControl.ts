@@ -107,6 +107,7 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
   const verificationRef = useRef(0);
   const sequenceRef = useRef(0);
   const clipboardRevisionRef = useRef(0);
+  const unavailableNoticeSessionRef = useRef<string | null>(null);
 
   const showNotice = useCallback((next: RemoteControlNotice) => {
     setNotice(next);
@@ -194,6 +195,18 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
       ) {
         setOutgoingRequest(null);
         showNotice({ tone: 'error', message: `${outgoingRequest.sharerName} denied your Remote Control request.` });
+        return;
+      }
+
+      if (
+        message.type === 'remote-control:agent-unavailable' &&
+        session &&
+        iAmController &&
+        session.status === 'awaiting-agent' &&
+        message.sessionId === session.sessionId &&
+        participant.identity === session.sharerIdentity
+      ) {
+        showNotice({ tone: 'info', message: 'The Sharer may need to install the Control Agent before Remote Control can start.' });
         return;
       }
 
@@ -414,6 +427,21 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
     }
   }, [handleActionError, iAmSharer, participantToken, room, session]);
 
+  const notifyAgentUnavailable = useCallback(() => {
+    const sessionId = session?.sessionId;
+    const controllerIdentity = session?.controllerIdentity;
+    if (!sessionId || !controllerIdentity || !iAmSharer || session?.status !== 'awaiting-agent' || unavailableNoticeSessionRef.current === sessionId) return;
+    unavailableNoticeSessionRef.current = sessionId;
+    void sendRemoteControlMessage(localParticipant, [controllerIdentity], {
+      v: 1,
+      type: 'remote-control:agent-unavailable',
+      sessionId,
+    }).catch(() => {
+      // Recovery guidance is best-effort and must not surface a transport fault
+      // over the Sharer's local download path.
+    });
+  }, [iAmSharer, localParticipant, session?.controllerIdentity, session?.sessionId, session?.status]);
+
   const deny = useCallback(async () => {
     if (!incomingRequest || incomingRequest.sharerIdentity !== localIdentity) return;
     const denied = incomingRequest;
@@ -561,6 +589,7 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
     requestControl,
     approve,
     reopenAgent,
+    notifyAgentUnavailable,
     deny,
     stop,
     renew,

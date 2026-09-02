@@ -380,7 +380,12 @@ function CallView({
       </CallNoticeTray>
       <CallTimer hidden={hostPanelOpen} showThemeToggle={!isHost} />
       <ConnectionStatus />
-      <AgentLaunchDialog bootstrap={remoteControl.helperBootstrap} onReopen={remoteControl.reopenAgent} onDismiss={remoteControl.dismissHelperBootstrap} />
+      <AgentLaunchDialog
+        bootstrap={remoteControl.helperBootstrap}
+        onReopen={remoteControl.reopenAgent}
+        onAgentUnavailable={remoteControl.notifyAgentUnavailable}
+        onDismiss={remoteControl.dismissHelperBootstrap}
+      />
       {overlay}
       {/* The single feed handed to native Picture-in-Picture. Kept in the DOM
           and playing (PiP requires that) but visually out of the way — the grid

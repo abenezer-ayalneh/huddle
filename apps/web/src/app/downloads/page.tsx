@@ -25,6 +25,7 @@ export default async function DownloadsPage() {
   return (
     <DownloadsPageClient
       release={release}
+      repositoryUrl={publicConfig.projectRepositoryUrl}
       operatorContactUrl={publicConfig.operatorContactUrl}
       releaseNotesFallbackUrl={CONTROL_AGENT_RELEASE?.releasesUrl ?? null}
       issuesUrl={CONTROL_AGENT_RELEASE?.issuesUrl ?? null}

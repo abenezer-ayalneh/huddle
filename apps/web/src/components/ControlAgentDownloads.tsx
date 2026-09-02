@@ -1,7 +1,8 @@
 'use client';
 
-import { Apple, CheckCircle2, Cpu, Download, Monitor, ShieldCheck } from 'lucide-react';
+import { Apple, CheckCircle2, Cpu, Download, ExternalLink, Monitor, ShieldCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { getNoCostControlAgentBeta } from '@/lib/controlAgentFreeBeta';
 import type { ControlAgentRelease } from '@/lib/controlAgentReleaseShared';
 import { formatBytes } from '@/lib/controlAgentReleaseShared';
 
@@ -31,7 +32,7 @@ function detectPlatform(): { platform: DetectedPlatform; architecture: DetectedA
   return { platform, architecture };
 }
 
-export default function ControlAgentDownloads({ release }: { release: ControlAgentRelease | null }) {
+export default function ControlAgentDownloads({ release, repositoryUrl }: { release: ControlAgentRelease | null; repositoryUrl: string }) {
   const [detected, setDetected] = useState<{ platform: DetectedPlatform; architecture: DetectedArchitecture }>({ platform: 'other', architecture: 'unknown' });
 
   useEffect(() => {
@@ -39,9 +40,8 @@ export default function ControlAgentDownloads({ release }: { release: ControlAge
     return () => window.cancelAnimationFrame(frame);
   }, []);
 
-  const download = (architecture: 'arm64' | 'x86_64'): DownloadArtifact | undefined => {
-    return release?.verified ? release.downloads[architecture] : undefined;
-  };
+  const download: DownloadArtifact | undefined = release?.verified ? release.downloads.arm64 : undefined;
+  const noCostBeta = release?.verified ? null : getNoCostControlAgentBeta(repositoryUrl);
   const macDetected = detected.platform === 'mac';
   const architectureLabel = detected.architecture === 'arm64' ? 'Apple Silicon' : detected.architecture === 'x86_64' ? 'Intel' : null;
 
@@ -54,46 +54,54 @@ export default function ControlAgentDownloads({ release }: { release: ControlAge
             <h2 id="downloads-station-title">Choose the build for this Mac.</h2>
           </div>
           <span className={release?.verified ? 'downloads-release-status is-verified' : 'downloads-release-status'}>
-            {release?.verified ? 'Verified release' : 'Release unavailable'}
+            {release?.verified ? 'Verified release' : noCostBeta ? 'Public arm64 beta' : 'Release unavailable'}
           </span>
         </div>
 
         <div className="downloads-architecture-list">
-          {(['arm64', 'x86_64'] as const).map((architecture) => {
-            const artifact = download(architecture);
-            const isRecommended = macDetected && detected.architecture === architecture;
-            const label = architecture === 'arm64' ? 'Apple Silicon' : 'Intel';
+          {(() => {
+            const artifact = download ?? (noCostBeta ? { url: noCostBeta.downloadUrl } : undefined);
+            const isRecommended = macDetected && detected.architecture === 'arm64';
 
             return (
-              <article key={architecture} className={`downloads-architecture${isRecommended ? ' is-recommended' : ''}`}>
+              <article className={`downloads-architecture${isRecommended ? ' is-recommended' : ''}`}>
                 <div className="downloads-architecture__identity">
                   <span className="downloads-architecture__icon" aria-hidden="true">
                     <Apple className="size-6" strokeWidth={1.6} />
                   </span>
                   <div>
                     <div className="downloads-architecture__title-row">
-                      <h3>macOS · {label}</h3>
+                      <h3>macOS · Apple Silicon</h3>
                       {isRecommended ? <span className="downloads-recommended">Recommended</span> : null}
                     </div>
-                    <p>macOS 13 or later · {architecture === 'arm64' ? 'M1, M2, M3, M4' : 'Intel Macs'}</p>
+                    <p>macOS 13 or later · M1, M2, M3, M4</p>
                   </div>
                 </div>
                 <div className="downloads-architecture__meta">
                   <span>
-                    <Cpu className="size-3.5" aria-hidden="true" /> {artifact ? release?.version : 'Signed release unavailable'}
+                    <Cpu className="size-3.5" aria-hidden="true" /> {release?.verified ? release.version : noCostBeta ? 'No-cost public beta' : 'Release details unavailable'}
                   </span>
                   {artifact?.sizeBytes ? <span>{formatBytes(artifact.sizeBytes)} · SHA-256 published</span> : null}
                 </div>
                 {artifact ? (
                   <a href={artifact.url} className="downloads-download-button">
-                    <Download className="size-4" aria-hidden="true" /> Download {label} DMG
+                    <Download className="size-4" aria-hidden="true" /> Download Apple Silicon DMG
                   </a>
                 ) : (
                   <p className="downloads-unavailable">This operator has not configured a verified Control Agent release.</p>
                 )}
+                {noCostBeta ? (
+                  <p className="downloads-unavailable">
+                    Ad-hoc signed and unnotarized. Verify the{' '}
+                    <a href={noCostBeta.checksumUrl} target="_blank" rel="noreferrer">
+                      SHA-256 checksum <ExternalLink className="inline size-3" aria-hidden="true" />
+                    </a>
+                    , then use macOS Privacy &amp; Security → Open Anyway.
+                  </p>
+                ) : null}
               </article>
             );
-          })}
+          })()}
         </div>
 
         <div className="downloads-station-foot">
@@ -103,7 +111,13 @@ export default function ControlAgentDownloads({ release }: { release: ControlAge
               : 'If your Mac architecture is unknown, choose the matching DMG from About This Mac.'}{' '}
             Downloads are never selected silently.
           </p>
-          {!release?.verified ? <p className="downloads-release-warning">Downloads stay unavailable until this deployment provides a signed release manifest and matching public key.</p> : null}
+          {!release?.verified ? (
+            <p className="downloads-release-warning">
+              {noCostBeta
+                ? 'The Apple Silicon beta is available. A verified multi-architecture release channel will be added when available.'
+                : 'A verified Control Agent release can be added to this deployment when it is ready.'}
+            </p>
+          ) : null}
         </div>
       </section>
 

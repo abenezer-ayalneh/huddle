@@ -8056,7 +8056,7 @@ html[data-theme='dark'] .downloads-shell {
   max-width: 204px;
   margin: 0;
   padding: 10px 0;
-  color: var(--downloads-red);
+  color: var(--downloads-muted);
   font-weight: 700;
   text-align: right;
 }
@@ -8068,7 +8068,7 @@ html[data-theme='dark'] .downloads-shell {
 
 .downloads-release-warning {
   margin-top: 6px;
-  color: var(--downloads-red);
+  color: var(--downloads-muted);
 }
 
 .downloads-handoff-guide {
