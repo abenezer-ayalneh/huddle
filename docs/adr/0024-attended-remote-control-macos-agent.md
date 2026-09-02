@@ -107,7 +107,10 @@ coalesced pointer moves. A target Sharer's browser also briefly polls its
 participant-authorized pending-request endpoint while no Remote Control state is
 active, so a missed request wake-up packet cannot strand the Controller. That
 endpoint returns the request only to its exact Sharer and never publishes
-pending consent state in room metadata. Every privileged Controller packet uses
+pending consent state in room metadata. Its private response is `no-store` and
+includes an API-calculated remaining request lifetime; browsers use that
+server-relative duration instead of comparing an absolute server timestamp to
+their own clocks. Every privileged Controller packet uses
 the session id and one shared monotonic authorization sequence. The Control
 Agent executes it only when the
 SFU-attested sender is the grant's exact Controller and its token/room-metadata

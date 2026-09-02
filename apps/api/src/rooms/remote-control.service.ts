@@ -32,6 +32,9 @@ export interface RemoteControlRequestSummary {
   controllerName: string;
   requestedAt: string;
   expiresAt: string;
+  // Relative to the API response, so browser clock skew cannot suppress a
+  // server-valid consent prompt. `expiresAt` remains for audit/display use.
+  expiresInMs: number;
 }
 
 export interface RemoteControlSessionSummary {
@@ -507,10 +510,14 @@ export class RemoteControlService implements OnModuleInit, OnModuleDestroy {
     return room;
   }
 
-  private toRequestSummary(request: PendingRemoteControlRequest): RemoteControlRequestSummary {
+  private toRequestSummary(request: PendingRemoteControlRequest, now = Date.now()): RemoteControlRequestSummary {
     const { controllerTokenExpiresAt, ...summary } = request;
     void controllerTokenExpiresAt;
-    return summary;
+    const remaining = new Date(request.expiresAt).getTime() - now;
+    return {
+      ...summary,
+      expiresInMs: Number.isFinite(remaining) ? Math.max(0, Math.min(REMOTE_CONTROL_REQUEST_TTL_MS, Math.floor(remaining))) : 0,
+    };
   }
 
   private toSessionSummary(grant: ActiveRemoteControlGrant): RemoteControlSessionSummary {

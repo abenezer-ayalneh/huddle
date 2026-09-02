@@ -404,9 +404,15 @@ The Controller requests control of a connected Sharer.
   "controllerIdentity": "bo-cd34",
   "controllerName": "Bo",
   "requestedAt": "2026-07-10T12:00:00.000Z",
-  "expiresAt": "2026-07-10T12:00:30.000Z"
+  "expiresAt": "2026-07-10T12:00:30.000Z",
+  "expiresInMs": 30000
 }
 ```
+
+`expiresInMs` is calculated by the API server when it writes the response and
+is clamped to `0`–`30000`. Browsers schedule and validate the consent prompt
+from this server-relative value, not by comparing `expiresAt` with their local
+clock. `requestedAt` and `expiresAt` remain for auditability and compatibility.
 
 Both identities must currently be present; self-control and Control Agent
 identities are rejected. Only one pending request or active session may own a
@@ -423,6 +429,8 @@ Returns the room's current, unexpired request only when the caller is its exact
 Sharer. Controllers and all other participants receive `null`, so every joined
 browser may use this as a short-lived polling fallback without exposing a
 pending consent request room-wide.
+
+This participant-private response sends `Cache-Control: private, no-store`.
 
 **Response 200:**
 
@@ -442,7 +450,8 @@ or:
     "controllerIdentity": "bo-cd34",
     "controllerName": "Bo",
     "requestedAt": "2026-07-10T12:00:00.000Z",
-    "expiresAt": "2026-07-10T12:00:30.000Z"
+    "expiresAt": "2026-07-10T12:00:30.000Z",
+    "expiresInMs": 30000
   }
 }
 ```
@@ -452,6 +461,8 @@ or:
 Only the target Sharer or requesting Controller may recover this display-safe
 request. The Sharer's client calls it after receiving the addressed wake-up
 packet so forged data packets cannot invent identities or consent copy.
+
+This participant-private response sends `Cache-Control: private, no-store`.
 
 **Response 200:** the same request summary returned by request creation.
 

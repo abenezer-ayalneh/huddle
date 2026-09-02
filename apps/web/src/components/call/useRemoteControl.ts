@@ -14,6 +14,7 @@ import {
   type RemoteControlInputEvent,
 } from '@/lib/controlProtocol';
 import { emitFault } from '@/lib/faults';
+import { getRemoteControlRequestRemainingMs } from '@/lib/remoteControlRequest';
 
 export type RemoteControlNotice = {
   tone: 'info' | 'success' | 'error';
@@ -45,7 +46,7 @@ function requestSummaryIsUsable(value: RemoteControlRequestSummary, room: string
     value.sharerName.length <= 256 &&
     value.controllerName.length > 0 &&
     value.controllerName.length <= 256 &&
-    Number.isFinite(Date.parse(value.expiresAt))
+    getRemoteControlRequestRemainingMs(value) !== null
   );
 }
 
@@ -165,8 +166,7 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
           !requestSummaryIsUsable(recovered, room) ||
           recovered.requestId !== requestId ||
           recovered.sharerIdentity !== localIdentity ||
-          recovered.controllerIdentity !== sender.identity ||
-          Date.parse(recovered.expiresAt) <= Date.now()
+          recovered.controllerIdentity !== sender.identity
         )
           return;
         setIncomingRequest(recovered);
@@ -233,14 +233,7 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
       recovering = true;
       try {
         const { request } = await api.getPendingRemoteControlRequest(room, participantToken);
-        if (
-          !mounted ||
-          !request ||
-          !requestSummaryIsUsable(request, room) ||
-          request.sharerIdentity !== localIdentity ||
-          Date.parse(request.expiresAt) <= Date.now()
-        )
-          return;
+        if (!mounted || !request || !requestSummaryIsUsable(request, room) || request.sharerIdentity !== localIdentity) return;
         setIncomingRequest((current) => (current?.requestId === request.requestId ? current : request));
       } catch {
         // This is passive recovery. API Reachability owns any unavailable-server
@@ -258,11 +251,11 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
     };
   }, [incomingRequest, localIdentity, outgoingRequest, participantToken, room, session]);
 
-  // Pending prompts are short-lived server records. Clear their local mirrors at
-  // the server-stamped deadline even if an addressed denial packet is lost.
+  // Pending prompts are short-lived server records. Clear their local mirrors
+  // after the API-calculated duration even if an addressed denial packet is lost.
   useEffect(() => {
     if (!incomingRequest) return;
-    const timer = setTimeout(() => setIncomingRequest(null), Math.max(0, Date.parse(incomingRequest.expiresAt) - Date.now()));
+    const timer = setTimeout(() => setIncomingRequest(null), getRemoteControlRequestRemainingMs(incomingRequest) ?? 0);
     return () => clearTimeout(timer);
   }, [incomingRequest]);
 
@@ -273,7 +266,7 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
         setOutgoingRequest(null);
         showNotice({ tone: 'error', message: `${outgoingRequest.sharerName} did not respond before the request expired.` });
       },
-      Math.max(0, Date.parse(outgoingRequest.expiresAt) - Date.now()),
+      getRemoteControlRequestRemainingMs(outgoingRequest) ?? 0,
     );
     return () => clearTimeout(timer);
   }, [outgoingRequest, showNotice]);

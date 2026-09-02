@@ -3,6 +3,7 @@
 import { emitFault } from './faults';
 import { FaultError, httpFetch, isFaultError, readFault } from './http';
 import type { RemoteControlSession } from './controlProtocol';
+import type { RemoteControlRequestTiming } from './remoteControlRequest';
 import { publicConfig } from './public-config';
 
 export const API_URL = publicConfig.apiUrl;
@@ -63,15 +64,13 @@ export type PendingKnock = {
   requestedAt: number;
 };
 
-export type RemoteControlRequestSummary = {
+export type RemoteControlRequestSummary = RemoteControlRequestTiming & {
   requestId: string;
   room: string;
   sharerIdentity: string;
   sharerName: string;
   controllerIdentity: string;
   controllerName: string;
-  requestedAt: string;
-  expiresAt: string;
 };
 
 export type RemoteControlApproval = {
@@ -301,6 +300,7 @@ export const api = {
   getRemoteControlRequest: (room: string, requestId: string, participantToken: string) =>
     request<RemoteControlRequestSummary>(`/rooms/${encodeURIComponent(room)}/remote-control/requests/${encodeURIComponent(requestId)}`, {
       headers: { 'x-participant-token': participantToken },
+      cache: 'no-store',
     }),
 
   // A short-lived fallback for an addressed LiveKit request notification that
@@ -309,6 +309,7 @@ export const api = {
   getPendingRemoteControlRequest: (room: string, participantToken: string) =>
     request<{ request: RemoteControlRequestSummary | null }>(`/rooms/${encodeURIComponent(room)}/remote-control/requests/pending`, {
       headers: { 'x-participant-token': participantToken },
+      cache: 'no-store',
     }),
 
   approveRemoteControl: (room: string, requestId: string, participantToken: string) =>

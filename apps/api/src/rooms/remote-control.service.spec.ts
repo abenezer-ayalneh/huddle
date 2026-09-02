@@ -193,6 +193,33 @@ describe('RemoteControlService', () => {
     expect(state.releasePending).not.toHaveBeenCalled();
   });
 
+  it('returns a server-relative, bounded TTL that decreases with API time', async () => {
+    jest.useFakeTimers();
+    const startedAt = new Date('2026-09-02T10:00:00.000Z');
+    jest.setSystemTime(startedAt);
+    const request = pendingRequest({
+      requestedAt: startedAt.toISOString(),
+      expiresAt: new Date(startedAt.getTime() + 30_000).toISOString(),
+    });
+    state.getPending.mockResolvedValue(request);
+
+    await expect(service.getRequest(room.slug, request.requestId, sharer)).resolves.toMatchObject({ expiresInMs: 30_000 });
+
+    jest.setSystemTime(new Date(startedAt.getTime() + 12_345));
+    await expect(service.getRequest(room.slug, request.requestId, sharer)).resolves.toMatchObject({ expiresInMs: 17_655 });
+
+    state.getPending.mockResolvedValue(
+      pendingRequest({
+        requestedAt: startedAt.toISOString(),
+        expiresAt: new Date(startedAt.getTime() + 90_000).toISOString(),
+      }),
+    );
+    jest.setSystemTime(startedAt);
+    await expect(service.getRequest(room.slug, 'request-id', sharer)).resolves.toMatchObject({ expiresInMs: 30_000 });
+
+    jest.useRealTimers();
+  });
+
   it('hides the current pending request from its Controller and bystanders', async () => {
     state.getPendingForRoom.mockResolvedValue(pendingRequest());
 

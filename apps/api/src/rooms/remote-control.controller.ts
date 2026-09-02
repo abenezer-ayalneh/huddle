@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Header, HttpCode, Param, Post, UseGuards } from '@nestjs/common';
 import { Participant, ParticipantGuard, type CallParticipant } from './participant.guard';
 import { RedeemControlAgentTokenDto, RequestRemoteControlDto } from './dto/remote-control.dto';
 import { RemoteControlService } from './remote-control.service';
@@ -19,12 +19,14 @@ export class RemoteControlController {
   // Keep this static route ahead of :requestId so Nest never treats "pending"
   // as an id. The service returns a request only to its exact Sharer.
   @UseGuards(ParticipantGuard)
+  @Header('Cache-Control', 'private, no-store')
   @Get('requests/pending')
   async getPendingRequest(@Param('room') room: string, @Participant() participant: CallParticipant) {
     return this.remoteControl.getPendingRequest(room, participant);
   }
 
   @UseGuards(ParticipantGuard)
+  @Header('Cache-Control', 'private, no-store')
   @Get('requests/:requestId')
   async getRequest(@Param('room') room: string, @Param('requestId') requestId: string, @Participant() participant: CallParticipant) {
     return this.remoteControl.getRequest(room, requestId, participant);
