@@ -655,14 +655,18 @@ private struct InputInjector {
 }
 
 private enum HuddleTheme {
-    static let background = Color(red: 0.075, green: 0.064, blue: 0.12)
-    static let surface = Color(red: 0.13, green: 0.11, blue: 0.18)
-    static let surfaceStrong = Color(red: 0.16, green: 0.13, blue: 0.22)
-    static let magenta = Color(red: 0.85, green: 0.27, blue: 0.66)
-    static let cyan = Color(red: 0.36, green: 0.88, blue: 0.84)
-    static let text = Color.white.opacity(0.96)
-    static let muted = Color.white.opacity(0.58)
-    static let border = Color.white.opacity(0.12)
+    static let background = Color(red: 0.965, green: 0.933, blue: 0.859)
+    static let backgroundDeep = Color(red: 0.918, green: 0.875, blue: 0.784)
+    static let surface = Color(red: 1.0, green: 0.98, blue: 0.941)
+    static let surfaceStrong = Color(red: 0.941, green: 0.894, blue: 0.804)
+    static let purple = Color(red: 0.553, green: 0.149, blue: 0.463)
+    static let purpleDark = Color(red: 0.435, green: 0.098, blue: 0.369)
+    static let yellow = Color(red: 0.953, green: 0.69, blue: 0.11)
+    static let red = Color(red: 0.933, green: 0.204, blue: 0.184)
+    static let text = Color(red: 0.078, green: 0.078, blue: 0.078)
+    static let muted = Color(red: 0.384, green: 0.349, blue: 0.31)
+    static let border = Color(red: 0.835, green: 0.78, blue: 0.69)
+    static let borderStrong = Color(red: 0.737, green: 0.659, blue: 0.541)
 }
 
 private struct HuddleBackdrop: View {
@@ -670,32 +674,28 @@ private struct HuddleBackdrop: View {
         GeometryReader { proxy in
             ZStack {
                 HuddleTheme.background
-                RadialGradient(
-                    colors: [HuddleTheme.magenta.opacity(0.18), .clear],
-                    center: .topLeading,
-                    startRadius: 0,
-                    endRadius: max(proxy.size.width, proxy.size.height) * 0.72
-                )
-                RadialGradient(
-                    colors: [HuddleTheme.cyan.opacity(0.12), .clear],
-                    center: .bottomTrailing,
-                    startRadius: 0,
-                    endRadius: max(proxy.size.width, proxy.size.height) * 0.62
-                )
-                Canvas { context, size in
-                    let dot = Path(ellipseIn: CGRect(x: 0, y: 0, width: 1.5, height: 1.5))
-                    for x in stride(from: 13.0, through: size.width, by: 26.0) {
-                        for y in stride(from: 13.0, through: size.height, by: 26.0) {
-                            context.drawLayer { layer in
-                                layer.translateBy(x: x, y: y)
-                                layer.fill(dot, with: .color(.white.opacity(0.045)))
-                            }
-                        }
-                    }
-                }
+                HandoffRoute(color: HuddleTheme.purple.opacity(0.42), width: proxy.size.width * 0.7)
+                    .rotationEffect(.degrees(15))
+                    .offset(x: proxy.size.width * 0.32, y: -proxy.size.height * 0.28)
+                HandoffRoute(color: HuddleTheme.yellow.opacity(0.62), width: proxy.size.width * 0.48)
+                    .rotationEffect(.degrees(-11))
+                    .offset(x: -proxy.size.width * 0.28, y: proxy.size.height * 0.3)
             }
         }
         .ignoresSafeArea()
+    }
+}
+
+private struct HandoffRoute: View {
+    let color: Color
+    let width: CGFloat
+
+    var body: some View {
+        HStack(spacing: 0) {
+            Circle().fill(HuddleTheme.background).overlay(Circle().stroke(color, lineWidth: 1)).frame(width: 7, height: 7)
+            Rectangle().fill(color).frame(width: width, height: 1)
+            Circle().fill(HuddleTheme.background).overlay(Circle().stroke(color, lineWidth: 1)).frame(width: 7, height: 7)
+        }
     }
 }
 
@@ -704,26 +704,16 @@ private struct HuddleMark: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: size * 0.24, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [HuddleTheme.surfaceStrong, HuddleTheme.background],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: size * 0.24, style: .continuous)
-                        .stroke(HuddleTheme.border)
-                )
-            Circle().fill(HuddleTheme.magenta).frame(width: size * 0.17).offset(y: -size * 0.31)
-            Circle().fill(HuddleTheme.cyan).frame(width: size * 0.17).offset(x: size * 0.31)
-            Circle().fill(HuddleTheme.magenta).frame(width: size * 0.17).offset(y: size * 0.31)
-            Circle().fill(HuddleTheme.cyan).frame(width: size * 0.17).offset(x: -size * 0.31)
+            RoundedRectangle(cornerRadius: size * 0.18, style: .continuous)
+                .fill(HuddleTheme.purple)
+                .overlay(RoundedRectangle(cornerRadius: size * 0.18, style: .continuous).stroke(HuddleTheme.purpleDark, lineWidth: 1))
+            Circle().fill(HuddleTheme.yellow).frame(width: size * 0.17).offset(y: -size * 0.31)
+            Circle().fill(HuddleTheme.yellow).frame(width: size * 0.17).offset(x: size * 0.31)
+            Circle().fill(HuddleTheme.yellow).frame(width: size * 0.17).offset(y: size * 0.31)
+            Circle().fill(HuddleTheme.yellow).frame(width: size * 0.17).offset(x: -size * 0.31)
             Image(systemName: "cursorarrow")
                 .font(.system(size: size * 0.34, weight: .bold))
-                .foregroundStyle(.white)
-                .shadow(color: .black.opacity(0.5), radius: 3, y: 2)
+                .foregroundStyle(HuddleTheme.surface)
         }
         .frame(width: size, height: size)
     }
@@ -738,14 +728,12 @@ private struct HuddleCard<Content: View>: View {
 
     var body: some View {
         content
-            .padding(18)
+            .padding(20)
             .background(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(HuddleTheme.surface.opacity(0.9))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(HuddleTheme.border)
-                    )
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(HuddleTheme.surface)
+                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(HuddleTheme.borderStrong))
+                    .shadow(color: HuddleTheme.purple.opacity(0.14), radius: 0, x: 7, y: 9)
             )
     }
 }
@@ -762,7 +750,7 @@ private struct HuddleButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 13, weight: .semibold))
+            .font(.system(size: 13, weight: .semibold, design: .rounded))
             .foregroundStyle(foreground)
             .padding(.horizontal, 14)
             .frame(minHeight: 36)
@@ -774,21 +762,20 @@ private struct HuddleButtonStyle: ButtonStyle {
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
                     .stroke(border)
             )
-            .scaleEffect(configuration.isPressed ? 0.98 : 1)
             .opacity(isEnabled ? 1 : 0.42)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 
     private var foreground: Color {
-        tone == .primary ? HuddleTheme.background : tone == .danger ? HuddleTheme.magenta : HuddleTheme.text
+        tone == .primary ? HuddleTheme.surface : tone == .danger ? HuddleTheme.red : HuddleTheme.purple
     }
 
     private var background: Color {
-        tone == .primary ? HuddleTheme.cyan : tone == .danger ? HuddleTheme.magenta.opacity(0.14) : Color.white.opacity(0.07)
+        tone == .primary ? HuddleTheme.purple : tone == .danger ? HuddleTheme.red.opacity(0.08) : HuddleTheme.surface
     }
 
     private var border: Color {
-        tone == .primary ? HuddleTheme.cyan.opacity(0.7) : tone == .danger ? HuddleTheme.magenta.opacity(0.45) : HuddleTheme.border
+        tone == .primary ? HuddleTheme.purpleDark : tone == .danger ? HuddleTheme.red.opacity(0.65) : HuddleTheme.borderStrong
     }
 }
 
@@ -800,15 +787,15 @@ private struct StepHeading: View {
     var body: some View {
         HStack(spacing: 10) {
             ZStack {
-                Circle().fill(complete ? HuddleTheme.cyan.opacity(0.16) : Color.white.opacity(0.07))
+                RoundedRectangle(cornerRadius: 7, style: .continuous).fill(complete ? HuddleTheme.yellow.opacity(0.28) : HuddleTheme.backgroundDeep)
                 if complete {
-                    Image(systemName: "checkmark").font(.system(size: 11, weight: .bold)).foregroundStyle(HuddleTheme.cyan)
+                    Image(systemName: "checkmark").font(.system(size: 11, weight: .bold)).foregroundStyle(HuddleTheme.purple)
                 } else {
                     Text("\(number)").font(.system(size: 11, weight: .bold)).foregroundStyle(HuddleTheme.muted)
                 }
             }
-            .frame(width: 24, height: 24)
-            Text(title).font(.system(size: 15, weight: .semibold)).foregroundStyle(HuddleTheme.text)
+            .frame(width: 26, height: 26)
+            Text(title).font(.system(size: 16, weight: .bold, design: .rounded)).foregroundStyle(HuddleTheme.text)
         }
     }
 }
@@ -820,15 +807,15 @@ private struct PermissionBadge: View {
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: granted ? "checkmark.shield.fill" : "exclamationmark.triangle.fill")
-                .foregroundStyle(granted ? HuddleTheme.cyan : Color.orange)
+                .foregroundStyle(granted ? HuddleTheme.purple : HuddleTheme.red)
             VStack(alignment: .leading, spacing: 2) {
                 Text(name).font(.system(size: 13, weight: .medium)).foregroundStyle(HuddleTheme.text)
-                Text(granted ? "Granted" : "Required").font(.caption).foregroundStyle(granted ? HuddleTheme.cyan : Color.orange)
+                Text(granted ? "Granted" : "Required").font(.caption).foregroundStyle(granted ? HuddleTheme.purple : HuddleTheme.red)
             }
             Spacer()
         }
         .padding(11)
-        .background(HuddleTheme.surfaceStrong, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .background(HuddleTheme.backgroundDeep, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
     }
 }
 
@@ -844,14 +831,14 @@ struct AgentView: View {
         ZStack {
             HuddleBackdrop()
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 20) {
                     header
 
                     if let updateNotice = model.updateNotice {
-                        notice(updateNotice, icon: "arrow.down.circle.fill", color: .orange)
+                        notice(updateNotice, icon: "arrow.down.circle.fill", color: HuddleTheme.yellow)
                     }
                     if let error = model.error {
-                        notice(error, icon: "exclamationmark.octagon.fill", color: HuddleTheme.magenta)
+                        notice(error, icon: "exclamationmark.octagon.fill", color: HuddleTheme.red)
                     }
 
                     trustStep
@@ -866,13 +853,12 @@ struct AgentView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.top, 4)
                 }
-                .frame(maxWidth: 680)
-                .padding(28)
+                .frame(maxWidth: 700)
+                .padding(32)
                 .frame(maxWidth: .infinity)
             }
         }
-        .frame(minWidth: 540, minHeight: 640)
-        .preferredColorScheme(.dark)
+        .frame(minWidth: 560, minHeight: 680)
         .onAppear { model.refreshPermissions() }
     }
 
@@ -880,14 +866,14 @@ struct AgentView: View {
         HStack(spacing: 16) {
             HuddleMark(size: 62)
             VStack(alignment: .leading, spacing: 4) {
-                Text("HUDDLE").font(.system(size: 11, weight: .bold, design: .monospaced)).tracking(3).foregroundStyle(HuddleTheme.magenta)
-                Text("Control Agent").font(.system(size: 25, weight: .bold, design: .rounded)).foregroundStyle(HuddleTheme.text)
+                Text("HUDDLE / REMOTE CONTROL").font(.system(size: 10, weight: .bold, design: .monospaced)).tracking(1.8).foregroundStyle(HuddleTheme.purple)
+                Text("Control handoff").font(.system(size: 27, weight: .bold, design: .rounded)).foregroundStyle(HuddleTheme.text)
                 Text(model.status).font(.callout).foregroundStyle(HuddleTheme.muted).lineLimit(2)
             }
             Spacer()
             statusPill
         }
-        .padding(.bottom, 4)
+        .padding(.bottom, 8)
     }
 
     private var statusPill: some View {
@@ -898,11 +884,11 @@ struct AgentView: View {
             systemImage: active ? "cursorarrow.motionlines" : connected ? "link" : "circle.dotted"
         )
         .font(.system(size: 10, weight: .bold, design: .monospaced))
-        .foregroundStyle(active || connected ? HuddleTheme.cyan : HuddleTheme.muted)
+        .foregroundStyle(active || connected ? HuddleTheme.purple : HuddleTheme.muted)
         .padding(.horizontal, 11)
         .padding(.vertical, 7)
-        .background((active || connected ? HuddleTheme.cyan : Color.white).opacity(0.08), in: Capsule())
-        .overlay(Capsule().stroke((active || connected ? HuddleTheme.cyan : Color.white).opacity(0.2)))
+        .background((active ? HuddleTheme.yellow : connected ? HuddleTheme.purple : HuddleTheme.backgroundDeep).opacity(active || connected ? 0.22 : 1), in: Capsule())
+        .overlay(Capsule().stroke(active || connected ? HuddleTheme.purple.opacity(0.5) : HuddleTheme.borderStrong))
     }
 
     private var trustStep: some View {
@@ -910,14 +896,14 @@ struct AgentView: View {
             VStack(alignment: .leading, spacing: 12) {
                 StepHeading(number: 1, title: "Confirm the Huddle session", complete: model.descriptor != nil && model.pendingTrustOrigin == nil)
                 if let origin = model.pendingTrustOrigin {
-                    Text("Trust this Huddle server?").font(.headline).foregroundStyle(HuddleTheme.text)
+                    Text("Trust this Huddle server?").font(.title3.weight(.bold)).foregroundStyle(HuddleTheme.text)
                     Text(origin)
                         .font(.body.monospaced())
-                        .foregroundStyle(HuddleTheme.cyan)
+                        .foregroundStyle(HuddleTheme.purple)
                         .textSelection(.enabled)
                         .padding(10)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 9))
+                        .background(HuddleTheme.backgroundDeep, in: RoundedRectangle(cornerRadius: 9))
                     Text("Only this server origin is remembered. The room and one-time link are never saved.")
                         .font(.caption)
                         .foregroundStyle(HuddleTheme.muted)
@@ -926,17 +912,17 @@ struct AgentView: View {
                 } else if let session = model.session {
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Session confirmed").font(.system(size: 13, weight: .semibold)).foregroundStyle(HuddleTheme.cyan)
+                            Text("Session confirmed").font(.system(size: 13, weight: .semibold)).foregroundStyle(HuddleTheme.purple)
                             Text("\(session.controllerName) controls \(session.sharerName)'s selected display")
                                 .font(.callout)
                                 .foregroundStyle(HuddleTheme.muted)
                         }
                         Spacer()
-                        Image(systemName: "checkmark.seal.fill").font(.title2).foregroundStyle(HuddleTheme.cyan)
+                        Image(systemName: "checkmark.seal.fill").font(.title2).foregroundStyle(HuddleTheme.purple)
                     }
                 } else {
                     HStack(spacing: 12) {
-                        Image(systemName: "link.badge.plus").font(.title2).foregroundStyle(HuddleTheme.magenta)
+                        Image(systemName: "arrow.left.arrow.right").font(.title2).foregroundStyle(HuddleTheme.purple)
                         VStack(alignment: .leading, spacing: 3) {
                             Text("Open Remote Control from your Huddle room").font(.system(size: 13, weight: .semibold)).foregroundStyle(HuddleTheme.text)
                             Text("This app stays inert until the Sharer approves a request and opens the one-time link.")
@@ -977,14 +963,14 @@ struct AgentView: View {
                 if model.switchingDisplay {
                     Label("Switching display… The Controller is disabled until the replacement is live.", systemImage: "arrow.triangle.2.circlepath")
                         .font(.callout)
-                        .foregroundStyle(HuddleTheme.cyan)
+                        .foregroundStyle(HuddleTheme.purple)
                     Button("Stop session") { model.stop() }
                         .buttonStyle(HuddleButtonStyle(tone: .danger))
                 } else if model.screenPublished, let session = model.session {
                     HStack(alignment: .top, spacing: 12) {
                         ZStack {
-                            Circle().fill(HuddleTheme.cyan.opacity(0.14))
-                            Image(systemName: "display.and.arrow.down").foregroundStyle(HuddleTheme.cyan)
+                            RoundedRectangle(cornerRadius: 10, style: .continuous).fill(HuddleTheme.yellow.opacity(0.28))
+                            Image(systemName: "display.and.arrow.down").foregroundStyle(HuddleTheme.purple)
                         }
                         .frame(width: 42, height: 42)
                         VStack(alignment: .leading, spacing: 4) {
@@ -1008,7 +994,7 @@ struct AgentView: View {
                             }
                         }
                         .pickerStyle(.menu)
-                        .tint(HuddleTheme.cyan)
+                        .tint(HuddleTheme.purple)
                     }
                     Button("Stop") { model.stop() }
                         .buttonStyle(HuddleButtonStyle(tone: .danger))
@@ -1016,7 +1002,7 @@ struct AgentView: View {
                     if model.displays.isEmpty {
                         Label("No displays are available yet. Refresh permissions, then try again.", systemImage: "display.trianglebadge.exclamationmark")
                             .font(.callout)
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(HuddleTheme.red)
                     } else {
                         Text("Only the entire selected physical display is published, including the Control Agent window. Desktop audio is never captured.")
                             .font(.caption)
@@ -1033,7 +1019,7 @@ struct AgentView: View {
                             }
                         }
                         .pickerStyle(.menu)
-                        .tint(HuddleTheme.cyan)
+                        .tint(HuddleTheme.purple)
                     }
                     HStack(spacing: 8) {
                         Button("Start Remote Control") { model.startRemoteControl() }
@@ -1073,7 +1059,7 @@ struct AgentView: View {
                         )
                     )
                     .toggleStyle(.switch)
-                    .tint(HuddleTheme.cyan)
+                    .tint(HuddleTheme.purple)
                     .disabled(model.connected)
                     HStack(spacing: 8) {
                         Button("Check for updates") { model.updater.checkForUpdates() }
@@ -1114,8 +1100,8 @@ struct AgentView: View {
                             .font(.body.monospaced())
                             .padding(.horizontal, 11)
                             .frame(minHeight: 36)
-                            .background(Color.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 9))
-                            .overlay(RoundedRectangle(cornerRadius: 9).stroke(HuddleTheme.border))
+                            .background(HuddleTheme.backgroundDeep, in: RoundedRectangle(cornerRadius: 9))
+                            .overlay(RoundedRectangle(cornerRadius: 9).stroke(HuddleTheme.borderStrong))
                         Button("Open") { model.submitManualLink() }
                             .buttonStyle(HuddleButtonStyle(tone: .secondary))
                             .disabled(model.manualLink.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -1137,7 +1123,7 @@ struct AgentView: View {
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(HuddleTheme.text)
             }
-            .tint(HuddleTheme.cyan)
+            .tint(HuddleTheme.purple)
         }
     }
 
