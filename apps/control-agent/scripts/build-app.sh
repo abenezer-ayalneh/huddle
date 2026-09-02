@@ -63,9 +63,11 @@ for FRAMEWORK in RustLiveKitUniFFI.framework LiveKitWebRTC.framework Sparkle.fra
 done
 
 # SwiftPM gives the executable an @loader_path rpath for its build directory.
-# A distributed .app keeps third-party frameworks in Contents/Frameworks, so
-# add the bundle-relative lookup path before its local ad-hoc signature.
-install_name_tool -add_rpath "@executable_path/../Frameworks" "$APP/Contents/MacOS/HuddleControlAgent"
+# A distributed .app keeps third-party frameworks in Contents/Frameworks. Keep
+# this idempotent so a retry after an interrupted packaging run can succeed.
+if ! otool -l "$APP/Contents/MacOS/HuddleControlAgent" | grep -Fq '@executable_path/../Frameworks'; then
+  install_name_tool -add_rpath "@executable_path/../Frameworks" "$APP/Contents/MacOS/HuddleControlAgent"
+fi
 codesign --force --sign "$SIGN_IDENTITY" --entitlements "$ROOT/Entitlements.plist" "$APP"
 codesign --verify --deep --strict "$APP"
 
