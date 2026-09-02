@@ -47,12 +47,20 @@ export default function RemoteControlToast({
           </p>
         )}
         <div className="flex justify-end gap-2">
-          <button type="button" onClick={onDeny} className="signal-call-consent-action rounded-lg bg-white/10 px-3 py-1.5 text-xs text-white/75 hover:bg-white/20">
-            <X className="mr-1 inline h-3.5 w-3.5" />
+          <button
+            type="button"
+            onClick={onDeny}
+            className="signal-call-consent-action inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-xs text-white/75 hover:bg-white/20"
+          >
+            <X className="h-3.5 w-3.5" />
             Deny
           </button>
-          <button type="button" onClick={onApprove} className="signal-call-consent-action rounded-lg bg-cyan/20 px-3 py-1.5 text-xs text-cyan ring-1 ring-cyan/45 hover:bg-cyan/30">
-            <Check className="mr-1 inline h-3.5 w-3.5" />
+          <button
+            type="button"
+            onClick={onApprove}
+            className="signal-call-consent-action inline-flex items-center gap-1.5 rounded-lg bg-cyan/20 px-3 py-1.5 text-xs text-cyan ring-1 ring-cyan/45 hover:bg-cyan/30"
+          >
+            <Check className="h-3.5 w-3.5" />
             Approve
           </button>
         </div>

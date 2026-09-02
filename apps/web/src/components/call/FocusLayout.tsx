@@ -1,7 +1,7 @@
 'use client';
 
 import { type TrackReferenceOrPlaceholder } from '@livekit/components-react';
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import VideoTile from './VideoTile';
 
 // One stable React key per track reference. Shared by every layout so a given
@@ -21,7 +21,6 @@ export default function FocusLayout({
   onRequestControl,
   localName,
   statusRail,
-  noticeTrayHeight = 0,
 }: {
   main: ReactNode;
   stripTracks: TrackReferenceOrPlaceholder[];
@@ -37,13 +36,9 @@ export default function FocusLayout({
   // Optional persistent status below the focused content. It occupies layout
   // space instead of overlaying a presentation or Remote Control desktop.
   statusRail?: ReactNode;
-  noticeTrayHeight?: number;
 }) {
   return (
-    <div
-      className="signal-call-focus absolute inset-0 flex flex-col p-3 pb-24 sm:p-4 sm:pb-28"
-      style={{ '--signal-call-notice-height': `${noticeTrayHeight}px` } as CSSProperties}
-    >
+    <div className="signal-call-focus absolute inset-0 flex flex-col p-3 pb-24 sm:p-4 sm:pb-28">
       <div className="flex min-h-0 flex-1 flex-col sm:flex-row">
         {/* Main focused area — centers both axes so a contain-fitted tile sits
             centered when letterboxed on any viewport shape. */}

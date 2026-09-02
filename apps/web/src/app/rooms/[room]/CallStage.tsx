@@ -233,10 +233,6 @@ function CallView({
 }) {
   const { chatMessages, send, isSending } = useChat();
   const [chatOpen, setChatOpen] = useState(false);
-  // The consent/request tray is intentionally separate from system notices. Its
-  // measured height also becomes layout space for the media stage, so a
-  // multi-line approval never obscures the screen or faces it protects.
-  const [noticeTrayHeight, setNoticeTrayHeight] = useState(0);
 
   // Background Call + Picture-in-Picture. VideoGrid reports the feed that owns
   // the main stage; PiP mirrors it into the OS floating window, and the
@@ -317,7 +313,6 @@ function CallView({
             />
           ) : undefined
         }
-        noticeTrayHeight={noticeTrayHeight}
       />
       {/* Scoped boundaries (docs/adr/0018): the chat and the data-message-driven
           overlays are the likely crash sources. A crash in any of them fails to
@@ -342,7 +337,7 @@ function CallView({
         onPopOut={pipSupported ? () => (pipActive ? exitPip() : enterPip()) : undefined}
         pipActive={pipActive}
       />
-      <CallNoticeTray onHeightChange={setNoticeTrayHeight}>
+      <CallNoticeTray>
         <ErrorBoundary label="Call toasts" fallback={null}>
           <RecordingIndicator active={recording.recordingActive} startedAt={recording.recordingStartedAt} />
           {recording.recordingActive && recording.recordingId && (
@@ -395,7 +390,7 @@ function CallView({
   );
 }
 
-function CallNoticeTray({ children, onHeightChange }: { children: ReactNode; onHeightChange: (height: number) => void }) {
+function CallNoticeTray({ children }: { children: ReactNode }) {
   const trayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -403,11 +398,10 @@ function CallNoticeTray({ children, onHeightChange }: { children: ReactNode; onH
     if (!tray) return;
 
     // The tray begins 56px below the call stage. Reporting its rendered height
-    // lets the global system stack follow actual consent/request content rather
-    // than guessing at one fixed prompt height.
+    // lets the global system stack stay below actual consent/request content
+    // rather than guessing at one fixed prompt height.
     const updateOffset = () => {
       const height = tray.getBoundingClientRect().height;
-      onHeightChange(height);
       setCallNoticeTrayOffset(height ? height + 56 : 0);
     };
     updateOffset();
@@ -415,10 +409,9 @@ function CallNoticeTray({ children, onHeightChange }: { children: ReactNode; onH
     observer.observe(tray);
     return () => {
       observer.disconnect();
-      onHeightChange(0);
       setCallNoticeTrayOffset(0);
     };
-  }, [onHeightChange]);
+  }, []);
 
   return (
     <div ref={trayRef} className="signal-call-notice-tray pointer-events-none absolute inset-x-0 top-14 z-30 flex flex-col items-center gap-2">

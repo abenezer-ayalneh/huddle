@@ -7104,18 +7104,17 @@ html[data-theme='dark'] .signal-call-shell {
   min-width: 0;
 }
 
-/* Call consent and request notices sit in their own protected top gutter.
-   The rendered tray height is measured in CallStage, so media always starts
-   below it instead of being visually covered by a multi-line decision. */
+/* Keep the original media-stage inset. The separate absolute notice tray
+   overlays this reserved chrome without adding its own height to the stage. */
 .signal-call-grid,
 .signal-call-focus {
-  padding-top: calc(4rem + var(--signal-call-notice-height, 0px)) !important;
+  padding-top: 4rem !important;
 }
 
 @media (min-width: 640px) {
   .signal-call-grid,
   .signal-call-focus {
-    padding-top: calc(4.5rem + var(--signal-call-notice-height, 0px)) !important;
+    padding-top: 4.5rem !important;
   }
 }
 
@@ -7388,14 +7387,14 @@ html[data-theme='dark'] .signal-call-device-popover button:hover {
   backdrop-filter: none !important;
 }
 
-.signal-call-consent-card [class*='text-white'],
-.signal-call-remote-consent [class*='text-white'],
+.signal-call-consent-card [class*='text-white']:not(.signal-call-consent-action),
+.signal-call-remote-consent [class*='text-white']:not(.signal-call-consent-action),
 .signal-call-notice-pill [class*='text-white'] {
   color: var(--call-ink) !important;
 }
 
-.signal-call-consent-card [class*='text-cyan'],
-.signal-call-remote-consent [class*='text-cyan'] {
+.signal-call-consent-card [class*='text-cyan']:not(.signal-call-consent-action),
+.signal-call-remote-consent [class*='text-cyan']:not(.signal-call-consent-action) {
   color: var(--call-purple) !important;
 }
 
@@ -7442,7 +7441,7 @@ html[data-theme='dark'] .signal-call-device-popover button:hover {
   color: var(--call-muted) !important;
 }
 
-.signal-call-remote-status [class*='text-cyan'] {
+.signal-call-remote-status [class*='text-cyan']:not(.signal-call-remote-action) {
   color: var(--call-purple) !important;
 }
 

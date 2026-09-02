@@ -19,7 +19,6 @@ export default function VideoGrid({
   onRequestControl,
   remoteControlStatus,
   remoteControlInput,
-  noticeTrayHeight = 0,
 }: {
   // When the local participant is the Presenter, they see their own shared
   // track through the protected local-only PresenterPreview below.
@@ -40,9 +39,6 @@ export default function VideoGrid({
   // own row below stage content so it never covers the published desktop.
   remoteControlStatus?: ReactNode;
   remoteControlInput?: ReactNode;
-  // The interactive consent/request tray reports its real rendered height so
-  // the media stage can reserve space below it instead of sitting underneath.
-  noticeTrayHeight?: number;
 }) {
   const tracks = useTracks(
     [
@@ -128,7 +124,6 @@ export default function VideoGrid({
         localName={localName}
         onRequestControl={onRequestControl}
         statusRail={remoteControlStatus}
-        noticeTrayHeight={noticeTrayHeight}
       />
     );
   }
@@ -145,7 +140,6 @@ export default function VideoGrid({
         localName={localName}
         onRequestControl={onRequestControl}
         statusRail={remoteControlStatus}
-        noticeTrayHeight={noticeTrayHeight}
       />
     );
   }
@@ -176,7 +170,6 @@ export default function VideoGrid({
         onRequestControl={onRequestControl}
         localName={localName}
         statusRail={remoteControlStatus}
-        noticeTrayHeight={noticeTrayHeight}
       />
     );
   }
@@ -190,7 +183,6 @@ export default function VideoGrid({
         localName={localName}
         onRequestControl={onRequestControl}
         statusRail={remoteControlStatus}
-        noticeTrayHeight={noticeTrayHeight}
       />
     );
   }
@@ -204,7 +196,6 @@ export default function VideoGrid({
         onTogglePin={togglePin}
         onRequestControl={onRequestControl}
         statusRail={remoteControlStatus}
-        noticeTrayHeight={noticeTrayHeight}
       />
       {localTrack && <SelfView trackRef={localTrack} corner={selfCorner} onCornerChange={setSelfCorner} fallbackName={localName} />}
     </>
@@ -218,7 +209,6 @@ function EqualGrid({
   onRequestControl,
   statusRail,
   localName,
-  noticeTrayHeight,
 }: {
   cameraTracks: ReturnType<typeof useTracks>;
   activeIdentity: string | undefined;
@@ -227,7 +217,6 @@ function EqualGrid({
   statusRail?: ReactNode;
   // The local participant's known name, applied only to its own tile.
   localName?: string;
-  noticeTrayHeight: number;
 }) {
   const cols = useMemo(() => {
     const n = cameraTracks.length || 1;
@@ -242,10 +231,7 @@ function EqualGrid({
   const portraitVisibleRows = Math.min(cameraTracks.length || 1, 4);
 
   return (
-    <div
-      className="signal-call-grid absolute inset-0 flex flex-col p-3 pb-24 sm:p-6 sm:pb-28"
-      style={{ '--signal-call-notice-height': `${noticeTrayHeight}px` } as CSSProperties}
-    >
+    <div className="signal-call-grid absolute inset-0 flex flex-col p-3 pb-24 sm:p-6 sm:pb-28">
       <div className="flex min-h-0 flex-1 items-center justify-center">
         <div
           className="portrait-equal-grid grid h-full w-full gap-3 sm:gap-4"
