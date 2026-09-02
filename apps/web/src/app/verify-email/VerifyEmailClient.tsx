@@ -2,12 +2,10 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { CheckCircle2, TriangleAlert } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import HuddleIcon from '@/components/HuddleIcon';
-import LoadingSpinner from '@/components/LoadingSpinner';
 import { publicConfig } from '@/lib/public-config';
+import VerificationPageShell, { type VerificationTone } from './VerificationPageShell';
 
 const AUTH_URL = publicConfig.authUrl;
 const MIN_LOADING_MS = 700;
@@ -16,6 +14,7 @@ export default function VerifyEmailClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
+  const [tone, setTone] = useState<VerificationTone>('pending');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -24,6 +23,7 @@ export default function VerifyEmailClient() {
     async function verify() {
       if (!token) {
         setError('This verification link is missing its token.');
+        setTone('error');
         return;
       }
 
@@ -48,12 +48,19 @@ export default function VerifyEmailClient() {
 
         if (!response.ok) {
           setError(await verificationError(response));
+          setTone('error');
           return;
         }
 
-        router.replace('/lobby');
+        setTone('success');
+        window.setTimeout(() => {
+          if (!cancelled) router.replace('/lobby');
+        }, 900);
       } catch {
-        if (!cancelled) setError("We couldn't reach Huddle to verify your email. Check your connection and try again.");
+        if (!cancelled) {
+          setError("We couldn't reach Huddle to verify your email. Check your connection and try again.");
+          setTone('error');
+        }
       }
     }
 
@@ -66,51 +73,31 @@ export default function VerifyEmailClient() {
 
   if (error) {
     return (
-      <VerificationShell
-        icon={<TriangleAlert className="size-7 text-magenta" />}
+      <VerificationPageShell
+        tone="error"
         title="Verification failed"
         body={error}
-        footer={
-          <Link
-            href="/lobby"
-            className="inline-flex h-9 items-center justify-center rounded-lg bg-magenta px-4 font-display font-semibold text-black transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60"
-          >
-            Back to lobby
-          </Link>
-        }
-      />
+      >
+        <Link href="/lobby" className="verify-email-primary-action">
+          <ArrowLeft className="size-4" aria-hidden="true" />
+          Back to lobby
+        </Link>
+      </VerificationPageShell>
     );
   }
 
-  return (
-    <VerificationShell
-      icon={<CheckCircle2 className="size-7 text-cyan" />}
-      title="Verifying"
-      body="Hang tight while Huddle confirms your email."
-      footer={<LoadingSpinner className="mx-auto size-8" />}
-    />
-  );
-}
+  if (tone === 'success') {
+    return (
+      <VerificationPageShell tone="success" title="Email verified" body="Your Huddle account is confirmed. Taking you to the lobby now.">
+        <p className="verify-email-next-step" role="status">
+          <CheckCircle2 className="size-4" aria-hidden="true" />
+          Opening lobby
+        </p>
+      </VerificationPageShell>
+    );
+  }
 
-function VerificationShell({ icon, title, body, footer }: { icon: ReactNode; title: string; body: string; footer: ReactNode }) {
-  return (
-    <main className="relative flex flex-1 items-center justify-center overflow-hidden p-6">
-      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="animate-drift absolute -left-32 top-1/4 h-96 w-96 rounded-full bg-magenta/20 blur-[120px]" />
-        <div className="animate-drift absolute -right-24 bottom-0 h-96 w-96 rounded-full bg-cyan/15 blur-[120px] [animation-delay:5s]" />
-      </div>
-
-      <div className="glass-strong w-full max-w-sm rounded-2xl p-8 text-center shadow-[0_8px_60px_oklch(0_0_0/0.5)]">
-        <Link href="/" aria-label="Huddle home" className="inline-flex rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60">
-          <HuddleIcon className="size-12" />
-        </Link>
-        <div className="mx-auto mt-6 flex size-12 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/10">{icon}</div>
-        <h1 className="mt-5 font-display text-2xl font-semibold text-white">{title}</h1>
-        <p className="mt-2 text-sm text-white/55">{body}</p>
-        <div className="mt-6">{footer}</div>
-      </div>
-    </main>
-  );
+  return <VerificationPageShell tone="pending" title="Verifying" body="Hang tight while Huddle confirms your email." ariaBusy />;
 }
 
 async function verificationError(response: Response): Promise<string> {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import { useSession } from '@/lib/auth-client';
 import { loadHostSession, saveHostSession, clearHostSession } from '@/lib/hostSession';
@@ -9,8 +9,12 @@ import CallStage from './CallStage';
 import GuestGate from './GuestGate';
 import HostPanel from './HostPanel';
 import ErrorBoundary from '@/components/faults/ErrorBoundary';
-import LoadingSpinner from '@/components/LoadingSpinner';
-import { Centered } from './ui';
+import MeetingLoadingScreen from '@/components/call/MeetingLoadingScreen';
+import MeetingJoinErrorScreen from '@/components/call/MeetingJoinErrorScreen';
+
+// Authentication is optional for a shared Guest link. Do not make a Guest wait
+// forever for a session lookup before the public room check can begin.
+const ROLE_RESOLUTION_TIMEOUT_MS = 10_000;
 
 // Role router for a managed room (Phase 6). Role is derived from the host
 // session, never the URL: whoever created the room in the lobby has its token +
@@ -31,10 +35,25 @@ export default function RoomClient({ room }: { room: string }) {
 
   const [host, setHost] = useState<ReturnType<typeof loadHostSession>>(null);
   const [hostChecked, setHostChecked] = useState(false);
+  const roleResolutionFinished = useRef(false);
   useEffect(() => {
-    if (sessionPending) return;
-
     let cancelled = false;
+    const timeout = window.setTimeout(() => {
+      if (cancelled || roleResolutionFinished.current) return;
+      // A shared link is still a valid Guest entry point when auth is offline.
+      // GuestGate will perform the public room check and surface its own
+      // bounded API error if the room service is unavailable too.
+      roleResolutionFinished.current = true;
+      setHostChecked(true);
+    }, ROLE_RESOLUTION_TIMEOUT_MS);
+
+    if (sessionPending) {
+      return () => {
+        cancelled = true;
+        window.clearTimeout(timeout);
+      };
+    }
+
     const resolveHost = async () => {
       const cached = loadHostSession(room);
       if (cached) return cached;
@@ -60,36 +79,25 @@ export default function RoomClient({ room }: { room: string }) {
     };
 
     resolveHost().then((hostSession) => {
-      if (cancelled) return;
+      if (cancelled || roleResolutionFinished.current) return;
+      roleResolutionFinished.current = true;
+      window.clearTimeout(timeout);
       if (hostSession) setHost(hostSession);
       setHostChecked(true);
     });
     return () => {
       cancelled = true;
+      window.clearTimeout(timeout);
     };
   }, [room, session, sessionPending]);
 
   if (error) {
-    return (
-      <Centered>
-        <p className="text-magenta text-glow-magenta">{error}</p>
-        <button
-          onClick={leave}
-          className="rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-white/90 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50"
-        >
-          Back to lobby
-        </button>
-      </Centered>
-    );
+    return <MeetingJoinErrorScreen room={room} message={error} onRetry={() => window.location.reload()} onBack={leave} />;
   }
 
   // Decide the role only after the host session has been read on the client.
   if (!hostChecked) {
-    return (
-      <Centered>
-        <LoadingSpinner className="mx-auto size-12" />
-      </Centered>
-    );
+    return <MeetingLoadingScreen room={room} />;
   }
 
   // No host session → guest. A signed-in guest's name comes from their account

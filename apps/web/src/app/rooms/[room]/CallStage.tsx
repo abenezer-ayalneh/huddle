@@ -18,6 +18,7 @@ import RemoteControlSurface from '@/components/call/RemoteControlSurface';
 import RemoteControlToast from '@/components/call/RemoteControlToast';
 import AgentLaunchDialog from '@/components/call/AgentLaunchDialog';
 import VideoGrid from '@/components/call/VideoGrid';
+import MeetingLoadingScreen from '@/components/call/MeetingLoadingScreen';
 import ErrorBoundary from '@/components/faults/ErrorBoundary';
 import LandingThemeProvider from '@/components/landing/LandingThemeProvider';
 import { usePresentation } from '@/components/call/usePresentation';
@@ -25,7 +26,6 @@ import { useRecording } from '@/components/call/useRecording';
 import { useRemoteControl } from '@/components/call/useRemoteControl';
 import { setCallNoticeTrayOffset } from '@/lib/systemNotices';
 import LeaveConfirmDialog from './LeaveConfirmDialog';
-import { Centered } from './ui';
 
 /*
  * SIGNAL HANDOFF CALL WORKSPACE
@@ -38,6 +38,13 @@ import { Centered } from './ui';
  * FORM: The established Signal Handoff workspace applied to an Operate surface.
  */
 type Connection = { token: string; livekitUrl: string };
+
+const INITIAL_CONNECTION_TIMEOUT_MS = 45_000;
+const LIVEKIT_CONNECT_OPTIONS = {
+  maxRetries: 1,
+  peerConnectionTimeout: 15_000,
+  websocketTimeout: 15_000,
+} as const;
 
 export default function CallStage({
   room,
@@ -72,8 +79,35 @@ export default function CallStage({
   hostPanelOpen?: boolean;
 }) {
   const [choices, setChoices] = useState<LocalUserChoices | null>(initialChoices ?? null);
+  const [hasConnected, setHasConnected] = useState(false);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const intentionalLeave = useRef(false);
+  const connectionEstablished = useRef(false);
+  const joinFailureReported = useRef(false);
+
+  const reportJoinFailure = useCallback(
+    (message: string) => {
+      if (joinFailureReported.current) return;
+      joinFailureReported.current = true;
+      intentionalLeave.current = true;
+      onError(message);
+    },
+    [onError],
+  );
+
+  useEffect(() => {
+    if (!choices) return;
+
+    connectionEstablished.current = false;
+    joinFailureReported.current = false;
+
+    const timeout = window.setTimeout(() => {
+      if (connectionEstablished.current || intentionalLeave.current) return;
+      reportJoinFailure('We couldn’t connect to the call in time. Check your connection and try again.');
+    }, INITIAL_CONNECTION_TIMEOUT_MS);
+
+    return () => window.clearTimeout(timeout);
+  }, [choices, reportJoinFailure]);
 
   const confirmLeave = useCallback(() => {
     intentionalLeave.current = true;
@@ -83,8 +117,28 @@ export default function CallStage({
 
   const handleDisconnected = useCallback(() => {
     if (intentionalLeave.current) return;
+    if (!connectionEstablished.current) {
+      reportJoinFailure('We couldn’t connect to the call. Check your connection and try again.');
+      return;
+    }
     (onDisconnected ?? onLeave)();
-  }, [onDisconnected, onLeave]);
+  }, [onDisconnected, onLeave, reportJoinFailure]);
+
+  const handleConnected = useCallback(() => {
+    connectionEstablished.current = true;
+    setHasConnected(true);
+  }, []);
+
+  const handleConnectionError = useCallback(
+    (error: Error) => {
+      if (!connectionEstablished.current) {
+        reportJoinFailure(`We couldn’t connect to the call. ${error.message}`);
+        return;
+      }
+      onError(`Lost connection to the call: ${error.message}`);
+    },
+    [onError, reportJoinFailure],
+  );
 
   // Back-gesture intercept (Android OS back button / Safari swipe): once in the
   // call, trap the history pop and surface the Leave confirmation instead of
@@ -127,23 +181,29 @@ export default function CallStage({
           token={connection.token}
           serverUrl={connection.livekitUrl}
           connect
+          connectOptions={LIVEKIT_CONNECT_OPTIONS}
           video={choices.videoEnabled ? { deviceId: choices.videoDeviceId } : false}
           audio={startMuted || !choices.audioEnabled ? false : { deviceId: choices.audioDeviceId }}
+          onConnected={handleConnected}
           onDisconnected={handleDisconnected}
-          onError={(e) => onError(`Lost connection to the call: ${e.message}`)}
+          onError={handleConnectionError}
           style={{ height: '100dvh' }}
           className="signal-call-shell"
         >
-          <CallView
-            room={room}
-            token={connection.token}
-            displayName={displayName}
-            onLeaveClick={() => setShowLeaveDialog(true)}
-            overlay={overlay}
-            isHost={isHost}
-            hostKey={hostKey}
-            hostPanelOpen={hostPanelOpen}
-          />
+          {hasConnected ? (
+            <CallView
+              room={room}
+              token={connection.token}
+              displayName={displayName}
+              onLeaveClick={() => setShowLeaveDialog(true)}
+              overlay={overlay}
+              isHost={isHost}
+              hostKey={hostKey}
+              hostPanelOpen={hostPanelOpen}
+            />
+          ) : (
+            <MeetingLoadingScreen room={room} stage="connecting" />
+          )}
           <RoomAudioRenderer />
         </LiveKitRoom>
         <LeaveConfirmDialog open={showLeaveDialog} onConfirm={confirmLeave} onCancel={() => setShowLeaveDialog(false)} />
@@ -366,5 +426,3 @@ function CallNoticeTray({ children, onHeightChange }: { children: ReactNode; onH
     </div>
   );
 }
-
-export { Centered };

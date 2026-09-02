@@ -1,9 +1,7 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { Suspense } from 'react';
-import HuddleIcon from '@/components/HuddleIcon';
-import LoadingSpinner from '@/components/LoadingSpinner';
 import VerifyEmailClient from './VerifyEmailClient';
+import { VerificationLoadingState } from './VerificationPageShell';
 
 export const metadata: Metadata = {
   title: 'Verifying email',
@@ -19,16 +17,5 @@ export default function VerifyEmailPage() {
 }
 
 function VerifyingFallback() {
-  return (
-    <main className="relative flex flex-1 items-center justify-center overflow-hidden p-6">
-      <div className="glass-strong w-full max-w-sm rounded-2xl p-8 text-center shadow-[0_8px_60px_oklch(0_0_0/0.5)]">
-        <Link href="/" aria-label="Huddle home" className="inline-flex rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60">
-          <HuddleIcon className="size-12" />
-        </Link>
-        <LoadingSpinner className="mx-auto mt-6 size-8" />
-        <h1 className="mt-5 font-display text-2xl font-semibold text-white">Verifying</h1>
-        <p className="mt-2 text-sm text-white/55">Hang tight while Huddle confirms your email.</p>
-      </div>
-    </main>
-  );
+  return <VerificationLoadingState />;
 }

@@ -7,8 +7,8 @@ import { ApiError, api } from '@/lib/api';
 import PreJoinScreen from '@/components/call/PreJoinScreen';
 import { DIRECT_REJOIN_NOT_ALLOWED } from '@/lib/faultCodes';
 import CallStage from './CallStage';
-import LoadingSpinner from '@/components/LoadingSpinner';
-import { Centered } from './ui';
+import MeetingLoadingScreen, { type MeetingLoadingStage } from '@/components/call/MeetingLoadingScreen';
+import MeetingEntryShell from '@/components/call/MeetingEntryShell';
 
 type Connection = { token: string; livekitUrl: string };
 
@@ -196,17 +196,32 @@ export default function GuestGate({
 
   if (phase === 'denied') {
     return (
-      <Centered>
-        <p className="font-display text-lg text-magenta text-glow-magenta">Entry declined</p>
-        <p className="text-sm text-white/60">The host declined your request to join.</p>
-        <button
-          onClick={onLeave}
-          className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-white/90 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to lobby
-        </button>
-      </Centered>
+      <MeetingEntryShell
+        room={room}
+        kicker="Guest request"
+        title="Entry was declined."
+        lede="The Host declined this request. Return to the lobby and check the Room Code before trying again."
+        panelLabel="Admission denied"
+        tone="denied"
+        headingId="meeting-denied-title"
+        panelLabelId="meeting-denied-panel-label"
+        panelRole="alert"
+        panelClassName="meeting-denied-panel"
+      >
+        <div className="meeting-error-mark meeting-denied-mark" aria-hidden="true">
+          <span aria-hidden="true">×</span>
+        </div>
+
+        <p className="meeting-loading-status">The Host said no</p>
+        <p className="meeting-error-message">This request is closed. Ask the Host for a new Room Code if you think this was a mistake.</p>
+
+        <div className="meeting-error-actions">
+          <button type="button" className="meeting-error-secondary meeting-denied-action" onClick={onLeave}>
+            <ArrowLeft aria-hidden="true" />
+            Back to lobby
+          </button>
+        </div>
+      </MeetingEntryShell>
     );
   }
 
@@ -229,48 +244,40 @@ export default function GuestGate({
     );
   }
 
-  // precheck / knocking / rejoining / waiting
-  return (
-    <Centered>
-      {phase === 'waiting' ? (
-        <WaitingRoom room={room} onCancel={cancel} />
-      ) : phase === 'precheck' ? (
-        <LoadingSpinner className="mx-auto size-12" />
-      ) : (
-        <div className="flex flex-col items-center gap-3">
-          <LoadingSpinner className="size-12" />
-          <p className="text-white/60">{phase === 'rejoining' ? 'Rejoining call…' : 'Requesting to join…'}</p>
-        </div>
-      )}
-    </Centered>
-  );
+  if (phase === 'waiting') return <WaitingRoom room={room} onCancel={cancel} />;
+
+  const loadingStage: MeetingLoadingStage = phase === 'precheck' ? 'checking' : phase === 'rejoining' ? 'rejoining' : 'requesting';
+  return <MeetingLoadingScreen room={room} stage={loadingStage} />;
 }
 
-// Pulsing ring while waiting for the host. Two offset rings (magenta + cyan)
-// expand outward from a glowing core.
+// Waiting-room content lives in the shared Signal Handoff entry shell so the
+// admission state reads like the rest of room entry, not like the call stage.
 function WaitingRoom({ room, onCancel }: { room: string; onCancel: () => void }) {
   return (
-    <div className="flex flex-col items-center gap-8">
-      <div className="relative flex h-32 w-32 items-center justify-center">
-        <span className="pulse-ring absolute inset-6" />
-        <div className="neon-magenta flex h-20 w-20 items-center justify-center rounded-full bg-[oklch(0.66_0.27_350_/_0.18)] font-display text-2xl font-bold tracking-[0.2em] text-white">
-          H
-        </div>
+    <MeetingEntryShell
+      room={room}
+      kicker="Waiting Room"
+      title="Waiting for the Host."
+      lede="Your request is with the Host. Keep this tab open; we’ll let you in as soon as they admit you."
+      panelLabel="Admission request"
+      headingId="meeting-waiting-title"
+      panelLabelId="meeting-waiting-panel-label"
+    >
+      <div className="meeting-waiting-mark" aria-hidden="true">
+        <span className="meeting-waiting-beacon meeting-waiting-beacon-one" />
+        <span className="meeting-waiting-beacon meeting-waiting-beacon-two" />
+        <span className="meeting-waiting-mark-core">H</span>
       </div>
 
-      <div className="space-y-1.5 text-center">
-        <p className="font-display text-lg text-white">Waiting for the host…</p>
-        <p className="text-sm text-white/55">
-          You&apos;ll join <span className="font-mono text-cyan">{room}</span> the moment you&apos;re let in.
-        </p>
-      </div>
+      <p className="meeting-loading-status">Request sent</p>
+      <p className="meeting-entry-panel-copy">The Host will admit you when they’re ready. This page checks automatically.</p>
 
-      <button
-        onClick={onCancel}
-        className="rounded-lg border border-white/15 bg-white/5 px-5 py-2 text-sm text-white/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50"
-      >
-        Cancel request
-      </button>
-    </div>
+      <div className="meeting-error-actions meeting-waiting-actions">
+        <button type="button" className="meeting-error-secondary" onClick={onCancel}>
+          <ArrowLeft aria-hidden="true" />
+          Withdraw request
+        </button>
+      </div>
+    </MeetingEntryShell>
   );
 }

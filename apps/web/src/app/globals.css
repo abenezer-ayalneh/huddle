@@ -3317,7 +3317,10 @@ html[data-theme='dark'] .recordings-shell {
 .recordings-masthead h1 {
   max-width: 12ch;
   margin: 16px 0 0;
-  font-family: var(--font-archivo-black), Arial Black, sans-serif;
+  font-family:
+    var(--font-archivo-black),
+    Arial Black,
+    sans-serif;
   font-size: clamp(2.75rem, 6vw, 5.25rem);
   font-weight: 400;
   letter-spacing: -0.04em;
@@ -3408,7 +3411,10 @@ html[data-theme='dark'] .recordings-shell {
 .recordings-empty-state h3 {
   margin: 5px 0 0;
   color: var(--recordings-ink);
-  font-family: var(--font-archivo-black), Arial Black, sans-serif;
+  font-family:
+    var(--font-archivo-black),
+    Arial Black,
+    sans-serif;
   font-weight: 400;
   letter-spacing: -0.035em;
   line-height: 1;
@@ -5768,6 +5774,945 @@ html[data-theme='dark'] .prejoin-recovery-dialog {
   }
 }
 
+/* ── Shared meeting-link loading surface ────────────────────────────────
+   The room route starts here before it knows whether this browser is a Host
+   or Guest. Keep that handoff in the same warm Signal Handoff world as the
+   Device Check, with the room code as the only technical readout. */
+.meeting-loading-shell {
+  --meeting-loading-bg: #f6eedb;
+  --meeting-loading-bg-deep: #eadfc8;
+  --meeting-loading-surface: #fffaf0;
+  --meeting-loading-ink: #141414;
+  --meeting-loading-muted: #62594f;
+  --meeting-loading-faint: #82776b;
+  --meeting-loading-border: #d5c7b0;
+  --meeting-loading-border-strong: #bca88a;
+  --meeting-loading-purple: #8d2676;
+  --meeting-loading-purple-dark: #6f195e;
+  --meeting-loading-yellow: #f3b01c;
+  --meeting-loading-red: #ee342f;
+  --meeting-loading-warm-white: #faf4e9;
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  min-height: 100dvh;
+  overflow: hidden;
+  background: var(--meeting-loading-bg);
+  color: var(--meeting-loading-ink);
+  font-family: var(--font-archivo), Arial, sans-serif;
+}
+
+html[data-theme='dark'] .meeting-loading-shell {
+  --meeting-loading-bg: #1a0f0f;
+  --meeting-loading-bg-deep: #241514;
+  --meeting-loading-surface: #2a1b19;
+  --meeting-loading-ink: #faf4e9;
+  --meeting-loading-muted: #d1c1ad;
+  --meeting-loading-faint: #a99986;
+  --meeting-loading-border: #624a3e;
+  --meeting-loading-border-strong: #866957;
+  --meeting-loading-purple: #c15a9e;
+  --meeting-loading-purple-dark: #e182bc;
+  --meeting-loading-yellow: #f3b01c;
+  --meeting-loading-red: #ff6b5e;
+  --meeting-loading-warm-white: #fff8ee;
+}
+
+.meeting-loading-shell,
+.meeting-loading-shell * {
+  box-sizing: border-box;
+}
+
+.meeting-loading-shell button,
+.meeting-loading-shell a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.meeting-loading-shell a:focus-visible {
+  outline: 2px solid var(--meeting-loading-yellow);
+  outline-offset: 3px;
+}
+
+.meeting-loading-shell button:focus-visible {
+  outline: 2px solid var(--meeting-loading-yellow);
+  outline-offset: 3px;
+}
+
+.meeting-loading-container {
+  width: min(100% - 40px, 1180px);
+  margin-inline: auto;
+}
+
+.meeting-loading-header {
+  position: absolute;
+  z-index: 2;
+  top: 18px;
+  right: 0;
+  left: 0;
+}
+
+.meeting-loading-layout {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(320px, 0.95fr) minmax(320px, 0.75fr);
+  align-content: center;
+  align-items: center;
+  gap: clamp(48px, 9vw, 132px);
+  padding-top: 112px;
+  padding-bottom: 64px;
+}
+
+.meeting-loading-intro {
+  max-width: 510px;
+}
+
+.meeting-loading-kicker,
+.meeting-loading-panel-heading p,
+.meeting-loading-room span {
+  margin: 0;
+  color: var(--meeting-loading-purple);
+  font-family: var(--font-plex-mono), monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.meeting-loading-intro h1 {
+  max-width: 9ch;
+  margin: 18px 0 0;
+  font-family:
+    var(--font-archivo-black),
+    Arial Black,
+    sans-serif;
+  font-size: clamp(3.15rem, 6vw, 5.7rem);
+  font-weight: 400;
+  letter-spacing: -0.055em;
+  line-height: 0.94;
+  text-wrap: balance;
+}
+
+.meeting-loading-lede {
+  max-width: 33rem;
+  margin: 24px 0 0;
+  color: var(--meeting-loading-muted);
+  font-size: clamp(1rem, 1.5vw, 1.14rem);
+  line-height: 1.65;
+}
+
+.meeting-loading-divider {
+  max-width: 510px;
+  margin-top: 36px;
+  border-top: 1px solid var(--meeting-loading-border-strong);
+}
+
+.meeting-loading-panel {
+  width: min(100%, 430px);
+  justify-self: end;
+  padding: clamp(24px, 4vw, 38px);
+  border: 1px solid var(--meeting-loading-border-strong);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--meeting-loading-surface) 92%, transparent);
+  box-shadow: 14px 18px 0 color-mix(in srgb, var(--meeting-loading-purple) 14%, transparent);
+  text-align: center;
+}
+
+.meeting-loading-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--meeting-loading-border);
+  text-align: left;
+}
+
+.meeting-loading-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--meeting-loading-yellow);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--meeting-loading-yellow) 40%, transparent);
+}
+
+.meeting-loading-status-dot--denied {
+  background: var(--meeting-loading-red);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--meeting-loading-red) 42%, transparent);
+}
+
+.meeting-loading-mark {
+  display: grid;
+  width: 104px;
+  height: 104px;
+  place-items: center;
+  margin: 38px auto 24px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--meeting-loading-purple) 9%, var(--meeting-loading-bg-deep));
+  box-shadow: 0 12px 24px color-mix(in srgb, var(--meeting-loading-purple) 12%, transparent);
+  --huddle-logo-primary: var(--meeting-loading-purple);
+  --huddle-logo-accent: var(--meeting-loading-yellow);
+  --huddle-logo-play: var(--meeting-loading-ink);
+  --huddle-logo-play-stroke: var(--meeting-loading-surface);
+}
+
+.meeting-loading-mark svg {
+  width: 72px;
+  height: 72px;
+}
+
+.meeting-loading-status {
+  margin: 0;
+  color: var(--meeting-loading-ink);
+  font-family:
+    var(--font-archivo-black),
+    Arial Black,
+    sans-serif;
+  font-size: clamp(1.4rem, 2.5vw, 1.85rem);
+  font-weight: 400;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+}
+
+.meeting-entry-panel-copy {
+  max-width: 25rem;
+  margin: 12px auto 0;
+  color: var(--meeting-loading-muted);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.meeting-loading-room {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  max-width: 100%;
+  margin-top: 24px;
+  padding: 9px 12px;
+  border: 1px solid var(--meeting-loading-border);
+  border-radius: 9px;
+  color: var(--meeting-loading-muted);
+  background: color-mix(in srgb, var(--meeting-loading-bg-deep) 70%, transparent);
+  text-align: left;
+}
+
+.meeting-loading-room code {
+  overflow: hidden;
+  color: var(--meeting-loading-ink);
+  font-family: var(--font-plex-mono), monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meeting-loading-route {
+  position: absolute;
+  z-index: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(40vw, 480px);
+  pointer-events: none;
+}
+
+.meeting-loading-route i {
+  display: block;
+  height: 1px;
+  background: color-mix(in srgb, var(--meeting-loading-purple) 65%, transparent);
+}
+
+.meeting-loading-route i:nth-child(2) {
+  width: 82%;
+  margin-left: 9%;
+  background: color-mix(in srgb, var(--meeting-loading-yellow) 75%, transparent);
+}
+
+.meeting-loading-route i:nth-child(3) {
+  width: 64%;
+  margin-left: 22%;
+  background: color-mix(in srgb, var(--meeting-loading-red) 55%, transparent);
+}
+
+.meeting-loading-route-one {
+  top: 29%;
+  right: -9%;
+  transform: rotate(18deg);
+}
+
+.meeting-loading-route-two {
+  bottom: 15%;
+  left: -15%;
+  transform: rotate(-10deg);
+}
+
+.meeting-error-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--meeting-loading-red);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--meeting-loading-red) 42%, transparent);
+}
+
+.meeting-error-mark {
+  display: grid;
+  width: 104px;
+  height: 104px;
+  place-items: center;
+  margin: 38px auto 24px;
+  border: 1px solid color-mix(in srgb, var(--meeting-loading-red) 45%, var(--meeting-loading-border));
+  border-radius: 50%;
+  color: var(--meeting-loading-red);
+  background: color-mix(in srgb, var(--meeting-loading-red) 10%, var(--meeting-loading-bg-deep));
+  box-shadow: 0 12px 24px color-mix(in srgb, var(--meeting-loading-red) 12%, transparent);
+}
+
+.meeting-error-mark svg {
+  width: 48px;
+  height: 48px;
+}
+
+.meeting-denied-mark {
+  border-radius: 16px;
+}
+
+.meeting-denied-mark span {
+  font-family:
+    var(--font-archivo-black),
+    Arial Black,
+    sans-serif;
+  font-size: 3.5rem;
+  font-weight: 400;
+  letter-spacing: -0.08em;
+  line-height: 1;
+}
+
+.meeting-waiting-mark {
+  position: relative;
+  display: grid;
+  width: 104px;
+  height: 104px;
+  place-items: center;
+  margin: 38px auto 24px;
+  border: 1px solid var(--meeting-loading-border-strong);
+  border-radius: 16px;
+  color: var(--meeting-loading-purple);
+  background: color-mix(in srgb, var(--meeting-loading-yellow) 10%, var(--meeting-loading-bg-deep));
+  box-shadow: 12px 15px 0 color-mix(in srgb, var(--meeting-loading-purple) 13%, transparent);
+}
+
+.meeting-waiting-mark::before,
+.meeting-waiting-mark::after {
+  position: absolute;
+  content: '';
+  border: 1px solid color-mix(in srgb, var(--meeting-loading-yellow) 68%, transparent);
+  border-radius: 12px;
+  animation: meeting-waiting-beacon 2.8s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+}
+
+.meeting-waiting-mark::before {
+  inset: -10px;
+}
+
+.meeting-waiting-mark::after {
+  inset: -20px;
+  border-color: color-mix(in srgb, var(--meeting-loading-purple) 42%, transparent);
+  animation-delay: 1.4s;
+}
+
+.meeting-waiting-mark-core {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--meeting-loading-purple) 52%, var(--meeting-loading-border));
+  border-radius: 12px;
+  color: var(--meeting-loading-warm-white);
+  background: var(--meeting-loading-purple);
+  box-shadow: 6px 7px 0 color-mix(in srgb, var(--meeting-loading-purple) 20%, transparent);
+  font-family:
+    var(--font-archivo-black),
+    Arial Black,
+    sans-serif;
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.meeting-waiting-beacon {
+  position: absolute;
+  z-index: 2;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--meeting-loading-yellow);
+  box-shadow: 0 3px 8px color-mix(in srgb, var(--meeting-loading-yellow) 50%, transparent);
+}
+
+.meeting-waiting-beacon-one {
+  top: 17px;
+  right: 17px;
+}
+
+.meeting-waiting-beacon-two {
+  bottom: 17px;
+  left: 17px;
+  background: var(--meeting-loading-purple);
+}
+
+.meeting-waiting-actions {
+  margin-top: 24px;
+}
+
+@keyframes meeting-waiting-beacon {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.96);
+  }
+
+  50% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+}
+
+.meeting-error-message {
+  max-width: 31rem;
+  margin: 12px auto 0;
+  color: var(--meeting-loading-muted);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.meeting-error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 26px;
+}
+
+.meeting-error-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 11px 15px;
+  border-radius: 9px;
+  font-family: var(--font-archivo), Arial, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    transform 140ms ease,
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+
+.meeting-error-actions button:active {
+  transform: translateY(1px);
+}
+
+.meeting-error-actions button svg {
+  width: 15px;
+  height: 15px;
+}
+
+.meeting-error-primary {
+  border: 1px solid var(--meeting-loading-purple);
+  color: var(--meeting-loading-warm-white);
+  background: var(--meeting-loading-purple);
+}
+
+.meeting-error-primary:hover {
+  background: var(--meeting-loading-purple-dark);
+}
+
+.meeting-error-secondary {
+  border: 1px solid var(--meeting-loading-border-strong);
+  color: var(--meeting-loading-ink);
+  background: color-mix(in srgb, var(--meeting-loading-surface) 52%, transparent);
+}
+
+.meeting-error-secondary:hover {
+  border-color: var(--meeting-loading-purple);
+  background: color-mix(in srgb, var(--meeting-loading-purple) 8%, var(--meeting-loading-surface));
+}
+
+@media (max-width: 760px) {
+  .meeting-loading-container {
+    width: min(100% - 28px, 1180px);
+  }
+
+  .meeting-loading-header {
+    top: 12px;
+  }
+
+  .meeting-loading-layout {
+    grid-template-columns: 1fr;
+    align-content: start;
+    gap: 38px;
+    padding-top: 104px;
+    padding-bottom: 32px;
+  }
+
+  .meeting-loading-intro {
+    max-width: none;
+  }
+
+  .meeting-loading-intro h1 {
+    max-width: 8ch;
+    font-size: clamp(2.9rem, 14vw, 4.4rem);
+  }
+
+  .meeting-loading-lede {
+    margin-top: 18px;
+  }
+
+  .meeting-loading-divider {
+    margin-top: 26px;
+  }
+
+  .meeting-loading-panel {
+    width: 100%;
+    justify-self: stretch;
+    padding: 24px 20px;
+    box-shadow: 8px 10px 0 color-mix(in srgb, var(--meeting-loading-purple) 14%, transparent);
+  }
+
+  .meeting-loading-mark {
+    margin-top: 30px;
+  }
+
+  .meeting-error-mark {
+    margin-top: 30px;
+  }
+
+  .meeting-error-actions {
+    flex-direction: column;
+  }
+
+  .meeting-error-actions button {
+    width: 100%;
+  }
+
+  .meeting-loading-route-one {
+    top: 255px;
+    right: -35%;
+  }
+
+  .meeting-loading-route-two {
+    bottom: 16%;
+    left: -44%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .meeting-loading-shell,
+  .meeting-loading-shell * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* ── Signal Handoff email verification ──────────────────────────────────
+   Email confirmation is an account handoff, not an operator task. Keep the
+   route on the warm public surface with the same framed status panel used by
+   meeting entry, while keeping the recovery action quiet and explicit. */
+.verify-email-shell {
+  --verify-email-bg: #f6eedb;
+  --verify-email-bg-deep: #eadfc8;
+  --verify-email-surface: #fffaf0;
+  --verify-email-ink: #141414;
+  --verify-email-muted: #62594f;
+  --verify-email-faint: #82776b;
+  --verify-email-border: #d5c7b0;
+  --verify-email-border-strong: #bca88a;
+  --verify-email-purple: #8d2676;
+  --verify-email-purple-dark: #6f195e;
+  --verify-email-yellow: #f3b01c;
+  --verify-email-red: #ee342f;
+  --verify-email-warm-white: #faf4e9;
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  min-height: 100dvh;
+  overflow: clip;
+  background: var(--verify-email-bg);
+  color: var(--verify-email-ink);
+  font-family: var(--font-archivo), Arial, sans-serif;
+}
+
+html[data-theme='dark'] .verify-email-shell {
+  --verify-email-bg: #1a0f0f;
+  --verify-email-bg-deep: #241514;
+  --verify-email-surface: #2a1b19;
+  --verify-email-ink: #faf4e9;
+  --verify-email-muted: #d1c1ad;
+  --verify-email-faint: #a99986;
+  --verify-email-border: #624a3e;
+  --verify-email-border-strong: #866957;
+  --verify-email-purple: #c15a9e;
+  --verify-email-purple-dark: #e182bc;
+  --verify-email-yellow: #f3b01c;
+  --verify-email-red: #ff6b5e;
+  --verify-email-warm-white: #fff8ee;
+}
+
+.verify-email-shell,
+.verify-email-shell * {
+  box-sizing: border-box;
+}
+
+.verify-email-shell a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.verify-email-shell a:focus-visible {
+  outline: 2px solid var(--verify-email-yellow);
+  outline-offset: 3px;
+}
+
+.verify-email-container {
+  width: min(100% - 40px, 1180px);
+  margin-inline: auto;
+}
+
+.verify-email-header {
+  position: absolute;
+  z-index: 2;
+  top: 18px;
+  right: 0;
+  left: 0;
+}
+
+.verify-email-layout {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(320px, 0.95fr) minmax(320px, 0.75fr);
+  align-content: center;
+  align-items: center;
+  gap: clamp(48px, 9vw, 132px);
+  padding-top: 112px;
+  padding-bottom: 64px;
+}
+
+.verify-email-intro {
+  max-width: 510px;
+}
+
+.verify-email-kicker,
+.verify-email-panel-heading p,
+.verify-email-context-list dt {
+  margin: 0;
+  color: var(--verify-email-purple);
+  font-family: var(--font-plex-mono), monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.verify-email-intro h1 {
+  max-width: 8ch;
+  margin: 18px 0 0;
+  font-family:
+    var(--font-archivo-black),
+    Arial Black,
+    sans-serif;
+  font-size: clamp(3.15rem, 6vw, 5.7rem);
+  font-weight: 400;
+  letter-spacing: -0.055em;
+  line-height: 0.94;
+  text-wrap: balance;
+}
+
+.verify-email-lede {
+  max-width: 31rem;
+  margin: 24px 0 0;
+  color: var(--verify-email-muted);
+  font-size: clamp(1rem, 1.5vw, 1.14rem);
+  line-height: 1.65;
+}
+
+.verify-email-divider {
+  max-width: 510px;
+  margin-top: 36px;
+  border-top: 1px solid var(--verify-email-border-strong);
+}
+
+.verify-email-context-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 510px;
+  margin: 18px 0 0;
+  gap: 20px;
+}
+
+.verify-email-context-list dd {
+  margin: 7px 0 0;
+  color: var(--verify-email-ink);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.verify-email-panel {
+  --verify-email-signal: var(--verify-email-purple);
+  --verify-email-signal-soft: var(--verify-email-bg-deep);
+  width: min(100%, 430px);
+  justify-self: end;
+  padding: clamp(24px, 4vw, 38px);
+  border: 1px solid var(--verify-email-border-strong);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--verify-email-surface) 92%, transparent);
+  box-shadow: 14px 18px 0 color-mix(in srgb, var(--verify-email-purple) 14%, transparent);
+  text-align: center;
+}
+
+.verify-email-panel--error {
+  --verify-email-signal: var(--verify-email-red);
+  --verify-email-signal-soft: color-mix(in srgb, var(--verify-email-red) 10%, var(--verify-email-bg-deep));
+  box-shadow: 14px 18px 0 color-mix(in srgb, var(--verify-email-red) 12%, transparent);
+}
+
+.verify-email-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--verify-email-border);
+  text-align: left;
+}
+
+.verify-email-status-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--verify-email-yellow);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--verify-email-yellow) 40%, transparent);
+}
+
+.verify-email-panel--error .verify-email-status-dot {
+  background: var(--verify-email-red);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--verify-email-red) 42%, transparent);
+}
+
+.verify-email-mark {
+  display: grid;
+  width: 104px;
+  height: 104px;
+  place-items: center;
+  margin: 38px auto 24px;
+  border: 1px solid color-mix(in srgb, var(--verify-email-signal) 45%, var(--verify-email-border));
+  border-radius: 50%;
+  color: var(--verify-email-signal);
+  background: var(--verify-email-signal-soft);
+  box-shadow: 0 12px 24px color-mix(in srgb, var(--verify-email-signal) 12%, transparent);
+  --huddle-logo-primary: var(--verify-email-purple);
+  --huddle-logo-accent: var(--verify-email-yellow);
+  --huddle-logo-play: var(--verify-email-ink);
+  --huddle-logo-play-stroke: var(--verify-email-surface);
+}
+
+.verify-email-mark svg {
+  width: 48px;
+  height: 48px;
+}
+
+.verify-email-mark .verify-email-spinner {
+  width: 72px;
+  height: 72px;
+}
+
+.verify-email-status {
+  margin: 0;
+  color: var(--verify-email-ink);
+  font-family:
+    var(--font-archivo-black),
+    Arial Black,
+    sans-serif;
+  font-size: clamp(1.4rem, 2.5vw, 1.85rem);
+  font-weight: 400;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+}
+
+.verify-email-message {
+  max-width: 31rem;
+  margin: 12px auto 0;
+  color: var(--verify-email-muted);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.verify-email-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 26px;
+}
+
+.verify-email-primary-action,
+.verify-email-next-step {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 9px;
+  font-family: var(--font-archivo), Arial, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.verify-email-primary-action {
+  padding: 11px 15px;
+  border: 1px solid var(--verify-email-purple);
+  color: var(--verify-email-warm-white);
+  background: var(--verify-email-purple);
+  transition:
+    background-color 140ms ease,
+    transform 140ms ease;
+}
+
+.verify-email-primary-action:hover {
+  background: var(--verify-email-purple-dark);
+}
+
+.verify-email-primary-action:active {
+  transform: translateY(1px);
+}
+
+.verify-email-next-step {
+  color: var(--verify-email-purple);
+}
+
+.verify-email-route {
+  position: absolute;
+  z-index: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(40vw, 480px);
+  pointer-events: none;
+}
+
+.verify-email-route i {
+  display: block;
+  height: 1px;
+  background: color-mix(in srgb, var(--verify-email-purple) 65%, transparent);
+}
+
+.verify-email-route i:nth-child(2) {
+  width: 82%;
+  margin-left: 9%;
+  background: color-mix(in srgb, var(--verify-email-yellow) 75%, transparent);
+}
+
+.verify-email-route i:nth-child(3) {
+  width: 64%;
+  margin-left: 22%;
+  background: color-mix(in srgb, var(--verify-email-red) 55%, transparent);
+}
+
+.verify-email-route-one {
+  top: 29%;
+  right: -9%;
+  transform: rotate(18deg);
+}
+
+.verify-email-route-two {
+  bottom: 15%;
+  left: -15%;
+  transform: rotate(-10deg);
+}
+
+@media (max-width: 760px) {
+  .verify-email-container {
+    width: min(100% - 28px, 1180px);
+  }
+
+  .verify-email-header {
+    top: 12px;
+  }
+
+  .verify-email-layout {
+    grid-template-columns: 1fr;
+    align-content: start;
+    gap: 38px;
+    padding-top: 104px;
+    padding-bottom: 32px;
+  }
+
+  .verify-email-intro {
+    max-width: none;
+  }
+
+  .verify-email-intro h1 {
+    max-width: 8ch;
+    font-size: clamp(2.9rem, 14vw, 4.4rem);
+  }
+
+  .verify-email-lede {
+    margin-top: 18px;
+  }
+
+  .verify-email-divider {
+    margin-top: 26px;
+  }
+
+  .verify-email-panel {
+    width: 100%;
+    justify-self: stretch;
+    padding: 24px 20px;
+    box-shadow: 8px 10px 0 color-mix(in srgb, var(--verify-email-purple) 14%, transparent);
+  }
+
+  .verify-email-panel--error {
+    box-shadow: 8px 10px 0 color-mix(in srgb, var(--verify-email-red) 12%, transparent);
+  }
+
+  .verify-email-mark {
+    margin-top: 30px;
+  }
+
+  .verify-email-actions,
+  .verify-email-primary-action {
+    width: 100%;
+  }
+
+  .verify-email-route-one {
+    top: 255px;
+    right: -35%;
+  }
+
+  .verify-email-route-two {
+    bottom: 16%;
+    left: -44%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .verify-email-shell,
+  .verify-email-shell * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
 /* ── Signal Handoff system notices ──────────────────────────────────────
    The sole global family for Faults, API Reachability, and Call Connection.
    It intentionally follows the saved document theme rather than inheriting a
@@ -5978,7 +6923,16 @@ html[data-theme='dark'] .signal-call-shell {
   content: '';
   pointer-events: none;
   background:
-    linear-gradient(90deg, transparent 0 12%, var(--call-purple) 12% calc(12% + 1px), transparent calc(12% + 1px) 52%, var(--call-yellow) 52% calc(52% + 1px), transparent calc(52% + 1px) 82%, var(--call-red) 82% calc(82% + 1px), transparent calc(82% + 1px)),
+    linear-gradient(
+      90deg,
+      transparent 0 12%,
+      var(--call-purple) 12% calc(12% + 1px),
+      transparent calc(12% + 1px) 52%,
+      var(--call-yellow) 52% calc(52% + 1px),
+      transparent calc(52% + 1px) 82%,
+      var(--call-red) 82% calc(82% + 1px),
+      transparent calc(82% + 1px)
+    ),
     var(--call-surface-strong);
 }
 
@@ -6044,7 +6998,10 @@ html[data-theme='dark'] .signal-call-shell {
   color: var(--call-ink);
   background: var(--call-surface);
   box-shadow: 4px 4px 0 var(--call-shadow);
-  transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease;
 }
 
 .signal-call-theme-toggle:hover {
@@ -6794,7 +7751,10 @@ html[data-theme='dark'] .downloads-shell {
   max-width: 8ch;
   margin: 16px 0 0;
   color: var(--downloads-ink);
-  font-family: var(--font-archivo-black), Arial Black, sans-serif;
+  font-family:
+    var(--font-archivo-black),
+    Arial Black,
+    sans-serif;
   font-size: clamp(49px, 6vw, 88px);
   font-weight: 900;
   letter-spacing: -0.04em;
@@ -6933,7 +7893,10 @@ html[data-theme='dark'] .downloads-shell {
 .downloads-integrity h2 {
   margin: 7px 0 0;
   color: var(--downloads-ink);
-  font-family: var(--font-archivo-black), Arial Black, sans-serif;
+  font-family:
+    var(--font-archivo-black),
+    Arial Black,
+    sans-serif;
   font-size: clamp(24px, 2.25vw, 34px);
   font-weight: 900;
   letter-spacing: -0.035em;
@@ -7010,7 +7973,10 @@ html[data-theme='dark'] .downloads-shell {
 .downloads-architecture h3 {
   margin: 0;
   color: var(--downloads-ink);
-  font-family: var(--font-archivo-black), Arial Black, sans-serif;
+  font-family:
+    var(--font-archivo-black),
+    Arial Black,
+    sans-serif;
   font-size: 18px;
   font-weight: 900;
   letter-spacing: -0.025em;
@@ -7376,5 +8342,378 @@ html[data-theme='dark'] .downloads-shell {
   .downloads-shell * {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Signal Handoff 404 surface ─────────────────────────────────────────
+   A missing route is a wayfinding outcome, so it keeps the warm public
+   composition while offering known destinations instead of retry controls. */
+.signal-not-found-shell {
+  --not-found-bg: #f6eedb;
+  --not-found-bg-deep: #eadfc8;
+  --not-found-surface: #fffaf0;
+  --not-found-ink: #141414;
+  --not-found-muted: #62594f;
+  --not-found-faint: #82776b;
+  --not-found-border: #d5c7b0;
+  --not-found-border-strong: #bca88a;
+  --not-found-purple: #8d2676;
+  --not-found-purple-dark: #6f195e;
+  --not-found-yellow: #f3b01c;
+  --not-found-red: #ee342f;
+  --not-found-warm-white: #faf4e9;
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  min-height: 100dvh;
+  overflow: hidden;
+  background: var(--not-found-bg);
+  color: var(--not-found-ink);
+  font-family: var(--font-archivo), Arial, sans-serif;
+}
+
+html[data-theme='dark'] .signal-not-found-shell {
+  --not-found-bg: #1a0f0f;
+  --not-found-bg-deep: #241514;
+  --not-found-surface: #2a1b19;
+  --not-found-ink: #faf4e9;
+  --not-found-muted: #d1c1ad;
+  --not-found-faint: #a99986;
+  --not-found-border: #624a3e;
+  --not-found-border-strong: #866957;
+  --not-found-purple: #c15a9e;
+  --not-found-purple-dark: #e182bc;
+  --not-found-yellow: #f3b01c;
+  --not-found-red: #ff6b5e;
+  --not-found-warm-white: #fff8ee;
+}
+
+.signal-not-found-shell,
+.signal-not-found-shell * {
+  box-sizing: border-box;
+}
+
+.signal-not-found-shell a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.signal-not-found-shell a:focus-visible,
+.signal-not-found-shell button:focus-visible {
+  outline: 2px solid var(--not-found-yellow);
+  outline-offset: 3px;
+}
+
+.signal-not-found-container {
+  width: min(100% - 40px, 1180px);
+  margin-inline: auto;
+}
+
+.signal-not-found-header {
+  position: absolute;
+  z-index: 2;
+  top: 18px;
+  right: 0;
+  left: 0;
+}
+
+.signal-not-found-layout {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(320px, 0.95fr) minmax(320px, 0.75fr);
+  align-content: center;
+  align-items: center;
+  gap: clamp(48px, 9vw, 132px);
+  padding-top: 112px;
+  padding-bottom: 64px;
+}
+
+.signal-not-found-intro {
+  max-width: 510px;
+}
+
+.signal-not-found-kicker,
+.signal-not-found-panel-heading p,
+.signal-not-found-state span {
+  margin: 0;
+  color: var(--not-found-purple);
+  font-family: var(--font-plex-mono), monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.signal-not-found-intro h1 {
+  max-width: 8ch;
+  margin: 18px 0 0;
+  font-family: var(--font-archivo-black), Arial Black, sans-serif;
+  font-size: clamp(3.15rem, 6vw, 5.7rem);
+  font-weight: 400;
+  letter-spacing: -0.055em;
+  line-height: 0.94;
+  text-wrap: balance;
+}
+
+.signal-not-found-lede {
+  max-width: 33rem;
+  margin: 24px 0 0;
+  color: var(--not-found-muted);
+  font-size: clamp(1rem, 1.5vw, 1.14rem);
+  line-height: 1.65;
+}
+
+.signal-not-found-divider {
+  max-width: 510px;
+  margin-top: 36px;
+  border-top: 1px solid var(--not-found-border-strong);
+}
+
+.signal-not-found-panel {
+  width: min(100%, 430px);
+  justify-self: end;
+  padding: clamp(24px, 4vw, 38px);
+  border: 1px solid var(--not-found-border-strong);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--not-found-surface) 92%, transparent);
+  box-shadow: 14px 18px 0 color-mix(in srgb, var(--not-found-purple) 14%, transparent);
+  text-align: center;
+}
+
+.signal-not-found-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--not-found-border);
+  text-align: left;
+}
+
+.signal-not-found-panel-heading span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--not-found-red);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--not-found-red) 42%, transparent);
+}
+
+.signal-not-found-mark {
+  display: grid;
+  width: 104px;
+  height: 104px;
+  place-items: center;
+  margin: 38px auto 24px;
+  border: 1px solid color-mix(in srgb, var(--not-found-red) 45%, var(--not-found-border));
+  border-radius: 16px;
+  background: var(--not-found-bg-deep);
+  box-shadow: 8px 10px 0 color-mix(in srgb, var(--not-found-red) 12%, transparent);
+  --huddle-logo-primary: var(--not-found-purple);
+  --huddle-logo-accent: var(--not-found-red);
+  --huddle-logo-play: var(--not-found-ink);
+  --huddle-logo-play-stroke: var(--not-found-surface);
+}
+
+.signal-not-found-mark svg {
+  width: 68px;
+  height: 68px;
+}
+
+.signal-not-found-status {
+  margin: 0;
+  color: var(--not-found-ink);
+  font-family: var(--font-archivo-black), Arial Black, sans-serif;
+  font-size: clamp(1.35rem, 2.5vw, 1.8rem);
+  font-weight: 400;
+  letter-spacing: -0.045em;
+  line-height: 1.03;
+}
+
+.signal-not-found-copy {
+  margin: 12px 0 0;
+  color: var(--not-found-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.signal-not-found-state {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 24px;
+  padding: 9px 12px;
+  border: 1px solid var(--not-found-border);
+  border-radius: 9px;
+  background: var(--not-found-bg-deep);
+  text-align: left;
+}
+
+.signal-not-found-state code {
+  overflow: hidden;
+  color: var(--not-found-ink);
+  font-family: var(--font-plex-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.signal-not-found-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.signal-not-found-actions a {
+  display: inline-flex;
+  min-height: 46px;
+  flex: 1 1 150px;
+  align-items: center;
+  justify-content: center;
+  padding: 11px 15px;
+  border: 1px solid var(--not-found-border-strong);
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    transform 140ms ease;
+}
+
+.signal-not-found-primary {
+  border-color: var(--not-found-purple) !important;
+  color: var(--not-found-warm-white);
+  background: var(--not-found-purple);
+}
+
+.signal-not-found-secondary {
+  color: var(--not-found-ink);
+  background: transparent;
+}
+
+.signal-not-found-actions a:hover {
+  border-color: var(--not-found-purple);
+  background: color-mix(in srgb, var(--not-found-purple) 8%, var(--not-found-surface));
+}
+
+.signal-not-found-actions .signal-not-found-primary:hover {
+  background: var(--not-found-purple-dark);
+}
+
+.signal-not-found-actions a:active {
+  transform: translateY(1px);
+}
+
+.signal-not-found-route {
+  position: absolute;
+  display: grid;
+  width: min(40vw, 480px);
+  gap: 8px;
+  pointer-events: none;
+}
+
+.signal-not-found-route i {
+  display: block;
+  height: 1px;
+  background: color-mix(in srgb, var(--not-found-purple) 65%, transparent);
+}
+
+.signal-not-found-route i:nth-child(2) {
+  width: 82%;
+  margin-left: 9%;
+  background: color-mix(in srgb, var(--not-found-yellow) 75%, transparent);
+}
+
+.signal-not-found-route i:nth-child(3) {
+  width: 64%;
+  margin-left: 22%;
+  background: color-mix(in srgb, var(--not-found-red) 55%, transparent);
+}
+
+.signal-not-found-route--top {
+  top: 27%;
+  right: -10%;
+  transform: rotate(18deg);
+}
+
+.signal-not-found-route--bottom {
+  bottom: 15%;
+  left: -15%;
+  transform: rotate(-10deg);
+}
+
+@media (max-width: 760px) {
+  .signal-not-found-container {
+    width: min(100% - 28px, 1180px);
+  }
+
+  .signal-not-found-layout {
+    grid-template-columns: 1fr;
+    align-content: start;
+    gap: 38px;
+    padding-top: 104px;
+    padding-bottom: 44px;
+  }
+
+  .signal-not-found-intro {
+    max-width: none;
+  }
+
+  .signal-not-found-intro h1 {
+    max-width: 8ch;
+    font-size: clamp(2.9rem, 14vw, 4.4rem);
+  }
+
+  .signal-not-found-lede {
+    margin-top: 18px;
+  }
+
+  .signal-not-found-divider {
+    margin-top: 26px;
+  }
+
+  .signal-not-found-panel {
+    width: 100%;
+    justify-self: stretch;
+    padding: 24px 20px;
+    box-shadow: 8px 10px 0 color-mix(in srgb, var(--not-found-purple) 14%, transparent);
+  }
+
+  .signal-not-found-actions {
+    flex-direction: column;
+  }
+
+  .signal-not-found-actions a {
+    width: 100%;
+    flex: 0 0 auto;
+  }
+
+  .signal-not-found-route {
+    width: 80vw;
+  }
+
+  .signal-not-found-route--top {
+    top: 46%;
+    right: -35%;
+  }
+
+  .signal-not-found-route--bottom {
+    bottom: 12%;
+    left: -44%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signal-not-found-shell,
+  .signal-not-found-shell * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
   }
 }
