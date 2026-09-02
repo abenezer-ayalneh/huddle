@@ -2186,7 +2186,7 @@ html[data-theme='dark'] .huddle-brand-theme-header {
   flex-basis: 100%;
   justify-content: flex-end;
   margin-top: 3px;
-  color: var(--landing-yellow);
+  color: var(--landing-primary-foreground);
 }
 
 .landing-faq-section {
@@ -3702,7 +3702,7 @@ html[data-theme='dark'] .recordings-primary-action {
   background: var(--recordings-surface-strong);
 }
 
-.recordings-icon-action--download {
+.recordings-shell .recordings-icon-action--download {
   border-color: var(--recordings-purple);
   color: #fff8ee;
   background: var(--recordings-purple);
@@ -5791,7 +5791,7 @@ html[data-theme='dark'] .prejoin-recovery-dialog {
   --meeting-loading-purple-dark: #6f195e;
   --meeting-loading-yellow: #f3b01c;
   --meeting-loading-red: #ee342f;
-  --meeting-loading-warm-white: #faf4e9;
+  --meeting-loading-primary-foreground: #faf4e9;
   position: relative;
   isolation: isolate;
   display: flex;
@@ -5815,7 +5815,7 @@ html[data-theme='dark'] .meeting-loading-shell {
   --meeting-loading-purple-dark: #e182bc;
   --meeting-loading-yellow: #f3b01c;
   --meeting-loading-red: #ff6b5e;
-  --meeting-loading-warm-white: #fff8ee;
+  --meeting-loading-primary-foreground: #140b0b;
 }
 
 .meeting-loading-shell,
@@ -6130,7 +6130,7 @@ html[data-theme='dark'] .meeting-loading-shell {
   place-items: center;
   border: 1px solid color-mix(in srgb, var(--meeting-loading-purple) 52%, var(--meeting-loading-border));
   border-radius: 12px;
-  color: var(--meeting-loading-warm-white);
+  color: var(--meeting-loading-primary-foreground);
   background: var(--meeting-loading-purple);
   box-shadow: 6px 7px 0 color-mix(in srgb, var(--meeting-loading-purple) 20%, transparent);
   font-family:
@@ -6225,7 +6225,7 @@ html[data-theme='dark'] .meeting-loading-shell {
 
 .meeting-error-primary {
   border: 1px solid var(--meeting-loading-purple);
-  color: var(--meeting-loading-warm-white);
+  color: var(--meeting-loading-primary-foreground);
   background: var(--meeting-loading-purple);
 }
 
@@ -6338,7 +6338,7 @@ html[data-theme='dark'] .meeting-loading-shell {
   --verify-email-purple-dark: #6f195e;
   --verify-email-yellow: #f3b01c;
   --verify-email-red: #ee342f;
-  --verify-email-warm-white: #faf4e9;
+  --verify-email-primary-foreground: #faf4e9;
   position: relative;
   isolation: isolate;
   display: flex;
@@ -6362,7 +6362,7 @@ html[data-theme='dark'] .verify-email-shell {
   --verify-email-purple-dark: #e182bc;
   --verify-email-yellow: #f3b01c;
   --verify-email-red: #ff6b5e;
-  --verify-email-warm-white: #fff8ee;
+  --verify-email-primary-foreground: #140b0b;
 }
 
 .verify-email-shell,
@@ -6577,10 +6577,10 @@ html[data-theme='dark'] .verify-email-shell {
   line-height: 1;
 }
 
-.verify-email-primary-action {
+.verify-email-shell .verify-email-primary-action {
   padding: 11px 15px;
   border: 1px solid var(--verify-email-purple);
-  color: var(--verify-email-warm-white);
+  color: var(--verify-email-primary-foreground);
   background: var(--verify-email-purple);
   transition:
     background-color 140ms ease,
@@ -7318,6 +7318,13 @@ html[data-theme='dark'] .signal-call-device-popover button:hover {
   color: var(--call-primary-foreground) !important;
 }
 
+.signal-call-side-panel button[class*='bg-destructive'],
+.signal-call-side-panel button[class*='bg-red'] {
+  border-color: var(--call-red) !important;
+  background-color: var(--call-red) !important;
+  color: var(--call-danger-foreground) !important;
+}
+
 .signal-call-side-panel [class*='border-white'] {
   border-color: var(--call-border) !important;
 }
@@ -7366,6 +7373,10 @@ html[data-theme='dark'] .signal-call-device-popover button:hover {
 .signal-call-host-toggle {
   border-radius: 8px !important;
   color: var(--call-ink) !important;
+}
+
+.signal-call-host-toggle [class*='text-cyan'] {
+  color: var(--call-purple) !important;
 }
 
 .signal-call-host-panel-actions {
@@ -7608,7 +7619,7 @@ html[data-theme='dark'] .signal-call-dialog [data-slot='alert-dialog-action'].si
   --downloads-purple-dark: #6f195e;
   --downloads-yellow: #f3b01c;
   --downloads-red: #ee342f;
-  --downloads-warm-white: #faf4e9;
+  --downloads-primary-foreground: #faf4e9;
   position: relative;
   min-height: 100vh;
   overflow-x: clip;
@@ -7632,7 +7643,7 @@ html[data-theme='dark'] .downloads-shell {
   --downloads-purple: #c15a9e;
   --downloads-purple-dark: #e182bc;
   --downloads-red: #ff6b5e;
-  --downloads-warm-white: #fff8ee;
+  --downloads-primary-foreground: #140b0b;
 }
 
 .downloads-shell,
@@ -8013,7 +8024,7 @@ html[data-theme='dark'] .downloads-shell {
   gap: 5px;
 }
 
-.downloads-download-button {
+.downloads-shell .downloads-download-button {
   align-self: center;
   display: inline-flex;
   min-height: 46px;
@@ -8025,7 +8036,7 @@ html[data-theme='dark'] .downloads-shell {
   border-radius: 9px;
   background: var(--downloads-purple);
   box-shadow: 5px 5px 0 color-mix(in srgb, var(--downloads-purple-dark) 52%, transparent);
-  color: var(--downloads-warm-white);
+  color: var(--downloads-primary-foreground);
   font-size: 13px;
   font-weight: 800;
   text-align: center;
@@ -8360,7 +8371,7 @@ html[data-theme='dark'] .downloads-shell {
   --not-found-purple-dark: #6f195e;
   --not-found-yellow: #f3b01c;
   --not-found-red: #ee342f;
-  --not-found-warm-white: #faf4e9;
+  --not-found-primary-foreground: #faf4e9;
   position: relative;
   isolation: isolate;
   display: flex;
@@ -8384,7 +8395,7 @@ html[data-theme='dark'] .signal-not-found-shell {
   --not-found-purple-dark: #e182bc;
   --not-found-yellow: #f3b01c;
   --not-found-red: #ff6b5e;
-  --not-found-warm-white: #fff8ee;
+  --not-found-primary-foreground: #140b0b;
 }
 
 .signal-not-found-shell,
@@ -8447,7 +8458,10 @@ html[data-theme='dark'] .signal-not-found-shell {
 .signal-not-found-intro h1 {
   max-width: 8ch;
   margin: 18px 0 0;
-  font-family: var(--font-archivo-black), Arial Black, sans-serif;
+  font-family:
+    var(--font-archivo-black),
+    Arial Black,
+    sans-serif;
   font-size: clamp(3.15rem, 6vw, 5.7rem);
   font-weight: 400;
   letter-spacing: -0.055em;
@@ -8522,7 +8536,10 @@ html[data-theme='dark'] .signal-not-found-shell {
 .signal-not-found-status {
   margin: 0;
   color: var(--not-found-ink);
-  font-family: var(--font-archivo-black), Arial Black, sans-serif;
+  font-family:
+    var(--font-archivo-black),
+    Arial Black,
+    sans-serif;
   font-size: clamp(1.35rem, 2.5vw, 1.8rem);
   font-weight: 400;
   letter-spacing: -0.045em;
@@ -8587,7 +8604,7 @@ html[data-theme='dark'] .signal-not-found-shell {
 
 .signal-not-found-primary {
   border-color: var(--not-found-purple) !important;
-  color: var(--not-found-warm-white);
+  color: var(--not-found-primary-foreground);
   background: var(--not-found-purple);
 }
 

@@ -23,7 +23,7 @@ const colors = {
   purpleDark: '#6f195e',
   yellow: '#f3b01c',
   red: '#ee342f',
-  warmWhite: '#faf4e9',
+  primaryForeground: '#faf4e9',
 };
 
 const darkColors = {
@@ -39,7 +39,7 @@ const darkColors = {
   purpleDark: '#e182bc',
   yellow: '#f3b01c',
   red: '#ff6b5e',
-  warmWhite: '#fff8ee',
+  primaryForeground: '#140b0b',
 };
 
 const fontSans = 'var(--font-archivo, Arial, Helvetica, sans-serif)';
@@ -81,11 +81,11 @@ export default function ErrorSurface({ kind, digest, onRetry }: ErrorSurfaceProp
   } satisfies CSSProperties;
 
   const darkModeStyle = `
-    .huddle-error-surface { --error-background: ${colors.background}; --error-background-deep: ${colors.backgroundDeep}; --error-surface: ${colors.surface}; --error-ink: ${colors.ink}; --error-muted: ${colors.muted}; --error-faint: ${colors.faint}; --error-border: ${colors.border}; --error-border-strong: ${colors.borderStrong}; --error-purple: ${colors.purple}; --error-purple-dark: ${colors.purpleDark}; --error-yellow: ${colors.yellow}; --error-red: ${colors.red}; --error-warm-white: ${colors.warmWhite}; }
+    .huddle-error-surface { --error-background: ${colors.background}; --error-background-deep: ${colors.backgroundDeep}; --error-surface: ${colors.surface}; --error-ink: ${colors.ink}; --error-muted: ${colors.muted}; --error-faint: ${colors.faint}; --error-border: ${colors.border}; --error-border-strong: ${colors.borderStrong}; --error-purple: ${colors.purple}; --error-purple-dark: ${colors.purpleDark}; --error-yellow: ${colors.yellow}; --error-red: ${colors.red}; --error-primary-foreground: ${colors.primaryForeground}; }
     @media (prefers-color-scheme: dark) {
-      .huddle-error-surface { --error-background: ${darkColors.background}; --error-background-deep: ${darkColors.backgroundDeep}; --error-surface: ${darkColors.surface}; --error-ink: ${darkColors.ink}; --error-muted: ${darkColors.muted}; --error-faint: ${darkColors.faint}; --error-border: ${darkColors.border}; --error-border-strong: ${darkColors.borderStrong}; --error-purple: ${darkColors.purple}; --error-purple-dark: ${darkColors.purpleDark}; --error-yellow: ${darkColors.yellow}; --error-red: ${darkColors.red}; --error-warm-white: ${darkColors.warmWhite}; color-scheme: dark; }
+      .huddle-error-surface { --error-background: ${darkColors.background}; --error-background-deep: ${darkColors.backgroundDeep}; --error-surface: ${darkColors.surface}; --error-ink: ${darkColors.ink}; --error-muted: ${darkColors.muted}; --error-faint: ${darkColors.faint}; --error-border: ${darkColors.border}; --error-border-strong: ${darkColors.borderStrong}; --error-purple: ${darkColors.purple}; --error-purple-dark: ${darkColors.purpleDark}; --error-yellow: ${darkColors.yellow}; --error-red: ${darkColors.red}; --error-primary-foreground: ${darkColors.primaryForeground}; color-scheme: dark; }
     }
-    html[data-theme='dark'] .huddle-error-surface { --error-background: ${darkColors.background}; --error-background-deep: ${darkColors.backgroundDeep}; --error-surface: ${darkColors.surface}; --error-ink: ${darkColors.ink}; --error-muted: ${darkColors.muted}; --error-faint: ${darkColors.faint}; --error-border: ${darkColors.border}; --error-border-strong: ${darkColors.borderStrong}; --error-purple: ${darkColors.purple}; --error-purple-dark: ${darkColors.purpleDark}; --error-yellow: ${darkColors.yellow}; --error-red: ${darkColors.red}; --error-warm-white: ${darkColors.warmWhite}; color-scheme: dark; }
+    html[data-theme='dark'] .huddle-error-surface { --error-background: ${darkColors.background}; --error-background-deep: ${darkColors.backgroundDeep}; --error-surface: ${darkColors.surface}; --error-ink: ${darkColors.ink}; --error-muted: ${darkColors.muted}; --error-faint: ${darkColors.faint}; --error-border: ${darkColors.border}; --error-border-strong: ${darkColors.borderStrong}; --error-purple: ${darkColors.purple}; --error-purple-dark: ${darkColors.purpleDark}; --error-yellow: ${darkColors.yellow}; --error-red: ${darkColors.red}; --error-primary-foreground: ${darkColors.primaryForeground}; color-scheme: dark; }
     html[data-theme='light'] .huddle-error-surface { color-scheme: light; }
     .huddle-error-surface a, .huddle-error-surface button { transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, transform 140ms ease; }
     .huddle-error-surface a:hover { border-color: var(--error-purple) !important; background: color-mix(in srgb, var(--error-purple) 8%, var(--error-surface)) !important; }
@@ -150,7 +150,7 @@ export default function ErrorSurface({ kind, digest, onRetry }: ErrorSurfaceProp
               </div>
 
               <div className="huddle-error-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 24 }}>
-                <button type="button" onClick={onRetry} style={{ minHeight: 46, flex: '1 1 160px', padding: '11px 15px', border: '1px solid var(--error-purple)', borderRadius: 9, color: 'var(--error-warm-white)', background: 'var(--error-purple)', fontFamily: fontSans, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                <button type="button" onClick={onRetry} style={{ minHeight: 46, flex: '1 1 160px', padding: '11px 15px', border: '1px solid var(--error-purple)', borderRadius: 9, color: 'var(--error-primary-foreground)', background: 'var(--error-purple)', fontFamily: fontSans, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
                   {copy.actionLabel}
                 </button>
                 <Link href="/" style={{ display: 'inline-flex', minHeight: 46, flex: '1 1 130px', alignItems: 'center', justifyContent: 'center', padding: '11px 15px', border: '1px solid var(--error-border-strong)', borderRadius: 9, color: 'var(--error-ink)', background: 'transparent', fontFamily: fontSans, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
