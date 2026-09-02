@@ -1,277 +1,88 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-07-30T09:50:41Z",
-  "title": "Design System: Huddle Web + Signal Handoff Landing",
+  "generatedAt": "2026-09-02T00:00:00Z",
+  "title": "Design System: Huddle Web",
   "extensions": {
-    "landingDirection": {
-      "name": "Signal Handoff",
-      "scope": "apps/web/src/app/page.tsx",
-      "mode": "persuade",
-      "light": { "background": "#F6EEDB", "ink": "#141414", "primary": "#8D2676", "signal": "#F3B01C", "critical": "#EE342F" },
-      "dark": { "background": "#1A0F0F", "ink": "#FAF4E9", "primary": "#C15A9E", "signal": "#F3B01C", "critical": "#FF6B5E" },
-      "displayFont": "Archivo Black",
-      "bodyFont": "Archivo",
-      "monoFont": "IBM Plex Mono",
-      "firstViewport": "Floating pill navigation, left promise/actions/Room Code field, right code-native meeting scene",
-      "legacyRoutes": "Keep the dark Neon Switchboard tokens until a later migration approval"
-    },
-    "colorMeta": {
-      "command-magenta": {
-        "role": "primary",
-        "displayName": "Command Magenta",
-        "canonical": "oklch(0.66 0.27 350)",
-        "tonalRamp": [
-          "oklch(0.15 0.27 350)",
-          "oklch(0.25 0.27 350)",
-          "oklch(0.35 0.27 350)",
-          "oklch(0.45 0.27 350)",
-          "oklch(0.55 0.27 350)",
-          "oklch(0.66 0.27 350)",
-          "oklch(0.8 0.27 350)",
-          "oklch(0.95 0.27 350)"
-        ]
+    "surfaceFamilies": [
+      {
+        "name": "Signal Handoff warm shells",
+        "scope": "apps/web/src/app and apps/web/src/components",
+        "routes": [
+          "/",
+          "/lobby",
+          "/privacy",
+          "/terms",
+          "/downloads",
+          "/recordings",
+          "/verify-email",
+          "/rooms/[room] entry and call workspace",
+          "route/global errors",
+          "404",
+          "global system notices"
+        ],
+        "themes": {
+          "light": {
+            "background": "#F6EEDB",
+            "surface": "#FFFAF0",
+            "ink": "#141414",
+            "purple": "#8D2676",
+            "yellow": "#F3B01C",
+            "red": "#EE342F"
+          },
+          "dark": {
+            "background": "#1A0F0F",
+            "surface": "#2A1B19",
+            "ink": "#FAF4E9",
+            "purple": "#C15A9E",
+            "yellow": "#F3B01C",
+            "red": "#FF6B5E"
+          }
+        }
       },
-      "consent-cyan": {
-        "role": "secondary",
-        "displayName": "Consent Cyan",
-        "canonical": "oklch(0.82 0.15 200)",
-        "tonalRamp": [
-          "oklch(0.15 0.15 200)",
-          "oklch(0.25 0.15 200)",
-          "oklch(0.35 0.15 200)",
-          "oklch(0.45 0.15 200)",
-          "oklch(0.55 0.15 200)",
-          "oklch(0.7 0.15 200)",
-          "oklch(0.82 0.15 200)",
-          "oklch(0.95 0.15 200)"
-        ]
+      {
+        "name": "Dark media field",
+        "scope": "apps/web/src/app/rooms/[room]",
+        "purpose": "Keep live camera and screen media legible in both theme preferences.",
+        "background": "#1A0F0F light / #140B0B dark",
+        "mediaFit": "object-contain"
       },
-      "operator-background": {
-        "role": "neutral",
-        "displayName": "Operator Background",
-        "canonical": "oklch(0.15 0.02 280)",
-        "tonalRamp": [
-          "oklch(0.15 0.02 280)",
-          "oklch(0.25 0.02 280)",
-          "oklch(0.35 0.02 280)",
-          "oklch(0.45 0.02 280)",
-          "oklch(0.55 0.02 280)",
-          "oklch(0.7 0.02 280)",
-          "oklch(0.82 0.02 280)",
-          "oklch(0.95 0.02 280)"
-        ]
-      },
-      "high-signal": {
-        "role": "neutral",
-        "displayName": "High Signal",
-        "canonical": "oklch(0.97 0.01 250)",
-        "tonalRamp": [
-          "oklch(0.15 0.01 250)",
-          "oklch(0.25 0.01 250)",
-          "oklch(0.35 0.01 250)",
-          "oklch(0.45 0.01 250)",
-          "oklch(0.55 0.01 250)",
-          "oklch(0.7 0.01 250)",
-          "oklch(0.82 0.01 250)",
-          "oklch(0.95 0.01 250)"
-        ]
-      },
-      "on-command": {
-        "role": "neutral",
-        "displayName": "On Command",
-        "canonical": "oklch(0.99 0 0)",
-        "tonalRamp": [
-          "oklch(0.15 0 0)",
-          "oklch(0.25 0 0)",
-          "oklch(0.35 0 0)",
-          "oklch(0.45 0 0)",
-          "oklch(0.55 0 0)",
-          "oklch(0.7 0 0)",
-          "oklch(0.82 0 0)",
-          "oklch(0.95 0 0)"
-        ]
-      },
-      "on-consent": {
-        "role": "neutral",
-        "displayName": "On Consent",
-        "canonical": "oklch(0.18 0.03 240)",
-        "tonalRamp": [
-          "oklch(0.15 0.03 240)",
-          "oklch(0.25 0.03 240)",
-          "oklch(0.35 0.03 240)",
-          "oklch(0.45 0.03 240)",
-          "oklch(0.55 0.03 240)",
-          "oklch(0.7 0.03 240)",
-          "oklch(0.82 0.03 240)",
-          "oklch(0.95 0.03 240)"
-        ]
-      },
-      "glass-card": {
-        "role": "neutral",
-        "displayName": "Glass Card",
-        "canonical": "oklch(0.2 0.025 285)",
-        "tonalRamp": [
-          "oklch(0.15 0.025 285)",
-          "oklch(0.25 0.025 285)",
-          "oklch(0.35 0.025 285)",
-          "oklch(0.45 0.025 285)",
-          "oklch(0.55 0.025 285)",
-          "oklch(0.7 0.025 285)",
-          "oklch(0.82 0.025 285)",
-          "oklch(0.95 0.025 285)"
-        ]
-      },
-      "deep-popover": {
-        "role": "neutral",
-        "displayName": "Deep Popover",
-        "canonical": "oklch(0.19 0.025 285)",
-        "tonalRamp": [
-          "oklch(0.15 0.025 285)",
-          "oklch(0.25 0.025 285)",
-          "oklch(0.35 0.025 285)",
-          "oklch(0.45 0.025 285)",
-          "oklch(0.55 0.025 285)",
-          "oklch(0.7 0.025 285)",
-          "oklch(0.82 0.025 285)",
-          "oklch(0.95 0.025 285)"
-        ]
-      },
-      "secondary-surface": {
-        "role": "neutral",
-        "displayName": "Secondary Surface",
-        "canonical": "oklch(0.26 0.03 285)",
-        "tonalRamp": [
-          "oklch(0.15 0.03 285)",
-          "oklch(0.25 0.03 285)",
-          "oklch(0.35 0.03 285)",
-          "oklch(0.45 0.03 285)",
-          "oklch(0.55 0.03 285)",
-          "oklch(0.7 0.03 285)",
-          "oklch(0.82 0.03 285)",
-          "oklch(0.95 0.03 285)"
-        ]
-      },
-      "muted-surface": {
-        "role": "neutral",
-        "displayName": "Muted Surface",
-        "canonical": "oklch(0.24 0.02 285)",
-        "tonalRamp": [
-          "oklch(0.15 0.02 285)",
-          "oklch(0.25 0.02 285)",
-          "oklch(0.35 0.02 285)",
-          "oklch(0.45 0.02 285)",
-          "oklch(0.55 0.02 285)",
-          "oklch(0.7 0.02 285)",
-          "oklch(0.82 0.02 285)",
-          "oklch(0.95 0.02 285)"
-        ]
-      },
-      "quiet-copy": {
-        "role": "neutral",
-        "displayName": "Quiet Copy",
-        "canonical": "oklch(0.72 0.03 270)",
-        "tonalRamp": [
-          "oklch(0.15 0.03 270)",
-          "oklch(0.25 0.03 270)",
-          "oklch(0.35 0.03 270)",
-          "oklch(0.45 0.03 270)",
-          "oklch(0.55 0.03 270)",
-          "oklch(0.7 0.03 270)",
-          "oklch(0.82 0.03 270)",
-          "oklch(0.95 0.03 270)"
-        ]
-      },
-      "destructive-red": {
-        "role": "tertiary",
-        "displayName": "Recording Red",
-        "canonical": "oklch(0.62 0.24 18)",
-        "tonalRamp": [
-          "oklch(0.15 0.24 18)",
-          "oklch(0.25 0.24 18)",
-          "oklch(0.35 0.24 18)",
-          "oklch(0.45 0.24 18)",
-          "oklch(0.55 0.24 18)",
-          "oklch(0.62 0.24 18)",
-          "oklch(0.8 0.24 18)",
-          "oklch(0.95 0.24 18)"
-        ]
-      },
-      "hairline-static": {
-        "role": "neutral",
-        "displayName": "Hairline Static",
-        "canonical": "oklch(0.92 0.05 320 / 14%)",
-        "tonalRamp": [
-          "oklch(0.15 0.05 320 / 14%)",
-          "oklch(0.25 0.05 320 / 14%)",
-          "oklch(0.35 0.05 320 / 14%)",
-          "oklch(0.45 0.05 320 / 14%)",
-          "oklch(0.55 0.05 320 / 14%)",
-          "oklch(0.7 0.05 320 / 14%)",
-          "oklch(0.82 0.05 320 / 14%)",
-          "oklch(0.95 0.05 320 / 14%)"
-        ]
+      {
+        "name": "Root fallback",
+        "scope": "apps/web/src/app/layout.tsx",
+        "purpose": "Dark dot-grid baseline for future unscoped routes; current audited shells override it."
       }
-    },
-    "typographyMeta": {
-      "display": {
-        "displayName": "Display",
-        "purpose": "Short landing and Downloads hero statements."
-      },
-      "headline": {
-        "displayName": "Headline",
-        "purpose": "Major marketing and empty-state section headings."
-      },
-      "title": {
-        "displayName": "Title",
-        "purpose": "Dialogs, panels, dashboards, and primary app sections."
-      },
-      "body": {
-        "displayName": "Body",
-        "purpose": "Default explanatory and interface copy."
-      },
-      "action": {
-        "displayName": "Action",
-        "purpose": "Decisive calls to action and primary submit controls."
-      },
-      "label": {
-        "displayName": "Label",
-        "purpose": "Form labels, compact buttons, metadata, and controls."
-      },
-      "mono": {
-        "displayName": "Machine Readout",
-        "purpose": "Room Codes, timers, transport state, and HUD labels."
-      }
+    ],
+    "headerInvariant": {
+      "component": "HuddleBrandThemeHeader",
+      "brand": "left",
+      "actions": "right",
+      "breakpoints": "preserve at desktop and mobile"
     },
     "shadows": [
       {
-        "name": "command-glow",
-        "value": "0 0 0 1px oklch(0.66 0.27 350 / 0.5), 0 0 18px oklch(0.66 0.27 350 / 0.45), 0 0 42px oklch(0.66 0.27 350 / 0.25)",
-        "purpose": "Decisive Command Magenta actions and rare attention states."
+        "name": "task-lift",
+        "value": "14px 18px 0 color-mix(in srgb, var(--verify-email-purple) 14%, transparent)",
+        "purpose": "Primary outcome, verification, and error panels."
       },
       {
-        "name": "consent-glow",
-        "value": "0 0 0 1px oklch(0.82 0.15 200 / 0.5), 0 0 18px oklch(0.82 0.15 200 / 0.45), 0 0 42px oklch(0.82 0.15 200 / 0.25)",
-        "purpose": "Active Consent Cyan controls and approved state."
+        "name": "compact-task-lift",
+        "value": "8px 10px 0 color-mix(in srgb, var(--verify-email-purple) 14%, transparent)",
+        "purpose": "Mobile and compact entry panels."
       },
       {
-        "name": "dialog-lift",
-        "value": "0 8px 60px oklch(0 0 0 / 0.6)",
-        "purpose": "Centered task panels and blocking dialogs."
+        "name": "archive-release-lift",
+        "value": "12px 16px 0 color-mix(in srgb, var(--recordings-purple) 18%, transparent)",
+        "purpose": "Downloads and Recordings workspaces."
       },
       {
         "name": "status-lift",
-        "value": "0 12px 36px oklch(0 0 0 / 0.35)",
-        "purpose": "Persistent status rails below media."
+        "value": "9px 11px 0 color-mix(in srgb, var(--system-notice-purple) 17%, transparent)",
+        "purpose": "Global system notices."
       },
       {
-        "name": "side-panel-cast",
-        "value": "8px 0 50px oklch(0 0 0 / 0.5)",
-        "purpose": "Inward shadow for the left-docked Chat panel; negate the x offset for the Host panel."
-      },
-      {
-        "name": "cta-bloom",
-        "value": "0 16px 45px oklch(0.66 0.27 350 / 0.28)",
-        "purpose": "Primary marketing CTA only."
+        "name": "call-chrome-lift",
+        "value": "6px 7px 0 var(--call-shadow)",
+        "purpose": "Framed controls and drawers around live media."
       }
     ],
     "motion": [
@@ -297,190 +108,90 @@
       },
       {
         "name": "panel-transition",
-        "value": "200ms ease",
-        "purpose": "Chat, Host panel, toast, and compact state transitions."
+        "value": "140–200ms ease",
+        "purpose": "Controls, panels, toasts, and compact state changes."
       }
     ],
     "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ],
+    "components": [
       {
-        "name": "sm",
-        "value": "640px"
+        "name": "Shared Huddle Header",
+        "kind": "navigation",
+        "refersTo": "HuddleBrandThemeHeader",
+        "description": "Home-linked brand island on the left, theme control and route actions on the right.",
+        "html": "<header class=\"huddle-brand-theme-header\"><a class=\"huddle-brand-theme-header__brand\" href=\"/\">Huddle</a><div class=\"huddle-brand-theme-header__trailing\"><button type=\"button\">Theme</button></div></header>",
+        "css": ".huddle-brand-theme-header { display:flex; align-items:center; gap:14px; min-height:60px; } .huddle-brand-theme-header__brand { margin-right:auto; } .huddle-brand-theme-header__theme, .huddle-brand-theme-header__trailing { flex:0 0 auto; }"
       },
       {
-        "name": "md",
-        "value": "768px"
+        "name": "Warm Task Panel",
+        "kind": "card",
+        "refersTo": "signal-panel",
+        "description": "A framed task surface with warm fill, strong boundary, and offset structural lift.",
+        "html": "<section class=\"signal-task-panel\"><p class=\"signal-kicker\">CURRENT HANDOFF</p><h2>State is clear.</h2><p>Copy names the state and the next recovery path.</p></section>",
+        "css": ".signal-task-panel { border:1px solid var(--meeting-loading-border-strong); border-radius:16px; padding:clamp(24px,4vw,38px); background:var(--meeting-loading-surface); box-shadow:14px 18px 0 color-mix(in srgb, var(--meeting-loading-purple) 14%, transparent); }"
       },
       {
-        "name": "lg",
-        "value": "1024px"
+        "name": "Meeting Entry Shell",
+        "kind": "outcome",
+        "refersTo": "MeetingEntryShell",
+        "description": "Shared room resolution, waiting, denied, and connection-error composition.",
+        "html": "<main class=\"meeting-loading-shell\"><section class=\"meeting-loading-intro\">Context</section><section class=\"meeting-loading-panel\" role=\"status\">State and recovery</section></main>",
+        "css": ".meeting-loading-shell { display:flex; min-height:100dvh; background:var(--meeting-loading-bg); color:var(--meeting-loading-ink); } .meeting-loading-panel { border:1px solid var(--meeting-loading-border-strong); border-radius:16px; background:var(--meeting-loading-surface); box-shadow:14px 18px 0 color-mix(in srgb, var(--meeting-loading-purple) 14%, transparent); }"
+      },
+      {
+        "name": "Live Media Frame",
+        "kind": "media",
+        "refersTo": "cyber-frame / signal-call-shell",
+        "description": "Dark, cut-corner media frame that preserves full camera and screen content.",
+        "html": "<article class=\"cyber-frame cyber-clip\"><video style=\"object-fit:contain\" /></article>",
+        "css": ".cyber-frame { padding:1.5px; background:linear-gradient(135deg, var(--magenta), var(--cyan)); } .cyber-clip { clip-path:polygon(16px 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%,0 16px); } video { object-fit:contain; }"
       }
-    ]
-  },
-  "components": [
-    {
-      "name": "Primary Command Button",
-      "kind": "button",
-      "refersTo": "button-primary",
-      "description": "The decisive marketing or form action; use once per decision cluster.",
-      "html": "<button class=\"ds-btn-command\">OPEN LOBBY <svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M5 12h14M13 6l6 6-6 6\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg></button>",
-      "css": ".ds-btn-command { display:inline-flex; align-items:center; justify-content:center; gap:8px; border:0; border-radius:var(--radius-md); padding:12px 20px; background:var(--magenta); color:var(--background); font-family:var(--font-display); font-size:16px; font-weight:600; box-shadow:0 16px 45px oklch(0.66 0.27 350 / 0.28); transition:filter 160ms ease, transform 160ms ease, box-shadow 160ms ease; } .ds-btn-command svg { width:20px; height:20px; } .ds-btn-command:hover { filter:brightness(1.1); } .ds-btn-command:active { transform:translateY(1px); } .ds-btn-command:focus-visible { outline:none; box-shadow:0 0 0 2px oklch(0.99 0 0 / 0.7), 0 16px 45px oklch(0.66 0.27 350 / 0.28); }"
-    },
-    {
-      "name": "Secondary Glass Button",
-      "kind": "button",
-      "refersTo": "button-secondary",
-      "description": "A quieter alternative action that retains the dark glass hierarchy.",
-      "html": "<button class=\"ds-btn-glass\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"3\" y=\"6\" width=\"14\" height=\"12\" rx=\"2\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"/><path d=\"m17 10 4-2v8l-4-2\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\"/></svg> JOIN ROOM</button>",
-      "css": ".ds-btn-glass { display:inline-flex; align-items:center; justify-content:center; gap:8px; border:1px solid oklch(0.82 0.15 200 / 0.3); border-radius:var(--radius-md); padding:12px 20px; background:oklch(1 0 0 / 0.08); color:oklch(0.97 0.01 250); font-family:var(--font-sans); font-size:16px; font-weight:600; box-shadow:inset 0 1px 0 oklch(1 0 0 / 0.08); transition:background 160ms ease, transform 160ms ease; } .ds-btn-glass svg { width:18px; height:18px; } .ds-btn-glass:hover { background:oklch(1 0 0 / 0.13); } .ds-btn-glass:active { transform:translateY(1px); } .ds-btn-glass:focus-visible { outline:none; box-shadow:0 0 0 2px oklch(0.82 0.15 200 / 0.7), inset 0 1px 0 oklch(1 0 0 / 0.08); }"
-    },
-    {
-      "name": "Room Code Field",
-      "kind": "input",
-      "refersTo": "text-field",
-      "description": "The canonical text-field treatment for codes, names, links, and device labels.",
-      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">ROOM CODE OR MEETING LINK</span><span class=\"ds-field-help\">Paste a code or full Huddle URL.</span><span class=\"ds-field-shell\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M10 3 8 21M16 3l-2 18M4 9h16M3 15h16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\"/></svg><input placeholder=\"team-checkin\" /></span></label>",
-      "css": ".ds-field { display:grid; gap:6px; color:oklch(0.97 0.01 250); font-family:var(--font-sans); } .ds-field-label { font-family:var(--font-display); font-size:14px; font-weight:600; } .ds-field-help { color:oklch(0.72 0.03 270); font-size:14px; } .ds-field-shell { display:flex; align-items:center; gap:8px; border:1px solid oklch(1 0 0 / 0.15); border-radius:var(--radius-md); padding:10px 12px; background:oklch(1 0 0 / 0.05); transition:border-color 160ms ease, box-shadow 160ms ease; } .ds-field-shell:focus-within { border-color:oklch(0.82 0.15 200 / 0.7); box-shadow:0 0 0 2px oklch(0.82 0.15 200 / 0.25); } .ds-field-shell svg { width:16px; height:16px; color:var(--cyan); } .ds-field-shell input { min-width:0; flex:1; border:0; outline:0; background:transparent; color:oklch(0.97 0.01 250); font:400 16px/1.5 var(--font-sans); } .ds-field-shell input::placeholder { color:oklch(0.97 0.01 250 / 0.42); }"
-    },
-    {
-      "name": "Glass Task Panel",
-      "kind": "card",
-      "refersTo": "glass-panel",
-      "description": "A contained form, recordings, or dialog surface over the dot-grid canvas.",
-      "html": "<section class=\"ds-glass-panel\"><span class=\"ds-panel-kicker\">MANAGED ROOM</span><h3>Host authority stays visible.</h3><p>Use one contained task surface, clear supporting copy, and a decisive action.</p></section>",
-      "css": ".ds-glass-panel { max-width:420px; border:1px solid var(--border); border-radius:var(--radius-lg); padding:24px; background:oklch(0.2 0.025 285 / 0.62); color:oklch(0.97 0.01 250); font-family:var(--font-sans); backdrop-filter:blur(16px) saturate(140%); box-shadow:0 8px 60px oklch(0 0 0 / 0.45); } .ds-glass-panel h3 { margin:8px 0; font-family:var(--font-display); font-size:24px; line-height:1.2; letter-spacing:-0.01em; } .ds-glass-panel p { margin:0; color:oklch(0.72 0.03 270); line-height:1.5; } .ds-panel-kicker { color:var(--cyan); font-family:var(--font-mono); font-size:11px; font-weight:500; letter-spacing:0.16em; } .ds-glass-panel:hover { border-color:oklch(0.82 0.15 200 / 0.24); } .ds-glass-panel:focus-within { box-shadow:0 0 0 2px oklch(0.82 0.15 200 / 0.45), 0 8px 60px oklch(0 0 0 / 0.45); }"
-    },
-    {
-      "name": "Active Call Control",
-      "kind": "button",
-      "refersTo": "call-control-active",
-      "description": "A compact, immediate in-call action in its active or approved state.",
-      "html": "<button class=\"ds-call-control\" aria-label=\"Camera on\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M15 10 21 7v10l-6-3M3 6h12v12H3z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\"/></svg></button>",
-      "css": ".ds-call-control { display:inline-flex; width:44px; height:44px; align-items:center; justify-content:center; border:0; border-radius:9999px; background:oklch(0.82 0.15 200 / 0.15); color:var(--cyan); box-shadow:0 0 0 1px oklch(0.82 0.15 200 / 0.4); transition:background 160ms ease, transform 160ms ease, box-shadow 160ms ease; } .ds-call-control svg { width:20px; height:20px; } .ds-call-control:hover { background:oklch(0.82 0.15 200 / 0.25); } .ds-call-control:active { transform:translateY(1px); } .ds-call-control:focus-visible { outline:none; box-shadow:0 0 0 2px oklch(0.82 0.15 200 / 0.7), 0 0 18px oklch(0.82 0.15 200 / 0.28); }"
-    },
-    {
-      "name": "Live Video Tile",
-      "kind": "custom",
-      "refersTo": "video-tile",
-      "description": "The cut-corner live-media surface with participant state and non-cropping media behavior.",
-      "html": "<article class=\"ds-video-frame\"><div class=\"ds-video-tile\"><div class=\"ds-avatar\">MA</div><span class=\"ds-live\"><i></i> LIVE</span><span class=\"ds-name\">Maya</span></div></article>",
-      "css": ".ds-video-frame { box-sizing:border-box; width:320px; aspect-ratio:16/9; padding:2px; clip-path:polygon(16px 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%,0 16px); background:linear-gradient(135deg,oklch(0.66 0.27 350 / 0.5),oklch(0.82 0.15 200 / 0.45)); box-shadow:0 0 22px oklch(0.66 0.27 350 / 0.25),0 0 50px oklch(0.82 0.15 200 / 0.15); } .ds-video-tile { position:relative; display:grid; height:100%; place-items:center; overflow:hidden; clip-path:inherit; background:linear-gradient(135deg,oklch(0.18 0.03 300),oklch(0.13 0.02 270)); color:oklch(0.97 0.01 250); font-family:var(--font-sans); } .ds-avatar { display:grid; width:64px; aspect-ratio:1; place-items:center; border-radius:9999px; background:oklch(0.66 0.27 350 / 0.18); color:oklch(0.97 0.01 250 / 0.9); font-family:var(--font-display); font-size:24px; font-weight:600; box-shadow:0 0 0 1px oklch(0.66 0.27 350 / 0.4); } .ds-live { position:absolute; top:10px; right:10px; display:flex; align-items:center; gap:6px; color:oklch(0.82 0.15 200 / 0.9); font-family:var(--font-mono); font-size:10px; letter-spacing:0.2em; text-shadow:0 0 14px oklch(0.82 0.15 200 / 0.6); } .ds-live i { width:6px; height:6px; border-radius:9999px; background:var(--cyan); } .ds-name { position:absolute; bottom:10px; left:10px; border-radius:var(--radius-md); padding:4px 8px; background:oklch(0 0 0 / 0.55); color:oklch(0.97 0.01 250 / 0.9); font-size:12px; font-weight:500; backdrop-filter:blur(8px); } .ds-video-frame:hover { box-shadow:0 0 22px oklch(0.66 0.27 350 / 0.4),0 0 50px oklch(0.82 0.15 200 / 0.22); } .ds-video-frame:focus-within { outline:none; box-shadow:0 0 0 2px oklch(0.82 0.15 200 / 0.75),0 0 40px oklch(0.82 0.15 200 / 0.25); }"
-    },
-    {
-      "name": "Remote Control Status Rail",
-      "kind": "custom",
-      "refersTo": "status-rail",
-      "description": "Persistent relationship and consent state below the shared display.",
-      "html": "<section class=\"ds-status-rail\"><span class=\"ds-status-icon\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"m5 3 14 8-6 2-3 6z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\"/></svg><i></i></span><span class=\"ds-status-copy\"><strong>Controlling Maya</strong><small>Remote Control active</small></span><button>STOP</button></section>",
-      "css": ".ds-status-rail { display:flex; align-items:center; gap:12px; width:min(680px,100%); border:1px solid var(--border); border-radius:var(--radius-xl); padding:8px 16px; background:oklch(0.17 0.025 285 / 0.82); color:oklch(0.97 0.01 250); font-family:var(--font-sans); backdrop-filter:blur(22px) saturate(150%); box-shadow:0 12px 36px oklch(0 0 0 / 0.35),0 0 0 1px oklch(0.82 0.15 200 / 0.3); } .ds-status-icon { position:relative; display:grid; width:32px; height:32px; flex:none; place-items:center; border-radius:var(--radius-lg); background:oklch(0.82 0.15 200 / 0.12); color:var(--cyan); box-shadow:0 0 0 1px oklch(0.82 0.15 200 / 0.25); } .ds-status-icon svg { width:16px; height:16px; } .ds-status-icon i { position:absolute; top:-2px; right:-2px; width:10px; height:10px; border:2px solid oklch(0.17 0.025 285); border-radius:9999px; background:var(--cyan); } .ds-status-copy { display:grid; min-width:0; flex:1; } .ds-status-copy strong { overflow:hidden; color:oklch(0.97 0.01 250 / 0.95); font-size:14px; text-overflow:ellipsis; white-space:nowrap; } .ds-status-copy small { color:oklch(0.97 0.01 250 / 0.55); font-size:12px; } .ds-status-rail button { border:0; border-radius:var(--radius-lg); padding:9px 12px; background:oklch(0.66 0.27 350 / 0.15); color:var(--magenta); font-size:12px; font-weight:600; box-shadow:0 0 0 1px oklch(0.66 0.27 350 / 0.35); transition:background 160ms ease; } .ds-status-rail button:hover { background:oklch(0.66 0.27 350 / 0.25); } .ds-status-rail button:focus-visible { outline:none; box-shadow:0 0 0 2px oklch(0.66 0.27 350 / 0.7); }"
-    },
-    {
-      "name": "Marketing Navigation",
-      "kind": "nav",
-      "refersTo": "navigation",
-      "description": "Quiet route links with a single task-oriented action at the edge.",
-      "html": "<nav class=\"ds-nav\"><a class=\"ds-brand\" href=\"#\"><svg viewBox=\"0 0 64 64\" aria-hidden=\"true\"><circle cx=\"32\" cy=\"4\" r=\"8\" fill=\"#d946a8\"/><circle cx=\"60\" cy=\"32\" r=\"8\" fill=\"#5ce0d6\"/><circle cx=\"32\" cy=\"60\" r=\"8\" fill=\"#d946a8\"/><circle cx=\"4\" cy=\"32\" r=\"8\" fill=\"#5ce0d6\"/><path d=\"m27 24 14 8-14 8z\" fill=\"white\" fill-opacity=\".92\"/></svg>Huddle</a><span class=\"ds-links\"><a href=\"#\">CONTROL</a><a href=\"#\">STACK</a><a class=\"ds-nav-action\" href=\"#\">OPEN LOBBY</a></span></nav>",
-      "css": ".ds-nav { display:flex; min-height:72px; align-items:center; justify-content:space-between; gap:20px; color:oklch(0.97 0.01 250); font-family:var(--font-sans); } .ds-nav a { color:inherit; text-decoration:none; } .ds-brand { display:inline-flex; align-items:center; gap:12px; font-family:var(--font-display); font-size:20px; font-weight:700; } .ds-brand svg { width:36px; height:36px; } .ds-links { display:flex; align-items:center; gap:24px; } .ds-links > a { color:oklch(0.97 0.01 250 / 0.7); font-size:14px; font-weight:500; transition:color 160ms ease, background 160ms ease; } .ds-links > a:hover { color:oklch(0.97 0.01 250); } .ds-links > a:focus-visible, .ds-brand:focus-visible { border-radius:var(--radius-sm); outline:none; box-shadow:0 0 0 2px oklch(0.82 0.15 200 / 0.6); } .ds-links .ds-nav-action { border:1px solid oklch(0.82 0.15 200 / 0.25); border-radius:var(--radius-md); padding:8px 14px; background:oklch(1 0 0 / 0.08); color:oklch(0.97 0.01 250); font-weight:600; box-shadow:inset 0 1px 0 oklch(1 0 0 / 0.09); } .ds-links .ds-nav-action:hover { background:oklch(1 0 0 / 0.13); }"
+    ],
+    "narrative": {
+      "northStar": "Signal Handoff",
+      "overview": "Huddle moves a conversation into shared work. Warm editorial route shells make the current handoff readable, while the active call keeps a deliberately dark media field so faces and shared displays stay legible. The system is scoped by surface: public, account, entry, archive, error, and 404 routes use Signal Handoff; the root dot-grid is only a future/unscoped fallback.",
+      "keyCharacteristics": [
+        "Warm cream/chocolate themes with scoped route tokens.",
+        "Purple authority, yellow focus/active/recoverable state, red recording/stop/failure.",
+        "Archivo Black, Archivo, and IBM Plex Mono with strict semantic roles.",
+        "Flat framed panels and offset structural shadows.",
+        "Media-first call geometry with protected consent and Remote Control state."
+      ],
+      "rules": [
+        {
+          "name": "The One Signal per Moment Rule",
+          "body": "Purple answers authority, yellow answers active or recoverable state, and red answers recording, stopping, or failure.",
+          "section": "colors"
+        },
+        {
+          "name": "The Scoped World Rule",
+          "body": "Route shells own their visual world explicitly; the root dark baseline is only a fallback.",
+          "section": "colors"
+        },
+        { "name": "The Dark Media Rule", "body": "The media well stays dark in both themes so live content remains legible.", "section": "colors" },
+        { "name": "The Brand-left Rule", "body": "Huddle branding stays left and actions stay right at every breakpoint.", "section": "layout" },
+        { "name": "The Media Owns the Stage Rule", "body": "Chrome protects the important shared content rather than covering it.", "section": "layout" },
+        { "name": "The Structural First Rule", "body": "Use tone, border, and placement before adding shadow.", "section": "elevation" },
+        { "name": "The Cut Means Live Rule", "body": "Cut corners belong to live media and capture surfaces, not ordinary forms.", "section": "shapes" },
+        { "name": "The Mono Means Machine Rule", "body": "Monospace is data or state, not decoration.", "section": "typography" }
+      ],
+      "dos": [
+        "Use the scoped warm tokens on audited route shells.",
+        "Preserve brand-left/actions-right header geometry.",
+        "Keep media unobscured and use object-contain for joined media.",
+        "Preserve consent, admission, Direct Rejoin, Recording, Drive, and attended Remote Control behavior.",
+        "Provide visible focus and reduced-motion fallbacks."
+      ],
+      "donts": [
+        "Do not describe the audited application as dark-only.",
+        "Do not migrate the dark media field into a light video surface.",
+        "Do not turn every section into a repeated rounded-card grid.",
+        "Do not use monospace as a costume or compress recovery copy into cryptic HUD language."
+      ]
     }
-  ],
-  "narrative": {
-    "northStar": "The Neon Switchboard",
-    "overview": "Huddle is a dark operator surface for real-time work. The visual system should feel technical, cinematic, and controlled: a quiet violet-black room holds the meeting while Command Magenta and Consent Cyan behave like purposeful signals on a switchboard. The interface is expressive enough to feel like Huddle, but never so decorative that media, consent, recovery, or Host authority becomes harder to read.\n\nMarketing surfaces may open the visual world with orbital imagery, dot lattices, and spacious type. Operative surfaces compress that same world into glass panels, concise status rails, clipped media tiles, and compact controls. Depth is layered and structural; neon is reserved for priority, focus, active state, and acknowledgement.\n\nThe system is intentionally dark-only. It rejects light themes, pastel SaaS styling, and generic rounded-card dashboards that would erase Huddle's operator character.",
-    "keyCharacteristics": [
-      "Dark violet-black canvases with restrained magenta and cyan signal color.",
-      "Exo 2 gives headings and decisive actions geometric authority; Rajdhani keeps dense UI open and legible.",
-      "Frosted glass, hairline borders, and directional shadows organize layers without turning every panel into a floating card.",
-      "Cut-corner media frames and room-wide state rails make live content and authority visibly distinct.",
-      "Strong keyboard focus, visible system status, responsive call layouts, and reduced-motion fallbacks are part of the visual language."
-    ],
-    "rules": [
-      {
-        "name": "The One Signal per Moment Rule",
-        "body": "Command Magenta tells the user where authority or decisive action lives; Consent Cyan tells them what is active, approved, focused, or recoverable. Do not make both accents compete for the same action.",
-        "section": "colors"
-      },
-      {
-        "name": "The Dark Room Rule",
-        "body": "Huddle is dark-only. New surfaces inherit the Operator Background and create separation through tone, glass, hairlines, and light—not through white canvases.",
-        "section": "colors"
-      },
-      {
-        "name": "The Neon Budget Rule",
-        "body": "High-chroma accents occupy a small portion of a screen. Large fields stay neutral so video, text, and active system state remain readable.",
-        "section": "colors"
-      },
-      {
-        "name": "The Display Carries Authority Rule",
-        "body": "Exo 2 leads brand statements, decisions, and section ownership. Do not use it for long explanatory paragraphs.",
-        "section": "typography"
-      },
-      {
-        "name": "The Dense UI Stays Human Rule",
-        "body": "Rajdhani is the default for controls and supporting copy; do not compress important consent or error language into decorative uppercase labels.",
-        "section": "typography"
-      },
-      {
-        "name": "The Mono Means Machine Rule",
-        "body": "Monospace indicates identifiers, time, transport, or system state. It is not a general stylistic accent.",
-        "section": "typography"
-      },
-      {
-        "name": "The Media Owns the Stage Rule",
-        "body": "Controls, Host panels, status, and self-view must protect media rather than cover its most important regions.",
-        "section": "layout"
-      },
-      {
-        "name": "The Orientation Is the Contract Rule",
-        "body": "Portrait Equal Grid responds to viewport orientation, not user-agent, touch, or assumed device class.",
-        "section": "layout"
-      },
-      {
-        "name": "The Four Visible Rule",
-        "body": "In portrait Equal Grid, participant overflow scrolls after four visible rows; do not keep shrinking faces to avoid scrolling.",
-        "section": "layout"
-      },
-      {
-        "name": "The Structural First Rule",
-        "body": "Establish hierarchy with tone, border, and placement before adding shadow.",
-        "section": "elevation"
-      },
-      {
-        "name": "The Neon Must Be Earned Rule",
-        "body": "Glow appears because something is active, urgent, selected, or decisively actionable. A resting decorative card does not glow.",
-        "section": "elevation"
-      },
-      {
-        "name": "The Overlay Casts Direction Rule",
-        "body": "Side panels cast inward; centered dialogs cast down and outward; status rails lift evenly. Shadow direction explains where the layer came from.",
-        "section": "elevation"
-      },
-      {
-        "name": "The Cut Means Live Rule",
-        "body": "Cut-corner geometry belongs to video, screen-share, and Remote Control capture surfaces. Forms and ordinary cards stay gently rounded.",
-        "section": "shapes"
-      },
-      {
-        "name": "The Round Means Immediate Rule",
-        "body": "Circular controls are for compact, direct in-call actions. Multi-step actions and text-heavy decisions use rounded rectangles or dialogs.",
-        "section": "shapes"
-      }
-    ],
-    "dos": [
-      "Do preserve the dark-only Operator Background across every route and transient state.",
-      "Do use Command Magenta for decisive authority and Consent Cyan for focus, active state, approval, and recovery.",
-      "Do keep media unobscured, letterboxed with `object-contain`, and framed with the cut-corner live silhouette.",
-      "Do retain the Portrait Equal Grid contract: orientation-based, four visible rows, vertical overflow, existing gutters, and a floating local Self-view.",
-      "Do place Remote Control state below focused content and keep participant-scoped Request Control at the tile's bottom-right.",
-      "Do provide visible keyboard focus and remove nonessential animation under `prefers-reduced-motion`.",
-      "Do use the supplied Huddle mark and link every route-level logo or wordmark home."
-    ],
-    "donts": [
-      "Don't introduce a light theme, pastel SaaS palette, or pale neutral dashboard surface.",
-      "Don't turn the product into a generic grid of interchangeable rounded cards; keep the dot-grid, glass hierarchy, signal color, and live-media geometry purposeful.",
-      "Don't spread neon across resting surfaces or let Command Magenta and Consent Cyan compete on the same action.",
-      "Don't crop camera faces or screen shares to fill a tile.",
-      "Don't overlay Host controls, Remote Control status, or self-view on critical shared-display content when layout space can hold them.",
-      "Don't use cut corners on ordinary forms, settings rows, or marketing cards.",
-      "Don't use monospace as decoration or compress consent, recovery, and error language into cryptic HUD copy."
-    ]
   }
 }

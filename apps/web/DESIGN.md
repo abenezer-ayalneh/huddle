@@ -1,6 +1,6 @@
 ---
 name: Huddle Web
-description: A scoped Signal Handoff landing surface beside the legacy Neon Switchboard application routes.
+description: Signal Handoff operating surfaces around a deliberately dark LiveKit media stage.
 colors:
   command-magenta: 'oklch(0.66 0.27 350)'
   consent-cyan: 'oklch(0.82 0.15 200)'
@@ -15,55 +15,91 @@ colors:
   quiet-copy: 'oklch(0.72 0.03 270)'
   destructive-red: 'oklch(0.62 0.24 18)'
   hairline-static: 'oklch(0.92 0.05 320 / 14%)'
+  signal-background: '#f6eedb'
+  signal-background-deep: '#eadfc8'
+  signal-surface: '#fffaf0'
+  signal-surface-strong: '#f0e4cd'
+  signal-ink: '#141414'
+  signal-muted: '#62594f'
+  signal-faint: '#82776b'
+  signal-border: '#d5c7b0'
+  signal-border-strong: '#bca88a'
+  signal-border-dark: '#624a3e'
+  signal-purple: '#8d2676'
+  signal-purple-dark: '#6f195e'
+  signal-yellow: '#f3b01c'
+  signal-red: '#ee342f'
+  signal-red-dark: '#ff6b5e'
+  signal-media: '#1a0f0f'
+  signal-media-dark: '#140b0b'
+  signal-warm-white: '#faf4e9'
 typography:
   display:
-    fontFamily: '"Exo 2", "Exo 2 Fallback", sans-serif'
-    fontSize: '3rem'
-    fontWeight: 700
-    lineHeight: 0.96
-    letterSpacing: 'normal'
+    fontFamily: 'var(--font-archivo-black), Arial Black, sans-serif'
+    fontSize: 'clamp(3.25rem, 6vw, 5.75rem)'
+    fontWeight: 400
+    lineHeight: 0.95
+    letterSpacing: '-0.055em'
   headline:
-    fontFamily: '"Exo 2", "Exo 2 Fallback", sans-serif'
-    fontSize: '2.25rem'
-    fontWeight: 700
-    lineHeight: 1
-    letterSpacing: '-0.01em'
+    fontFamily: 'var(--font-archivo-black), Arial Black, sans-serif'
+    fontSize: 'clamp(2.25rem, 4vw, 4rem)'
+    fontWeight: 400
+    lineHeight: 0.96
+    letterSpacing: '-0.045em'
   title:
-    fontFamily: '"Exo 2", "Exo 2 Fallback", sans-serif'
-    fontSize: '1.5rem'
-    fontWeight: 600
-    lineHeight: 1.33
-    letterSpacing: '-0.01em'
+    fontFamily: 'var(--font-archivo-black), Arial Black, sans-serif'
+    fontSize: 'clamp(1.4rem, 2.5vw, 1.85rem)'
+    fontWeight: 400
+    lineHeight: 1.05
+    letterSpacing: '-0.035em'
   body:
-    fontFamily: 'Rajdhani, "Rajdhani Fallback", sans-serif'
+    fontFamily: 'var(--font-archivo), Arial, sans-serif'
     fontSize: '1rem'
     fontWeight: 400
-    lineHeight: 1.5
+    lineHeight: 1.65
     letterSpacing: 'normal'
   action:
-    fontFamily: '"Exo 2", "Exo 2 Fallback", sans-serif'
-    fontSize: '1rem'
-    fontWeight: 600
-    lineHeight: 1.5
+    fontFamily: 'var(--font-archivo), Arial, sans-serif'
+    fontSize: '0.9rem'
+    fontWeight: 700
+    lineHeight: 1.2
     letterSpacing: 'normal'
   label:
-    fontFamily: 'Rajdhani, "Rajdhani Fallback", sans-serif'
-    fontSize: '0.875rem'
-    fontWeight: 600
-    lineHeight: 1.25
-    letterSpacing: 'normal'
-  mono:
-    fontFamily: 'ui-monospace, "SF Mono", "SFMono-Regular", Menlo, monospace'
-    fontSize: '0.75rem'
+    fontFamily: 'var(--font-plex-mono), ui-monospace, monospace'
+    fontSize: '0.625rem'
     fontWeight: 500
-    lineHeight: 1.5
-    letterSpacing: '0.16em'
+    lineHeight: 1.4
+    letterSpacing: '0.13em'
+  mono:
+    fontFamily: 'var(--font-plex-mono), ui-monospace, monospace'
+    fontSize: '0.6875rem'
+    fontWeight: 500
+    lineHeight: 1.4
+    letterSpacing: '0.08em'
+  outcome-display:
+    fontFamily: 'var(--font-archivo-black), Arial Black, sans-serif'
+    fontSize: 'clamp(3.2rem, 7vw, 6rem)'
+    fontWeight: 900
+    lineHeight: 0.91
+    letterSpacing: '-0.065em'
+  outcome-body:
+    fontFamily: 'var(--font-archivo), Arial, sans-serif'
+    fontSize: 'clamp(1rem, 1.5vw, 1.15rem)'
+    fontWeight: 400
+    lineHeight: 1.65
+    letterSpacing: 'normal'
+  outcome-title:
+    fontFamily: 'var(--font-archivo-black), Arial Black, sans-serif'
+    fontSize: 'clamp(1.35rem, 2.5vw, 1.8rem)'
+    fontWeight: 900
+    lineHeight: 1.03
+    letterSpacing: '-0.045em'
 rounded:
-  sm: '7.2px'
-  md: '9.6px'
-  lg: '12px'
-  xl: '16.8px'
-  2xl: '21.6px'
+  sm: '8px'
+  md: '9px'
+  lg: '10px'
+  xl: '16px'
+  pill: '999px'
   full: '9999px'
 spacing:
   1: '4px'
@@ -73,333 +109,308 @@ spacing:
   5: '20px'
   6: '24px'
   8: '32px'
+  10: '40px'
 components:
   button-primary:
-    backgroundColor: '{colors.command-magenta}'
-    textColor: '{colors.operator-background}'
+    backgroundColor: '{colors.signal-purple}'
+    textColor: '{colors.signal-warm-white}'
     typography: '{typography.action}'
     rounded: '{rounded.md}'
-    padding: '12px 20px'
+    padding: '11px 15px'
   button-secondary:
-    backgroundColor: 'oklch(1 0 0 / 8%)'
-    textColor: '{colors.high-signal}'
-    typography: '{typography.label}'
+    backgroundColor: 'transparent'
+    textColor: '{colors.signal-purple}'
+    typography: '{typography.action}'
     rounded: '{rounded.md}'
-    padding: '12px 20px'
+    padding: '11px 15px'
   text-field:
-    backgroundColor: 'oklch(1 0 0 / 5%)'
-    textColor: '{colors.high-signal}'
+    backgroundColor: '{colors.signal-background}'
+    textColor: '{colors.signal-ink}'
     typography: '{typography.body}'
     rounded: '{rounded.md}'
     padding: '10px 12px'
-  glass-panel:
-    backgroundColor: 'oklch(0.2 0.025 285 / 62%)'
-    textColor: '{colors.high-signal}'
-    rounded: '{rounded.lg}'
+  signal-panel:
+    backgroundColor: '{colors.signal-surface}'
+    textColor: '{colors.signal-ink}'
+    rounded: '{rounded.xl}'
     padding: '24px'
   call-control-active:
-    backgroundColor: 'oklch(0.82 0.15 200 / 15%)'
-    textColor: '{colors.consent-cyan}'
+    backgroundColor: 'color-mix(in srgb, #f3b01c 16%, transparent)'
+    textColor: '{colors.signal-purple}'
     rounded: '{rounded.full}'
     size: '44px'
   status-rail:
-    backgroundColor: 'oklch(0.17 0.025 285 / 82%)'
-    textColor: '{colors.high-signal}'
+    backgroundColor: '{colors.signal-surface}'
+    textColor: '{colors.signal-ink}'
     rounded: '{rounded.xl}'
-    padding: '8px 16px'
+    padding: '8px 12px'
   video-tile:
-    backgroundColor: 'oklch(0.12 0.02 280)'
-    textColor: '{colors.high-signal}'
+    backgroundColor: '{colors.signal-media}'
+    textColor: '{colors.signal-warm-white}'
     width: '100%'
     height: '100%'
   navigation:
-    backgroundColor: 'transparent'
-    textColor: '{colors.high-signal}'
-    height: '72px'
-    padding: '0 32px'
+    backgroundColor: 'color-mix(in srgb, #f6eedb 88%, transparent)'
+    textColor: '{colors.signal-ink}'
+    height: '60px'
+    padding: '8px 10px 8px 18px'
 ---
 
 # Design System: Huddle Web
 
 ## Overview
 
-**Creative North Stars: "The Neon Switchboard" and "Signal Handoff"**
+**Creative North Star: “Signal Handoff”**
 
-Legacy application routes remain a dark operator surface for real-time work. Public landing and legal-document surfaces use Signal Handoff: warm editorial fields explain how a meeting becomes shared work, while dossier-like policy pages make responsibility and data boundaries readable. The active call workspace (`/rooms/[room]`) is the approved Operate-surface extension of Signal Handoff: warm framed workspace chrome protects a deliberately dark, media-first stage.
+Huddle is a meeting product about moving a conversation into shared work. Its
+public and operational surfaces use warm editorial fields, framed handoff
+states, route-like signal lines, and a compact technical readout. The system is
+not a collection of interchangeable cards: panels contain a task, frames mark a
+boundary, and color explains authority or recovery.
 
-Marketing surfaces may open the visual world with orbital imagery, dot lattices, and spacious type. Signal Handoff operating surfaces use flat warm frames, structural purple shadows, concise state rails, and compact controls. The call stage follows the saved light/dark preference around its media field; media itself remains dark so faces, screens, consent, and authority remain easy to read.
-
-The legacy application system is intentionally dark-only outside the scoped call workspace. Signal Handoff supports light cream and dark chocolate themes through scoped tokens, without migrating unrelated application routes.
-
-**System Notice Exception:** Non-blocking system feedback is a single global
-Signal Handoff family, even over legacy application routes. Faults, API
-Reachability, and Call Connection use the saved light/dark preference, flat
-warm frames, structural shadows, and purple/yellow/red semantic accents. This
-feedback family remains separate from the call's interactive consent and
-authority prompts, which stay in their dedicated call tray.
+The current system is applied as scoped shells. Signal Handoff covers the
+landing page, Lobby, Device Check, legal dossiers, Downloads, Recordings,
+email verification, room-entry outcomes, route and global error surfaces, the
+custom 404, and global system notices. The active call extends the same grammar
+into an Operate surface: warm workspace chrome surrounds a deliberately dark,
+media-first field. The unscoped root `bg-dotgrid` remains a dark fallback for
+future routes; it is not the visual contract of the audited route shells.
 
 **Key Characteristics:**
 
-- Legacy dark routes use violet-black canvases with restrained magenta and cyan signal color; the call workspace uses warm cream/chocolate fields with purple, yellow, and red signal roles.
-- Archivo Black gives headings and decisive actions authority; Archivo keeps dense UI open and legible; IBM Plex Mono communicates Room Codes, timers, and technical state.
-- Flat frames, hairlines, and structural purple shadows organize layers without turning every panel into a floating card.
-- A dark media field and room-wide state rails make live content and authority visibly distinct.
-- Strong keyboard focus, visible system status, responsive call layouts, and reduced-motion fallbacks are part of the visual language.
+- Warm cream/chocolate themes with a saved light/dark preference and scoped tokens.
+- Purple marks authority and committed action; yellow marks focus, active, or recoverable state; red marks recording, Stop, and true failure.
+- Archivo Black gives decisions and headings weight; Archivo keeps interface copy readable; IBM Plex Mono is reserved for machine state.
+- Flat frames, hairlines, and offset structural shadows establish hierarchy before blur or glow.
+- Media owns the active-call stage, while consent, Host authority, and Remote Control state remain visible without obscuring shared content.
+- Keyboard focus, responsive layouts, and reduced-motion fallbacks are part of the system rather than afterthoughts.
 
 ## Colors
 
-The palette is a near-black operating environment punctuated by two rare, high-chroma signals.
+Signal Handoff uses a warm cream/chocolate foundation with three restrained
+semantic signals. The older operator tokens remain available to low-level
+legacy primitives and the dark media field, but new route shells use the warm
+tokens below.
 
 ### Primary
 
-- **Command Magenta:** Decisive actions, Host authority, submit and leave actions, brand emphasis, and urgent attention. Its rarity gives it force.
+- **Signal Purple** (`#8D2676` light / `#C15A9E` dark): authority, primary actions, committed handoffs, and the Huddle mark.
 
 ### Secondary
 
-- **Consent Cyan:** Focus rings, approved or active state, participant-scoped control, system links, live indicators, and recovery actions.
+- **Signal Yellow** (`#F3B01C`): keyboard focus, active state, recoverable attention, and the live status dot.
 
 ### Tertiary
 
-- **Recording Red:** Destructive actions and Recording state only. Do not substitute Command Magenta when the interface must communicate a true destructive or recording-specific state.
+- **Signal Red** (`#EE342F` light / `#FF6B5E` dark): recording, Stop/Leave, destructive action, and true route or transport failure.
 
 ### Neutral
 
-- **Operator Background:** The dark violet-black canvas behind every route and call stage.
-- **Glass Card:** The main translucent panel family for forms, cards, rails, and side panels.
-- **Deep Popover:** A denser modal and overlay surface.
-- **Secondary Surface:** Filled secondary controls and strong tonal separation.
-- **Muted Surface:** Quiet rows, disabled regions, and low-emphasis control backgrounds.
-- **High Signal:** Near-white primary text and icons.
-- **Quiet Copy:** Supporting text, helper text, timestamps, and inactive labels.
-- **Hairline Static:** Low-contrast borders that clarify structure without reading as boxes.
+- **Signal Background** (`#F6EEDB` light / `#1A0F0F` dark): the warm route canvas.
+- **Signal Background Deep** (`#EADFC8` light / `#241514` dark): route lines, recessed fields, and quiet context rows.
+- **Signal Surface** (`#FFFAF0` light / `#2A1B19` dark): task panels and framed content.
+- **Signal Surface Strong** (`#F0E4CD` light / `#33221D` dark): filled secondary regions and active navigation.
+- **Signal Ink** (`#141414` light / `#FAF4E9` dark): primary copy and icons.
+- **Signal Muted / Faint** (`#62594F` / `#82776B` light; `#D1C1AD` / `#A99986` dark): supporting copy and low-emphasis metadata.
+- **Signal Border** (`#D5C7B0` light / `#624A3E` dark): hairlines and quiet boundaries.
+- **Signal Border Strong** (`#BCA88A` light / `#866957` dark): task-panel frames and meaningful state boundaries.
+- **Signal Media** (`#1A0F0F` light / `#140B0B` dark): the intentional dark field behind live camera and screen media.
 
 ### Named Rules
 
-**The One Signal per Moment Rule.** Command Magenta tells the user where authority or decisive action lives; Consent Cyan tells them what is active, approved, focused, or recoverable. Do not make both accents compete for the same action.
+**The One Signal per Moment Rule.** Purple answers “who has authority?” Yellow
+answers “what is active or recoverable?” Red answers “what stops, records, or
+failed?” Do not make multiple signals compete for one action.
 
-**The Dark Room Rule.** Huddle is dark-only. New surfaces inherit the Operator Background and create separation through tone, glass, hairlines, and light—not through white canvases.
+**The Scoped World Rule.** Route shells own their visual world explicitly. Keep
+the root dark baseline as a fallback, not as a reason to reintroduce dark glass
+into a warm Signal Handoff surface.
 
-**The Neon Budget Rule.** High-chroma accents occupy a small portion of a screen. Large fields stay neutral so video, text, and active system state remain readable.
+**The Dark Media Rule.** The media well stays dark in both themes so faces,
+shared displays, consent prompts, and authority controls remain legible.
 
 ## Typography
 
-**Display Font:** Exo 2 (with its generated fallback and sans-serif)
+**Display Font:** Archivo Black (with Arial Black and sans-serif fallbacks)
 
-**Body Font:** Rajdhani (with its generated fallback and sans-serif)
+**Body Font:** Archivo (with Arial and sans-serif fallbacks)
 
-**Label/Mono Font:** System monospace for Room Codes, timers, machine state, and HUD readouts
+**Label/Mono Font:** IBM Plex Mono (with system monospace fallbacks)
 
-**Character:** Exo 2 is geometric and futuristic without becoming ornamental; it gives brand marks, headings, and decisive actions a controlled technical voice. Rajdhani is narrower and more open, allowing operational copy and compact controls to remain legible at meeting density.
+**Character:** Archivo Black supplies editorial authority without decorative
+distortion. Archivo keeps dense operational copy open, while IBM Plex Mono
+signals only identifiers, timers, routes, and transport state.
 
 ### Hierarchy
 
-- **Display** (700, 3rem mobile / 3.75rem small desktop / 4.5rem large desktop, 0.96): Landing and Downloads hero statements. Keep the measure short, usually near 11 characters per line in the lead hero.
-- **Headline** (700, 2.25rem rising to 3rem, approximately 1): Major marketing or empty-state section headings.
-- **Title** (600, 1.5rem, 1.33): Dialogs, form panels, dashboards, and primary in-app sections.
-- **Body** (400, 1rem, 1.5): Default interface copy. Marketing introductions may rise to 1.125–1.25rem with a 1.75–2rem line height.
-- **Action** (600, 1rem, 1.5): Major calls to action and submit controls in Exo 2.
-- **Label** (600, 0.875rem, 1.25): Form labels, compact buttons, metadata, and section controls.
-- **Mono** (500, 0.75rem, 0.16em): Room Codes, timers, connection state, uppercase HUD copy, and technical readouts.
+- **Display** (400, `clamp(3.25rem, 6vw, 5.75rem)`, 0.95): landing, Lobby, and major handoff statements; keep the measure short and balanced.
+- **Headline** (400, `clamp(2.25rem, 4vw, 4rem)`, 0.96): major public sections and empty/outcome headings.
+- **Title** (400, `clamp(1.4rem, 2.5vw, 1.85rem)`, 1.05): task-panel status and contained decisions.
+- **Body** (400, 1rem, 1.65): explanatory and consent copy, usually constrained to approximately 31–56ch.
+- **Action** (700, 0.9rem, 1.2): buttons and explicit recovery actions.
+- **Label** (500, 0.625rem, 0.13em): compact uppercase route and state labels.
+- **Mono** (500, 0.6875rem, 0.08em): Room Codes, timers, route names, and technical readouts only.
 
 ### Named Rules
 
-**The Display Carries Authority Rule.** Exo 2 leads brand statements, decisions, and section ownership. Do not use it for long explanatory paragraphs.
+**The Display Carries Authority Rule.** Use Archivo Black for the decision or
+the section owner, never for long explanatory paragraphs.
 
-**The Dense UI Stays Human Rule.** Rajdhani is the default for controls and supporting copy; do not compress important consent or error language into decorative uppercase labels.
-
-**The Mono Means Machine Rule.** Monospace indicates identifiers, time, transport, or system state. It is not a general stylistic accent.
+**The Mono Means Machine Rule.** Monospace is data or state, not decoration.
 
 ## Layout
 
-Marketing pages use a centered 80rem container with 20px mobile gutters and 32px gutters from the small breakpoint. The main navigation is 72px high. Hero sections occupy approximately 88dvh on mobile and 92dvh from the small breakpoint, with content weighted left and imagery or atmospheric light providing the opposing mass. Primary calls to action stack on narrow screens and align in a row from 640px.
+Public and dossier surfaces use centered containers between 1120px and 1280px,
+with 20px gutters on wider mobile layouts and 14px gutters at the narrowest
+breakpoint. Headers sit in a compact 60px pill or a 72px route rail. The brand
+always occupies the left side; theme, navigation, and route actions occupy the
+right side.
 
-App entry surfaces use the full viewport and the dot-grid background. A two-column composition may place brand context beside a compact glass task panel; it collapses to one column when width cannot protect the form. Panels should normally stay between 28rem and 42rem rather than stretching across the viewport.
+Landing, Lobby, legal, verification, 404, and room-entry outcomes use a
+left-context/right-task composition at desktop widths. The task panel stays
+roughly 360–430px wide, while the copy owns the remaining measure. At mobile
+widths the composition becomes a single column, with the context first and the
+task or preview immediately after it. Primary actions stack or stretch to the
+available width.
 
-The call stage owns 100dvh. Equal Grid reserves 12px stage gutters and 96px beneath the media for mobile controls; from 640px it uses 24px gutters and 112px control clearance. Landscape grids use one column for one tile, two columns through four tiles, three through nine, and four beyond nine.
+Device Check keeps preview and device controls as distinct regions. Its preview
+is responsive and may use a tall portrait stage on narrow screens. Joined call
+media uses `object-contain`, reserves space for controls and consent, and keeps
+the floating Self-view separate from the Device Check preview.
 
-Portrait Equal Grid applies by orientation rather than device detection. One to three remote tiles divide the usable stage into equal rows; four or more keep four rows visible and scroll vertically. Tiles retain the existing gutters, fill the row, and preserve the complete media frame with `object-contain`. The local camera remains a draggable 112px-wide Self-view, rising to 176px from 640px.
+The active call owns `100dvh`. Media takes precedence over chrome; Host and
+Chat dock at the edges, consent occupies a measured top tray, controls live in
+the bottom dock, and Remote Control status sits below focused content. Portrait
+Equal Grid is orientation-based, keeps four rows visible before vertical
+overflow, and retains its floating local Self-view.
 
-Focused presentation and Pin layouts keep one main stage plus a filmstrip. The strip is a horizontal 88px-high row on mobile and a scrollable 224px-wide right column from 640px. Persistent Remote Control state occupies a rail below the focused content instead of obscuring the shared display.
-
-Primary responsive thresholds are 640px for compact-to-roomy app layout, 768px for marketing navigation visibility, and 1024px for large marketing composition and hero type.
+Primary breakpoints are 640px for compact-to-roomy app layout, 768px for
+navigation visibility, and 1024px for large marketing composition. All audited
+route shells use `overflow-x: clip` or an equivalent bounded layout so routed
+signal lines cannot create horizontal scrolling.
 
 ### Named Rules
 
-**The Media Owns the Stage Rule.** Controls, Host panels, status, and self-view must protect media rather than cover its most important regions.
+**The Brand-left Rule.** Huddle branding stays left and actions stay right at
+every breakpoint; the action group may compress or disclose, but it does not
+swap sides.
 
-**The Orientation Is the Contract Rule.** Portrait Equal Grid responds to viewport orientation, not user-agent, touch, or assumed device class.
+**The Media Owns the Stage Rule.** Status, Host controls, consent, and
+self-view protect the important shared content rather than covering it.
 
-**The Four Visible Rule.** In portrait Equal Grid, participant overflow scrolls after four visible rows; do not keep shrinking faces to avoid scrolling.
+**The Orientation Is the Contract Rule.** Portrait grid behavior responds to
+orientation, not user-agent or assumed device class.
 
 ## Elevation & Depth
 
-Huddle uses a hybrid of translucent layering and structural shadow. Standard glass uses a violet surface at 62% opacity with 16px blur and 140% saturation; strong glass uses a deeper surface at 82% opacity with 22px blur and 150% saturation. Hairline borders establish most boundaries. Directional shadows establish overlays and side panels, while neon glows are reserved for active or decisive states.
+Signal Handoff is flat at rest and uses structure before shadow: a warm surface,
+a one-pixel boundary, and deliberate placement do most of the work. Primary
+panels and drawers use offset purple shadows; the shared header and legal
+navigation may use restrained translucency and blur. Neon glow belongs only to
+active legacy call states or explicitly earned signal moments.
 
 ### Shadow Vocabulary
 
-- **Command Glow** (`0 0 0 1px oklch(0.66 0.27 350 / 0.5), 0 0 18px oklch(0.66 0.27 350 / 0.45), 0 0 42px oklch(0.66 0.27 350 / 0.25)`): Selected Command Magenta controls, waiting attention, and rare decisive state.
-- **Consent Glow** (`0 0 0 1px oklch(0.82 0.15 200 / 0.5), 0 0 18px oklch(0.82 0.15 200 / 0.45), 0 0 42px oklch(0.82 0.15 200 / 0.25)`): Active Consent Cyan controls and status—not decoration.
-- **Dialog Lift** (`0 8px 60px oklch(0 0 0 / 0.6)`): Centered task panels and blocking dialogs.
-- **Status Lift** (`0 12px 36px oklch(0 0 0 / 0.35)`): Persistent rails that must remain distinct from media.
-- **Side Panel Cast** (`±8px 0 50px oklch(0 0 0 / 0.5)`): Docked Chat and Host panels, directed inward from the viewport edge.
-- **CTA Bloom** (`0 16px 45px oklch(0.66 0.27 350 / 0.24–0.28)`): Major marketing CTA only.
+- **Task Lift** (`14px 18px 0 color-mix(in srgb, var(--verify-email-purple) 14%, transparent)`): primary outcome, verification, and error panels; each shell uses its own purple token.
+- **Compact Task Lift** (`8px 10px 0 color-mix(in srgb, var(--verify-email-purple) 14%, transparent)`): mobile panels and compact entry surfaces; each shell uses its own purple token.
+- **Archive / Release Lift** (`12px 16px 0 color-mix(in srgb, var(--recordings-purple) 18%, transparent)`): Downloads and Recordings workspaces; each archive shell uses its own purple token.
+- **Status Lift** (`9px 11px 0 color-mix(in srgb, var(--system-notice-purple) 17%, transparent)`): global system notices that must stay distinct from route content.
+- **Call Chrome Lift** (`6px 7px 0 var(--call-shadow)`): framed controls and drawers around the dark media field.
 
 ### Named Rules
 
-**The Structural First Rule.** Establish hierarchy with tone, border, and placement before adding shadow.
+**The Structural First Rule.** Use tone, border, and placement before adding
+shadow.
 
-**The Neon Must Be Earned Rule.** Glow appears because something is active, urgent, selected, or decisively actionable. A resting decorative card does not glow.
-
-**The Overlay Casts Direction Rule.** Side panels cast inward; centered dialogs cast down and outward; status rails lift evenly. Shadow direction explains where the layer came from.
+**The Directional Lift Rule.** Offset shadows explain a panel’s relationship to
+the page; they are not ambient decoration.
 
 ## Shapes
 
-Standard controls use gently curved 7.2–12px corners. Panels and dialogs use 16.8–21.6px corners when they need to read as contained tasks. Compact call controls, status chips, avatars, and indicators are circular.
+Ordinary controls use 8–10px corners. Primary panels, dialogs, preview frames,
+and workspaces use 16px corners. Pills are reserved for compact navigation,
+state chips, and status markers. Hairlines are one pixel and usually warm-toned.
 
-Live media uses a distinct cut-corner silhouette: 16px diagonal cuts at the top-left and bottom-right. The outer frame paints a magenta-to-cyan bezel around the same clipped inner surface. Active speakers receive a rotating conic border and a restrained scanline layer.
+Live media uses the established cut-corner silhouette with a thin purple-to-
+yellow/cyan bezel; active-speaker treatment may animate the frame and scanline
+overlay. Forms, settings rows, and legal content do not use cut corners.
 
-The Huddle mark is a four-signal ring around a single two-layer play glyph. Every signal stays inside the canvas safety margin, and the opposing foreground/backing treatment keeps the play glyph visible on both light and dark surfaces without a cluttering center disc. Use the supplied asset; do not redraw, recolor, or replace it with a generic video-camera glyph when it serves as the brand mark.
-
-### Named Rules
-
-**The Cut Means Live Rule.** Cut-corner geometry belongs to video, screen-share, and Remote Control capture surfaces. Forms and ordinary cards stay gently rounded.
-
-**The Round Means Immediate Rule.** Circular controls are for compact, direct in-call actions. Multi-step actions and text-heavy decisions use rounded rectangles or dialogs.
+The Huddle mark is the supplied four-signal ring around a contrast-backed
+two-layer play glyph. Route-level marks link home. Do not replace it with a
+generic camera icon or redraw it in a way that loses its light/dark contrast.
 
 ## Components
 
 ### Buttons
 
-Buttons are tactile and decisive: compact silhouettes, visible pressed movement, and unmistakable state color.
-
-- **Shape:** Rounded rectangles use the medium or large radius; in-call icon controls are circular and normally 32px on mobile and 44px from 640px.
-- **Primary:** Command Magenta with dark text for lead marketing and form actions; some app-library actions use the high-signal foreground where contrast and local convention require it.
-- **Consent / Active:** Consent Cyan with dark text for affirmative Host actions, or a 15% cyan fill with cyan text and a thin cyan ring for active call state.
-- **Danger / Stop:** A 15% Command Magenta fill with magenta text for attended Stop or disabled-media state; true recording/destructive actions use Recording Red.
-- **Secondary / Ghost:** An 8% white fill or transparent surface with a hairline border and High Signal text.
-- **Hover / Focus:** Hover brightens a filled action or increases translucent fill. Active controls move down 1px. Keyboard focus uses a two-pixel cyan ring; a magenta ring is acceptable only when the control itself is a magenta Stop action.
+Buttons are compact, explicit, and tactile. Purple is the primary authority
+action; transparent or surface-toned buttons are secondary; yellow is a focus
+or active signal, not a competing primary action. Buttons move down 1px on
+press, use a visible 2px yellow focus outline, and preserve a disabled state
+with reduced opacity and a not-allowed cursor.
 
 ### Chips
 
-- **Style:** Rounded-full with an 8–15% tinted fill, a low-opacity matching border or ring, and compact 12–14px copy.
-- **State:** Cyan communicates active, approved, connected, or recoverable state. Magenta communicates attention or a participant badge. Recording uses red. Amber is reserved for temporary warning state.
+State chips use a pill silhouette with a low-opacity semantic fill and matching
+border. Yellow marks active/recoverable attention, purple marks authority or
+participant context, and red marks recording or destructive state.
 
 ### Cards / Containers
 
-- **Corner Style:** 12px for compact cards, 16.8–21.6px for primary panels and dialogs.
-- **Background:** Neutral translucent violet or low-opacity white over Operator Background.
-- **Shadow Strategy:** Flat at rest unless the surface is a task panel, overlay, or docked layer.
-- **Border:** One-pixel Hairline Static or a low-opacity accent border when state is meaningful.
-- **Internal Padding:** 16px for compact rows, 24px for standard panels, and 32px for large task panels.
+Panels are task containers, not a repeated page grid. They use a warm surface,
+one strong boundary, 24–38px padding on desktop and 20–24px on mobile, with an
+offset structural shadow only when the panel needs elevation. Archive and
+release stations may use a 6px yellow edge as a meaningful handoff marker.
 
 ### Inputs / Fields
 
-- **Style:** A 5% white fill, 15% white border, medium radius, and 10px vertical / 12px horizontal padding.
-- **Focus:** Border shifts to Consent Cyan and gains a two-pixel low-opacity cyan ring.
-- **Error / Disabled:** Error copy uses Command Magenta for validation and Recording Red for destructive system failures. Disabled fields retain structure at reduced opacity rather than disappearing.
+Inputs use a warm background, one-pixel border, 9px radius, 10px vertical and
+12px horizontal padding, and a readable 16px text size. Focus shifts the border
+to purple and adds a low-opacity purple ring. Errors use red for the true
+failure state; validation and helper text remain readable and descriptive.
 
 ### Navigation
 
-Marketing navigation is quiet until action is required: Rajdhani labels, High Signal at reduced opacity, and no default underline. Hover raises text toward full white. The rightmost task action uses a translucent bordered button. Route-level Huddle marks and wordmarks always link home and retain visible cyan keyboard focus.
+`HuddleBrandThemeHeader` is the shared interactive header for Landing, Legal,
+Lobby, Device Check, Downloads, Recordings, verification, and outcome shells.
+It owns the home-linked brand island and the standalone theme toggle. Route
+owners provide only their semantic navigation or trailing action. On mobile,
+links may disappear or disclose, but the Huddle mark remains left and actions
+remain right.
 
-`HuddleBrandThemeHeader` is the required shared control for every interactive public header: Landing, Legal, Lobby, and Device Check. It owns the home-linked Huddle brand island and the single standalone theme-ring button; route owners retain their semantic landmarks and may supply navigation or menu slots. Passive footer marks, Downloads, verification, and illustrative meeting-scene marks remain independent and must not be replaced with this control.
+### Entry and Outcome Surfaces
 
-### Video Tiles
+`MeetingEntryShell` composes room resolution, waiting, denied, and connection
+error states. `VerificationPageShell`, `ErrorSurface`, and `NotFoundSurface`
+reuse the same two-part grammar: a left explanation and a right framed status
+panel. Copy names the current state and the next recovery path; technical
+labels stay in IBM Plex Mono.
 
-Video tiles are the signature live component. They use the cut-corner gradient frame, dark letterboxing, and `object-contain` for both camera and screen media so faces and shared frames are never cropped. The participant name sits in a compact black glass pill at bottom-left; active state appears as the animated bezel plus a small cyan monospace `LIVE` HUD at top-right. Pin sits top-left and Request Control sits bottom-right so controls do not collide.
+### Live Media and Status Rails
 
-### Status Rails and Side Panels
-
-Remote Control status is a full-width strong-glass rail beneath the stage, with a cyan state icon, relationship copy, renewal or Stop controls, and an amber Recording disclosure when needed. Chat docks left and Host controls dock right; each uses strong glass, a 320px width capped at 85vw, a hairline inner edge, and an inward-cast shadow.
-
-### Dialogs and Faults
-
-Blocking decisions use a centered Deep Popover panel over a 60% black backdrop with subtle blur. Faults use compact strong-glass toasts with a destructive icon and a cyan recovery action. Passive server reachability uses a quiet top-center status pill rather than a disruptive toast.
+Joined camera and screen media use `object-contain` inside dark framed tiles.
+The participant name sits in a compact lower-left label; active state is a
+small technical HUD, not a screen-filling glow. Remote Control state is a
+persistent below-stage rail with relationship, renewal, and Stop affordances.
+Do not turn it into a passive toast or weaken its consent and room scope.
 
 ## Do's and Don'ts
 
-## Scoped public direction: Signal Handoff
-
-The public `/` route uses the Signal Handoff direction from
-`docs/LANDING_PAGE_REDESIGN_PLAN.md`. It is a Persuade surface for agencies and
-small teams collaborating with clients. The `/privacy` and `/terms` routes use
-the same direction as Read surfaces: long-form legal dossiers for people who
-need to find, understand, and compare the deployment's boundaries.
-
-- **Palette:** light `#F6EEDB` / `#141414` with purple `#8D2676`, yellow
-  `#F3B01C`, and red `#EE342F`; dark `#1A0F0F` / `#FAF4E9` with the same signal
-  roles. Tokens are scoped under `.landing-shell` and `data-theme`.
-- **Typography:** Archivo Black for display, Archivo for body/UI, and IBM Plex
-  Mono for Room Codes, routes, timers, and technical labels. Font files are
-  vendored under `src/app/fonts/` with the OFL notice.
-- **Composition:** 8–12px frames, selective pills, flat fields, large
-  sentence-case headlines, a floating top-center navigation, and three routed
-  signal lines. The landing's chosen first viewport is left promise +
-  action/Room Code entry + right code-native meeting scene. Legal dossiers use
-  a compact floating Huddle/Privacy/Terms navigator, an asymmetric document
-  masthead, a sticky numbered contents rail, and a long reading column.
-- **Proof:** fictional portraits are labeled illustrative; meeting scenes are
-  built with React markup. Do not replace product proof with fabricated
-  screenshots or customer claims.
-- **Motion:** the four-stage Meet → Present → Approve → Collaborate story
-  auto-advances only until a visitor interacts and stops under reduced motion.
-- **Boundaries:** the landing may describe Apache-2.0 self-hosted software and
-  the official capacity-limited evaluation demo. It must not imply a hosted
-  subscription service, customer adoption, compliance certification, or
-  production availability guarantee.
-
-All application surfaces other than the active call workspace keep the legacy
-dark Neon Switchboard rules above. The shared Huddle mark and native Control
-Agent app icon use the approved cross-product brand geometry without migrating
-the rest of those surfaces.
-
-## Scoped in-call direction: Signal Handoff workspace
-
-The active `/rooms/[room]` route is an **Operate** surface. It preserves every
-media, consent, and authority behavior while replacing legacy neon/glass chrome
-with a warm framed workspace. It inherits the saved `data-theme` preference but
-adds a compact top-rail control to change that shared preference.
-
-- **Palette:** light uses cream `#F6EEDB`, ink `#141414`, purple authority
-  `#8D2676`, yellow focus/signal `#F3B01C`, and critical red `#EE342F`; dark
-  uses chocolate `#1A0F0F`, warm white `#FAF4E9`, and the corresponding lighter
-  signals. The media well stays chocolate/near-black in both themes.
-- **Typography:** Archivo Black owns decisive labels, Archivo owns controls and
-  consent copy, and IBM Plex Mono is limited to the Room Code, timer, and live
-  technical state.
-- **Composition:** media owns the center. A compact room/time/theme rail uses
-  the top gutter when unobscured; an open Host drawer retains the same theme
-  control in its header, while a closed Host trigger retains a right-side lane
-  so the room rail truncates rather than collides. Interactive consent remains
-  in the measured top tray, flat Chat and Host drawers dock at the edges, and a
-  framed bottom dock holds circular immediate controls. Presentation, Pin, and
-  Remote Control retain their existing stage precedence and filmstrip/grid
-  geometry.
-- **States:** purple marks authority and committed actions; yellow marks focus,
-  active state, and recoverable attention; red is reserved for Recording,
-  Stop, and Leave. Device Recovery remains a per-device Domain Outcome;
-  non-blocking system feedback remains global and separate from consent.
-- **Boundaries:** media always uses `object-contain`; full screens and faces are
-  never cropped. Do not cover the protected Remote Control desktop with panels,
-  or turn its persistent below-stage rail into a passive toast. Retain visible
-  focus and reduced-motion fallbacks.
-
 ### Do:
 
-- **Do** preserve the dark-only Operator Background on legacy routes and use the scoped Signal Handoff palette only on its approved surfaces.
-- **Do** use purple for Signal Handoff authority, yellow for focus/active/recoverable state, and red only for recording/destructive actions.
-- **Do** keep media unobscured and letterboxed with `object-contain`.
-- **Do** retain the Portrait Equal Grid contract: orientation-based, four visible rows, vertical overflow, existing gutters, and a floating local Self-view.
-- **Do** place Remote Control state below focused content and keep participant-scoped Request Control at the tile's bottom-right.
-- **Do** provide visible keyboard focus and remove nonessential animation under `prefers-reduced-motion`.
-- **Do** use the supplied Huddle mark and link every route-level logo or wordmark home.
+- **Do** use the scoped warm Signal Handoff tokens on every audited route shell.
+- **Do** keep the unscoped `bg-dotgrid` root class as a fallback until future routes are checked; do not claim it is the active visual contract everywhere.
+- **Do** keep the Huddle brand on the left and navigation/theme/actions on the right at every breakpoint.
+- **Do** reserve purple for authority, yellow for focus/active/recoverable state, and red for recording, Stop/Leave, or true failure.
+- **Do** preserve `object-contain`, protected media geometry, consent, admission, Direct Rejoin, Recording, Google Drive, and attended Remote Control behavior.
+- **Do** provide visible keyboard focus and reduced-motion fallbacks on authored motion.
+- **Do** use the supplied Huddle mark and link route-level marks home.
 
 ### Don't:
 
-- **Don't** migrate unrelated legacy application routes into the Signal Handoff palette.
-- **Don't** turn the call workspace into a generic grid of interchangeable rounded cards; keep its media-first geometry and framed operational hierarchy purposeful.
-- **Don't** spread neon across resting surfaces or let more than one signal color compete on the same action.
-- **Don't** crop camera faces or screen shares to fill a tile.
-- **Don't** overlay Host controls, Remote Control status, or self-view on critical shared-display content when layout space can hold them.
-- **Don't** use cut corners on ordinary forms, settings rows, or marketing cards.
-- **Don't** use monospace as decoration or compress consent, recovery, and error language into cryptic HUD copy.
+- **Don't** describe the current application as dark-only or treat the warm route shells as a future migration; the audited surfaces already use Signal Handoff.
+- **Don't** migrate the dark media field into a light video surface or crop camera faces and shared screens.
+- **Don't** turn every section into a repeated rounded-card grid or use blur/glow as decoration.
+- **Don't** put cut corners on ordinary forms, settings rows, or legal reading surfaces.
+- **Don't** use monospace as a costume or compress consent, recovery, and error language into cryptic HUD copy.
+- **Don't** change LiveKit, admission, Direct Rejoin, Recording, Google Drive, or attended Remote Control behavior as part of visual work.
