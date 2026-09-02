@@ -6,8 +6,8 @@ set -euo pipefail
 # from the Developer ID/notarization release helpers and retains Gatekeeper's
 # explicit Open Anyway requirement.
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-VERSION="${AGENT_VERSION:-0.1.2}"
-BUILD_VERSION="${AGENT_BUILD_VERSION:-3}"
+VERSION="${AGENT_VERSION:-$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$ROOT/Info.plist")}"
+BUILD_VERSION="${AGENT_BUILD_VERSION:-$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$ROOT/Info.plist")}"
 REPOSITORY="${GITHUB_REPOSITORY:?GITHUB_REPOSITORY is required}"
 CHANNEL_TAG="${CONTROL_AGENT_FREE_BETA_TAG:-control-agent-free-beta}"
 KEYCHAIN_ACCOUNT="${CONTROL_AGENT_FREE_BETA_KEYCHAIN_ACCOUNT:-huddle-control-agent-free-beta}"
