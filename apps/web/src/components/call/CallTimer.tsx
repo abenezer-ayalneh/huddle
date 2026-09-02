@@ -32,13 +32,19 @@ export default function CallTimer({ hidden = false, showThemeToggle = true }: { 
   if (hidden || (!duration && !showThemeToggle)) return null;
 
   return (
-    <div className="signal-call-top-rail pointer-events-none absolute left-3 top-3 z-20">
+    <>
       {duration ? (
-        <span role="timer" aria-label={`Call duration ${duration}`} className="signal-call-timer pointer-events-auto">
-          {duration}
-        </span>
+        <div className="signal-call-top-rail pointer-events-none absolute left-3 top-3 z-20">
+          <span role="timer" aria-label={`Call duration ${duration}`} className="signal-call-timer pointer-events-auto">
+            {duration}
+          </span>
+        </div>
       ) : null}
-      {showThemeToggle ? <CallThemeToggle /> : null}
-    </div>
+      {showThemeToggle ? (
+        <div className="signal-call-top-rail pointer-events-none absolute right-3 top-3 z-20">
+          <CallThemeToggle />
+        </div>
+      ) : null}
+    </>
   );
 }
