@@ -29,7 +29,10 @@ fi
 
 SPARKLE_UPDATE_FEED_URL="https://github.com/$REPOSITORY/releases/download/$CHANNEL_TAG/appcast-arm64.xml"
 
-ARCHITECTURE=arm64 CODE_SIGN_IDENTITY=- AGENT_VERSION="$VERSION" AGENT_BUILD_VERSION="$BUILD_VERSION" \
+# Keep an installed Apple Development identity when available. This is
+# essential for TCC continuity across Sparkle updates; the build script still
+# falls back to ad-hoc signing on machines without a development certificate.
+ARCHITECTURE=arm64 AGENT_VERSION="$VERSION" AGENT_BUILD_VERSION="$BUILD_VERSION" \
   SPARKLE_UPDATE_PUBLIC_KEY="$SPARKLE_UPDATE_PUBLIC_KEY" SPARKLE_UPDATE_FEED_URL="$SPARKLE_UPDATE_FEED_URL" \
   "$ROOT/scripts/build-app.sh"
 ARCHITECTURE=arm64 "$ROOT/scripts/package-dmg.sh" "$ROOT/dist/Huddle Control Agent.app" "$DMG"

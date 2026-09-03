@@ -837,6 +837,7 @@ private struct PermissionBadge: View {
 struct AgentView: View {
     @ObservedObject var model: AgentModel
     @State private var helpExpanded = false
+    @Environment(\.scenePhase) private var scenePhase
 
     private var permissionsReady: Bool {
         model.screenPermission && model.accessibilityPermission
@@ -874,6 +875,12 @@ struct AgentView: View {
         }
         .frame(minWidth: 560, minHeight: 680)
         .onAppear { model.refreshPermissions() }
+        .onChange(of: scenePhase) { _, phase in
+            // System Settings can change TCC while this window is inactive.
+            // Re-read both APIs whenever the app becomes active so the UI
+            // represents the currently running app, not its launch snapshot.
+            if phase == .active { model.refreshPermissions() }
+        }
     }
 
     private var header: some View {
