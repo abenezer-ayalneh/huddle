@@ -655,18 +655,21 @@ private struct InputInjector {
 }
 
 private enum HuddleTheme {
-    static let background = Color(red: 0.965, green: 0.933, blue: 0.859)
-    static let backgroundDeep = Color(red: 0.918, green: 0.875, blue: 0.784)
-    static let surface = Color(red: 1.0, green: 0.98, blue: 0.941)
-    static let surfaceStrong = Color(red: 0.941, green: 0.894, blue: 0.804)
-    static let purple = Color(red: 0.553, green: 0.149, blue: 0.463)
-    static let purpleDark = Color(red: 0.435, green: 0.098, blue: 0.369)
+    // Match the established Huddle dark theme. The semantic names keep every
+    // foreground/background pairing explicit rather than inheriting system UI
+    // colors that can become illegible in a dark SwiftUI window.
+    static let background = Color(red: 0.102, green: 0.059, blue: 0.059)
+    static let backgroundDeep = Color(red: 0.141, green: 0.082, blue: 0.078)
+    static let surface = Color(red: 0.165, green: 0.106, blue: 0.098)
+    static let surfaceStrong = Color(red: 0.2, green: 0.133, blue: 0.114)
+    static let purple = Color(red: 0.757, green: 0.353, blue: 0.62)
+    static let purpleDark = Color(red: 0.882, green: 0.51, blue: 0.737)
     static let yellow = Color(red: 0.953, green: 0.69, blue: 0.11)
-    static let red = Color(red: 0.933, green: 0.204, blue: 0.184)
-    static let text = Color(red: 0.078, green: 0.078, blue: 0.078)
-    static let muted = Color(red: 0.384, green: 0.349, blue: 0.31)
-    static let border = Color(red: 0.835, green: 0.78, blue: 0.69)
-    static let borderStrong = Color(red: 0.737, green: 0.659, blue: 0.541)
+    static let red = Color(red: 1.0, green: 0.42, blue: 0.369)
+    static let text = Color(red: 0.98, green: 0.957, blue: 0.914)
+    static let muted = Color(red: 0.82, green: 0.757, blue: 0.678)
+    static let border = Color(red: 0.384, green: 0.29, blue: 0.243)
+    static let borderStrong = Color(red: 0.525, green: 0.412, blue: 0.341)
 }
 
 private struct HuddleBackdrop: View {
@@ -699,26 +702,6 @@ private struct HandoffRoute: View {
     }
 }
 
-private struct HuddleMark: View {
-    let size: CGFloat
-
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: size * 0.18, style: .continuous)
-                .fill(HuddleTheme.purple)
-                .overlay(RoundedRectangle(cornerRadius: size * 0.18, style: .continuous).stroke(HuddleTheme.purpleDark, lineWidth: 1))
-            Circle().fill(HuddleTheme.yellow).frame(width: size * 0.17).offset(y: -size * 0.31)
-            Circle().fill(HuddleTheme.yellow).frame(width: size * 0.17).offset(x: size * 0.31)
-            Circle().fill(HuddleTheme.yellow).frame(width: size * 0.17).offset(y: size * 0.31)
-            Circle().fill(HuddleTheme.yellow).frame(width: size * 0.17).offset(x: -size * 0.31)
-            Image(systemName: "cursorarrow")
-                .font(.system(size: size * 0.34, weight: .bold))
-                .foregroundStyle(HuddleTheme.surface)
-        }
-        .frame(width: size, height: size)
-    }
-}
-
 private struct HuddleCard<Content: View>: View {
     private let content: Content
 
@@ -728,7 +711,9 @@ private struct HuddleCard<Content: View>: View {
 
     var body: some View {
         content
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(20)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .fill(HuddleTheme.surface)
@@ -742,6 +727,35 @@ private enum HuddleButtonTone {
     case primary
     case secondary
     case danger
+}
+
+private struct PointingHandCursor: ViewModifier {
+    @Environment(\.isEnabled) private var isEnabled
+    @State private var cursorIsPushed = false
+
+    func body(content: Content) -> some View {
+        content
+            .onHover { isHovering in
+                if isHovering && isEnabled && !cursorIsPushed {
+                    NSCursor.pointingHand.push()
+                    cursorIsPushed = true
+                } else if cursorIsPushed {
+                    NSCursor.pop()
+                    cursorIsPushed = false
+                }
+            }
+            .onChange(of: isEnabled) { enabled in
+                guard !enabled, cursorIsPushed else { return }
+                NSCursor.pop()
+                cursorIsPushed = false
+            }
+    }
+}
+
+private extension View {
+    func pointingHandCursor() -> some View {
+        modifier(PointingHandCursor())
+    }
 }
 
 private struct HuddleButtonStyle: ButtonStyle {
@@ -764,6 +778,7 @@ private struct HuddleButtonStyle: ButtonStyle {
             )
             .opacity(isEnabled ? 1 : 0.42)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+            .pointingHandCursor()
     }
 
     private var foreground: Color {
@@ -843,8 +858,8 @@ struct AgentView: View {
 
                     trustStep
                     permissionsStep
-                    updateStep
                     displayStep
+                    updateStep
                     helpSection
 
                     Text("Huddle Control Agent \(model.appVersion) · Attended and room-scoped")
@@ -853,7 +868,6 @@ struct AgentView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.top, 4)
                 }
-                .frame(maxWidth: 700)
                 .padding(32)
                 .frame(maxWidth: .infinity)
             }
@@ -864,7 +878,6 @@ struct AgentView: View {
 
     private var header: some View {
         HStack(spacing: 16) {
-            HuddleMark(size: 62)
             VStack(alignment: .leading, spacing: 4) {
                 Text("HUDDLE / REMOTE CONTROL").font(.system(size: 10, weight: .bold, design: .monospaced)).tracking(1.8).foregroundStyle(HuddleTheme.purple)
                 Text("Control handoff").font(.system(size: 27, weight: .bold, design: .rounded)).foregroundStyle(HuddleTheme.text)
@@ -942,7 +955,7 @@ struct AgentView: View {
                 Text("Screen Recording publishes the selected display. Accessibility applies only the approved Controller's mouse and keyboard input.")
                     .font(.caption)
                     .foregroundStyle(HuddleTheme.muted)
-                HStack(spacing: 10) {
+                VStack(spacing: 10) {
                     PermissionBadge(name: "Screen Recording", granted: model.screenPermission)
                     PermissionBadge(name: "Accessibility", granted: model.accessibilityPermission)
                 }
@@ -995,6 +1008,7 @@ struct AgentView: View {
                         }
                         .pickerStyle(.menu)
                         .tint(HuddleTheme.purple)
+                        .pointingHandCursor()
                     }
                     Button("Stop") { model.stop() }
                         .buttonStyle(HuddleButtonStyle(tone: .danger))
@@ -1020,6 +1034,7 @@ struct AgentView: View {
                         }
                         .pickerStyle(.menu)
                         .tint(HuddleTheme.purple)
+                        .pointingHandCursor()
                     }
                     HStack(spacing: 8) {
                         Button("Start Remote Control") { model.startRemoteControl() }
@@ -1051,16 +1066,23 @@ struct AgentView: View {
                     Text("Updates are optional. Automatic download and installation is disabled by default and is paused for every active Remote Control session.")
                         .font(.caption)
                         .foregroundStyle(HuddleTheme.muted)
-                    Toggle(
-                        "Automatically download and install updates",
-                        isOn: Binding(
-                            get: { model.updater.automaticUpdatesEnabled },
-                            set: { model.updater.setAutomaticUpdatesEnabled($0) }
+                    HStack(spacing: 12) {
+                        Text("Automatically download and install updates")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(model.connected ? HuddleTheme.muted : HuddleTheme.text)
+                        Spacer(minLength: 12)
+                        Toggle(
+                            "Automatically download and install updates",
+                            isOn: Binding(
+                                get: { model.updater.automaticUpdatesEnabled },
+                                set: { model.updater.setAutomaticUpdatesEnabled($0) }
+                            )
                         )
-                    )
-                    .toggleStyle(.switch)
-                    .tint(HuddleTheme.purple)
-                    .disabled(model.connected)
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                        .tint(HuddleTheme.purple)
+                        .disabled(model.connected)
+                    }
                     HStack(spacing: 8) {
                         Button("Check for updates") { model.updater.checkForUpdates() }
                             .buttonStyle(HuddleButtonStyle(tone: .secondary))
@@ -1142,7 +1164,7 @@ struct AgentView: View {
 struct HuddleControlAgentApp: App {
     @StateObject private var model = AgentModel()
     var body: some Scene {
-        WindowGroup {
+        WindowGroup("Huddle Control Agent") {
             AgentView(model: model)
                 .onOpenURL { url in
                     do { model.accept(try BootstrapLink.parse(url)) } catch { model.error = error.localizedDescription }
