@@ -48,13 +48,13 @@ describe('ControlBar secondary controls', () => {
     expect(screen.getByRole('button', { name: 'More controls' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Leave call' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Share screen' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Enter picture-in-picture' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Open picture-in-picture' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Request to record' })).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'More controls' }));
 
     expect(screen.getByRole('button', { name: 'Share screen' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Enter picture-in-picture' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Open picture-in-picture' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Request to record' })).toBeTruthy();
   });
 

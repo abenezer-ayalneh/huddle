@@ -280,16 +280,22 @@ stage is offered as [[Picture-in-Picture]] so the user can keep watching.
 _Avoid_: Background mode, keep-alive, minimize
 
 **Picture-in-Picture (PiP)**:
-The OS-level floating window that shows a single video feed outside the browser,
-so a [[Background Call]] stays visible while the user is in another app. It holds
-exactly one feed (a native browser window, not a custom player or the grid),
-mirroring the main stage: the presented screen if someone is presenting, else the
-pinned participant ([[Pin]]), else the [[Active Speaker]]. Entered via an explicit
-pop-out control (a user gesture, reliable everywhere PiP exists) and, where the
-browser permits, automatically on backgrounding. On iOS, entering PiP is also what
-keeps the media session alive in the background; on Android background audio
-survives without it. Distinct from the [[Self-view]] (an in-page floating
-self-camera, never called PiP).
+A browser-owned floating meeting companion outside the main call document. On
+capable desktop browsers, Huddle uses Document PiP: a small movable/resizable
+surface with up to four human feeds, camera-off [[Avatar]] states, names, chat,
+and compact Huddle controls. It mirrors the same call state and never creates a
+second publication or authority path. During Present it offers People or
+Presentation layouts; a Remote Control Sharer sees a static safety state, while
+other participants may see the selected display read-only. Approval, admission,
+recording consent, and Remote Control input return to the full call. Automatic
+desktop PiP follows the local `huddle-pip-auto` preference and only treats
+window/monitor capture as a presentation trigger. Automatic PiP closes when the
+call becomes visible again; manual PiP remains until closed or returned to the
+call. Browsers without Document PiP fall back to the native single-feed video
+PiP, then WebKit presentation mode, then no PiP. On mobile, native PiP remains
+the Background Call continuity mechanism: iOS uses it to help keep media alive,
+while Android background audio may survive without it. Distinct from the
+[[Self-view]] (an in-page floating self-camera, never called PiP).
 _Avoid_: Pop-out (fine as the control's label/verb), mini player, floating grid,
 Self-view
 

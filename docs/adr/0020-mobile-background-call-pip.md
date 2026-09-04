@@ -25,8 +25,10 @@ allows it, automatically on backgrounding.
 
 - **Floating multi-participant grid** — rejected: impossible on mobile web; would
   require a native wrapper or installed PWA, a scope expansion beyond the stack.
-- **Document Picture-in-Picture** (renders arbitrary DOM) — rejected: desktop
-  Chrome only; absent on every mobile browser.
+- **Document Picture-in-Picture** (renders arbitrary DOM) — rejected as a mobile
+  replacement because it is a desktop-oriented browser primitive. It is now
+  accepted as a progressive desktop enhancement in [ADR 0031](0031-desktop-rich-picture-in-picture.md);
+  native video PiP remains the mobile and unsupported-browser path.
 - **Auto-enter PiP only, no button** — rejected: mobile browsers commonly block
   programmatic PiP without a user gesture, so it would silently fail for many
   users. We keep a manual control and treat auto-enter as best-effort.
@@ -39,3 +41,5 @@ allows it, automatically on backgrounding.
   therefore best-effort and platform-dependent, strongest when PiP is active.
 - The floating window shows one feed, never the grid — an accepted, documented
   limitation, not a bug.
+- Desktop rich PiP is specified separately in ADR 0031 and does not change the
+  mobile camera-off or background-audio behavior described here.

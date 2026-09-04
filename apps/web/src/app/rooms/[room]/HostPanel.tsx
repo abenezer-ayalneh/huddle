@@ -29,7 +29,7 @@ function playDing() {
   }
 }
 
-export default function HostPanel({ room, hostKey, onOpenChange }: { room: string; hostKey: string; onOpenChange?: (open: boolean) => void }) {
+export default function HostPanel({ room, hostKey, onOpenChange, onWaitingCountChange }: { room: string; hostKey: string; onOpenChange?: (open: boolean) => void; onWaitingCountChange?: (count: number) => void }) {
   const participants = useRemoteParticipants();
   const humanParticipants = useMemo(() => participants.filter((participant) => !isControlAgentParticipant(participant)), [participants]);
   const controlAgents = useMemo(() => participants.filter((participant) => isControlAgentParticipant(participant)), [participants]);
@@ -44,6 +44,10 @@ export default function HostPanel({ room, hostKey, onOpenChange }: { room: strin
   }, [metadata]);
   const [knocks, setKnocks] = useState<PendingKnock[]>([]);
   const seenKnockIds = useRef(new Set<string>());
+
+  useEffect(() => {
+    onWaitingCountChange?.(knocks.length);
+  }, [knocks.length, onWaitingCountChange]);
 
   useEffect(() => {
     const currentIds = new Set(knocks.map((k) => k.knockId));

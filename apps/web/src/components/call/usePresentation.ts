@@ -1,10 +1,11 @@
 'use client';
 
-import { useLocalParticipant, useRoomContext, useTracks } from '@livekit/components-react';
+import { isTrackReference, useLocalParticipant, useRoomContext, useTracks } from '@livekit/components-react';
 import { RoomEvent, Track, type RemoteParticipant } from 'livekit-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { PRESENT_TOPIC, decode, sendPresentMessage } from '@/lib/presentProtocol';
 import { isControlAgentParticipant } from '@/lib/controlProtocol';
+import type { PresentationDisplaySurface } from './pictureInPicture.types';
 
 export type OutgoingRequest = {
   presenterIdentity: string;
@@ -38,6 +39,11 @@ export function usePresentation(isHost: boolean, remoteControlActive = false) {
   const presenterName = presenterTrack?.participant.name || presenterIdentity;
   const iAmPresenting = presenterIdentity === localParticipant.identity;
   const someoneElsePresenting = presenterIdentity !== null && !iAmPresenting;
+  const displaySurface: PresentationDisplaySurface | null = (() => {
+    if (!presenterTrack || !isTrackReference(presenterTrack)) return null;
+    const value = presenterTrack.publication.track?.mediaStreamTrack.getSettings().displaySurface;
+    return value === 'window' || value === 'monitor' || value === 'browser' ? value : 'unknown';
+  })();
 
   const [outgoing, setOutgoing] = useState<OutgoingRequest | null>(null);
   const [incoming, setIncoming] = useState<IncomingRequest | null>(null);
@@ -248,6 +254,7 @@ export function usePresentation(isHost: boolean, remoteControlActive = false) {
   return {
     presenterIdentity,
     presenterName,
+    displaySurface,
     iAmPresenting,
     someoneElsePresenting,
     outgoing,

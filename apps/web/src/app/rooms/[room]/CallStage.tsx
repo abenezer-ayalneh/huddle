@@ -1,6 +1,7 @@
 'use client';
 
 import { LiveKitRoom, RoomAudioRenderer, useChat, type LocalUserChoices, type TrackReferenceOrPlaceholder } from '@livekit/components-react';
+import { createPortal } from 'react-dom';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useBackgroundCall } from '@/components/call/useBackgroundCall';
 import { usePictureInPicture } from '@/components/call/usePictureInPicture';
@@ -18,6 +19,7 @@ import RemoteControlSurface from '@/components/call/RemoteControlSurface';
 import RemoteControlToast from '@/components/call/RemoteControlToast';
 import AgentLaunchDialog from '@/components/call/AgentLaunchDialog';
 import VideoGrid from '@/components/call/VideoGrid';
+import PictureInPictureSurface from '@/components/call/PictureInPictureSurface';
 import MeetingLoadingScreen from '@/components/call/MeetingLoadingScreen';
 import ErrorBoundary from '@/components/faults/ErrorBoundary';
 import LandingThemeProvider from '@/components/landing/LandingThemeProvider';
@@ -59,6 +61,7 @@ export default function CallStage({
   isHost = false,
   hostKey,
   hostPanelOpen = false,
+  hostWaitingCount = 0,
 }: {
   room: string;
   connection: Connection;
@@ -77,6 +80,7 @@ export default function CallStage({
   // While the host drawer is open, its own header owns the theme control so
   // a compact control never sits underneath the high-priority drawer.
   hostPanelOpen?: boolean;
+  hostWaitingCount?: number;
 }) {
   const [choices, setChoices] = useState<LocalUserChoices | null>(initialChoices ?? null);
   const [hasConnected, setHasConnected] = useState(false);
@@ -195,10 +199,12 @@ export default function CallStage({
               token={connection.token}
               displayName={displayName}
               onLeaveClick={() => setShowLeaveDialog(true)}
+              onLeaveConfirm={confirmLeave}
               overlay={overlay}
               isHost={isHost}
               hostKey={hostKey}
               hostPanelOpen={hostPanelOpen}
+              hostWaitingCount={hostWaitingCount}
             />
           ) : (
             <MeetingLoadingScreen stage="connecting" />
@@ -216,34 +222,53 @@ function CallView({
   token,
   displayName,
   onLeaveClick,
+  onLeaveConfirm,
   overlay,
   isHost,
   hostKey,
   hostPanelOpen,
+  hostWaitingCount,
 }: {
   room: string;
   token: string;
   displayName: string;
   onLeaveClick: () => void;
+  onLeaveConfirm: () => void;
   overlay?: ReactNode;
   isHost: boolean;
   hostKey?: string;
   hostPanelOpen: boolean;
+  hostWaitingCount: number;
 }) {
   const { chatMessages, send, isSending } = useChat();
   const [chatOpen, setChatOpen] = useState(false);
-
-  // Background Call + Picture-in-Picture. VideoGrid reports the feed that owns
-  // the main stage; PiP mirrors it into the OS floating window, and the
-  // background hook keeps the call alive (mic on, camera off) when the app is
-  // backgrounded on mobile, auto-entering PiP where the browser allows it.
-  const [stageTrack, setStageTrack] = useState<TrackReferenceOrPlaceholder | null>(null);
-  const { videoRef: pipVideoRef, enter: enterPip, exit: exitPip, active: pipActive, supported: pipSupported } = usePictureInPicture(stageTrack);
-  useBackgroundCall({ enterPip });
+  const [pipChatOpen, setPipChatOpen] = useState(false);
+  const [pipChatDraft, setPipChatDraft] = useState('');
+  const [pinnedIdentity, setPinnedIdentity] = useState<string | null>(null);
 
   const recording = useRecording({ room, token, isHost, hostKey });
   const remoteControl = useRemoteControl({ room, participantToken: token });
   const presentation = usePresentation(isHost, !!remoteControl.session);
+
+  // Background Call + Picture-in-Picture. VideoGrid reports the feed that owns
+  // the native stage; the rich surface reads the same room tracks directly.
+  const [stageTrack, setStageTrack] = useState<TrackReferenceOrPlaceholder | null>(null);
+  const {
+    videoRef: pipVideoRef,
+    enter: enterPip,
+    exit: exitPip,
+    active: pipActive,
+    supported: pipSupported,
+    richSupported: pipRichSupported,
+    portalRoot,
+    autoPreference: pipAutoPreference,
+    setAutoPreference: setPipAutoPreference,
+    failure: pipFailure,
+  } = usePictureInPicture(stageTrack, {
+    presenting: presentation.iAmPresenting || presentation.someoneElsePresenting,
+    presentationSurface: presentation.displaySurface,
+  });
+  useBackgroundCall({ enterPip });
 
   // The non-host record affordance walks request → wait → stop (approval starts
   // the recording immediately). The host records from the Host panel, and nobody
@@ -261,19 +286,18 @@ function CallView({
 
   const onRecordClick = recordMode === 'recording' ? recording.stopRecording : recordMode === 'pending' ? recording.cancelRequest : recording.requestToRecord;
   const [unread, setUnread] = useState(0);
-  const [prev, setPrev] = useState({
-    len: chatMessages.length,
-    open: chatOpen,
-  });
-  if (prev.len !== chatMessages.length || prev.open !== chatOpen) {
-    if (chatOpen) {
+  const previousChatState = useRef({ len: chatMessages.length, open: chatOpen || pipChatOpen });
+  const chatIsOpen = chatOpen || pipChatOpen;
+  useEffect(() => {
+    const delta = chatMessages.length - previousChatState.current.len;
+    if (chatIsOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setUnread(0);
-    } else {
-      const delta = chatMessages.length - prev.len;
-      if (delta > 0) setUnread((u) => u + delta);
+    } else if (delta > 0) {
+      setUnread((current) => current + delta);
     }
-    setPrev({ len: chatMessages.length, open: chatOpen });
-  }
+    previousChatState.current = { len: chatMessages.length, open: chatIsOpen };
+  }, [chatIsOpen, chatMessages.length]);
 
   return (
     <>
@@ -282,6 +306,8 @@ function CallView({
         onStopPresenting={presentation.handleShareClick}
         onStageTrackChange={setStageTrack}
         localName={displayName}
+        pinnedIdentity={pinnedIdentity}
+        onPinnedIdentityChange={setPinnedIdentity}
         remoteControlSession={remoteControl.session}
         isRemoteSharer={remoteControl.iAmSharer}
         onRequestControl={(identity) => void remoteControl.requestControl(identity)}
@@ -333,8 +359,11 @@ function CallView({
         onRecordClick={recordMode ? onRecordClick : undefined}
         recordBusy={recording.busy}
         remoteControlActive={!!remoteControl.session}
-        onPopOut={pipSupported ? () => (pipActive ? exitPip() : enterPip()) : undefined}
+        onPopOut={pipSupported ? () => void (pipActive ? exitPip() : enterPip('manual')) : undefined}
         pipActive={pipActive}
+        pipRichSupported={pipRichSupported}
+        pipAutoPreference={pipAutoPreference}
+        onPipAutoPreferenceChange={setPipAutoPreference}
       />
       <CallNoticeTray>
         <ErrorBoundary label="Call toasts" fallback={null}>
@@ -386,6 +415,50 @@ function CallView({
         onDismiss={remoteControl.dismissHelperBootstrap}
       />
       {overlay}
+      {pipFailure && (
+        <div role="status" className="signal-call-pip-failure fixed bottom-24 left-1/2 z-30 max-w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 rounded-lg px-4 py-3 text-sm">
+          {pipFailure}
+        </div>
+      )}
+      {portalRoot &&
+        createPortal(
+          <PictureInPictureSurface
+            roomCode={room}
+            localName={displayName}
+            pinnedIdentity={pinnedIdentity}
+            iAmPresenting={presentation.iAmPresenting}
+            presentationDisplaySurface={presentation.displaySurface}
+            recordingActive={recording.recordingActive}
+            recordingNotice={recording.incoming ? `${recording.incoming.requesterName} requested recording.` : recording.phase === 'pending' ? 'Recording request pending.' : null}
+            hostWaitingCount={hostWaitingCount}
+            presentationNotice={presentation.incoming ? `${presentation.incoming.requesterName} wants to present.` : presentation.outgoing ? `Waiting for ${presentation.outgoing.presenterName}.` : null}
+            remoteControlActive={!!remoteControl.session}
+            remoteControlRole={remoteControl.iAmSharer ? 'sharer' : remoteControl.iAmController ? 'controller' : 'participant'}
+            remoteControlNotice={
+              remoteControl.incomingRequest
+                ? `${remoteControl.incomingRequest.controllerName} requested Remote Control.`
+                : remoteControl.outgoingRequest
+                  ? `Waiting for ${remoteControl.outgoingRequest.sharerName}.`
+                  : remoteControl.notice?.message ?? (remoteControl.session ? (remoteControl.iAmSharer ? 'Remote Control active. Your display stays hidden here.' : 'Remote Control active. Display is read-only.') : null)
+            }
+            messages={chatMessages}
+            onSend={send}
+            isSending={isSending}
+            unreadChat={unread}
+            chatDraft={pipChatDraft}
+            onChatDraftChange={setPipChatDraft}
+            onChatVisibilityChange={setPipChatOpen}
+            onReturnToCall={() => {
+              void exitPip();
+              window.focus();
+            }}
+            onConfirmLeave={() => {
+              void exitPip();
+              onLeaveConfirm();
+            }}
+          />,
+          portalRoot,
+        )}
       {/* The single feed handed to native Picture-in-Picture. Kept in the DOM
           and playing (PiP requires that) but visually out of the way — the grid
           renders the real tiles. */}

@@ -14,6 +14,8 @@ export default function VideoGrid({
   onStopPresenting,
   onStageTrackChange,
   localName,
+  pinnedIdentity,
+  onPinnedIdentityChange,
   remoteControlSession,
   isRemoteSharer = false,
   onRequestControl,
@@ -32,6 +34,10 @@ export default function VideoGrid({
   // tile so it never flashes a placeholder before LiveKit populates the name
   // (see VideoTile's `fallbackName`). Used wherever the local tile renders.
   localName?: string;
+  // Pin is call-layout state shared with the rich PiP surface. Omit both props
+  // to retain a self-contained grid for callers that do not need PiP.
+  pinnedIdentity?: string | null;
+  onPinnedIdentityChange?: (identity: string | null) => void;
   remoteControlSession?: RemoteControlSession | null;
   isRemoteSharer?: boolean;
   onRequestControl?: (identity: string) => void;
@@ -63,19 +69,25 @@ export default function VideoGrid({
   const localTrack = useMemo(() => cameraTracks.find((t) => t.participant.isLocal) ?? null, [cameraTracks]);
   const remoteTracks = useMemo(() => cameraTracks.filter((t) => !t.participant.isLocal), [cameraTracks]);
 
-  // Local view-state — never synced, never lifted. Lives here so it survives a
-  // presentation starting and stopping (this component stays mounted).
-  const [pinnedIdentity, setPinnedIdentity] = useState<string | null>(null);
+  // Pin is local to the call and shared with rich PiP when the parent supplies
+  // the controlled value. The fallback keeps this component reusable.
+  const [internalPinnedIdentity, setInternalPinnedIdentity] = useState<string | null>(null);
   const [selfCorner, setSelfCorner] = useState<Corner>('bl');
+  const activePinnedIdentity = pinnedIdentity !== undefined ? pinnedIdentity : internalPinnedIdentity;
+  const setPin = (next: string | null) => {
+    if (onPinnedIdentityChange) onPinnedIdentityChange(next);
+    else setInternalPinnedIdentity(next);
+  };
 
-  const pinnedTrack = remoteTracks.find((t) => t.participant.identity === pinnedIdentity) ?? null;
-  // The pinned participant left — drop the stale pin at render time (the same
-  // pattern CallView uses for its launchCode / unread counters).
-  if (pinnedIdentity !== null && !pinnedTrack) {
-    setPinnedIdentity(null);
-  }
+  const pinnedTrack = remoteTracks.find((t) => t.participant.identity === activePinnedIdentity) ?? null;
+  useEffect(() => {
+    // This is a controlled-layout reconciliation when a participant leaves.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (activePinnedIdentity !== null && !pinnedTrack) setPin(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- local controlled/uncontrolled adapter
+  }, [activePinnedIdentity, pinnedTrack]);
 
-  const togglePin = (identity: string) => setPinnedIdentity((cur) => (cur === identity ? null : identity));
+  const togglePin = (identity: string) => setPin(activePinnedIdentity === identity ? null : identity);
 
   // The feed that owns the main stage, by the same precedence the layout uses
   // below — reported up for Picture-in-Picture to mirror. A normal Presenter
@@ -156,7 +168,7 @@ export default function VideoGrid({
             <VideoTile trackRef={pinnedTrack} active={pinnedTrack.participant.identity === activeIdentity} />
             <button
               type="button"
-              onClick={() => setPinnedIdentity(null)}
+              onClick={() => setPin(null)}
               className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-black/55 px-3 py-1.5 text-xs font-medium text-white/90 backdrop-blur transition hover:bg-black/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60"
             >
               <PinOff className="h-3.5 w-3.5" />

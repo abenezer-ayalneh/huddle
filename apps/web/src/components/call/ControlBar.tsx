@@ -25,6 +25,7 @@ import DeviceRecoveryDialog, { type RecoveryTarget } from './DeviceRecoveryDialo
 import { useMediaPermissions } from './useMediaPermissions';
 import { useMuteReminder } from './useMuteReminder';
 import { useCallShortcuts, useModifierKeyLabel } from './useCallShortcuts';
+import type { PipAutoPreference } from './pictureInPicture.types';
 
 export default function ControlBar({
   onLeave,
@@ -41,6 +42,9 @@ export default function ControlBar({
   remoteControlActive = false,
   onPopOut,
   pipActive = false,
+  pipRichSupported = false,
+  pipAutoPreference,
+  onPipAutoPreferenceChange,
 }: {
   onLeave: () => void;
   chatOpen: boolean;
@@ -62,6 +66,9 @@ export default function ControlBar({
   // control where PiP is unsupported.
   onPopOut?: () => void;
   pipActive?: boolean;
+  pipRichSupported?: boolean;
+  pipAutoPreference?: PipAutoPreference;
+  onPipAutoPreferenceChange?: (preference: PipAutoPreference) => void;
 }) {
   // Device Recovery (docs/adr/0023): classify a failed mic/camera toggle so a
   // badge + recovery dialog can explain a blocked / busy / missing device. A
@@ -233,6 +240,9 @@ export default function ControlBar({
           onShareClick={onShareClick}
           onPopOut={onPopOut}
           pipActive={pipActive}
+          pipRichSupported={pipRichSupported}
+          pipAutoPreference={pipAutoPreference}
+          onPipAutoPreferenceChange={onPipAutoPreferenceChange}
           recordMode={recordMode}
           onRecordClick={onRecordClick}
           recordBusy={recordBusy}
@@ -263,6 +273,9 @@ function MoreControls({
   onShareClick,
   onPopOut,
   pipActive,
+  pipRichSupported,
+  pipAutoPreference,
+  onPipAutoPreferenceChange,
   recordMode,
   onRecordClick,
   recordBusy,
@@ -277,6 +290,9 @@ function MoreControls({
   onShareClick: () => void;
   onPopOut?: () => void;
   pipActive: boolean;
+  pipRichSupported: boolean;
+  pipAutoPreference?: PipAutoPreference;
+  onPipAutoPreferenceChange?: (preference: PipAutoPreference) => void;
   recordMode?: 'request' | 'pending' | 'recording';
   onRecordClick?: () => void;
   recordBusy: boolean;
@@ -312,11 +328,27 @@ function MoreControls({
         {onPopOut && (
           <MoreControlAction
             icon={PictureInPicture2}
-            label={pipActive ? 'Exit picture-in-picture' : 'Enter picture-in-picture'}
+            label={pipActive ? 'Close picture-in-picture' : 'Open picture-in-picture'}
             active={pipActive}
             onClick={onPopOut}
             close={() => onOpenChange(false)}
           />
+        )}
+        {onPopOut && pipRichSupported && pipAutoPreference && onPipAutoPreferenceChange && (
+          <label className="signal-call-pip-auto-setting flex min-w-0 flex-col items-stretch gap-1.5 border-t border-white/10 px-3 py-2.5 text-xs">
+            <span>Automatic picture-in-picture</span>
+            <select
+              aria-label="Automatic picture-in-picture"
+              value={pipAutoPreference}
+              onChange={(event) => onPipAutoPreferenceChange(event.target.value as PipAutoPreference)}
+              className="min-w-0 max-w-full rounded-md border border-white/15 bg-transparent px-1.5 py-1 text-xs outline-none focus-visible:ring-2 focus-visible:ring-cyan/60"
+            >
+              <option value="never">Never</option>
+              <option value="tab-switch">When I switch tabs</option>
+              <option value="presentation">When I present a window or screen</option>
+              <option value="always">Always</option>
+            </select>
+          </label>
         )}
         {recordMode && onRecordClick && (
           <MoreControlAction

@@ -322,5 +322,19 @@ Phase 10 authority boundary.
 
 Windows and Linux Control Agents remain future phases with no release date.
 
+### Phase 12 — Rich desktop Picture-in-Picture
+
+- [x] Progressive Document PiP orchestrator with native video/WebKit fallback.
+- [x] Persisted automatic preference for tab switching, eligible presentation,
+      Always, and Never; manual PiP remains available when automatic entry is
+      blocked.
+- [x] Portal surface with shared participant ordering, Pin, Present layouts,
+      chat/unread state, device controls, status notices, and confirmed Leave.
+- [x] Theme/font/style propagation, responsive PiP geometry, Control Agent
+      privacy rules, and Host Waiting Room count handoff.
+- [x] Add ADR 0031 and amend ADR 0020, glossary, product, and design records.
+- [ ] Complete physical Chrome/Chromium multi-participant, permission, resize,
+      WebRTC, Firefox/Safari fallback, iOS, and Android acceptance matrix.
+
 Keep this file honest: check boxes as you go, and move items between phases if
 priorities change.

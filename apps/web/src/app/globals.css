@@ -7212,6 +7212,38 @@ html[data-theme='dark'] .signal-call-shell {
   backdrop-filter: none !important;
 }
 
+.signal-call-more-popover {
+  width: min(16rem, calc(100vw - 2rem)) !important;
+  max-width: calc(100vw - 2rem) !important;
+}
+
+.signal-call-pip-auto-setting {
+  min-width: 0;
+  width: 100%;
+}
+
+.signal-call-pip-auto-setting > span {
+  min-width: 0;
+  color: #62594f;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+html[data-theme='dark'] .signal-call-pip-auto-setting > span {
+  color: #d1c1ad;
+}
+
+.signal-call-pip-auto-setting select {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .signal-call-device-popover [class*='text-white'],
 .signal-call-more-popover [class*='text-white'] {
   color: #141414 !important;
@@ -7564,6 +7596,617 @@ html[data-theme='dark'] .signal-call-dialog [data-slot='alert-dialog-action'].si
   border-color: #ff6b5e !important;
   background: #ff6b5e !important;
   color: #140b0b !important;
+}
+
+/* Rich desktop Document PiP. It deliberately reuses the call tokens above,
+   but has its own compact geometry because its document is outside the main
+   call stage. The browser owns the native title bar, origin identity, Back to
+   tab action, placement, and resize affordance. */
+.signal-call-pip-shell {
+  width: 100vw;
+  height: 100dvh;
+  min-height: 0 !important;
+  padding: 10px;
+  overflow: hidden !important;
+}
+
+.signal-call-pip-shell::before,
+.signal-call-pip-shell::after {
+  display: none;
+}
+
+.signal-call-pip-content {
+  position: relative;
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.signal-call-pip-header,
+.signal-call-pip-notice,
+.signal-call-pip-controls,
+.signal-call-pip-more,
+.signal-call-pip-confirm,
+.signal-call-pip-chat {
+  border: 1px solid var(--call-border);
+  background: var(--call-surface);
+  color: var(--call-ink);
+  box-shadow: 3px 4px 0 var(--call-shadow);
+}
+
+.signal-call-pip-header {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 9px;
+  border-radius: 9px;
+}
+
+.signal-call-pip-brand,
+.signal-call-pip-header-status {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+}
+
+.signal-call-pip-brand {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.signal-call-pip-brand code {
+  max-width: 112px;
+  overflow: hidden;
+  color: var(--call-muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.signal-call-pip-mark {
+  display: inline-flex;
+  width: 23px;
+  height: 23px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--call-purple);
+  border-radius: 5px;
+  background: var(--call-purple);
+  color: var(--call-primary-foreground);
+  font-family: var(--font-archivo-black), Impact, sans-serif;
+  font-size: 13px;
+}
+
+.signal-call-pip-header-status {
+  flex-shrink: 0;
+  color: var(--call-muted);
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 10px;
+}
+
+.signal-call-pip-status-recording {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--call-red);
+}
+
+.signal-call-pip-status-recording svg {
+  width: 9px;
+  height: 9px;
+  fill: currentColor;
+}
+
+.signal-call-pip-status-unread,
+.signal-call-pip-control-badge {
+  display: inline-flex;
+  min-width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--call-yellow);
+  color: #141414;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.signal-call-pip-notice {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 9px;
+  border-color: var(--call-yellow);
+  border-radius: 8px;
+  color: var(--call-ink);
+  font-size: 10px;
+  text-align: left;
+}
+
+.signal-call-pip-notice svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--call-purple);
+}
+
+.signal-call-pip-main {
+  position: relative;
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--call-border);
+  border-radius: 9px;
+  background: var(--call-media);
+}
+
+.signal-call-pip-people {
+  display: grid;
+  min-height: 0;
+  height: 100%;
+  gap: 7px;
+  padding: 7px;
+  overflow: hidden;
+}
+
+.signal-call-pip-people-stack {
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-rows: minmax(0, 1fr);
+}
+
+.signal-call-pip-people-single {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 0;
+  padding: 5px;
+}
+
+.signal-call-pip-people-pair {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr);
+  gap: 8px;
+  padding: 8px;
+}
+
+.signal-call-pip-people-trio {
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.85fr);
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px;
+}
+
+.signal-call-pip-people-trio > :first-child {
+  grid-row: 1 / -1;
+}
+
+.signal-call-pip-people-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  padding: 7px;
+}
+
+.signal-call-pip-people-primary {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.signal-call-pip-people-primary > .signal-call-pip-media:not(:first-child) {
+  display: none;
+}
+
+.signal-call-pip-people-single .signal-call-pip-media-label {
+  padding: 4px 6px;
+  font-size: 10px;
+}
+
+.signal-call-pip-people-pair .signal-call-pip-media,
+.signal-call-pip-people-trio .signal-call-pip-media {
+  border-radius: 8px;
+}
+
+.signal-call-pip-participant-count {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  z-index: 2;
+  padding: 4px 7px;
+  border: 1px solid var(--call-border);
+  border-radius: 6px;
+  background: var(--call-surface);
+  color: var(--call-ink);
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 10px;
+}
+
+.signal-call-pip-media {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--call-inverse) 38%, transparent);
+  border-radius: 7px;
+  background: var(--call-media-soft);
+}
+
+.signal-call-pip-media > video {
+  display: block;
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+}
+
+.signal-call-pip-camera > .signal-call-tile {
+  height: 100%;
+}
+
+.signal-call-pip-media-label {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  left: 5px;
+  overflow: hidden;
+  padding: 3px 5px;
+  border: 1px solid color-mix(in srgb, var(--call-inverse) 22%, transparent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--call-media) 92%, transparent);
+  color: var(--call-inverse);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.signal-call-pip-active {
+  border-color: var(--call-yellow);
+  box-shadow: inset 0 0 0 1px var(--call-yellow);
+}
+
+.signal-call-pip-primary {
+  min-height: 0;
+}
+
+.signal-call-pip-compact {
+  min-height: 62px;
+}
+
+.signal-call-pip-protected,
+.signal-call-pip-empty {
+  display: flex;
+  min-height: 62px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px;
+  color: var(--call-inverse);
+  font-size: 10px;
+  text-align: center;
+}
+
+.signal-call-pip-protected svg {
+  width: 17px;
+  height: 17px;
+  color: var(--call-yellow);
+}
+
+.signal-call-pip-presentation-layout {
+  display: grid;
+  min-height: 0;
+  height: 100%;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 7px;
+  padding: 7px;
+}
+
+.signal-call-pip-reactions {
+  display: grid;
+  min-height: 57px;
+  gap: 7px;
+}
+
+.signal-call-pip-reactions-0 {
+  display: none;
+}
+
+.signal-call-pip-reactions-1 {
+  grid-template-columns: minmax(0, min(46%, 180px));
+}
+
+.signal-call-pip-reactions-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.signal-call-pip-reactions-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.signal-call-pip-controls {
+  display: flex;
+  min-height: 54px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  padding: 5px;
+  border-radius: 9px;
+}
+
+.signal-call-pip-control {
+  position: relative;
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  flex: 1 1 44px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--call-border);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--call-ink);
+}
+
+.signal-call-pip-control:hover,
+.signal-call-pip-control:focus-visible {
+  border-color: var(--call-purple);
+  outline: 2px solid var(--call-yellow);
+  outline-offset: 2px;
+}
+
+.signal-call-pip-control-active {
+  border-color: var(--call-yellow);
+  background: var(--call-yellow);
+  color: #141414;
+}
+
+.signal-call-pip-control-danger {
+  border-color: var(--call-red);
+  background: var(--call-red);
+  color: var(--call-danger-foreground);
+}
+
+.signal-call-pip-control svg {
+  width: 18px;
+  height: 18px;
+}
+
+.signal-call-pip-control-badge {
+  position: absolute;
+  top: -4px;
+  right: -3px;
+}
+
+.signal-call-pip-more,
+.signal-call-pip-confirm {
+  position: absolute;
+  z-index: 5;
+  border-radius: 8px;
+  padding: 6px;
+  box-shadow: 5px 6px 0 var(--call-shadow);
+}
+
+.signal-call-pip-more {
+  right: 8px;
+  bottom: 66px;
+  display: flex;
+  min-width: 190px;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.signal-call-pip-more button,
+.signal-call-pip-confirm button {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  padding: 6px 8px;
+  color: var(--call-ink);
+  font-size: 11px;
+  text-align: left;
+}
+
+.signal-call-pip-more button:hover,
+.signal-call-pip-more button:focus-visible,
+.signal-call-pip-confirm button:hover,
+.signal-call-pip-confirm button:focus-visible {
+  border-color: var(--call-purple);
+  outline: 2px solid var(--call-yellow);
+  outline-offset: 1px;
+}
+
+.signal-call-pip-more svg {
+  width: 15px;
+  height: 15px;
+  color: var(--call-purple);
+}
+
+.signal-call-pip-menu-label {
+  padding: 7px 8px 3px;
+  color: var(--call-muted);
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.signal-call-pip-confirm {
+  right: 12px;
+  bottom: 70px;
+  left: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.signal-call-pip-confirm strong {
+  font-size: 12px;
+}
+
+.signal-call-pip-confirm span {
+  color: var(--call-muted);
+  font-size: 10px;
+}
+
+.signal-call-pip-confirm > div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.signal-call-pip-confirm button {
+  min-height: 36px;
+  padding-inline: 11px;
+}
+
+.signal-call-pip-leave-confirm {
+  border-color: var(--call-red) !important;
+  background: var(--call-red);
+  color: var(--call-danger-foreground) !important;
+}
+
+.signal-call-pip-chat {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  border-radius: 8px;
+}
+
+.signal-call-pip-chat header {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--call-border);
+  padding: 7px 9px;
+  font-size: 12px;
+}
+
+.signal-call-pip-chat header button {
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--call-border);
+  border-radius: 5px;
+}
+
+.signal-call-pip-chat header svg {
+  width: 15px;
+  height: 15px;
+}
+
+.signal-call-pip-chat-list {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.signal-call-pip-chat-list > p {
+  color: var(--call-muted);
+  font-size: 11px;
+}
+
+.signal-call-pip-chat-list article {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 8px;
+  gap: 3px;
+}
+
+.signal-call-pip-chat-list small {
+  color: var(--call-muted);
+  font-size: 9px;
+}
+
+.signal-call-pip-chat-list article span {
+  align-self: flex-start;
+  max-width: 90%;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--call-border);
+  border-radius: 5px;
+  background: var(--call-surface-strong);
+  padding: 6px 7px;
+  font-size: 11px;
+}
+
+.signal-call-pip-chat form {
+  display: flex;
+  gap: 5px;
+  border-top: 1px solid var(--call-border);
+  padding: 6px;
+}
+
+.signal-call-pip-chat input {
+  min-width: 0;
+  flex: 1;
+  min-height: 38px;
+  border: 1px solid var(--call-border);
+  border-radius: 5px;
+  background: var(--call-surface);
+  color: var(--call-ink);
+  padding: 6px 7px;
+  font-size: 11px;
+}
+
+.signal-call-pip-chat input:focus-visible {
+  border-color: var(--call-yellow);
+  outline: 2px solid var(--call-yellow);
+  outline-offset: 1px;
+}
+
+.signal-call-pip-chat form button {
+  display: inline-flex;
+  width: 40px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--call-purple);
+  border-radius: 5px;
+  background: var(--call-purple);
+  color: var(--call-primary-foreground);
+}
+
+.signal-call-pip-chat form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.signal-call-pip-chat form svg {
+  width: 15px;
+  height: 15px;
+}
+
+.signal-call-pip-failure {
+  border: 1px solid var(--call-yellow);
+  background: var(--call-surface);
+  color: var(--call-ink);
+  box-shadow: 4px 5px 0 var(--call-shadow);
+}
+
+.signal-call-pip-auto-setting select:focus-visible {
+  outline: 2px solid var(--call-yellow);
+  outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signal-call-pip-shell * {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 
 @media (max-width: 639px) {

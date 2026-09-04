@@ -284,6 +284,18 @@ the bottom dock, and Remote Control status sits below focused content. Portrait
 Equal Grid is orientation-based, keeps four rows visible before vertical
 overflow, and retains its floating local Self-view.
 
+Desktop Document Picture-in-Picture is a compact Signal Handoff companion: the
+browser keeps its native title bar and Back to tab affordance, while the Huddle
+document contains a warm rail, dark complete-frame media wells, participant
+names, status notices, and a five-control dock. Light and dark follow the active
+call theme in real time. The surface uses one-pixel frames, restrained offset
+shadows, yellow active-speaker/focus states, and red only for Leave or recording
+severity. Tile composition is participant-aware: one person gets a calm hero,
+two get balanced side-by-side tiles, three use a lead tile with two supporting
+tiles, and four or more use a 2×2 grid. Tall narrow windows stack those tiles;
+very short windows keep one primary tile plus a participant count. Sensitive
+consent and control actions return to the full call.
+
 Primary breakpoints are 640px for compact-to-roomy app layout, 768px for
 navigation visibility, and 1024px for large marketing composition. All audited
 route shells use `overflow-x: clip` or an equivalent bounded layout so routed
