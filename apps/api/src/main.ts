@@ -79,9 +79,17 @@ async function bootstrap() {
   await app.listen(port);
 }
 void bootstrap().catch(async (error: unknown) => {
+  // Nest's watch parent stays alive while Redis holds an open retry connection,
+  // so an exit code alone leaves a failed bootstrap looking like a running API.
+  // Write the underlying error locally before Sentry's optional async flush, then
+  // terminate the failed child so the watcher can report and recover from it.
+  console.error('Huddle API bootstrap failed:', error);
   Sentry.captureException(error, {
     tags: { 'failure.phase': 'bootstrap' },
   });
-  await Sentry.flush(2000);
-  process.exitCode = 1;
+  try {
+    await Sentry.flush(2000);
+  } finally {
+    process.exit(1);
+  }
 });

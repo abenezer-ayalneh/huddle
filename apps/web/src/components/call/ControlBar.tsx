@@ -2,9 +2,23 @@
 
 import { useRoomContext, useTrackToggle } from '@livekit/components-react';
 import { Track } from 'livekit-client';
-import { Circle, Mic, MicOff, Video, VideoOff, MonitorUp, MonitorOff, MessageSquare, PhoneOff, PictureInPicture2, Square, type LucideIcon } from 'lucide-react';
+import {
+  Circle,
+  Ellipsis,
+  Mic,
+  MicOff,
+  Video,
+  VideoOff,
+  MonitorUp,
+  MonitorOff,
+  MessageSquare,
+  PhoneOff,
+  PictureInPicture2,
+  Square,
+  type LucideIcon,
+} from 'lucide-react';
 import { useState } from 'react';
-import LoadingSpinner from '@/components/LoadingSpinner';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { classifyMediaError, type FailureCause, type RecoveryDevice } from '@/lib/deviceRecovery';
 import MergedControlButton, { DeviceMenuContent, type DeviceSection } from './MergedControlButton';
 import DeviceRecoveryDialog, { type RecoveryTarget } from './DeviceRecoveryDialog';
@@ -55,6 +69,7 @@ export default function ControlBar({
   const [micFailure, setMicFailure] = useState<FailureCause | null>(null);
   const [camFailure, setCamFailure] = useState<FailureCause | null>(null);
   const [recovery, setRecovery] = useState<RecoveryTarget | null>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   // onChange clears the failure on a successful (re)enable — covering the busy /
   // in-use case, where the permission never changed so the listener below won't
@@ -163,6 +178,13 @@ export default function ControlBar({
     { kind: 'audioinput', label: 'Microphone' },
     ...(typeof HTMLMediaElement !== 'undefined' && 'setSinkId' in HTMLMediaElement.prototype ? [{ kind: 'audiooutput', label: 'Speaker' } as const] : []),
   ];
+  const moreActiveActions = [
+    ...(recordMode === 'recording' ? ['recording'] : []),
+    ...(iAmPresenting ? ['presentation'] : []),
+    ...(pipActive ? ['picture-in-picture'] : []),
+  ];
+  const moreIndicator = recordMode === 'recording' ? 'recording' : moreActiveActions.length > 0 ? 'active' : null;
+  const moreLabel = moreActiveActions.length === 0 ? 'More controls' : `More controls. ${moreActiveActions.join(', ')} active.`;
 
   return (
     <div className="signal-call-controls pointer-events-none absolute inset-x-0 bottom-0 z-20 flex justify-center p-4 sm:p-6">
@@ -195,24 +217,26 @@ export default function ControlBar({
 
         <span className="signal-call-controls-divider mx-1 h-7 w-px bg-white/10" />
 
-        <ControlButton
-          icon={iAmPresenting ? MonitorOff : MonitorUp}
-          label={shareLabel}
-          active={iAmPresenting}
-          disabled={hasOutgoingRequest || remoteControlActive}
-          onClick={onShareClick}
-        />
         {/* display:contents wrapper carries the marker the chat panel's outside-press
             handler skips, so this toggle never closes-then-reopens chat. */}
         <span className="contents" data-chat-toggle>
           <ControlButton icon={MessageSquare} label={chatOpen ? 'Hide chat' : 'Show chat'} active={chatOpen} badge={unreadChat} onClick={onToggleChat} />
         </span>
-
-        {onPopOut && (
-          <ControlButton icon={PictureInPicture2} label={pipActive ? 'Exit picture-in-picture' : 'Pop out video'} active={pipActive} onClick={onPopOut} />
-        )}
-
-        {recordMode && onRecordClick && <RecordButton mode={recordMode} busy={recordBusy} onClick={onRecordClick} />}
+        <MoreControls
+          open={moreOpen}
+          onOpenChange={setMoreOpen}
+          label={moreLabel}
+          indicator={moreIndicator}
+          shareLabel={shareLabel}
+          presenting={iAmPresenting}
+          presentDisabled={hasOutgoingRequest || remoteControlActive}
+          onShareClick={onShareClick}
+          onPopOut={onPopOut}
+          pipActive={pipActive}
+          recordMode={recordMode}
+          onRecordClick={onRecordClick}
+          recordBusy={recordBusy}
+        />
 
         <span className="signal-call-controls-divider mx-1 h-7 w-px bg-white/10" />
 
@@ -228,40 +252,121 @@ export default function ControlBar({
   );
 }
 
-// The non-host record affordance (docs/adr/0011). One button that walks the
-// request lifecycle: ask → wait for approval → stop (approval starts it).
-function RecordButton({ mode, busy, onClick }: { mode: 'request' | 'pending' | 'recording'; busy: boolean; onClick: () => void }) {
-  if (mode === 'pending') {
-    return (
-      <button
-        type="button"
-        title="Waiting for the host to approve"
-        aria-label="Waiting for the host to approve recording. Cancel request"
-        onClick={onClick}
-        className="signal-call-record-button relative flex h-8 w-8 items-center justify-center rounded-full bg-white/8 text-white/70 ring-1 ring-white/10 transition-all hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 sm:h-11 sm:w-11 [&>svg]:h-4 [&>svg]:w-4 sm:[&>svg]:h-5 sm:[&>svg]:w-5"
+function MoreControls({
+  open,
+  onOpenChange,
+  label,
+  indicator,
+  shareLabel,
+  presenting,
+  presentDisabled,
+  onShareClick,
+  onPopOut,
+  pipActive,
+  recordMode,
+  onRecordClick,
+  recordBusy,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  label: string;
+  indicator: 'recording' | 'active' | null;
+  shareLabel: string;
+  presenting: boolean;
+  presentDisabled: boolean;
+  onShareClick: () => void;
+  onPopOut?: () => void;
+  pipActive: boolean;
+  recordMode?: 'request' | 'pending' | 'recording';
+  onRecordClick?: () => void;
+  recordBusy: boolean;
+}) {
+  const recordLabel =
+    recordMode === 'recording'
+      ? 'Stop recording'
+      : recordMode === 'pending'
+        ? 'Waiting for the host to approve recording. Cancel request'
+        : 'Request to record';
+  const RecordIcon = recordMode === 'recording' ? Square : Circle;
+
+  return (
+    <Popover open={open} onOpenChange={onOpenChange}>
+      <PopoverTrigger
+        title={label}
+        aria-label={label}
+        aria-pressed={indicator !== null}
+        className="signal-call-control-button signal-call-more-button relative flex h-8 w-8 items-center justify-center rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 sm:h-11 sm:w-11 [&>svg]:h-4 [&>svg]:w-4 sm:[&>svg]:h-5 sm:[&>svg]:w-5"
       >
-        <LoadingSpinner aria-hidden="true" />
-      </button>
-    );
-  }
+        <Ellipsis />
+        {indicator && <span aria-hidden="true" className={`signal-call-more-indicator signal-call-more-indicator-${indicator}`} />}
+      </PopoverTrigger>
+      <PopoverContent side="top" sideOffset={14} className="signal-call-more-popover w-64 gap-1.5 rounded-xl p-1.5">
+        <MoreControlAction
+          icon={presenting ? MonitorOff : MonitorUp}
+          label={shareLabel}
+          active={presenting}
+          disabled={presentDisabled}
+          onClick={onShareClick}
+          close={() => onOpenChange(false)}
+        />
+        {onPopOut && (
+          <MoreControlAction
+            icon={PictureInPicture2}
+            label={pipActive ? 'Exit picture-in-picture' : 'Enter picture-in-picture'}
+            active={pipActive}
+            onClick={onPopOut}
+            close={() => onOpenChange(false)}
+          />
+        )}
+        {recordMode && onRecordClick && (
+          <MoreControlAction
+            icon={RecordIcon}
+            label={recordLabel}
+            active={recordMode === 'recording'}
+            danger={recordMode === 'recording'}
+            disabled={recordBusy}
+            onClick={onRecordClick}
+            close={() => onOpenChange(false)}
+          />
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
 
-  const recording = mode === 'recording';
-  const label = recording ? 'Stop recording' : 'Request to record';
-  const Icon = recording ? Square : Circle;
-
+function MoreControlAction({
+  icon: Icon,
+  label,
+  active = false,
+  danger = false,
+  disabled = false,
+  onClick,
+  close,
+}: {
+  icon: LucideIcon;
+  label: string;
+  active?: boolean;
+  danger?: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+  close: () => void;
+}) {
   return (
     <button
       type="button"
-      title={label}
       aria-label={label}
-      aria-pressed={recording}
-      disabled={busy}
-      onClick={onClick}
-      className={`signal-call-record-button relative flex h-8 w-8 items-center justify-center rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-35 sm:h-11 sm:w-11 [&>svg]:h-4 [&>svg]:w-4 sm:[&>svg]:h-5 sm:[&>svg]:w-5 ${
-        recording ? 'bg-red-500 text-black hover:bg-red-400' : 'bg-white/8 text-white/80 ring-1 ring-white/10 hover:bg-white/15'
+      aria-pressed={active}
+      disabled={disabled}
+      onClick={() => {
+        close();
+        onClick();
+      }}
+      className={`signal-call-more-action flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-45 ${
+        danger ? 'signal-call-more-action-danger' : ''
       }`}
     >
-      <Icon />
+      <Icon className="h-4 w-4 shrink-0" />
+      <span>{label}</span>
     </button>
   );
 }

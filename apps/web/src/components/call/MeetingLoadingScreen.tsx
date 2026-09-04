@@ -38,12 +38,11 @@ const stageCopy: Record<MeetingLoadingStage, { kicker: string; title: string; le
   },
 };
 
-export default function MeetingLoadingScreen({ room, stage = 'resolving' }: { room: string; stage?: MeetingLoadingStage }) {
+export default function MeetingLoadingScreen({ stage = 'resolving' }: { stage?: MeetingLoadingStage }) {
   const copy = stageCopy[stage];
 
   return (
     <MeetingEntryShell
-      room={room}
       kicker={copy.kicker}
       title={copy.title}
       lede={copy.lede}

@@ -199,7 +199,6 @@ function RecordingsContent() {
                 <li key={recording.id} className="recordings-record">
                   <article>
                     <div className="recordings-record__identity">
-                      <p className="recordings-record__room">{recording.room}</p>
                       <h3>{recording.filename}</h3>
                       <p className="recordings-record__metadata">
                         {new Date(recording.startedAt).toLocaleString()}
@@ -244,7 +243,7 @@ function RecordingsContent() {
                       {recording.downloadUrl ? (
                         <IconLink
                           icon={Download}
-                          label={`Download recording from ${recording.room}`}
+                          label="Download recording"
                           className="recordings-icon-action recordings-icon-action--download"
                           href={recording.downloadUrl}
                           download={recording.filename}

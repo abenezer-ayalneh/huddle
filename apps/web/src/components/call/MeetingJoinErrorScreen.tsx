@@ -3,10 +3,9 @@
 import { AlertTriangle, ArrowLeft, RotateCw } from 'lucide-react';
 import MeetingEntryShell from './MeetingEntryShell';
 
-export default function MeetingJoinErrorScreen({ room, message, onRetry, onBack }: { room: string; message: string; onRetry: () => void; onBack: () => void }) {
+export default function MeetingJoinErrorScreen({ message, onRetry, onBack }: { message: string; onRetry: () => void; onBack: () => void }) {
   return (
     <MeetingEntryShell
-      room={room}
       kicker="Call entry"
       title="We couldn’t join."
       lede="The room did not finish connecting. Try the join again, or return to the lobby and check the meeting link."

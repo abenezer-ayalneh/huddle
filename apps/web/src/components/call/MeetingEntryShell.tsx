@@ -7,7 +7,6 @@ import LandingThemeProvider from '@/components/landing/LandingThemeProvider';
 export type MeetingEntryTone = 'pending' | 'denied';
 
 type MeetingEntryShellProps = {
-  room: string;
   kicker: string;
   title: string;
   lede: string;
@@ -22,7 +21,6 @@ type MeetingEntryShellProps = {
 };
 
 export default function MeetingEntryShell({
-  room,
   kicker,
   title,
   lede,
@@ -75,11 +73,6 @@ export default function MeetingEntryShell({
             </div>
 
             {children}
-
-            <div className="meeting-loading-room">
-              <span>Room code</span>
-              <code>{room}</code>
-            </div>
           </section>
         </div>
       </main>

@@ -92,12 +92,12 @@ export default function RoomClient({ room }: { room: string }) {
   }, [room, session, sessionPending]);
 
   if (error) {
-    return <MeetingJoinErrorScreen room={room} message={error} onRetry={() => window.location.reload()} onBack={leave} />;
+    return <MeetingJoinErrorScreen message={error} onRetry={() => window.location.reload()} onBack={leave} />;
   }
 
   // Decide the role only after the host session has been read on the client.
   if (!hostChecked) {
-    return <MeetingLoadingScreen room={room} />;
+    return <MeetingLoadingScreen />;
   }
 
   // No host session → guest. A signed-in guest's name comes from their account

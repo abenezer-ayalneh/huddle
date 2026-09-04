@@ -169,7 +169,6 @@ export default function CallStage({
         heading="Ready to join?"
         subheading="Check your camera and mic before you go live."
         submitLabel="Join call"
-        roomName={room}
       />
     );
   }
@@ -202,7 +201,7 @@ export default function CallStage({
               hostPanelOpen={hostPanelOpen}
             />
           ) : (
-            <MeetingLoadingScreen room={room} stage="connecting" />
+            <MeetingLoadingScreen stage="connecting" />
           )}
           <RoomAudioRenderer />
         </LiveKitRoom>

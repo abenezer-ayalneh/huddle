@@ -378,7 +378,6 @@ function MeetingRow({ room, onStart }: { room: RoomSummary; onStart: () => void 
       <div className="lobby-meeting-row-content">
         <div className="lobby-meeting-meta">
           <p>{room.scheduledStart ? new Date(room.scheduledStart).toLocaleString() : 'Anytime'}</p>
-          <p>{room.room}</p>
         </div>
         <div className="lobby-meeting-actions">
           <IconButton

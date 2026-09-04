@@ -3598,15 +3598,6 @@ html[data-theme='dark'] .recordings-primary-action {
   white-space: nowrap;
 }
 
-.recordings-record__room {
-  margin: 0;
-  color: var(--recordings-purple-dark);
-  font-family: var(--font-plex-mono), ui-monospace, monospace;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-}
-
 .recordings-record__metadata,
 .recordings-record__delivery p,
 .recordings-record__retention,
@@ -4016,15 +4007,6 @@ html[data-theme='dark'] .recordings-icon-action--download {
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.lobby-meeting-meta p + p {
-  margin-top: 4px;
-  color: var(--lobby-purple);
-  font-family: var(--font-plex-mono), monospace;
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.06em;
 }
 
 .lobby-meeting-actions {
@@ -5409,17 +5391,6 @@ html[data-theme='dark'] .prejoin-shell {
   padding: 0 4px 6px;
 }
 
-.prejoin-preview-header strong {
-  overflow: hidden;
-  color: var(--prejoin-muted);
-  font-family: var(--font-plex-mono), monospace;
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .prejoin-preview-stage {
   position: relative;
   min-height: 0;
@@ -5868,8 +5839,7 @@ html[data-theme='dark'] .meeting-loading-shell {
 }
 
 .meeting-loading-kicker,
-.meeting-loading-panel-heading p,
-.meeting-loading-room span {
+.meeting-loading-panel-heading p {
   margin: 0;
   color: var(--meeting-loading-purple);
   font-family: var(--font-plex-mono), monospace;
@@ -5981,30 +5951,6 @@ html[data-theme='dark'] .meeting-loading-shell {
   color: var(--meeting-loading-muted);
   font-size: 0.92rem;
   line-height: 1.55;
-}
-
-.meeting-loading-room {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 10px;
-  max-width: 100%;
-  margin-top: 24px;
-  padding: 9px 12px;
-  border: 1px solid var(--meeting-loading-border);
-  border-radius: 9px;
-  color: var(--meeting-loading-muted);
-  background: color-mix(in srgb, var(--meeting-loading-bg-deep) 70%, transparent);
-  text-align: left;
-}
-
-.meeting-loading-room code {
-  overflow: hidden;
-  color: var(--meeting-loading-ink);
-  font-family: var(--font-plex-mono), monospace;
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .meeting-loading-route {
@@ -6958,6 +6904,7 @@ html[data-theme='dark'] .signal-call-shell {
 .signal-call-shell button:focus-visible,
 .signal-call-shell [role='button']:focus-visible,
 .signal-call-device-popover button:focus-visible,
+.signal-call-more-popover button:focus-visible,
 .signal-call-dialog button:focus-visible {
   outline: 2px solid var(--call-yellow, #f3b01c);
   outline-offset: 3px;
@@ -7214,6 +7161,30 @@ html[data-theme='dark'] .signal-call-shell {
   color: var(--call-danger-foreground) !important;
 }
 
+/* Secondary call actions live behind one compact, state-aware More control. */
+.signal-call-more-button[aria-pressed='true'] {
+  background: transparent !important;
+  color: var(--call-ink) !important;
+}
+
+.signal-call-more-indicator {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--call-surface);
+  border-radius: 999px;
+}
+
+.signal-call-more-indicator-active {
+  background: var(--call-yellow);
+}
+
+.signal-call-more-indicator-recording {
+  background: var(--call-red);
+}
+
 .signal-call-device-alert {
   border-color: var(--call-red) !important;
   color: var(--call-red) !important;
@@ -7230,8 +7201,9 @@ html[data-theme='dark'] .signal-call-shell {
   box-shadow: none !important;
 }
 
-/* Portalled device choices carry their own Signal Handoff surface. */
-.signal-call-device-popover {
+/* Portalled call menus carry their own Signal Handoff surface. */
+.signal-call-device-popover,
+.signal-call-more-popover {
   border: 1px solid #bca88a !important;
   border-radius: 10px !important;
   background: #fffaf0 !important;
@@ -7240,35 +7212,58 @@ html[data-theme='dark'] .signal-call-shell {
   backdrop-filter: none !important;
 }
 
-.signal-call-device-popover [class*='text-white'] {
+.signal-call-device-popover [class*='text-white'],
+.signal-call-more-popover [class*='text-white'] {
   color: #141414 !important;
 }
 
-.signal-call-device-popover [class*='text-cyan'] {
+.signal-call-device-popover [class*='text-cyan'],
+.signal-call-more-popover [class*='text-cyan'] {
   color: #8d2676 !important;
 }
 
-.signal-call-device-popover button:hover {
+.signal-call-device-popover button:hover,
+.signal-call-more-popover button:hover {
   background: color-mix(in srgb, #8d2676 10%, transparent) !important;
 }
 
-html[data-theme='dark'] .signal-call-device-popover {
+.signal-call-more-action {
+  color: #141414;
+}
+
+.signal-call-more-action[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--call-yellow) 22%, transparent);
+}
+
+.signal-call-more-action-danger {
+  color: var(--call-red);
+}
+
+html[data-theme='dark'] .signal-call-device-popover,
+html[data-theme='dark'] .signal-call-more-popover {
   border-color: #866957 !important;
   background: #2a1b19 !important;
   color: #faf4e9 !important;
   box-shadow: 6px 7px 0 color-mix(in srgb, #e182bc 38%, transparent) !important;
 }
 
-html[data-theme='dark'] .signal-call-device-popover [class*='text-white'] {
+html[data-theme='dark'] .signal-call-device-popover [class*='text-white'],
+html[data-theme='dark'] .signal-call-more-popover [class*='text-white'] {
   color: #faf4e9 !important;
 }
 
-html[data-theme='dark'] .signal-call-device-popover [class*='text-cyan'] {
+html[data-theme='dark'] .signal-call-device-popover [class*='text-cyan'],
+html[data-theme='dark'] .signal-call-more-popover [class*='text-cyan'] {
   color: #e182bc !important;
 }
 
-html[data-theme='dark'] .signal-call-device-popover button:hover {
+html[data-theme='dark'] .signal-call-device-popover button:hover,
+html[data-theme='dark'] .signal-call-more-popover button:hover {
   background: color-mix(in srgb, #e182bc 10%, transparent) !important;
+}
+
+html[data-theme='dark'] .signal-call-more-action {
+  color: #faf4e9;
 }
 
 /* Chat and host drawers are flat, high-context work surfaces. */
@@ -7575,6 +7570,10 @@ html[data-theme='dark'] .signal-call-dialog [data-slot='alert-dialog-action'].si
   .signal-call-control-dock {
     gap: 6px;
     padding: 7px !important;
+  }
+
+  .signal-call-more-popover {
+    max-width: calc(100vw - 2rem);
   }
 
   .signal-call-filmstrip {

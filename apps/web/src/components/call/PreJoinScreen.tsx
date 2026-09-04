@@ -26,7 +26,6 @@ type PreJoinScreenProps = {
   heading?: string;
   subheading?: string;
   requireName?: boolean;
-  roomName?: string;
   children?: ReactNode;
 };
 
@@ -52,7 +51,6 @@ function PreJoinExperience({
   heading = 'Ready to join?',
   subheading,
   requireName = false,
-  roomName,
   children,
 }: PreJoinScreenProps) {
   const [username, setUsername] = useState(defaults.username ?? '');
@@ -388,7 +386,6 @@ function PreJoinExperience({
         <section className="prejoin-preview-panel" aria-label="Camera preview">
           <header className="prejoin-preview-header">
             <span>Preview</span>
-            {roomName && <strong>Room code: {roomName}</strong>}
           </header>
           <div className="prejoin-preview-stage">
             {videoStarting ? (

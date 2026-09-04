@@ -197,7 +197,6 @@ export default function GuestGate({
   if (phase === 'denied') {
     return (
       <MeetingEntryShell
-        room={room}
         kicker="Guest request"
         title="Entry was declined."
         lede="The Host declined this request. Return to the lobby and check the Room Code before trying again."
@@ -236,26 +235,24 @@ export default function GuestGate({
         // A denied or missing camera/mic never blocks the knock — Device
         // Recovery (docs/adr/0023) handles it in place on the Device Check.
         heading={rejoinEligible ? 'Rejoin meeting' : 'Join meeting'}
-        subheading={rejoinEligible ? `Check your camera and mic, then rejoin “${room}”.` : `Check your camera and mic, then ask to join “${room}”.`}
+        subheading={rejoinEligible ? 'Check your camera and mic, then rejoin.' : 'Check your camera and mic, then ask to join.'}
         submitLabel={rejoinEligible ? 'Rejoin call' : 'Ask to join'}
         requireName={!signedInName}
-        roomName={room}
       />
     );
   }
 
-  if (phase === 'waiting') return <WaitingRoom room={room} onCancel={cancel} />;
+  if (phase === 'waiting') return <WaitingRoom onCancel={cancel} />;
 
   const loadingStage: MeetingLoadingStage = phase === 'precheck' ? 'checking' : phase === 'rejoining' ? 'rejoining' : 'requesting';
-  return <MeetingLoadingScreen room={room} stage={loadingStage} />;
+  return <MeetingLoadingScreen stage={loadingStage} />;
 }
 
 // Waiting-room content lives in the shared Signal Handoff entry shell so the
 // admission state reads like the rest of room entry, not like the call stage.
-function WaitingRoom({ room, onCancel }: { room: string; onCancel: () => void }) {
+function WaitingRoom({ onCancel }: { onCancel: () => void }) {
   return (
     <MeetingEntryShell
-      room={room}
       kicker="Waiting Room"
       title="Waiting for the Host."
       lede="Your request is with the Host. Keep this tab open; we’ll let you in as soon as they admit you."
