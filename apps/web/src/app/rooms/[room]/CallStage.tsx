@@ -185,6 +185,7 @@ export default function CallStage({
           serverUrl={connection.livekitUrl}
           connect
           connectOptions={LIVEKIT_CONNECT_OPTIONS}
+          options={{ adaptiveStream: { pauseVideoInBackground: false }, dynacast: true }}
           video={choices.videoEnabled ? { deviceId: choices.videoDeviceId } : false}
           audio={startMuted || !choices.audioEnabled ? false : { deviceId: choices.audioDeviceId }}
           onConnected={handleConnected}

@@ -13,5 +13,5 @@ export function formatDuration(ms: number): string {
   const hh = String(h).padStart(2, '0');
   const mm = String(m).padStart(2, '0');
   const ss = String(s).padStart(2, '0');
-  return h > 0 ? `${hh}:${mm}:${ss}` : `${m}:${ss}`;
+  return h > 0 ? `${hh}:${mm}:${ss}` : `${mm}:${ss}`;
 }

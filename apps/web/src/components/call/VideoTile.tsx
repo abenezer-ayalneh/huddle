@@ -28,14 +28,17 @@ function getAvatarUrl(metadata?: string): string | undefined {
 
 export default function VideoTile({
   trackRef,
-  active,
+  speaking = false,
+  active = false,
   pinned,
   onTogglePin,
   fallbackName,
   onRequestControl,
 }: {
   trackRef: TrackReferenceOrPlaceholder;
-  active: boolean;
+  speaking?: boolean;
+  /** @deprecated compatibility alias; use speaking. */
+  active?: boolean;
   // Pin affordance — omitted (undefined) means no pin button is rendered
   // (the floating Self-view and the presentation strip pass nothing).
   pinned?: boolean;
@@ -61,6 +64,7 @@ export default function VideoTile({
   // local tile would flash a placeholder before the name resolves, so the local
   // render sites pass the already-known display name. Remote tiles arrive with
   // their name on their token and need no fallback.
+  const isSpeaking = speaking || active;
   const label = participant.name || fallbackName || participant.identity || 'Participant';
   const initials = getInitials(label);
 
@@ -74,8 +78,8 @@ export default function VideoTile({
 
   return (
     <div className="signal-call-tile group relative h-full w-full min-h-0 min-w-0">
-      <div className={`signal-call-tile-frame cyber-clip h-full w-full transition-shadow ${active ? 'cyber-frame-active' : 'cyber-frame'}`}>
-        <div className={`signal-call-tile-media cyber-clip relative h-full w-full overflow-hidden bg-[oklch(0.12_0.02_280)] ${active ? 'scanlines' : ''}`}>
+      <div aria-label={isSpeaking ? `${label} is speaking` : label} data-speaking={isSpeaking || undefined} className={`signal-call-tile-frame cyber-clip h-full w-full transition-shadow ${isSpeaking ? 'cyber-frame-active' : 'cyber-frame'}`}>
+        <div className={`signal-call-tile-media cyber-clip relative h-full w-full overflow-hidden bg-[oklch(0.12_0.02_280)]`}>
           {showVideo ? (
             <VideoTrack
               trackRef={trackRef}
@@ -91,7 +95,7 @@ export default function VideoTile({
             <div className="signal-call-camera-off flex h-full w-full items-center justify-center bg-gradient-to-br from-[oklch(0.18_0.03_300)] to-[oklch(0.13_0.02_270)]">
               <div
                 className={`signal-call-avatar flex aspect-square w-[clamp(2.5rem,18%,5rem)] items-center justify-center overflow-hidden rounded-full font-display text-2xl font-semibold text-white/90 ${
-                  active ? 'neon-magenta' : ''
+                  isSpeaking ? 'neon-magenta' : ''
                 } bg-[oklch(0.66_0.27_350_/_0.18)] ring-1 ring-magenta/40`}
               >
                 {showAvatar ? (
@@ -137,12 +141,6 @@ export default function VideoTile({
           )}
 
           {/* HUD readout — active speaker only. */}
-          {active && (
-            <div className="signal-call-live-signal pointer-events-none absolute right-2 top-2 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan/90 text-glow-cyan">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan" />
-              live
-            </div>
-          )}
 
           {/* Name pill + status. */}
           <div

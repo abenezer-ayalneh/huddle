@@ -18,7 +18,7 @@ export function selectPictureInPictureLayout(
 
 export function orderPictureInPictureTracks(
   tracks: TrackReferenceOrPlaceholder[],
-  options: { pinnedIdentity?: string | null; activeIdentity?: string; max?: number },
+  options: { pinnedIdentity?: string | null; activeIdentity?: string; speakingIdentities?: string[]; max?: number },
 ) {
   const unique = new Map<string, TrackReferenceOrPlaceholder>();
   for (const track of tracks) {
@@ -34,7 +34,8 @@ export function orderPictureInPictureTracks(
   };
 
   add(remotes.find((track) => track.participant.identity === options.pinnedIdentity) ?? null);
-  add(remotes.find((track) => track.participant.identity === options.activeIdentity) ?? null);
+  const speaking = options.speakingIdentities ?? (options.activeIdentity ? [options.activeIdentity] : []);
+  speaking.forEach((identity) => add(remotes.find((track) => track.participant.identity === identity) ?? null));
   remotes.forEach(add);
   add(local);
 

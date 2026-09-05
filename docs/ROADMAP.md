@@ -335,6 +335,8 @@ Windows and Linux Control Agents remain future phases with no release date.
 - [x] Add ADR 0031 and amend ADR 0020, glossary, product, and design records.
 - [ ] Complete physical Chrome/Chromium multi-participant, permission, resize,
       WebRTC, Firefox/Safari fallback, iOS, and Android acceptance matrix.
+- [ ] Close stable participant-layout acceptance: equal-grid paging, persisted
+      Self-view states, speaking promotion, Present/Pin anchors, and panel reflow.
 
 Keep this file honest: check boxes as you go, and move items between phases if
 priorities change.

@@ -280,9 +280,13 @@ the floating Self-view separate from the Device Check preview.
 
 The active call owns `100dvh`. Media takes precedence over chrome; Host and
 Chat dock at the edges, consent occupies a measured top tray, controls live in
-the bottom dock, and Remote Control status sits below focused content. Portrait
-Equal Grid is orientation-based, keeps four rows visible before vertical
-overflow, and retains its floating local Self-view.
+the bottom dock, and Remote Control status sits below focused content. Equal Grid
+is stable, equal, uncropped, and orientation-based: eight landscape slots or four
+portrait slots per page, with centered incomplete rows. Speaking Participants use
+one yellow structural frame. Self-view persists Auto/Float/In-grid, corner, and
+minimized restore-chip state; demoted Present follows Self-view on every page.
+Pager dots and touch swipe change pages and reset speaker promotions. At 1024px
+panels reserve width and reflow media/chrome together; smaller panels overlay.
 
 Desktop Document Picture-in-Picture is a compact Signal Handoff companion: the
 browser keeps its native title bar and Back to tab affordance, while the Huddle

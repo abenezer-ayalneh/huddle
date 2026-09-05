@@ -195,10 +195,9 @@ _Avoid_: PTT (fine in code), walkie-talkie mode, hold to unmute, hold to speak
 ### Video layout
 
 **Equal Grid**:
-The default call layout when no one is presenting and nothing is pinned: every
-remote participant in an equal-sized tile. The local participant is **not** an
-ordinary tile here — they appear only as the floating Self-view. Alone in the
-room, the local camera fills the stage instead.
+The stable, uncropped default layout. Tiles keep join order and equal geometry;
+speech never resizes or reorders them. Landscape pages show up to eight slots;
+Portrait Equal Grid pages show four. Incomplete final rows are centered.
 _Avoid_: Gallery, tile view, speaker grid
 
 **Portrait Equal Grid**:
@@ -209,25 +208,18 @@ local participant remains the floating Self-view.
 _Avoid_: Vertical device layout, mobile-only grid
 
 **Self-view**:
-The local participant's own camera feed as shown back to themselves. In the Equal
-Grid it is a small window that floats over the stage and can be dragged between
-the stage's corners (snapping to the nearest on release); the local participant
-never appears as an ordinary grid tile. It surfaces only once at least one other
-participant is present. In any **focused layout** (a presentation or a Pin) the
-Self-view stops floating and docks into the thumbnail strip alongside everyone
-else. It is always shown while the camera is on — there is no hide control. Its
-corner and visibility are session-only (a rejoin resets it to the default
-corner).
+The local feed, persisted per browser as Auto, Float, or In-grid with a corner
+and minimized state. Auto floats in a two-person call and joins the grid at
+three or more; explicit modes override it. Minimize leaves a restore chip and
+camera-off remains an Avatar tile.
 _Avoid_: PiP / Picture-in-Picture — that is now a distinct feature, the OS-level
 [[Picture-in-Picture]] window. The Self-view is the in-page floating self-camera
 and is never called PiP. Also: self-mirror, local tile, floating thumbnail
 
-**Active Speaker**:
-The remote participant LiveKit currently reports as loudest. The [[Equal Grid]]
-gives every tile equal size and does **not** focus the speaker — the Active
-Speaker is used only as the fallback feed for [[Picture-in-Picture]] when nothing
-is presented and no one is pinned. It carries no on-stage emphasis in the normal
-grid.
+**Speaking Participant**:
+Any participant currently speaking (including Self-view and camera-off Avatars).
+Speaking uses the same structural yellow frame everywhere, with a short trailing
+hold and a non-visual accessible state; it does not reorder the stable grid.
 _Avoid_: Dominant speaker, loudest, current talker
 
 **Pin**:

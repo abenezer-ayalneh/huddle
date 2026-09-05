@@ -40,7 +40,9 @@ browser supports it. A Present trigger is eligible only when the capture's
 another window.
 
 The rich surface is intentionally bounded to Huddle's existing capabilities:
-four human participant feeds in Pin → Active Speaker → remote → local order,
+four human participant feeds with Self-view anchored top-left; the remaining
+slots use Pin → Speaking Participants (speech-start order) → stable remote join
+order,
 with participant-aware single, pair, trio, grid, stacked, and short-window
 primary compositions. It also provides People/Presentation layouts, microphone,
 camera, chat, More, Return to call, and confirmed Leave. Control Agent identities are filtered from ordinary people
