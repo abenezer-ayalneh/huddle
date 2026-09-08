@@ -21,7 +21,7 @@
     "tunnel:validate": "cloudflared tunnel --config ~/.cloudflared/huddle-local.yml ingress validate",
     "lint": "pnpm -r lint",
     "format:write": "prettier --ignore-unknown --write .",
-    "build": "node scripts/with-env.mjs .env -- pnpm -r build",
+    "build": "node scripts/build.mjs",
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test",
     "test:config": "node --test scripts/validate-production-env.test.mjs",
