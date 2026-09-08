@@ -10,6 +10,18 @@ cd "$(dirname "$0")/.."   # repo root, regardless of where this is invoked from
 
 COMPOSE="docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml --env-file .env.prod"
 
+# The deploy host only needs Git and Docker. Run the validator in the same
+# Node major line as the application images instead of relying on a host Node
+# installation or a shell-specific PATH (for example, a non-interactive SSH
+# session does not normally load nvm).
+validate_production_env() {
+  docker run --rm --network none --read-only \
+    --volume "$PWD:/repo:ro" \
+    --workdir /repo \
+    node:24-alpine \
+    node scripts/validate-production-env.mjs --env .env.prod "$@"
+}
+
 echo "==> Current revision (for rollback): $(git rev-parse --short HEAD)"
 
 echo "==> Fetching and hard-resetting to origin/main"
@@ -18,8 +30,8 @@ git reset --hard origin/main
 echo "==> Now at: $(git rev-parse --short HEAD)"
 
 echo "==> Validating production configuration"
-node scripts/validate-production-env.mjs --env .env.prod
-FRONT_DOOR="$(node scripts/validate-production-env.mjs --env .env.prod --print-front-door)"
+validate_production_env
+FRONT_DOOR="$(validate_production_env --print-front-door)"
 
 mkdir -p infra/maintenance-state
 
@@ -41,7 +53,7 @@ echo "==> Pruning dangling images"
 docker image prune -f
 
 echo "==> Health check (waiting up to 60s for API readiness)"
-READY_URL="$(node scripts/validate-production-env.mjs --env .env.prod --print-ready-url)"
+READY_URL="$(validate_production_env --print-ready-url)"
 for i in $(seq 1 20); do
   if curl -fsS "$READY_URL" >/dev/null 2>&1; then
     echo "==> API ready (attempt $i)"

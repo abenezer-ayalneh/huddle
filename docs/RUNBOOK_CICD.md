@@ -20,8 +20,10 @@ external configuration and recovery instead of duplicating either script.
   material.
 - The deploy user can run Docker Compose without `sudo`, and the VPS can
   `git fetch origin`.
-- Production configuration passes `node scripts/validate-production-env.mjs
---env .env.prod` on the VPS.
+- Production configuration passes the containerized preflight below. A host
+  Node.js installation is not required: `infra/deploy.sh` runs its validator in
+  a read-only `node:24-alpine` container so non-interactive SSH PATH settings
+  cannot affect a deploy.
 - `HUDDLE_FRONT_DOOR=compose` is the default. If this VPS uses
   `HUDDLE_FRONT_DOOR=host`, its Caddy has loaded `infra/huddle.caddy`, owns
   ports 80/443, and proxies the configured loopback web/API ports.
@@ -54,6 +56,15 @@ external configuration and recovery instead of duplicating either script.
 
 Do not put the private deploy key, `.env.prod`, Apple credentials, or provider
 tokens in the repository or workflow source.
+
+To run the same configuration preflight manually on the VPS:
+
+```bash
+cd /home/huddle
+docker run --rm --network none --read-only \
+  --volume "$PWD:/repo:ro" --workdir /repo \
+  node:24-alpine node scripts/validate-production-env.mjs --env .env.prod
+```
 
 ## What a deployment changes
 

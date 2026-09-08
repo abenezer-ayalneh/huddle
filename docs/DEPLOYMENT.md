@@ -73,6 +73,9 @@ sudo usermod -aG docker "$USER"   # log out/in so the group applies
 docker compose version            # confirm the Compose v2 plugin is present
 ```
 
+The production images and deployment configuration preflight use `node:24-alpine`
+containers, so Node.js does not need to be installed on the VPS host.
+
 ---
 
 ## 3. Open the firewall
