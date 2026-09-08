@@ -6,7 +6,7 @@
 # NEXT_PUBLIC_* are baked at BUILD time (they ship in the browser bundle), so
 # they're passed as build args, not runtime env. Set them in .env.prod (the
 # prod compose forwards them as args).
-FROM node:20-alpine AS build
+FROM node:24-alpine AS build
 WORKDIR /repo
 RUN corepack enable
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
@@ -48,7 +48,7 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
 RUN --mount=type=secret,id=sentry_auth_token,env=SENTRY_AUTH_TOKEN,required=false \
     pnpm --filter @huddle/web build
 
-FROM node:20-alpine AS run
+FROM node:24-alpine AS run
 WORKDIR /app
 ENV NODE_ENV=production
 # Next standalone in a monorepo emits the server under apps/web/, with a shared
