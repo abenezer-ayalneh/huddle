@@ -38,4 +38,15 @@ jobs:
         run: pnpm test
 
       - name: Build
+        env:
+          # Next.js statically renders metadata and legal routes during this
+          # step. These are public, non-production values solely for CI; the
+          # production Docker build receives its real values from the VPS's
+          # untracked .env.prod file.
+          NEXT_PUBLIC_SITE_URL: https://ci.huddle.invalid
+          NEXT_PUBLIC_API_URL: https://api.ci.huddle.invalid
+          NEXT_PUBLIC_AUTH_URL: https://api.ci.huddle.invalid
+          NEXT_PUBLIC_OPERATOR_NAME: Huddle CI
+          NEXT_PUBLIC_OPERATOR_CONTACT_URL: https://ci.huddle.invalid/contact
+          NEXT_PUBLIC_PROJECT_REPOSITORY_URL: https://example.invalid/huddle
         run: pnpm build

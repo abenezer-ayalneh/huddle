@@ -125,10 +125,6 @@ pnpm typecheck
 pnpm build
 ```
 
-The root build loads `.env` when present and otherwise falls back to the
-production `.env.prod` file; `.env` takes precedence if both are present. Keep
-the appropriate file in the repository root before running this verification.
-
 A release acceptance pass should also exercise owner/non-owner sessions, an
 already-open call, cancellation, an API restart during the warning, real
 recording and attended remote-control shutdown, and desktop/mobile/PiP display.
