@@ -32,12 +32,10 @@ function playDing() {
 export default function HostPanel({
   room,
   hostKey,
-  onOpenChange,
   onWaitingCountChange,
 }: {
   room: string;
   hostKey: string;
-  onOpenChange?: (open: boolean) => void;
   onWaitingCountChange?: (count: number) => void;
 }) {
   const participants = useRemoteParticipants();
@@ -77,13 +75,7 @@ export default function HostPanel({
   const [busy, setBusy] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const panelRef = useRef<HTMLElement>(null);
-  const setPanelOpen = useCallback(
-    (nextOpen: boolean) => {
-      setOpen(nextOpen);
-      onOpenChange?.(nextOpen);
-    },
-    [onOpenChange],
-  );
+  const setPanelOpen = useCallback((nextOpen: boolean) => setOpen(nextOpen), []);
 
   // Close on a press outside the panel or on Escape. The reopen pill only mounts
   // while closed, so unlike chat there is no trigger to exclude.

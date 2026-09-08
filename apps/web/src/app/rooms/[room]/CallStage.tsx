@@ -62,7 +62,6 @@ export default function CallStage({
   startMuted = false,
   isHost = false,
   hostKey,
-  hostPanelOpen = false,
   hostWaitingCount = 0,
 }: {
   room: string;
@@ -79,9 +78,6 @@ export default function CallStage({
   isHost?: boolean;
   // Present only for the host; lets them approve a Request to Record.
   hostKey?: string;
-  // While the host drawer is open, its own header owns the theme control so
-  // a compact control never sits underneath the high-priority drawer.
-  hostPanelOpen?: boolean;
   hostWaitingCount?: number;
 }) {
   const [choices, setChoices] = useState<LocalUserChoices | null>(initialChoices ?? null);
@@ -206,7 +202,6 @@ export default function CallStage({
               overlay={overlay}
               isHost={isHost}
               hostKey={hostKey}
-              hostPanelOpen={hostPanelOpen}
               hostWaitingCount={hostWaitingCount}
             />
           ) : (
@@ -230,7 +225,6 @@ function CallView({
   overlay,
   isHost,
   hostKey,
-  hostPanelOpen,
   hostWaitingCount,
 }: {
   room: string;
@@ -241,7 +235,6 @@ function CallView({
   overlay?: ReactNode;
   isHost: boolean;
   hostKey?: string;
-  hostPanelOpen: boolean;
   hostWaitingCount: number;
 }) {
   const { chatMessages, send, isSending } = useChat();
@@ -415,7 +408,7 @@ function CallView({
           />
         </ErrorBoundary>
       </CallNoticeTray>
-      <CallTimer hidden={hostPanelOpen} showThemeToggle={!isHost} />
+      <CallTimer showThemeToggle={!isHost} />
       <ConnectionStatus />
       {mobileCapabilities.canUseDesktopRemoteControl && (
         <AgentLaunchDialog

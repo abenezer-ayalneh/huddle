@@ -46,15 +46,17 @@ describe('CallTimer theme control', () => {
     expect(screen.getByRole('button', { name: 'Switch to light theme' }).getAttribute('aria-pressed')).toBe('true');
   });
 
-  it('removes the top utility rail while the Host drawer exposes its replacement control', () => {
+  it('keeps the duration visible when the Host drawer owns the theme control', () => {
+    useRoomInfoMock.mockReturnValue({ metadata: JSON.stringify({ startedAt: Date.now() - 65_000 }) });
+
     render(
       <LandingThemeProvider>
-        <CallTimer hidden />
+        <CallTimer showThemeToggle={false} />
       </LandingThemeProvider>,
     );
 
     expect(screen.queryByRole('button', { name: /switch to .* theme/i })).toBeNull();
-    expect(screen.queryByRole('timer')).toBeNull();
+    expect(screen.getByRole('timer', { name: 'Call duration 01:05' })).toBeTruthy();
   });
 
   it('renders a compact duration-only chip for the Host lane', () => {

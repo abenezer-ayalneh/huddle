@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { formatDuration } from '@/lib/duration';
 import CallThemeToggle from './CallThemeToggle';
 
-export default function CallTimer({ hidden = false, showThemeToggle = true }: { hidden?: boolean; showThemeToggle?: boolean }) {
+export default function CallTimer({ showThemeToggle = true }: { showThemeToggle?: boolean }) {
   const { metadata } = useRoomInfo();
   // Seed `now` lazily at mount (an allowed impure initializer) so the first
   // paint reflects the real current time; the interval keeps it ticking.
@@ -44,7 +44,7 @@ export default function CallTimer({ hidden = false, showThemeToggle = true }: { 
 
   const duration = startedAt == null ? null : formatDuration(now + (serverClockOffsetMs ?? 0) - startedAt);
 
-  if (hidden || (!duration && !showThemeToggle)) return null;
+  if (!duration && !showThemeToggle) return null;
 
   return (
     <>
