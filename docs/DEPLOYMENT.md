@@ -395,9 +395,14 @@ The web deployment links to the public beta channel through
 `NEXT_PUBLIC_CONTROL_AGENT_RELEASE_CHANNEL_URL` and
 `NEXT_PUBLIC_CONTROL_AGENT_RELEASES_URL`. The signed channel contains only the
 release manifest and signature; its manifest points to immutable, versioned
-GitHub Release DMGs. Set `NEXT_PUBLIC_CONTROL_AGENT_UPDATE_PUBLIC_KEY` to the
-same Ed25519 public key embedded in the signed agent bundle so the Downloads page
-can show verified release metadata.
+GitHub Release DMGs. To enable it, set all four `CONTROL_AGENT_RELEASE_*` /
+`CONTROL_AGENT_UPDATE_PUBLIC_KEY` values in the VPS `.env.prod`. The latter must
+be exactly the GitHub Actions `AGENT_UPDATE_PUBLIC_KEY` value: standard Base64 of
+the raw 32-byte Ed25519 public key that corresponds to
+`AGENT_UPDATE_PRIVATE_KEY_B64`. Do not use the private key itself or the
+separate `SPARKLE_UPDATE_PUBLIC_KEY`; either would make signed manifest
+verification fail. Leave all four production variables blank to disable the
+signed channel.
 
 Do not put Developer ID certificates, App Store Connect keys, or the manifest
 private key in the VPS environment. They belong only in protected GitHub release

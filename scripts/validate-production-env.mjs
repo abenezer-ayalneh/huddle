@@ -81,7 +81,11 @@ export function validateProductionEnv(env, { root = process.cwd() } = {}) {
   }
   if (configuredReleaseKeys.length === RELEASE_KEYS.length) {
     for (const key of RELEASE_KEYS.slice(0, 3)) if (!isHttpsUrl(env[key])) errors.push(`${key} must be an HTTPS URL`);
-    if (!isPublicKey(env.CONTROL_AGENT_UPDATE_PUBLIC_KEY)) errors.push('CONTROL_AGENT_UPDATE_PUBLIC_KEY must be a base64-encoded 32-byte Ed25519 public key');
+    if (!isPublicKey(env.CONTROL_AGENT_UPDATE_PUBLIC_KEY)) {
+      errors.push(
+        'CONTROL_AGENT_UPDATE_PUBLIC_KEY must be the base64-encoded 32-byte Ed25519 public counterpart of AGENT_UPDATE_PRIVATE_KEY_B64 (not the private key or SPARKLE_UPDATE_PUBLIC_KEY)',
+      );
+    }
   }
 
   const turnEnabled = env.TURN_ENABLED ?? 'false';

@@ -39,11 +39,15 @@ external configuration and recovery instead of duplicating either script.
    ```
 
 2. Add the public key to the deploy user's `~/.ssh/authorized_keys` on the VPS,
-   then prove it can reach the checkout and Docker:
+   then prove it can reach the checkout and Docker. The deploy workflow retries
+   GitHub SSH through `ssh.github.com:443` if the VPS cannot reach port 22; this
+   probe verifies that fallback without changing the VPS SSH configuration:
 
    ```bash
    ssh -i ~/.ssh/huddle_deploy_key <deploy_user>@<vps_host> \
-     "cd /home/huddle && docker compose version && git fetch --dry-run origin"
+     "cd /home/huddle && docker compose version && \
+     GIT_SSH_COMMAND='ssh -o HostName=ssh.github.com -o Port=443 -o HostKeyAlias=github.com' \
+     git ls-remote origin HEAD"
    ```
 
 3. In GitHub Actions secrets, set `VPS_HOST`, `VPS_USER`, `VPS_PORT`, and
@@ -104,14 +108,15 @@ acceptance.
 
 ## Failure handling
 
-| Symptom                       | First response                                                                                                                                                                                |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Deploy never starts           | Check that `CI` is green on `main`, Actions secrets exist, and the production Environment is not awaiting approval. Manual dispatch isolates trigger issues.                                  |
-| SSH or Docker fails           | Re-run the precondition SSH command; repair the deploy key, account, or Docker-group membership before retrying.                                                                              |
-| Configuration preflight fails | Run the displayed validator command on the VPS and correct only the reported `.env.prod` value. Do not guess or expose it in logs.                                                            |
-| Migration fails               | Stop. Inspect Postgres and API logs; never edit an applied migration. Add a forward migration or restore from a verified backup if required.                                                  |
-| `/ready` times out            | Inspect `docker compose ... logs api postgres redis`; resolve the dependency failure before another deploy.                                                                                   |
-| Caddy returns `502`           | Confirm the `web` and `api` services are healthy and inspect their logs. Check the selected front door: Compose Caddy by default, or the host Caddy site block when `HUDDLE_FRONT_DOOR=host`. |
+| Symptom                         | First response                                                                                                                                                                                                                 |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Deploy never starts             | Check that `CI` is green on `main`, Actions secrets exist, and the production Environment is not awaiting approval. Manual dispatch isolates trigger issues.                                                                   |
+| SSH or Docker fails             | Re-run the precondition SSH command; repair the deploy key, account, or Docker-group membership before retrying.                                                                                                               |
+| `git fetch` times out to GitHub | The workflow retries a GitHub SSH remote through `ssh.github.com:443`. If that retry fails, run the port-443 precondition command above; keep the existing GitHub host key verified rather than disabling SSH host-key checks. |
+| Configuration preflight fails   | Run the displayed validator command on the VPS and correct only the reported `.env.prod` value. Do not guess or expose it in logs.                                                                                             |
+| Migration fails                 | Stop. Inspect Postgres and API logs; never edit an applied migration. Add a forward migration or restore from a verified backup if required.                                                                                   |
+| `/ready` times out              | Inspect `docker compose ... logs api postgres redis`; resolve the dependency failure before another deploy.                                                                                                                    |
+| Caddy returns `502`             | Confirm the `web` and `api` services are healthy and inspect their logs. Check the selected front door: Compose Caddy by default, or the host Caddy site block when `HUDDLE_FRONT_DOOR=host`.                                  |
 
 ## Rollback
 
