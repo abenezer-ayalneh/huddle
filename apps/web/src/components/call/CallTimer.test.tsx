@@ -21,6 +21,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   vi.clearAllMocks();
 });
 
@@ -65,7 +66,24 @@ describe('CallTimer theme control', () => {
       </LandingThemeProvider>,
     );
 
-    expect(screen.getByRole('timer', { name: 'Call duration 1:05' })).toBeTruthy();
+    expect(screen.getByRole('timer', { name: 'Call duration 01:05' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /switch to .* theme/i })).toBeNull();
+  });
+
+  it('uses the API clock reference when the host device clock is ahead', () => {
+    vi.useFakeTimers();
+    const serverTime = 1_000_000;
+    vi.setSystemTime(serverTime + 120_000);
+    useRoomInfoMock.mockReturnValue({
+      metadata: JSON.stringify({ startedAt: serverTime - 10_000, serverTime }),
+    });
+
+    render(
+      <LandingThemeProvider>
+        <CallTimer showThemeToggle={false} />
+      </LandingThemeProvider>,
+    );
+
+    expect(screen.getByRole('timer', { name: 'Call duration 00:10' })).toBeTruthy();
   });
 });

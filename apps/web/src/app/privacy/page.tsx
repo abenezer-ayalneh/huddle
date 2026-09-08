@@ -198,8 +198,8 @@ export default function PrivacyPage() {
             people admitted to the meeting. Recording and Remote Control status are intentionally visible room-wide.
           </li>
           <li>
-            <strong>Service infrastructure.</strong> This deployment's LiveKit, Postgres, Redis, MinIO, API, and web services process data under the
-            operator's control.
+            <strong>Service infrastructure.</strong> This deployment's LiveKit, Postgres, Redis, MinIO, API, and web services process data under the operator's
+            control.
           </li>
           <li>
             <strong>Google.</strong> At your direction, Google processes sign-in data or stores and shares Drive recordings under Google's own terms and privacy
@@ -287,9 +287,8 @@ export default function PrivacyPage() {
           <li>request access, correction, deletion, restriction, objection, or portability where applicable law provides those rights.</li>
         </ul>
         <p>
-          This deployment does not currently provide a self-service account-deletion button. Submit a privacy request through the contact method below.
-          We may need to verify your identity before acting. If another organization operates the Huddle deployment you use, direct your request to that
-          operator.
+          This deployment does not currently provide a self-service account-deletion button. Submit a privacy request through the contact method below. We may
+          need to verify your identity before acting. If another organization operates the Huddle deployment you use, direct your request to that operator.
         </p>
       </LegalSection>
 
@@ -311,8 +310,8 @@ export default function PrivacyPage() {
 
       <LegalSection id="transfers" title="International processing">
         <p>
-          This deployment, its configured providers, and meeting participants may be located in different countries. As a result, information may be
-          processed outside your country, where privacy laws may differ. Where required, the operator will use an appropriate legal mechanism and safeguards for
+          This deployment, its configured providers, and meeting participants may be located in different countries. As a result, information may be processed
+          outside your country, where privacy laws may differ. Where required, the operator will use an appropriate legal mechanism and safeguards for
           cross-border processing. A self-hosted operator selects its own hosting region and providers.
         </p>
       </LegalSection>

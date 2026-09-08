@@ -38,12 +38,12 @@ install or configure a second, host-level Caddy instance for this deployment.
 You will use **four hostnames**. The values below are the ones this deployment
 uses; substitute your own if different.
 
-| Purpose          | Env var / location | Value                                 |
-| ---------------- | ------------------ | ------------------------------------- |
-| Frontend         | `APP_DOMAIN`       | `app.example.com`                     |
-| API              | `API_DOMAIN`       | `api.example.com`                     |
-| LiveKit signal   | `LIVEKIT_DOMAIN`   | `livekit.example.com`                 |
-| TURN relay (TLS) | `TURN_DOMAIN`      | `turn.example.com`                    |
+| Purpose          | Env var / location | Value                 |
+| ---------------- | ------------------ | --------------------- |
+| Frontend         | `APP_DOMAIN`       | `app.example.com`     |
+| API              | `API_DOMAIN`       | `api.example.com`     |
+| LiveKit signal   | `LIVEKIT_DOMAIN`   | `livekit.example.com` |
+| TURN relay (TLS) | `TURN_DOMAIN`      | `turn.example.com`    |
 
 ---
 
@@ -196,13 +196,13 @@ mail passes SPF/DKIM/DMARC and lands in the inbox.
 3. At that domain's DNS provider, add the records Brevo gives
    you (exact values come from the Brevo dashboard — these are the shapes):
 
-   | Type  | Host (name)                        | Value                                                   | Purpose                        |
-   | ----- | ---------------------------------- | ------------------------------------------------------- | ------------------------------ |
-   | TXT   | `@` (or `brevo-code...` per Brevo) | `brevo-code:...` ownership token                        | Verify you own the domain      |
-   | TXT   | `@`                                | `v=spf1 include:spf.brevo.com mx ~all`                  | SPF — authorizes Brevo to send |
-   | CNAME | `brevo1._domainkey`                | `b1.<…>.brevo.com` (from dashboard)                     | DKIM key 1                     |
-   | CNAME | `brevo2._domainkey`                | `b2.<…>.brevo.com` (from dashboard)                     | DKIM key 2                     |
-   | TXT   | `_dmarc`                           | `v=DMARC1; p=none; rua=mailto:you@example.com`          | DMARC (monitor-only)           |
+   | Type  | Host (name)                        | Value                                          | Purpose                        |
+   | ----- | ---------------------------------- | ---------------------------------------------- | ------------------------------ |
+   | TXT   | `@` (or `brevo-code...` per Brevo) | `brevo-code:...` ownership token               | Verify you own the domain      |
+   | TXT   | `@`                                | `v=spf1 include:spf.brevo.com mx ~all`         | SPF — authorizes Brevo to send |
+   | CNAME | `brevo1._domainkey`                | `b1.<…>.brevo.com` (from dashboard)            | DKIM key 1                     |
+   | CNAME | `brevo2._domainkey`                | `b2.<…>.brevo.com` (from dashboard)            | DKIM key 2                     |
+   | TXT   | `_dmarc`                           | `v=DMARC1; p=none; rua=mailto:you@example.com` | DMARC (monitor-only)           |
 
    > If you already have an SPF TXT record, **merge** the `include:spf.brevo.com`
    > into the existing one — a domain may have only a single SPF record.
@@ -537,8 +537,8 @@ little; it's a config change, not a redesign, when you outgrow the VPS.
   then `up -d`.
 - **Caddy can't get a certificate:** DNS for that hostname isn't pointing at the
   box yet, or ports 80/443 aren't open/free. Inspect `docker compose -f
-  infra/docker-compose.yml -f infra/docker-compose.prod.yml --env-file .env.prod
-  logs -f caddy` and make sure no host process holds :80/:443.
+infra/docker-compose.yml -f infra/docker-compose.prod.yml --env-file .env.prod
+logs -f caddy` and make sure no host process holds :80/:443.
 - **`/ready` returns 503:** Postgres or Redis isn't up. The JSON body names the
   failing dependency (`{"postgres":"down"}`). Check `logs postgres` / `logs redis`.
 - **Connects but no audio/video:** WebRTC media can't traverse. Confirm the
@@ -561,3 +561,10 @@ little; it's a config change, not a redesign, when you outgrow the VPS.
   healthy and that they're bound to `127.0.0.1:3000` / `127.0.0.1:3001`
   (`ss -ltnp | grep -E '3000|3001'`). Check `logs api` / `logs web`; a common
   cause is a missing/typo'd env var in `.env.prod`.
+
+## Owner-controlled maintenance
+
+See [the maintenance runbook](./MAINTENANCE_PROPOSAL.md) for per-environment owner
+verification, the five-minute call shutdown, and the SSH static-page override.
+Apply the maintenance migrations before starting the updated API, and create
+`infra/maintenance-state/` as the deployment user before recreating Caddy.

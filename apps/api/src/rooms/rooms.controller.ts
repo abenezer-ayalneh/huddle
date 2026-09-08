@@ -1,3 +1,4 @@
+import { BlockDuringMaintenance } from '../maintenance/maintenance.guard';
 import { Body, Controller, Delete, Get, Header, Param, Post, Res, StreamableFile, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthGuard, OptionalAuthGuard, OptionalSessionUser, SessionUser, type AuthUser } from '../auth/auth.guard';
@@ -18,6 +19,7 @@ export class RoomsController {
   // --- Signed-in host: create / list / rejoin (BetterAuth session) ---
   @UseGuards(AuthGuard)
   @Post()
+  @BlockDuringMaintenance()
   create(@SessionUser() host: AuthUser, @Body() dto: CreateRoomDto) {
     return this.rooms.createRoom(host, { scheduledStart: dto.scheduledStart });
   }
@@ -31,6 +33,7 @@ export class RoomsController {
   // Owner mints a fresh host token to (re)join their own room.
   @UseGuards(AuthGuard)
   @Post(':room/host-token')
+  @BlockDuringMaintenance()
   hostJoin(@SessionUser() host: AuthUser, @Param('room') room: string) {
     return this.rooms.hostJoin(room, host);
   }
@@ -45,6 +48,7 @@ export class RoomsController {
 
   @UseGuards(AuthGuard)
   @Post(':room/rejoin')
+  @BlockDuringMaintenance()
   directRejoin(@SessionUser() guest: AuthUser, @Param('room') room: string) {
     return this.rooms.directRejoin(room, guest);
   }
@@ -60,11 +64,13 @@ export class RoomsController {
   // name is ignored; an anonymous guest's name rides the body (docs/adr/0016).
   @UseGuards(OptionalAuthGuard)
   @Post(':room/knock')
+  @BlockDuringMaintenance()
   knock(@Param('room') room: string, @OptionalSessionUser() user: AuthUser | null, @Body() dto: KnockDto) {
     return this.rooms.knock(room, user?.name ?? dto.name, user?.image, user?.id);
   }
 
   @Get(':room/knock/:knockId')
+  @BlockDuringMaintenance()
   knockStatus(@Param('room') room: string, @Param('knockId') knockId: string) {
     return this.rooms.knockStatus(room, knockId);
   }
@@ -103,6 +109,7 @@ export class RoomsController {
 
   @UseGuards(HostGuard)
   @Post(':room/knocks/:knockId/admit')
+  @BlockDuringMaintenance()
   admit(@Param('room') room: string, @Param('knockId') knockId: string) {
     return this.rooms.admit(room, knockId);
   }
@@ -134,6 +141,7 @@ export class RoomsController {
   // --- Host-only recording (x-host-key) ---
   @UseGuards(HostGuard)
   @Post(':room/recordings')
+  @BlockDuringMaintenance()
   startRecording(@Param('room') room: string) {
     return this.recordings.start(room);
   }
@@ -143,6 +151,7 @@ export class RoomsController {
   // stop it. Deny is purely a client-side data message — nothing to persist.
   @UseGuards(HostGuard)
   @Post(':room/recordings/approve')
+  @BlockDuringMaintenance()
   approveRecording(@Param('room') room: string, @Body() dto: ApproveRecordingDto) {
     return this.recordings.startForParticipant(room, dto.identity);
   }

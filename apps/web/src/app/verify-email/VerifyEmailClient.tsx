@@ -73,11 +73,7 @@ export default function VerifyEmailClient() {
 
   if (error) {
     return (
-      <VerificationPageShell
-        tone="error"
-        title="Verification failed"
-        body={error}
-      >
+      <VerificationPageShell tone="error" title="Verification failed" body={error}>
         <Link href="/lobby" className="verify-email-primary-action">
           <ArrowLeft className="size-4" aria-hidden="true" />
           Back to lobby

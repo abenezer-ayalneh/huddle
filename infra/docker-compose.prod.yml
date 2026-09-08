@@ -24,6 +24,8 @@ services:
       LIVEKIT_DOMAIN: ${LIVEKIT_DOMAIN}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./maintenance:/srv/maintenance:ro
+      - ./maintenance-state:/srv/maintenance-state:ro
       - caddy-data:/data
       - caddy-config:/config
     depends_on:
@@ -62,6 +64,7 @@ services:
       # Container-internal listen port (NOT the published host port). Next reads
       # PORT; the ports mapping below uses the same value so they can't drift.
       PORT: '${WEB_PORT:-3000}'
+      MAINTENANCE_API_INTERNAL_URL: http://api:3001
       HOSTNAME: '0.0.0.0' # Next standalone must bind all interfaces (not just localhost)
       SENTRY_WEB_DSN: '${SENTRY_WEB_DSN:-}'
       SENTRY_ENVIRONMENT: '${SENTRY_ENVIRONMENT:-production}'
@@ -91,6 +94,7 @@ services:
       NODE_ENV: production
       LOG_FORMAT: json # structured JSON logs in prod (logging/json.logger.ts)
       WEB_ORIGIN: https://${APP_DOMAIN:?APP_DOMAIN is required}
+      MAINTENANCE_OWNER_USER_ID: ${MAINTENANCE_OWNER_USER_ID:-}
       BETTER_AUTH_URL: https://${API_DOMAIN:?API_DOMAIN is required}
       GOOGLE_DRIVE_REDIRECT_URI: https://${API_DOMAIN:?API_DOMAIN is required}/storage-connections/google-drive/callback
       LIVEKIT_URL: ws://livekit:7880
@@ -128,6 +132,7 @@ services:
       NODE_ENV: production
       LOG_FORMAT: json
       WEB_ORIGIN: https://${APP_DOMAIN:?APP_DOMAIN is required}
+      MAINTENANCE_OWNER_USER_ID: ${MAINTENANCE_OWNER_USER_ID:-}
       BETTER_AUTH_URL: https://${API_DOMAIN:?API_DOMAIN is required}
       GOOGLE_DRIVE_REDIRECT_URI: https://${API_DOMAIN:?API_DOMAIN is required}/storage-connections/google-drive/callback
       LIVEKIT_URL: ws://livekit:7880

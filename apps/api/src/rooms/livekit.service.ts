@@ -1,4 +1,5 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Optional } from '@nestjs/common';
+import { MaintenanceService } from '../maintenance/maintenance.service';
 import { ConfigService } from '@nestjs/config';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { AccessToken, RoomServiceClient, TokenVerifier, TrackSource, WebhookReceiver, type WebhookEvent } from 'livekit-server-sdk';
@@ -55,7 +56,10 @@ export class LivekitService {
   private _verifier?: TokenVerifier;
   private readonly metadataWrites = new Map<string, Promise<void>>();
 
-  constructor(private readonly config: ConfigService) {
+  constructor(
+    private readonly config: ConfigService,
+    @Optional() private readonly maintenance?: MaintenanceService,
+  ) {
     const apiKey = this.config.get<string>('LIVEKIT_API_KEY');
     const apiSecret = this.config.get<string>('LIVEKIT_API_SECRET');
     const livekitUrl = this.config.get<string>('LIVEKIT_URL');
@@ -121,6 +125,7 @@ export class LivekitService {
     accountUserId?: string;
     directRejoin?: DirectRejoinTokenMetadata;
   }): Promise<string> {
+    await this.maintenance?.requireAdmissionsOpen();
     const at = new AccessToken(this.apiKey, this.apiSecret, {
       identity: opts.identity,
       name: opts.name,
@@ -142,6 +147,24 @@ export class LivekitService {
       roomAdmin: opts.host ?? false,
     });
     return at.toJwt();
+  }
+
+  async publishMaintenance(room: string, state: { phase: string; startsAt: string | null; message: string; serverTime: string }) {
+    await this.mutateRoomMetadata(room, (metadata) => {
+      if (state.phase === 'off' && !metadata.maintenance) return false;
+      const previous = metadata.maintenance as { phase?: string } | undefined;
+      if (state.phase === 'off' && previous?.phase === 'off') return false;
+      metadata.maintenance = state;
+      return true;
+    });
+  }
+
+  async listActiveRooms() {
+    return this.svc.listRooms();
+  }
+
+  async endRoom(name: string) {
+    await this.svc.deleteRoom(name);
   }
 
   accountBindingFor(userId: string): string {
@@ -396,6 +419,10 @@ export class LivekitService {
         const [info] = await this.svc.listRooms([room]);
         const metadata = this.parseMetadata(info?.metadata);
         if (!mutate(metadata)) return;
+        // Keep browser-side elapsed timers independent of each participant's
+        // wall clock. This is refreshed with every room metadata write so a
+        // client can estimate the API's current time from the same projection.
+        metadata.serverTime = Date.now();
         await this.svc.updateRoomMetadata(room, JSON.stringify(metadata));
       });
     this.metadataWrites.set(room, current);

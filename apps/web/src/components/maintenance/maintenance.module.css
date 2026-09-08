@@ -1,0 +1,114 @@
+.shell {
+  min-height: 100dvh;
+}
+.header {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px clamp(20px, 4vw, 56px);
+}
+.content {
+  width: min(100% - 40px, 680px);
+  margin: clamp(48px, 10vh, 120px) auto 64px;
+}
+.content h1 {
+  font-family: var(--font-archivo-black), sans-serif;
+  font-size: clamp(2.25rem, 6vw, 4rem);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+  margin-bottom: 24px;
+}
+.content p {
+  max-width: 62ch;
+  line-height: 1.7;
+  color: var(--landing-muted);
+  margin: 16px 0;
+}
+.content label {
+  display: block;
+  font-weight: 600;
+  margin: 28px 0 8px;
+}
+.content textarea,
+.content input {
+  width: 100%;
+  padding: 14px 16px;
+  color: var(--landing-ink);
+  background: var(--landing-surface);
+  border: 1px solid var(--landing-border-strong);
+  border-radius: 8px;
+}
+.content textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+  align-items: center;
+}
+.content .button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 44px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  background: var(--landing-purple);
+  color: var(--landing-primary-foreground);
+  font-weight: 600;
+  cursor: pointer;
+}
+.content .button:hover {
+  background: var(--landing-purple-dark);
+}
+.content .button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.content .secondary {
+  background: var(--landing-surface-strong);
+  color: var(--landing-ink);
+}
+.content .secondary:hover {
+  background: var(--landing-bg-deep);
+}
+.content :is(button, a, input, textarea):focus-visible {
+  outline: 3px solid var(--landing-purple);
+  outline-offset: 4px;
+}
+.status {
+  display: inline-block;
+  padding: 8px 12px;
+  background: var(--landing-surface-strong);
+  border-radius: 6px;
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+.detail {
+  padding: 24px 0;
+  margin-top: 28px;
+  border-top: 1px solid var(--landing-border);
+  border-bottom: 1px solid var(--landing-border);
+}
+.error {
+  font-weight: 600;
+  color: var(--landing-ink) !important;
+}
+.countdown {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 45;
+  max-width: calc(100% - 24px);
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: #f3b01c;
+  color: #1a0f0f;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}

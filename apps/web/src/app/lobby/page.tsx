@@ -13,8 +13,16 @@ export default function LobbyPage() {
     <LandingThemeProvider>
       <main className="lobby-shell">
         <LobbyHeader />
-        <div className="lobby-route lobby-route-one" aria-hidden="true"><i /><i /><i /></div>
-        <div className="lobby-route lobby-route-two" aria-hidden="true"><i /><i /><i /></div>
+        <div className="lobby-route lobby-route-one" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </div>
+        <div className="lobby-route lobby-route-two" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </div>
 
         <div className="lobby-container lobby-layout">
           <section className="lobby-intro" aria-labelledby="lobby-title">

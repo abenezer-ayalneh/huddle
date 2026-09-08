@@ -78,7 +78,11 @@ export default function VideoTile({
 
   return (
     <div className="signal-call-tile group relative h-full w-full min-h-0 min-w-0">
-      <div aria-label={isSpeaking ? `${label} is speaking` : label} data-speaking={isSpeaking || undefined} className={`signal-call-tile-frame cyber-clip h-full w-full transition-shadow ${isSpeaking ? 'cyber-frame-active' : 'cyber-frame'}`}>
+      <div
+        aria-label={isSpeaking ? `${label} is speaking` : label}
+        data-speaking={isSpeaking || undefined}
+        className={`signal-call-tile-frame cyber-clip h-full w-full transition-shadow ${isSpeaking ? 'cyber-frame-active' : 'cyber-frame'}`}
+      >
         <div className={`signal-call-tile-media cyber-clip relative h-full w-full overflow-hidden bg-[oklch(0.12_0.02_280)]`}>
           {showVideo ? (
             <VideoTrack

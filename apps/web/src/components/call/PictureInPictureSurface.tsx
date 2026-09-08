@@ -1,4 +1,5 @@
 'use client';
+import { useCallNoticeState } from '@/lib/systemNotices';
 
 import {
   VideoTrack,
@@ -79,6 +80,7 @@ export default function PictureInPictureSurface({
   onReturnToCall: () => void;
   onConfirmLeave: () => void;
 }) {
+  const { maintenance } = useCallNoticeState();
   const { localParticipant, isMicrophoneEnabled, isCameraEnabled } = useLocalParticipant();
   const speaking = useSpeakingParticipants();
   const activeIdentity = speaking[0]?.identity;
@@ -110,8 +112,14 @@ export default function PictureInPictureSurface({
   }, [chatOpen, messages, onChatVisibilityChange]);
 
   const cameraTracks = useMemo(() => tracks.filter((track) => track.source === Track.Source.Camera && !isControlAgentParticipant(track.participant)), [tracks]);
-  const screenTrack = useMemo(() => tracks.find((track) => track.source === Track.Source.ScreenShare && !isControlAgentParticipant(track.participant)) ?? null, [tracks]);
-  const remoteControlTrack = useMemo(() => tracks.find((track) => track.source === Track.Source.ScreenShare && isControlAgentParticipant(track.participant)) ?? null, [tracks]);
+  const screenTrack = useMemo(
+    () => tracks.find((track) => track.source === Track.Source.ScreenShare && !isControlAgentParticipant(track.participant)) ?? null,
+    [tracks],
+  );
+  const remoteControlTrack = useMemo(
+    () => tracks.find((track) => track.source === Track.Source.ScreenShare && isControlAgentParticipant(track.participant)) ?? null,
+    [tracks],
+  );
   const presentationTrack = remoteControlActive ? remoteControlTrack : screenTrack;
   const humanTracks = useMemo(
     () => orderPictureInPictureTracks(cameraTracks, { pinnedIdentity, activeIdentity, max: 4 }),
@@ -164,22 +172,32 @@ export default function PictureInPictureSurface({
     <div className="signal-call-pip-content" aria-label="Huddle picture-in-picture">
       <header className="signal-call-pip-header">
         <div className="signal-call-pip-brand">
-          <span className="signal-call-pip-mark" aria-hidden="true">H</span>
+          <span className="signal-call-pip-mark" aria-hidden="true">
+            H
+          </span>
           <span>Huddle</span>
           <code>{roomCode}</code>
         </div>
         <div className="signal-call-pip-header-status" aria-label="Call status">
           {humanTracks.omittedCount > 0 && <span title={`${humanTracks.omittedCount} more participants`}>+{humanTracks.omittedCount}</span>}
           {hostWaitingCount > 0 && <span title={`${hostWaitingCount} waiting`}>⏳ {hostWaitingCount}</span>}
-          {recordingActive && <span className="signal-call-pip-status-recording" title="Recording active"><Circle aria-hidden="true" /> REC</span>}
+          {recordingActive && (
+            <span className="signal-call-pip-status-recording" title="Recording active">
+              <Circle aria-hidden="true" /> REC
+            </span>
+          )}
           {hasPresentation && <span title="Presentation active">Presenting</span>}
-          {unreadChat > 0 && <span className="signal-call-pip-status-unread" title={`${unreadChat} unread chat messages`}>{unreadChat}</span>}
+          {unreadChat > 0 && (
+            <span className="signal-call-pip-status-unread" title={`${unreadChat} unread chat messages`}>
+              {unreadChat}
+            </span>
+          )}
         </div>
       </header>
 
-      {(presentationNotice || recordingNotice || remoteControlNotice || deviceError) && (
+      {(maintenance || presentationNotice || recordingNotice || remoteControlNotice || deviceError) && (
         <button type="button" className="signal-call-pip-notice" onClick={onReturnToCall}>
-          <span>{deviceError ?? remoteControlNotice ?? recordingNotice ?? presentationNotice}</span>
+          <span>{maintenance ?? deviceError ?? remoteControlNotice ?? recordingNotice ?? presentationNotice}</span>
           <ArrowLeft aria-hidden="true" />
         </button>
       )}
@@ -207,7 +225,12 @@ export default function PictureInPictureSurface({
                 />
                 <div className={`signal-call-pip-reactions signal-call-pip-reactions-${reactionCount}`} aria-label="Participant reactions">
                   {humanTracks.tracks.slice(0, 3).map((track) => (
-                    <PipMediaTile key={`${track.participant.identity}-${track.source}`} trackRef={track} compact fallbackName={track.participant.isLocal ? localName : undefined} />
+                    <PipMediaTile
+                      key={`${track.participant.identity}-${track.source}`}
+                      trackRef={track}
+                      compact
+                      fallbackName={track.participant.isLocal ? localName : undefined}
+                    />
                   ))}
                 </div>
               </div>
@@ -234,12 +257,34 @@ export default function PictureInPictureSurface({
 
       {moreOpen && (
         <div className="signal-call-pip-more" role="menu" aria-label="More picture-in-picture options">
-          <button type="button" role="menuitem" onClick={onReturnToCall}><ArrowLeft aria-hidden="true" /> Return to call</button>
+          <button type="button" role="menuitem" onClick={onReturnToCall}>
+            <ArrowLeft aria-hidden="true" /> Return to call
+          </button>
           {hasPresentation && (
             <>
               <span className="signal-call-pip-menu-label">During Present</span>
-              <button type="button" role="menuitemradio" aria-checked={effectiveMode === 'people'} onClick={() => { setPresentationMode('people'); setMoreOpen(false); }}><Users aria-hidden="true" /> People</button>
-              <button type="button" role="menuitemradio" aria-checked={effectiveMode === 'presentation'} onClick={() => { setPresentationMode('presentation'); setMoreOpen(false); }}><MonitorPlay aria-hidden="true" /> Presentation</button>
+              <button
+                type="button"
+                role="menuitemradio"
+                aria-checked={effectiveMode === 'people'}
+                onClick={() => {
+                  setPresentationMode('people');
+                  setMoreOpen(false);
+                }}
+              >
+                <Users aria-hidden="true" /> People
+              </button>
+              <button
+                type="button"
+                role="menuitemradio"
+                aria-checked={effectiveMode === 'presentation'}
+                onClick={() => {
+                  setPresentationMode('presentation');
+                  setMoreOpen(false);
+                }}
+              >
+                <MonitorPlay aria-hidden="true" /> Presentation
+              </button>
             </>
           )}
         </div>
@@ -250,18 +295,46 @@ export default function PictureInPictureSurface({
           <strong>Leave this call?</strong>
           <span>You will disconnect from {roomCode}.</span>
           <div>
-            <button type="button" onClick={() => setLeaveConfirm(false)}>Stay</button>
-            <button type="button" className="signal-call-pip-leave-confirm" onClick={onConfirmLeave}>Leave</button>
+            <button type="button" onClick={() => setLeaveConfirm(false)}>
+              Stay
+            </button>
+            <button type="button" className="signal-call-pip-leave-confirm" onClick={onConfirmLeave}>
+              Leave
+            </button>
           </div>
         </div>
       )}
 
       <footer className="signal-call-pip-controls" aria-label="Call controls">
-        <PipControlButton icon={isMicrophoneEnabled ? Mic : MicOff} label={isMicrophoneEnabled ? 'Mute microphone' : 'Unmute microphone'} onClick={() => void toggleDevice('microphone')} active={isMicrophoneEnabled} />
-        <PipControlButton icon={isCameraEnabled ? Camera : CameraOff} label={isCameraEnabled ? 'Turn camera off' : 'Turn camera on'} onClick={() => void toggleDevice('camera')} active={isCameraEnabled} />
-        <PipControlButton icon={MessageSquare} label={chatOpen ? 'Hide chat' : 'Show chat'} onClick={() => showChat(!chatOpen)} badge={unreadChat} active={chatOpen} />
+        <PipControlButton
+          icon={isMicrophoneEnabled ? Mic : MicOff}
+          label={isMicrophoneEnabled ? 'Mute microphone' : 'Unmute microphone'}
+          onClick={() => void toggleDevice('microphone')}
+          active={isMicrophoneEnabled}
+        />
+        <PipControlButton
+          icon={isCameraEnabled ? Camera : CameraOff}
+          label={isCameraEnabled ? 'Turn camera off' : 'Turn camera on'}
+          onClick={() => void toggleDevice('camera')}
+          active={isCameraEnabled}
+        />
+        <PipControlButton
+          icon={MessageSquare}
+          label={chatOpen ? 'Hide chat' : 'Show chat'}
+          onClick={() => showChat(!chatOpen)}
+          badge={unreadChat}
+          active={chatOpen}
+        />
         <PipControlButton icon={MoreHorizontal} label="More controls" onClick={() => setMoreOpen((open) => !open)} active={moreOpen} />
-        <PipControlButton icon={PhoneOff} label="Leave call" onClick={() => { setMoreOpen(false); setLeaveConfirm(true); }} danger />
+        <PipControlButton
+          icon={PhoneOff}
+          label="Leave call"
+          onClick={() => {
+            setMoreOpen(false);
+            setLeaveConfirm(true);
+          }}
+          danger
+        />
       </footer>
     </div>
   );
@@ -295,16 +368,23 @@ function PipMediaTile({
   }
   if (trackRef.source === Track.Source.Camera) {
     return (
-      <div className={`signal-call-pip-media signal-call-pip-camera ${primary ? 'signal-call-pip-primary' : ''} ${compact ? 'signal-call-pip-compact' : ''} ${active ? 'signal-call-pip-active' : ''}`}>
+      <div
+        className={`signal-call-pip-media signal-call-pip-camera ${primary ? 'signal-call-pip-primary' : ''} ${compact ? 'signal-call-pip-compact' : ''} ${active ? 'signal-call-pip-active' : ''}`}
+      >
         <VideoTile trackRef={trackRef} active={active} fallbackName={fallbackName} />
       </div>
     );
   }
   if (!isTrackReference(trackRef)) return <VideoTile trackRef={trackRef} active={active} fallbackName={fallbackName} />;
   return (
-    <div className={`signal-call-pip-media ${primary ? 'signal-call-pip-primary' : ''} ${compact ? 'signal-call-pip-compact' : ''} ${active ? 'signal-call-pip-active' : ''}`}>
+    <div
+      className={`signal-call-pip-media ${primary ? 'signal-call-pip-primary' : ''} ${compact ? 'signal-call-pip-compact' : ''} ${active ? 'signal-call-pip-active' : ''}`}
+    >
       <VideoTrack trackRef={trackRef} className="h-full w-full object-contain" />
-      <span className="signal-call-pip-media-label">{label ?? (trackRef.participant.name || fallbackName || trackRef.participant.identity || 'Participant')}{trackRef.participant.isLocal ? ' (You)' : ''}</span>
+      <span className="signal-call-pip-media-label">
+        {label ?? (trackRef.participant.name || fallbackName || trackRef.participant.identity || 'Participant')}
+        {trackRef.participant.isLocal ? ' (You)' : ''}
+      </span>
     </div>
   );
 }
@@ -332,26 +412,65 @@ function ChatDrawer({
 }) {
   return (
     <section className="signal-call-pip-chat" aria-label="Chat">
-      <header><strong>Chat</strong><button type="button" aria-label="Hide chat" onClick={onClose}><X aria-hidden="true" /></button></header>
+      <header>
+        <strong>Chat</strong>
+        <button type="button" aria-label="Hide chat" onClick={onClose}>
+          <X aria-hidden="true" />
+        </button>
+      </header>
       <div ref={listRef} className="signal-call-pip-chat-list">
-        {messages.length === 0 ? <p>No messages yet.</p> : messages.map((message) => (
-          <article key={`${message.timestamp}-${message.from?.identity ?? ''}`}>
-            <small>{message.from?.isLocal ? 'You' : message.from?.name || message.from?.identity || 'Participant'} · {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small>
-            <span>{message.message}</span>
-          </article>
-        ))}
+        {messages.length === 0 ? (
+          <p>No messages yet.</p>
+        ) : (
+          messages.map((message) => (
+            <article key={`${message.timestamp}-${message.from?.identity ?? ''}`}>
+              <small>
+                {message.from?.isLocal ? 'You' : message.from?.name || message.from?.identity || 'Participant'} ·{' '}
+                {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </small>
+              <span>{message.message}</span>
+            </article>
+          ))
+        )}
       </div>
-      <form onSubmit={(event) => { event.preventDefault(); onSubmit(); }}>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          onSubmit();
+        }}
+      >
         <input value={draft} onChange={(event) => onDraftChange(event.target.value)} placeholder="Type a message…" aria-label="Chat message" />
-        <button type="submit" aria-label="Send message" disabled={!draft.trim() || isSending}><Send aria-hidden="true" /></button>
+        <button type="submit" aria-label="Send message" disabled={!draft.trim() || isSending}>
+          <Send aria-hidden="true" />
+        </button>
       </form>
     </section>
   );
 }
 
-function PipControlButton({ icon: Icon, label, onClick, active = false, danger = false, badge = 0 }: { icon: LucideIcon; label: string; onClick: () => void; active?: boolean; danger?: boolean; badge?: number }) {
+function PipControlButton({
+  icon: Icon,
+  label,
+  onClick,
+  active = false,
+  danger = false,
+  badge = 0,
+}: {
+  icon: LucideIcon;
+  label: string;
+  onClick: () => void;
+  active?: boolean;
+  danger?: boolean;
+  badge?: number;
+}) {
   return (
-    <button type="button" className={`signal-call-pip-control ${active ? 'signal-call-pip-control-active' : ''} ${danger ? 'signal-call-pip-control-danger' : ''}`} aria-label={label} aria-pressed={active} onClick={onClick}>
+    <button
+      type="button"
+      className={`signal-call-pip-control ${active ? 'signal-call-pip-control-active' : ''} ${danger ? 'signal-call-pip-control-danger' : ''}`}
+      aria-label={label}
+      aria-pressed={active}
+      onClick={onClick}
+    >
       <Icon aria-hidden="true" />
       {badge > 0 && <span className="signal-call-pip-control-badge">{badge}</span>}
     </button>

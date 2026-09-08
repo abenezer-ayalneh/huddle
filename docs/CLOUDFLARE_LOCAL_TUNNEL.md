@@ -16,11 +16,11 @@ References:
 
 ## Hostnames
 
-| Hostname                                    | Local service          |
-| ------------------------------------------- | ---------------------- |
-| `local-huddle.example.test`                 | Next.js web `:3000`    |
-| `local-huddle-api.example.test`             | NestJS API `:3001`     |
-| `local-huddle-livekit.example.test`         | LiveKit signal `:7880` |
+| Hostname                            | Local service          |
+| ----------------------------------- | ---------------------- |
+| `local-huddle.example.test`         | Next.js web `:3000`    |
+| `local-huddle-api.example.test`     | NestJS API `:3001`     |
+| `local-huddle-livekit.example.test` | LiveKit signal `:7880` |
 
 ## One-time Setup
 

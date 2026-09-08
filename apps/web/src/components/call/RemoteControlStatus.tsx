@@ -67,7 +67,9 @@ export default function RemoteControlStatus({
 
         <div className="min-w-0 flex-1">
           <p className="signal-call-remote-title truncate text-sm font-semibold text-white/95">{active ? relationship : waiting}</p>
-          <p className="signal-call-remote-detail text-xs text-white/55">{active ? 'Remote Control active' : 'Remote Control approved · desktop not yet shared'}</p>
+          <p className="signal-call-remote-detail text-xs text-white/55">
+            {active ? 'Remote Control active' : 'Remote Control approved · desktop not yet shared'}
+          </p>
           {iAmSharer && active && (
             <p className="mt-0.5 text-xs text-cyan/80">Clipboard sharing on · plain text copied on this Mac is shared with {session.controllerName}.</p>
           )}

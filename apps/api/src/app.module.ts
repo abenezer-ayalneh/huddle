@@ -7,6 +7,7 @@ import { AppService } from './app.service';
 import { HealthController } from './health/health.controller';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
+import { MaintenanceModule } from './maintenance/maintenance.module';
 import { RoomsModule } from './rooms/rooms.module';
 import { validateEnvironment } from './config/validate-env';
 
@@ -23,6 +24,7 @@ import { validateEnvironment } from './config/validate-env';
     }),
     PrismaModule,
     RedisModule,
+    MaintenanceModule,
     RoomsModule,
   ],
   controllers: [AppController, HealthController],

@@ -1,8 +1,8 @@
 ---
 version: 1
-slug: "apps-web-src-components-legal-legalpage-tsx"
-primary_target: "src/components/legal/LegalPage.tsx"
-related_targets: ["src/app/privacy/page.tsx", "src/app/terms/page.tsx", "src/components/legal/LegalTableOfContents.tsx"]
+slug: 'apps-web-src-components-legal-legalpage-tsx'
+primary_target: 'src/components/legal/LegalPage.tsx'
+related_targets: ['src/app/privacy/page.tsx', 'src/app/terms/page.tsx', 'src/components/legal/LegalTableOfContents.tsx']
 ---
 
 # Signal Handoff legal dossiers

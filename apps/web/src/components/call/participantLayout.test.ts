@@ -5,7 +5,12 @@ describe('participant layout model', () => {
   it('uses landscape and portrait capacities', () => {
     expect(pageCapacity(false)).toBe(8);
     expect(pageCapacity(true)).toBe(4);
-    expect(buildParticipantPages(Array.from({ length: 9 }, (_, i) => i), false)).toHaveLength(2);
+    expect(
+      buildParticipantPages(
+        Array.from({ length: 9 }, (_, i) => i),
+        false,
+      ),
+    ).toHaveLength(2);
   });
   it('centers incomplete final rows without changing item order', () => {
     expect(centerLastRow(['a', 'b', 'c', 'd', 'e'], 3).map((x) => x.item)).toEqual(['a', 'b', 'c', 'd', 'e']);

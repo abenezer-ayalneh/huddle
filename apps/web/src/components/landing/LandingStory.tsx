@@ -8,9 +8,24 @@ export type LandingStoryStage = 'meet' | 'present' | 'approve' | 'collaborate';
 
 const stages: Array<{ id: LandingStoryStage; title: string; description: string; signal: string }> = [
   { id: 'meet', title: 'Meet', description: 'Open one link, finish the Device Check, and let the room find its people.', signal: 'link → device check' },
-  { id: 'present', title: 'Present', description: 'Bring the staging site into the room with camera, chat, and a visible Recording state.', signal: 'device check → present' },
-  { id: 'approve', title: 'Approve', description: 'The client asks for control. The Sharer decides. The request stays attached to the room.', signal: 'request → consent' },
-  { id: 'collaborate', title: 'Collaborate', description: 'Explore together, renew every 30 minutes, and stop from either side when the work is done.', signal: 'consent → handoff' },
+  {
+    id: 'present',
+    title: 'Present',
+    description: 'Bring the staging site into the room with camera, chat, and a visible Recording state.',
+    signal: 'device check → present',
+  },
+  {
+    id: 'approve',
+    title: 'Approve',
+    description: 'The client asks for control. The Sharer decides. The request stays attached to the room.',
+    signal: 'request → consent',
+  },
+  {
+    id: 'collaborate',
+    title: 'Collaborate',
+    description: 'Explore together, renew every 30 minutes, and stop from either side when the work is done.',
+    signal: 'consent → handoff',
+  },
 ];
 
 export default function LandingStory() {
@@ -68,7 +83,9 @@ export default function LandingStory() {
               }
             }}
           >
-            <span className="landing-story-tab-dot"><Circle className="size-2.5 fill-current" /></span>
+            <span className="landing-story-tab-dot">
+              <Circle className="size-2.5 fill-current" />
+            </span>
             {item.title}
           </button>
         ))}
@@ -79,10 +96,46 @@ export default function LandingStory() {
           <h3>{activeStage.title}. Then the work keeps moving.</h3>
           <p>{activeStage.description}</p>
           <div className="landing-story-checks">
-            {stage === 'meet' && <><span><Check /> Guest account not required</span><span><Check /> No meeting-app install</span></>}
-            {stage === 'present' && <><span><Check /> Camera tiles + shared stage</span><span><Check /> Recording stays visible</span></>}
-            {stage === 'approve' && <><span><Check /> Room-scoped identity binding</span><span><Check /> Sharer-controlled approval</span></>}
-            {stage === 'collaborate' && <><span><Check /> Reconfirm every 30 minutes</span><span><Check /> Stop from either side</span></>}
+            {stage === 'meet' && (
+              <>
+                <span>
+                  <Check /> Guest account not required
+                </span>
+                <span>
+                  <Check /> No meeting-app install
+                </span>
+              </>
+            )}
+            {stage === 'present' && (
+              <>
+                <span>
+                  <Check /> Camera tiles + shared stage
+                </span>
+                <span>
+                  <Check /> Recording stays visible
+                </span>
+              </>
+            )}
+            {stage === 'approve' && (
+              <>
+                <span>
+                  <Check /> Room-scoped identity binding
+                </span>
+                <span>
+                  <Check /> Sharer-controlled approval
+                </span>
+              </>
+            )}
+            {stage === 'collaborate' && (
+              <>
+                <span>
+                  <Check /> Reconfirm every 30 minutes
+                </span>
+                <span>
+                  <Check /> Stop from either side
+                </span>
+              </>
+            )}
           </div>
         </div>
         <LandingStoryScene stage={stage} />
@@ -98,16 +151,102 @@ function LandingStoryScene({ stage }: { stage: LandingStoryStage }) {
       {(stage === 'meet' || stage === 'present') && <LandingMeetingCanvas compact={stage === 'meet'} />}
       {stage === 'approve' && (
         <div className="landing-control-scene">
-          <div className="landing-control-scene-top"><span><Laptop className="size-4" /> Jun is viewing the shared display</span><span className="landing-chip landing-chip-yellow"><Circle className="size-2 fill-current" /> Awaiting decision</span></div>
-          <div className="landing-control-stage"><div className="landing-control-browser"><span className="landing-site-label">STUDIO / NORTH</span><strong>Review the<br />next frame.</strong><span className="landing-control-cursor"><MousePointer2 className="size-4" /> Jun</span></div><div className="landing-control-callout"><LockKeyhole className="size-5" /><strong>Request control</strong><p>The Sharer sees the request before anything moves.</p><div><button type="button" className="landing-mini-button landing-mini-button-primary"><Check className="size-3" /> Approve</button><button type="button" className="landing-mini-button">Not now</button></div></div></div>
-          <div className="landing-control-footer"><span><ShieldCheck className="size-4" /> Room-scoped</span><span><TimerReset className="size-4" /> 30 min renewal</span><span><Clipboard className="size-4" /> Plain text only</span></div>
+          <div className="landing-control-scene-top">
+            <span>
+              <Laptop className="size-4" /> Jun is viewing the shared display
+            </span>
+            <span className="landing-chip landing-chip-yellow">
+              <Circle className="size-2 fill-current" /> Awaiting decision
+            </span>
+          </div>
+          <div className="landing-control-stage">
+            <div className="landing-control-browser">
+              <span className="landing-site-label">STUDIO / NORTH</span>
+              <strong>
+                Review the
+                <br />
+                next frame.
+              </strong>
+              <span className="landing-control-cursor">
+                <MousePointer2 className="size-4" /> Jun
+              </span>
+            </div>
+            <div className="landing-control-callout">
+              <LockKeyhole className="size-5" />
+              <strong>Request control</strong>
+              <p>The Sharer sees the request before anything moves.</p>
+              <div>
+                <button type="button" className="landing-mini-button landing-mini-button-primary">
+                  <Check className="size-3" /> Approve
+                </button>
+                <button type="button" className="landing-mini-button">
+                  Not now
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="landing-control-footer">
+            <span>
+              <ShieldCheck className="size-4" /> Room-scoped
+            </span>
+            <span>
+              <TimerReset className="size-4" /> 30 min renewal
+            </span>
+            <span>
+              <Clipboard className="size-4" /> Plain text only
+            </span>
+          </div>
         </div>
       )}
       {stage === 'collaborate' && (
         <div className="landing-collab-scene">
-          <div className="landing-collab-top"><span className="landing-chip landing-chip-purple"><Circle className="size-2 fill-current" /> Control active</span><span><TimerReset className="size-4" /> Renews in 18:42</span><button type="button" className="landing-mini-button landing-mini-button-stop">Stop</button></div>
-          <div className="landing-collab-stage"><div className="landing-control-browser landing-control-browser-collab"><span className="landing-site-label">STUDIO / NORTH</span><strong>Make space<br />for the next idea.</strong><span className="landing-control-cursor"><MousePointer2 className="size-4" /> Jun</span><span className="landing-collab-stamp"><Hand className="size-4" /> Guided edit</span></div><div className="landing-collab-log"><span className="landing-mono-label">SIGNAL LOG</span><p><Circle className="size-2 fill-current" /> Jun requested control</p><p><Check className="size-3" /> Maya approved the handoff</p><p><MessageSquare className="size-3" /> Clipboard sharing enabled</p><p><Play className="size-3" /> Stop remains visible to both</p></div></div>
-          <div className="landing-collab-footer"><span>Files stay out.</span><span>Desktop audio stays out.</span><span>Unattended access stays out.</span></div>
+          <div className="landing-collab-top">
+            <span className="landing-chip landing-chip-purple">
+              <Circle className="size-2 fill-current" /> Control active
+            </span>
+            <span>
+              <TimerReset className="size-4" /> Renews in 18:42
+            </span>
+            <button type="button" className="landing-mini-button landing-mini-button-stop">
+              Stop
+            </button>
+          </div>
+          <div className="landing-collab-stage">
+            <div className="landing-control-browser landing-control-browser-collab">
+              <span className="landing-site-label">STUDIO / NORTH</span>
+              <strong>
+                Make space
+                <br />
+                for the next idea.
+              </strong>
+              <span className="landing-control-cursor">
+                <MousePointer2 className="size-4" /> Jun
+              </span>
+              <span className="landing-collab-stamp">
+                <Hand className="size-4" /> Guided edit
+              </span>
+            </div>
+            <div className="landing-collab-log">
+              <span className="landing-mono-label">SIGNAL LOG</span>
+              <p>
+                <Circle className="size-2 fill-current" /> Jun requested control
+              </p>
+              <p>
+                <Check className="size-3" /> Maya approved the handoff
+              </p>
+              <p>
+                <MessageSquare className="size-3" /> Clipboard sharing enabled
+              </p>
+              <p>
+                <Play className="size-3" /> Stop remains visible to both
+              </p>
+            </div>
+          </div>
+          <div className="landing-collab-footer">
+            <span>Files stay out.</span>
+            <span>Desktop audio stays out.</span>
+            <span>Unattended access stays out.</span>
+          </div>
         </div>
       )}
     </div>

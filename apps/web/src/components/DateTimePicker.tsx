@@ -118,12 +118,7 @@ export default function DateTimePicker({
         </div>
 
         <div className="border-t border-border px-3 py-3">
-          <button
-            type="button"
-            disabled={!selectedDay || disabled}
-            onClick={handleConfirm}
-            className="lobby-primary-button lobby-primary-button-full"
-          >
+          <button type="button" disabled={!selectedDay || disabled} onClick={handleConfirm} className="lobby-primary-button lobby-primary-button-full">
             {disabled && <LoadingSpinner className="h-3.5 w-3.5" />}
             {!disabled && 'Schedule'}
           </button>

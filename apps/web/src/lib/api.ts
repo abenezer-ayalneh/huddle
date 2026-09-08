@@ -160,7 +160,9 @@ async function request<T>(path: string, init?: RequestInitX): Promise<T> {
     // HTTP error → read the server's Fault envelope. Surfacing is opt-in:
     // user-initiated callers pass surfaceFault (or catch and call emitFault).
     const fault = await readFault(res);
-    if (surfaceFault) emitFault(fault);
+    if (fault.code === 'MAINTENANCE' && typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('huddle:maintenance'));
+    } else if (surfaceFault) emitFault(fault);
     throw new FaultError(fault);
   }
   // Some endpoints return no body; guard against empty responses.

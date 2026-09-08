@@ -1,3 +1,4 @@
+import { MaintenanceWorker } from '../maintenance/maintenance.worker';
 import { Module } from '@nestjs/common';
 import { DownloadTokenGuard } from './download-token.guard';
 import { DownloadTokenService } from './download-token.service';
@@ -29,6 +30,7 @@ import { WebhookController } from './webhook.controller';
 @Module({
   controllers: [RoomsController, RecordingsController, StorageConnectionsController, RemoteControlController, WebhookController],
   providers: [
+    MaintenanceWorker,
     RoomsService,
     RoomRepository,
     RoomStateService,

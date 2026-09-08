@@ -10,6 +10,7 @@ const base = {
   OPERATOR_NAME: 'Example Operator',
   OPERATOR_CONTACT_URL: 'https://example.com/contact',
   PROJECT_REPOSITORY_URL: 'https://github.com/example/huddle',
+  MAINTENANCE_OWNER_USER_ID: 'verified-owner-id',
 };
 
 test('accepts a complete production environment without a Control Agent release', () => {
@@ -21,9 +22,10 @@ test('parses documented inline comments without treating them as configuration',
 });
 
 test('rejects missing production metadata and malformed domains', () => {
-  const errors = validateProductionEnv({ ...base, OPERATOR_NAME: '', API_DOMAIN: 'https://api.example.com' });
+  const errors = validateProductionEnv({ ...base, OPERATOR_NAME: '', API_DOMAIN: 'https://api.example.com', MAINTENANCE_OWNER_USER_ID: '' });
   assert.ok(errors.some((error) => error.includes('OPERATOR_NAME is required')));
   assert.ok(errors.some((error) => error.includes('API_DOMAIN must be a hostname')));
+  assert.ok(errors.some((error) => error.includes('MAINTENANCE_OWNER_USER_ID is required')));
 });
 
 test('requires a complete signed release configuration', () => {

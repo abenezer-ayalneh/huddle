@@ -11,15 +11,30 @@ export default function CallTimer({ hidden = false, showThemeToggle = true }: { 
   // paint reflects the real current time; the interval keeps it ticking.
   const [now, setNow] = useState(Date.now);
 
-  const startedAt = (() => {
-    if (!metadata) return null;
+  const { startedAt, serverTime } = (() => {
+    if (!metadata) return { startedAt: null, serverTime: null };
     try {
-      const v = (JSON.parse(metadata) as { startedAt?: unknown }).startedAt;
-      return typeof v === 'number' ? v : null;
+      const parsed = JSON.parse(metadata) as { startedAt?: unknown; serverTime?: unknown };
+      return {
+        startedAt: typeof parsed.startedAt === 'number' ? parsed.startedAt : null,
+        serverTime: typeof parsed.serverTime === 'number' ? parsed.serverTime : null,
+      };
     } catch {
-      return null;
+      return { startedAt: null, serverTime: null };
     }
   })();
+
+  // `startedAt` and `serverTime` are written by the API. Offset the local
+  // ticking clock with that server reference so a fast host clock cannot make
+  // the call appear longer for the host than for other participants.
+  const [serverClockOffsetMs, setServerClockOffsetMs] = useState<number | null>(() => (serverTime == null ? null : serverTime - Date.now()));
+
+  useEffect(() => {
+    // Defer the state sync until after render so metadata updates can refresh
+    // the offset without triggering a cascading render from the effect body.
+    const id = window.setTimeout(() => setServerClockOffsetMs(serverTime == null ? null : serverTime - Date.now()), 0);
+    return () => window.clearTimeout(id);
+  }, [serverTime]);
 
   useEffect(() => {
     if (startedAt == null) return;
@@ -27,7 +42,7 @@ export default function CallTimer({ hidden = false, showThemeToggle = true }: { 
     return () => clearInterval(id);
   }, [startedAt]);
 
-  const duration = startedAt == null ? null : formatDuration(now - startedAt);
+  const duration = startedAt == null ? null : formatDuration(now + (serverClockOffsetMs ?? 0) - startedAt);
 
   if (hidden || (!duration && !showThemeToggle)) return null;
 

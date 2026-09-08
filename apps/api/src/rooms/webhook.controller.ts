@@ -1,6 +1,7 @@
-import { Controller, HttpCode, Logger, Post, Req, UnauthorizedException } from '@nestjs/common';
+import { Controller, HttpCode, Logger, Optional, Post, Req, UnauthorizedException } from '@nestjs/common';
 import type { RawBodyRequest } from '@nestjs/common';
 import type { Request } from 'express';
+import { MaintenanceService } from '../maintenance/maintenance.service';
 import { FaultCode, faultBody } from '../common/faults';
 import { LivekitService } from './livekit.service';
 import { RecordingsService } from './recordings.service';
@@ -19,6 +20,7 @@ export class WebhookController {
     private readonly rooms: RoomsService,
     private readonly recordings: RecordingsService,
     private readonly remoteControl: RemoteControlService,
+    @Optional() private readonly maintenance?: MaintenanceService,
   ) {}
 
   @Post('webhook')
@@ -37,6 +39,10 @@ export class WebhookController {
 
     if (event.event === 'participant_joined' && event.room?.name) {
       const identity = event.participant?.identity;
+      if (identity && this.maintenance && (await this.maintenance.status()).phase !== 'off') {
+        await this.livekit.removeParticipant(event.room.name, identity);
+        return { received: true };
+      }
       const directRejoin = this.livekit.directRejoinMetadata(event.participant?.metadata);
       const validDirectRejoin =
         !directRejoin || (identity != null && (await this.rooms.isDirectRejoinParticipantValid(event.room.name, event.room.sid, identity, directRejoin)));

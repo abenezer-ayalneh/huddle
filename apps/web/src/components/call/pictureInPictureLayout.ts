@@ -2,11 +2,7 @@ import { type TrackReferenceOrPlaceholder } from '@livekit/components-react';
 
 export type PictureInPictureLayout = 'stack' | 'single' | 'pair' | 'trio' | 'grid' | 'primary';
 
-export function selectPictureInPictureLayout(
-  width: number,
-  height: number,
-  participantCount = 4,
-): PictureInPictureLayout {
+export function selectPictureInPictureLayout(width: number, height: number, participantCount = 4): PictureInPictureLayout {
   if (participantCount <= 0) return 'stack';
   if (height < 280 || width / Math.max(height, 1) > 1.85) return 'primary';
   if (participantCount === 1) return 'single';

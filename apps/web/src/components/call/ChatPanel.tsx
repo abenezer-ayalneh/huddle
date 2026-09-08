@@ -89,7 +89,9 @@ export default function ChatPanel({
                 </span>
                 <span
                   className={`max-w-[85%] break-words rounded-2xl px-3 py-2 ${
-                    mine ? 'signal-call-chat-message-mine rounded-br-sm bg-magenta/20 text-white ring-1 ring-magenta/40' : 'signal-call-chat-message rounded-bl-sm bg-white/8 text-white/90 ring-1 ring-white/10'
+                    mine
+                      ? 'signal-call-chat-message-mine rounded-br-sm bg-magenta/20 text-white ring-1 ring-magenta/40'
+                      : 'signal-call-chat-message rounded-bl-sm bg-white/8 text-white/90 ring-1 ring-white/10'
                   }`}
                 >
                   {m.message}

@@ -600,15 +600,15 @@ idempotent.
 
 Topic: `huddle:remote-control`; JSON messages carry `v: 1`.
 
-| type                              | sender → recipient         | purpose                                                                        |
-| --------------------------------- | -------------------------- | ------------------------------------------------------------------------------ |
-| `remote-control:request`           | Controller → Sharer        | carries a server-issued request id to wake consent UI                         |
-| `remote-control:denied`            | Sharer → Controller        | transient denial UX after the API decision                                    |
-| `remote-control:agent-unavailable` | Sharer → Controller        | addressed recovery hint when the Control Agent handoff is not detected       |
-| `remote-control:input`            | Controller → Control Agent | `{ sessionId, sequence, event }`; transport only, never authority              |
-| `remote-control:clipboard-copy`   | Controller → Control Agent | `{ sessionId, sequence }`; injects the Sharer's native Copy shortcut           |
-| `remote-control:clipboard-paste`  | Controller → Control Agent | `{ sessionId, sequence, text }`; writes bounded plain text, then injects Paste |
-| `remote-control:clipboard-update` | Control Agent → Controller | `{ sessionId, revision, text }`; recipient-targeted Sharer plain-text update   |
+| type                               | sender → recipient         | purpose                                                                        |
+| ---------------------------------- | -------------------------- | ------------------------------------------------------------------------------ |
+| `remote-control:request`           | Controller → Sharer        | carries a server-issued request id to wake consent UI                          |
+| `remote-control:denied`            | Sharer → Controller        | transient denial UX after the API decision                                     |
+| `remote-control:agent-unavailable` | Sharer → Controller        | addressed recovery hint when the Control Agent handoff is not detected         |
+| `remote-control:input`             | Controller → Control Agent | `{ sessionId, sequence, event }`; transport only, never authority              |
+| `remote-control:clipboard-copy`    | Controller → Control Agent | `{ sessionId, sequence }`; injects the Sharer's native Copy shortcut           |
+| `remote-control:clipboard-paste`   | Controller → Control Agent | `{ sessionId, sequence, text }`; writes bounded plain text, then injects Paste |
+| `remote-control:clipboard-update`  | Control Agent → Controller | `{ sessionId, revision, text }`; recipient-targeted Sharer plain-text update   |
 
 Input events are bounded, normalized mouse `move/down/up/scroll`, keyboard `key`
 down/up, and `release-all`. Pointer coordinates are in `[0,1]` of the published

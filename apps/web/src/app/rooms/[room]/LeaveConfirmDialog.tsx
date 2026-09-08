@@ -21,7 +21,11 @@ export default function LeaveConfirmDialog({ open, onConfirm, onCancel }: { open
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onCancel}>Cancel</AlertDialogCancel>
-          <AlertDialogAction variant="destructive" onClick={onConfirm} className="signal-call-dialog-action-danger bg-destructive text-black hover:bg-destructive/90">
+          <AlertDialogAction
+            variant="destructive"
+            onClick={onConfirm}
+            className="signal-call-dialog-action-danger bg-destructive text-black hover:bg-destructive/90"
+          >
             Leave
           </AlertDialogAction>
         </AlertDialogFooter>

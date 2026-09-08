@@ -128,19 +128,17 @@ describe('rich picture-in-picture rules', () => {
   });
 
   it('orders pin, active speaker, remote participants, then local and deduplicates identities', () => {
-    const result = orderPictureInPictureTracks(
-      [track('local', true), track('remote-a'), track('remote-b'), track('remote-a'), track('remote-c')],
-      { pinnedIdentity: 'remote-b', activeIdentity: 'remote-c', max: 4 },
-    );
+    const result = orderPictureInPictureTracks([track('local', true), track('remote-a'), track('remote-b'), track('remote-a'), track('remote-c')], {
+      pinnedIdentity: 'remote-b',
+      activeIdentity: 'remote-c',
+      max: 4,
+    });
     expect(result.tracks.map((item) => item.participant.identity)).toEqual(['remote-b', 'remote-c', 'remote-a', 'local']);
     expect(result.omittedCount).toBe(0);
   });
 
   it('reports omitted people after the four-tile cap', () => {
-    const result = orderPictureInPictureTracks(
-      [track('local', true), track('one'), track('two'), track('three'), track('four'), track('five')],
-      {},
-    );
+    const result = orderPictureInPictureTracks([track('local', true), track('one'), track('two'), track('three'), track('four'), track('five')], {});
     expect(result.tracks).toHaveLength(4);
     expect(result.omittedCount).toBe(2);
   });

@@ -27,6 +27,7 @@ import { usePresentation } from '@/components/call/usePresentation';
 import { useRecording } from '@/components/call/useRecording';
 import { useRemoteControl } from '@/components/call/useRemoteControl';
 import { setCallNoticeTrayOffset } from '@/lib/systemNotices';
+import MaintenanceWarning from '@/components/maintenance/MaintenanceWarning';
 import LeaveConfirmDialog from './LeaveConfirmDialog';
 
 /*
@@ -210,6 +211,7 @@ export default function CallStage({
           ) : (
             <MeetingLoadingScreen stage="connecting" />
           )}
+          <MaintenanceWarning />
           <RoomAudioRenderer />
         </LiveKitRoom>
         <LeaveConfirmDialog open={showLeaveDialog} onConfirm={confirmLeave} onCancel={() => setShowLeaveDialog(false)} />
@@ -417,7 +419,10 @@ function CallView({
       />
       {overlay}
       {pipFailure && (
-        <div role="status" className="signal-call-pip-failure fixed bottom-24 left-1/2 z-30 max-w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 rounded-lg px-4 py-3 text-sm">
+        <div
+          role="status"
+          className="signal-call-pip-failure fixed bottom-24 left-1/2 z-30 max-w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 rounded-lg px-4 py-3 text-sm"
+        >
           {pipFailure}
         </div>
       )}
@@ -430,9 +435,21 @@ function CallView({
             iAmPresenting={presentation.iAmPresenting}
             presentationDisplaySurface={presentation.displaySurface}
             recordingActive={recording.recordingActive}
-            recordingNotice={recording.incoming ? `${recording.incoming.requesterName} requested recording.` : recording.phase === 'pending' ? 'Recording request pending.' : null}
+            recordingNotice={
+              recording.incoming
+                ? `${recording.incoming.requesterName} requested recording.`
+                : recording.phase === 'pending'
+                  ? 'Recording request pending.'
+                  : null
+            }
             hostWaitingCount={hostWaitingCount}
-            presentationNotice={presentation.incoming ? `${presentation.incoming.requesterName} wants to present.` : presentation.outgoing ? `Waiting for ${presentation.outgoing.presenterName}.` : null}
+            presentationNotice={
+              presentation.incoming
+                ? `${presentation.incoming.requesterName} wants to present.`
+                : presentation.outgoing
+                  ? `Waiting for ${presentation.outgoing.presenterName}.`
+                  : null
+            }
             remoteControlActive={!!remoteControl.session}
             remoteControlRole={remoteControl.iAmSharer ? 'sharer' : remoteControl.iAmController ? 'controller' : 'participant'}
             remoteControlNotice={
@@ -440,7 +457,12 @@ function CallView({
                 ? `${remoteControl.incomingRequest.controllerName} requested Remote Control.`
                 : remoteControl.outgoingRequest
                   ? `Waiting for ${remoteControl.outgoingRequest.sharerName}.`
-                  : remoteControl.notice?.message ?? (remoteControl.session ? (remoteControl.iAmSharer ? 'Remote Control active. Your display stays hidden here.' : 'Remote Control active. Display is read-only.') : null)
+                  : (remoteControl.notice?.message ??
+                    (remoteControl.session
+                      ? remoteControl.iAmSharer
+                        ? 'Remote Control active. Your display stays hidden here.'
+                        : 'Remote Control active. Display is read-only.'
+                      : null))
             }
             messages={chatMessages}
             onSend={send}

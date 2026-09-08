@@ -13,7 +13,13 @@ export function roomFromInput(input: string): string {
     const roomSegment = url.pathname.split('/').filter(Boolean).at(-1);
     return roomSegment ?? '';
   } catch {
-    return trimmed.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean).at(-1) ?? '';
+    return (
+      trimmed
+        .replace(/^\/+|\/+$/g, '')
+        .split('/')
+        .filter(Boolean)
+        .at(-1) ?? ''
+    );
   }
 }
 
@@ -39,7 +45,9 @@ export default function LandingJoinForm() {
         <label htmlFor="landing-room" className="landing-field-label">
           Room code or meeting link
         </label>
-        <p id="landing-room-help">Paste a code like <code>abc-defg-hij</code> or a full Huddle URL.</p>
+        <p id="landing-room-help">
+          Paste a code like <code>abc-defg-hij</code> or a full Huddle URL.
+        </p>
       </div>
       <div className="landing-join-row">
         <div className="landing-input-wrap">
@@ -63,7 +71,11 @@ export default function LandingJoinForm() {
           <ArrowRight className="size-4" strokeWidth={1.8} />
         </button>
       </div>
-      {error && <p className="landing-form-error" role="alert">{error}</p>}
+      {error && (
+        <p className="landing-form-error" role="alert">
+          {error}
+        </p>
+      )}
     </form>
   );
 }

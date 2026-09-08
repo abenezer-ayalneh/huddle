@@ -12,7 +12,23 @@
 
 # Frontend (Next.js)
 {$APP_DOMAIN} {
-	reverse_proxy web:3000
+  @maintenance file {
+    root /srv/maintenance-state
+    try_files enabled
+  }
+  handle @maintenance {
+    root * /srv/maintenance
+    rewrite * /index.html
+    header Cache-Control "no-store"
+    header Retry-After "60"
+    header X-Robots-Tag "noindex"
+    file_server {
+      status 503
+    }
+  }
+  handle {
+    reverse_proxy web:3000
+  }
 }
 
 # API (NestJS) — REST + BetterAuth + LiveKit webhook

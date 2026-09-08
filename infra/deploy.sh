@@ -19,11 +19,17 @@ echo "==> Now at: $(git rev-parse --short HEAD)"
 echo "==> Validating production configuration"
 node scripts/validate-production-env.mjs --env .env.prod
 
-echo "==> Building images and starting the stack"
-$COMPOSE up -d --build
+mkdir -p infra/maintenance-state
 
-echo "==> Applying database migrations"
-$COMPOSE exec -T api node node_modules/prisma/build/index.js migrate deploy
+echo "==> Building images"
+$COMPOSE build
+
+echo "==> Applying database migrations before the updated API starts"
+$COMPOSE up -d postgres redis
+$COMPOSE run --rm --no-deps api node node_modules/prisma/build/index.js migrate deploy
+
+echo "==> Starting the updated stack"
+$COMPOSE up -d
 
 echo "==> Pruning dangling images"
 docker image prune -f

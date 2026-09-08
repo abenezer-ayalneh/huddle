@@ -1,3 +1,4 @@
+import MaintenanceNavigation from '@/components/maintenance/MaintenanceNavigation';
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 import Script from 'next/script';
@@ -150,6 +151,7 @@ export default function RootLayout({
         {/* App-wide Fault surfaces: the quiet reachability banner + the Fault
             toast, mounted once above every route (docs/adr/0017, 0019). */}
         <FaultLayer />
+        <MaintenanceNavigation />
       </body>
     </html>
   );

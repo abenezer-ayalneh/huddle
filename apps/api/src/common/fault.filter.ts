@@ -19,7 +19,7 @@ export class FaultFilter implements ExceptionFilter {
     const res = host.switchToHttp().getResponse<Response>();
     const normalized = this.normalize(exception);
 
-    if (normalized.status >= 500) {
+    if (normalized.status >= 500 && (normalized.passthrough || normalized.envelope.code !== 'MAINTENANCE')) {
       // 5xx Faults: log loudly with the original stack for diagnosis.
       const code = normalized.passthrough ? FaultCode.INTERNAL : normalized.envelope.code;
       Sentry.captureException(exception, {

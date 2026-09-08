@@ -176,7 +176,9 @@ export function usePictureInPicture(
             if (!api) throw new Error('Document PiP is unavailable');
             const existing = api.window;
             const nextWindow = existing ?? (await api.requestWindow({ width: PIP_WIDTH, height: PIP_HEIGHT }));
-            const root = existing ? portalRootRef.current ?? copyOpenerDocument(document, nextWindow.document) : copyOpenerDocument(document, nextWindow.document);
+            const root = existing
+              ? (portalRootRef.current ?? copyOpenerDocument(document, nextWindow.document))
+              : copyOpenerDocument(document, nextWindow.document);
             pipWindowRef.current = nextWindow;
             portalRootRef.current = root;
             nextWindow.addEventListener('pagehide', () => cleanupDocument(nextWindow), { once: true });
@@ -193,7 +195,11 @@ export function usePictureInPicture(
         }
 
         if (!(await openNative(reason))) {
-          setFailure(reason === 'manual' ? 'Picture-in-picture could not be opened in this browser.' : 'Automatic picture-in-picture was blocked. Use the browser site controls or open it from More.');
+          setFailure(
+            reason === 'manual'
+              ? 'Picture-in-picture could not be opened in this browser.'
+              : 'Automatic picture-in-picture was blocked. Use the browser site controls or open it from More.',
+          );
         }
       } finally {
         openingRef.current = false;
@@ -289,7 +295,8 @@ export function usePictureInPicture(
   }, [autoPreference, capabilities.document, enter]);
 
   useEffect(() => {
-    if (!options.presenting || !isEligiblePresentationSurface(options.presentationSurface) || active || !pipPreferenceAllows(autoPreference, 'presentation')) return;
+    if (!options.presenting || !isEligiblePresentationSurface(options.presentationSurface) || active || !pipPreferenceAllows(autoPreference, 'presentation'))
+      return;
     // Automatic entry is an intentional external-system side effect. The
     // browser may reject it without a transient activation, which enter()
     // converts into recoverable state.

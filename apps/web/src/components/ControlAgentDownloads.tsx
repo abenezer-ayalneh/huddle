@@ -79,7 +79,8 @@ export default function ControlAgentDownloads({ release, repositoryUrl }: { rele
                 </div>
                 <div className="downloads-architecture__meta">
                   <span>
-                    <Cpu className="size-3.5" aria-hidden="true" /> {release?.verified ? release.version : noCostBeta ? 'No-cost public beta' : 'Release details unavailable'}
+                    <Cpu className="size-3.5" aria-hidden="true" />{' '}
+                    {release?.verified ? release.version : noCostBeta ? 'No-cost public beta' : 'Release details unavailable'}
                   </span>
                   {artifact?.sizeBytes ? <span>{formatBytes(artifact.sizeBytes)} · SHA-256 published</span> : null}
                 </div>
@@ -131,7 +132,11 @@ export default function ControlAgentDownloads({ release, repositoryUrl }: { rele
             <CheckCircle2 className="size-5" aria-hidden="true" />
             <div>
               <strong>Install deliberately</strong>
-              <p>{release?.verified ? 'Open the signed DMG, drag Huddle Control Agent to Applications, then launch it.' : 'When a verified release is configured, open its DMG, drag Huddle Control Agent to Applications, then launch it.'}</p>
+              <p>
+                {release?.verified
+                  ? 'Open the signed DMG, drag Huddle Control Agent to Applications, then launch it.'
+                  : 'When a verified release is configured, open its DMG, drag Huddle Control Agent to Applications, then launch it.'}
+              </p>
             </div>
           </li>
           <li>

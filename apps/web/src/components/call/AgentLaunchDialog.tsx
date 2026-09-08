@@ -95,9 +95,15 @@ export default function AgentLaunchDialog({
 
   if (handoffUnavailableSessionId === bootstrap.sessionId) {
     return (
-      <div role="status" aria-live="polite" className="signal-call-agent-recovery glass-strong pointer-events-auto fixed right-4 top-4 z-50 w-[min(92vw,26rem)] rounded-xl p-4 text-white shadow-[0_12px_36px_oklch(0_0_0/0.35)] ring-1 ring-amber-200/30">
+      <div
+        role="status"
+        aria-live="polite"
+        className="signal-call-agent-recovery glass-strong pointer-events-auto fixed right-4 top-4 z-50 w-[min(92vw,26rem)] rounded-xl p-4 text-white shadow-[0_12px_36px_oklch(0_0_0/0.35)] ring-1 ring-amber-200/30"
+      >
         <h2 className="text-sm font-semibold">Control Agent not detected</h2>
-        <p className="mt-1 text-xs leading-5 text-white/70">Huddle could not confirm that the Control Agent opened. If it is not installed, download it, then return to this call and try again.</p>
+        <p className="mt-1 text-xs leading-5 text-white/70">
+          Huddle could not confirm that the Control Agent opened. If it is not installed, download it, then return to this call and try again.
+        </p>
         <div className="mt-3 flex justify-end gap-2">
           <a
             href="/downloads?from=remote-control"
@@ -108,7 +114,12 @@ export default function AgentLaunchDialog({
             <Download className="mr-1 inline h-3.5 w-3.5" />
             Open downloads
           </a>
-          <button type="button" disabled={opening} onClick={() => void retry()} className="rounded-lg bg-white/10 px-3 py-2 text-xs text-white/80 hover:bg-white/20">
+          <button
+            type="button"
+            disabled={opening}
+            onClick={() => void retry()}
+            className="rounded-lg bg-white/10 px-3 py-2 text-xs text-white/80 hover:bg-white/20"
+          >
             {opening ? 'Preparing…' : 'Try again'}
           </button>
           <button type="button" onClick={onDismiss} className="rounded-lg bg-white/10 px-3 py-2 text-xs text-white/65 hover:bg-white/20">
@@ -119,7 +130,11 @@ export default function AgentLaunchDialog({
     );
   }
   return (
-    <div role="dialog" aria-modal="true" className="signal-call-agent-backdrop pointer-events-auto fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="signal-call-agent-backdrop pointer-events-auto fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4"
+    >
       <div className="signal-call-agent-dialog glass-strong w-full max-w-md space-y-4 rounded-2xl p-6 text-white">
         <div>
           <h2 className="font-display text-lg font-semibold">Opening the Control Agent</h2>

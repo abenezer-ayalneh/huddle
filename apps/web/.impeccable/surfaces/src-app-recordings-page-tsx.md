@@ -1,8 +1,8 @@
 ---
 version: 1
-slug: "src-app-recordings-page-tsx"
-primary_target: "src/app/recordings/page.tsx"
-related_targets: ["src/app/recordings/loading.tsx","src/app/recordings/RecordingsPageShell.tsx"]
+slug: 'src-app-recordings-page-tsx'
+primary_target: 'src/app/recordings/page.tsx'
+related_targets: ['src/app/recordings/loading.tsx', 'src/app/recordings/RecordingsPageShell.tsx']
 ---
 
 # Recordings archive

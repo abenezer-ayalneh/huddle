@@ -237,3 +237,24 @@ model RemoteControlSession {
   @@index([roomId, status])
   @@map("remote_control_session")
 }
+
+// Singleton operator switch. The deadline survives API restarts.
+model MaintenanceState {
+  id        Int      @id @default(1)
+  enabled   Boolean  @default(false)
+  startsAt  DateTime
+  message   String
+  actorId   String
+  updatedAt DateTime @updatedAt
+
+  @@map("maintenance_state")
+}
+
+// Cleanup survives a successful LiveKit delete followed by an API/Redis failure.
+model MaintenanceCleanup {
+  roomSid   String @id
+  roomName  String
+  createdAt DateTime @default(now())
+
+  @@map("maintenance_cleanup")
+}

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Maintenance · Huddle</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f6eedb;
+        --ink: #141414;
+        --muted: #62594f;
+        --accent: #8d2676;
+        --button: #faf4e9;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: Arial, sans-serif;
+      }
+      header {
+        padding: 32px max(24px, 5vw);
+        font-size: 24px;
+        font-weight: 800;
+      }
+      main {
+        max-width: 720px;
+        margin: 12vh auto;
+        padding: 24px;
+      }
+      h1 {
+        font-size: clamp(36px, 7vw, 64px);
+        line-height: 1.08;
+        letter-spacing: -0.03em;
+      }
+      p {
+        color: var(--muted);
+        line-height: 1.7;
+        font-size: 18px;
+        max-width: 56ch;
+      }
+      a {
+        display: inline-block;
+        padding: 14px 22px;
+        margin-top: 24px;
+        background: var(--accent);
+        color: var(--button);
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 700;
+      }
+      a:focus-visible {
+        outline: 3px solid var(--accent);
+        outline-offset: 5px;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #1a0f0f;
+          --ink: #faf4e9;
+          --muted: #d1c1ad;
+          --accent: #c15a9e;
+          --button: #1a0f0f;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>Huddle</header>
+    <main>
+      <p>Maintenance</p>
+      <h1>A short pause.<br />Then back together.</h1>
+      <p>Huddle is temporarily unavailable while we make improvements. Please check back shortly.</p>
+      <a href="/">Check again</a>
+    </main>
+  </body>
+</html>

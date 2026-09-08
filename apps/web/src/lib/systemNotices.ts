@@ -13,11 +13,12 @@ export type CallConnectionNotice = {
 type CallNoticeState = {
   connection: CallConnectionNotice | null;
   trayOffset: number;
+  maintenance: string | null;
 };
 
-let state: CallNoticeState = { connection: null, trayOffset: 0 };
+let state: CallNoticeState = { connection: null, trayOffset: 0, maintenance: null };
 const listeners = new Set<() => void>();
-const EMPTY_STATE: CallNoticeState = { connection: null, trayOffset: 0 };
+const EMPTY_STATE: CallNoticeState = { connection: null, trayOffset: 0, maintenance: null };
 
 function notify() {
   listeners.forEach((listener) => listener());
@@ -50,4 +51,10 @@ export function useCallNoticeState(): CallNoticeState {
     () => state,
     () => EMPTY_STATE,
   );
+}
+
+export function setMaintenanceNotice(message: string | null) {
+  if (state.maintenance === message) return;
+  state = { ...state, maintenance: message };
+  notify();
 }

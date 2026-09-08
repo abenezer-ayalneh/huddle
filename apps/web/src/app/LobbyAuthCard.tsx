@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import OwnerMaintenanceLink from '@/components/maintenance/OwnerMaintenanceLink';
 import { useRouter } from 'next/navigation';
 import { Calendar, Check, Copy, LogOut, MailCheck, Play } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
@@ -121,9 +122,7 @@ function SignIn() {
         <div className="lobby-panel-heading">
           <p className="lobby-panel-eyebrow">HOST ACCESS</p>
           <h2>{mode === 'signup' ? 'Create your account' : 'Welcome back'}</h2>
-          <p>
-            {mode === 'signup' ? 'Create an account to host or schedule a meeting.' : 'Sign in to host or schedule a meeting.'}
-          </p>
+          <p>{mode === 'signup' ? 'Create an account to host or schedule a meeting.' : 'Sign in to host or schedule a meeting.'}</p>
         </div>
 
         <form
@@ -158,11 +157,7 @@ function SignIn() {
 
           {error && <p className="lobby-form-error">{error}</p>}
 
-          <button
-            type="submit"
-            disabled={!canSubmit}
-            className="lobby-primary-button lobby-primary-button-full"
-          >
+          <button type="submit" disabled={!canSubmit} className="lobby-primary-button lobby-primary-button-full">
             {busy && <LoadingSpinner className="h-4 w-4" />}
             {!busy && (mode === 'signup' ? 'Create account' : 'Sign in')}
           </button>
@@ -195,15 +190,8 @@ function SignIn() {
         </div>
 
         <p className="lobby-legal-copy">
-          By signing in or creating an account, you agree to the{' '}
-          <Link href="/terms">
-            Terms of Service
-          </Link>{' '}
-          and acknowledge the{' '}
-          <Link href="/privacy">
-            Privacy Policy
-          </Link>
-          .
+          By signing in or creating an account, you agree to the <Link href="/terms">Terms of Service</Link> and acknowledge the{' '}
+          <Link href="/privacy">Privacy Policy</Link>.
         </p>
 
         <p className="lobby-guest-note">Have a meeting link? Open it directly. You do not need an account to join.</p>
@@ -301,21 +289,12 @@ function HostDashboard({ userName, onSignOut }: { userName: string; onSignOut: (
       </header>
 
       <div className="lobby-room-actions">
-        <button
-          type="button"
-          onClick={handleInstant}
-          disabled={busy}
-          className="lobby-primary-button"
-        >
+        <button type="button" onClick={handleInstant} disabled={busy} className="lobby-primary-button">
           {busy ? <LoadingSpinner className="h-4 w-4" /> : <Play className="h-4 w-4" />}
           {!busy && 'Instant'}
         </button>
 
-        <DateTimePicker
-          onSchedule={handleSchedule}
-          disabled={busy}
-          triggerClassName="lobby-secondary-button"
-        >
+        <DateTimePicker onSchedule={handleSchedule} disabled={busy} triggerClassName="lobby-secondary-button">
           <span>Schedule</span>
           <Calendar size={16} />
         </DateTimePicker>
@@ -326,6 +305,7 @@ function HostDashboard({ userName, onSignOut }: { userName: string; onSignOut: (
       <Link href="/recordings" className="lobby-recordings-link">
         View past recordings
       </Link>
+      <OwnerMaintenanceLink />
     </div>
   );
 }
@@ -337,9 +317,7 @@ function MeetingList({ rooms, onStart }: { rooms: RoomSummary[] | null; onStart:
   }
   return (
     <div className="lobby-meeting-list">
-      <h3>
-        Upcoming meetings
-      </h3>
+      <h3>Upcoming meetings</h3>
       <ul>
         {rooms.map((r) => (
           <MeetingRow key={r.room} room={r} onStart={() => onStart(r.room)} />
@@ -387,14 +365,7 @@ function MeetingRow({ room, onStart }: { room: RoomSummary; onStart: () => void 
             onClick={copy}
             disabled={starting}
           />
-          <button
-            type="button"
-            disabled={starting}
-            onClick={handleStart}
-            className="lobby-start-button"
-            aria-label="Start meeting"
-            title="Start meeting"
-          >
+          <button type="button" disabled={starting} onClick={handleStart} className="lobby-start-button" aria-label="Start meeting" title="Start meeting">
             {starting ? <LoadingSpinner className="h-4 w-4" /> : <Play className="h-5 w-5" />}
           </button>
         </div>

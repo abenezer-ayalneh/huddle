@@ -1,8 +1,9 @@
 ---
 version: 1
-slug: "src-app-rooms-room-callstage-tsx"
-primary_target: "src/app/rooms/[room]/CallStage.tsx"
-related_targets: ["src/components/call/VideoGrid.tsx","src/components/call/ControlBar.tsx","src/components/call/ChatPanel.tsx","src/app/rooms/[room]/HostPanel.tsx"]
+slug: 'src-app-rooms-room-callstage-tsx'
+primary_target: 'src/app/rooms/[room]/CallStage.tsx'
+related_targets:
+  ['src/components/call/VideoGrid.tsx', 'src/components/call/ControlBar.tsx', 'src/components/call/ChatPanel.tsx', 'src/app/rooms/[room]/HostPanel.tsx']
 ---
 
 # Signal Handoff call workspace

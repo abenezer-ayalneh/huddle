@@ -3,14 +3,20 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const RELEASE_KEYS = [
-  'CONTROL_AGENT_RELEASE_CHANNEL_URL',
-  'CONTROL_AGENT_RELEASES_URL',
-  'CONTROL_AGENT_ISSUES_URL',
-  'CONTROL_AGENT_UPDATE_PUBLIC_KEY',
-];
+const RELEASE_KEYS = ['CONTROL_AGENT_RELEASE_CHANNEL_URL', 'CONTROL_AGENT_RELEASES_URL', 'CONTROL_AGENT_ISSUES_URL', 'CONTROL_AGENT_UPDATE_PUBLIC_KEY'];
 
-const REQUIRED_KEYS = ['ACME_EMAIL', 'APP_DOMAIN', 'API_DOMAIN', 'LIVEKIT_DOMAIN', 'OPERATOR_NAME', 'OPERATOR_CONTACT_URL', 'PROJECT_REPOSITORY_URL'];
+const REQUIRED_KEYS = [
+  'ACME_EMAIL',
+  'APP_DOMAIN',
+  'API_DOMAIN',
+  'LIVEKIT_DOMAIN',
+  'OPERATOR_NAME',
+  'OPERATOR_CONTACT_URL',
+  'PROJECT_REPOSITORY_URL',
+  // The owner control surface is intentionally unavailable until this is
+  // bound to one verified account in the target database.
+  'MAINTENANCE_OWNER_USER_ID',
+];
 
 export function parseEnv(source, file = '.env') {
   const env = {};

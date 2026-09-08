@@ -1,3 +1,4 @@
+import { BlockDuringMaintenance } from '../maintenance/maintenance.guard';
 import { Body, Controller, Get, Header, HttpCode, Param, Post, UseGuards } from '@nestjs/common';
 import { Participant, ParticipantGuard, type CallParticipant } from './participant.guard';
 import { RedeemControlAgentTokenDto, RequestRemoteControlDto } from './dto/remote-control.dto';
@@ -12,6 +13,7 @@ export class RemoteControlController {
 
   @UseGuards(ParticipantGuard)
   @Post('requests')
+  @BlockDuringMaintenance()
   async request(@Param('room') room: string, @Body() dto: RequestRemoteControlDto, @Participant() participant: CallParticipant) {
     return this.remoteControl.requestControl(room, participant, dto.sharerIdentity);
   }
@@ -35,6 +37,7 @@ export class RemoteControlController {
   @UseGuards(ParticipantGuard)
   @Post('requests/:requestId/approve')
   @HttpCode(200)
+  @BlockDuringMaintenance()
   async approve(@Param('room') room: string, @Param('requestId') requestId: string, @Participant() participant: CallParticipant) {
     return this.remoteControl.approve(room, requestId, participant);
   }
@@ -48,6 +51,7 @@ export class RemoteControlController {
 
   @Post(':sessionId/helper-token')
   @HttpCode(200)
+  @BlockDuringMaintenance()
   async helperToken(@Param('room') room: string, @Param('sessionId') sessionId: string, @Body() dto: RedeemControlAgentTokenDto) {
     return this.remoteControl.redeemHelperToken(room, sessionId, dto.bootstrapCode);
   }
@@ -55,6 +59,7 @@ export class RemoteControlController {
   @UseGuards(ParticipantGuard)
   @Post(':sessionId/bootstrap')
   @HttpCode(200)
+  @BlockDuringMaintenance()
   async reissueBootstrap(@Param('room') room: string, @Param('sessionId') sessionId: string, @Participant() participant: CallParticipant) {
     return this.remoteControl.reissueBootstrap(room, sessionId, participant);
   }
@@ -69,6 +74,7 @@ export class RemoteControlController {
   @UseGuards(ParticipantGuard)
   @Post(':sessionId/renew')
   @HttpCode(200)
+  @BlockDuringMaintenance()
   async renew(@Param('room') room: string, @Param('sessionId') sessionId: string, @Participant() participant: CallParticipant) {
     return this.remoteControl.renew(room, sessionId, participant);
   }

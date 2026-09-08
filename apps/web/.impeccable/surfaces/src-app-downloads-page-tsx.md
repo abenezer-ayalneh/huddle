@@ -1,8 +1,8 @@
 ---
 version: 1
-slug: "src-app-downloads-page-tsx"
-primary_target: "src/app/downloads/page.tsx"
-related_targets: ["src/components/ControlAgentDownloads.tsx"]
+slug: 'src-app-downloads-page-tsx'
+primary_target: 'src/app/downloads/page.tsx'
+related_targets: ['src/components/ControlAgentDownloads.tsx']
 ---
 
 # Downloads — Signal Handoff release dossier

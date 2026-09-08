@@ -46,9 +46,9 @@ export default function TermsPage() {
           and any Control Agent distributed by this deployment. The operator is <strong>{publicConfig.operatorName}</strong> ("we," "us," or "our").
         </p>
         <p>
-          By creating an account, joining or hosting a meeting, downloading or using the Control Agent, or otherwise using this deployment, you agree to
-          these Terms and acknowledge the Privacy Policy. If you use Huddle for an organization, you confirm that you have authority to bind that organization.
-          If you do not agree, do not use the service.
+          By creating an account, joining or hosting a meeting, downloading or using the Control Agent, or otherwise using this deployment, you agree to these
+          Terms and acknowledge the Privacy Policy. If you use Huddle for an organization, you confirm that you have authority to bind that organization. If you
+          do not agree, do not use the service.
         </p>
         <LegalCallout title="Operator review required">
           <p>
@@ -65,9 +65,9 @@ export default function TermsPage() {
           Google Drive recording delivery, and attended macOS Remote Control.
         </p>
         <p>
-          This deployment is currently offered without a subscription fee. We may add, remove, limit, or change features, providers, capacity, or
-          availability and may introduce paid features later with notice before charges apply. We do not promise that every feature will be available in every
-          browser, device, country, or self-hosted deployment.
+          This deployment is currently offered without a subscription fee. We may add, remove, limit, or change features, providers, capacity, or availability
+          and may introduce paid features later with notice before charges apply. We do not promise that every feature will be available in every browser,
+          device, country, or self-hosted deployment.
         </p>
       </LegalSection>
 
@@ -139,8 +139,8 @@ export default function TermsPage() {
         <p>
           You represent that you have the rights and permissions needed to provide Your Content and permit this processing. You are responsible for deciding
           whether Huddle is appropriate for confidential, regulated, export-controlled, health, financial, employment, educational, or other sensitive
-          information. This deployment is not offered under a special data-processing, business-associate, archival, or regulated-industry agreement unless
-          we sign one separately.
+          information. This deployment is not offered under a special data-processing, business-associate, archival, or regulated-industry agreement unless we
+          sign one separately.
         </p>
         <p>
           Other participants retain rights in their content. Access to a meeting does not give you permission to copy, publish, train models on, or reuse
@@ -285,9 +285,9 @@ export default function TermsPage() {
           participant conduct; or actions taken through Remote Control, even if advised that such harm was possible.
         </p>
         <p>
-          To the maximum extent permitted by law, our total liability arising from or related to this deployment or these Terms will not exceed the greater
-          of the amount you paid us for the service during the 12 months before the event giving rise to the claim or <strong>USD 50</strong>. This limit does
-          not apply where liability cannot lawfully be limited, including liability arising from fraud or willful misconduct where applicable.
+          To the maximum extent permitted by law, our total liability arising from or related to this deployment or these Terms will not exceed the greater of
+          the amount you paid us for the service during the 12 months before the event giving rise to the claim or <strong>USD 50</strong>. This limit does not
+          apply where liability cannot lawfully be limited, including liability arising from fraud or willful misconduct where applicable.
         </p>
       </LegalSection>
 
@@ -324,8 +324,8 @@ export default function TermsPage() {
       <LegalSection id="contact" title="Contact">
         <p>
           Send questions, legal notices, security reports, or account-deletion requests to <strong>{publicConfig.operatorName}</strong> through the{' '}
-          <a href={publicConfig.operatorContactUrl}>operator contact page</a>. Include "Huddle" and the nature of the request, but do not send passwords,
-          Host keys, meeting tokens, Control Agent links, Google tokens, or other secrets.
+          <a href={publicConfig.operatorContactUrl}>operator contact page</a>. Include "Huddle" and the nature of the request, but do not send passwords, Host
+          keys, meeting tokens, Control Agent links, Google tokens, or other secrets.
         </p>
       </LegalSection>
     </LegalPage>

@@ -15,8 +15,7 @@ const jsonLd = [
     url: siteUrl,
     codeRepository: projectRepositoryUrl,
     license: 'https://www.apache.org/licenses/LICENSE-2.0',
-    description:
-      'Huddle is self-hosted browser meeting software for teams that want to review, decide, and work together in a room they control.',
+    description: 'Huddle is self-hosted browser meeting software for teams that want to review, decide, and work together in a room they control.',
     featureList: [
       'Shared-link guest entry without an account',
       'Device Check and Host-controlled Waiting Room admission',
@@ -43,17 +42,26 @@ const jsonLd = [
       {
         '@type': 'Question',
         name: 'Do guests need an account to join a Huddle meeting?',
-        acceptedAnswer: { '@type': 'Answer', text: 'No. Guests open a shared Room Code link, complete the Device Check, Knock, and wait for a Host to Admit them.' },
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'No. Guests open a shared Room Code link, complete the Device Check, Knock, and wait for a Host to Admit them.',
+        },
       },
       {
         '@type': 'Question',
         name: 'Is Huddle self-hosted?',
-        acceptedAnswer: { '@type': 'Answer', text: 'Yes. Teams run the web app, API, LiveKit, Redis, Postgres, MinIO, and Caddy on infrastructure they control.' },
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Yes. Teams run the web app, API, LiveKit, Redis, Postgres, MinIO, and Caddy on infrastructure they control.',
+        },
       },
       {
         '@type': 'Question',
         name: 'Is Huddle a hosted subscription service?',
-        acceptedAnswer: { '@type': 'Answer', text: 'No. Huddle is self-hosted software: each operator runs it on infrastructure they control and sets their own service policies.' },
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'No. Huddle is self-hosted software: each operator runs it on infrastructure they control and sets their own service policies.',
+        },
       },
       {
         '@type': 'Question',

@@ -44,3 +44,6 @@ infra/data/
 # Graphify knowledge graph (regenerable)
 graphify-out/
 infra/dev-tls/
+
+# Runtime SSH maintenance switch; survives deployment checkout updates.
+infra/maintenance-state/
