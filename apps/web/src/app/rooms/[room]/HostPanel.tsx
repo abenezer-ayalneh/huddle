@@ -29,15 +29,7 @@ function playDing() {
   }
 }
 
-export default function HostPanel({
-  room,
-  hostKey,
-  onWaitingCountChange,
-}: {
-  room: string;
-  hostKey: string;
-  onWaitingCountChange?: (count: number) => void;
-}) {
+export default function HostPanel({ room, hostKey, onWaitingCountChange }: { room: string; hostKey: string; onWaitingCountChange?: (count: number) => void }) {
   const participants = useRemoteParticipants();
   const humanParticipants = useMemo(() => participants.filter((participant) => !isControlAgentParticipant(participant)), [participants]);
   const controlAgents = useMemo(() => participants.filter((participant) => isControlAgentParticipant(participant)), [participants]);
