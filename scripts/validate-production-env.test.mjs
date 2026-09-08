@@ -38,3 +38,9 @@ test('requires TURN domain and certificates only when TURN is enabled', () => {
   assert.equal(errors.filter((error) => error.includes('turn-certs')).length, 2);
   assert.deepEqual(validateProductionEnv({ ...base, TURN_ENABLED: 'false' }, { root: '/definitely-not-a-repository' }), []);
 });
+
+test('defaults to Compose Caddy and rejects an unknown front door', () => {
+  assert.deepEqual(validateProductionEnv(base), []);
+  const errors = validateProductionEnv({ ...base, HUDDLE_FRONT_DOOR: 'nginx' });
+  assert.ok(errors.some((error) => error.includes('HUDDLE_FRONT_DOOR must be one of: compose, host')));
+});

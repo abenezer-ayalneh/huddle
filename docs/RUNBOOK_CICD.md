@@ -22,6 +22,9 @@ external configuration and recovery instead of duplicating either script.
   `git fetch origin`.
 - Production configuration passes `node scripts/validate-production-env.mjs
 --env .env.prod` on the VPS.
+- `HUDDLE_FRONT_DOOR=compose` is the default. If this VPS uses
+  `HUDDLE_FRONT_DOOR=host`, its Caddy has loaded `infra/huddle.caddy`, owns
+  ports 80/443, and proxies the configured loopback web/API ports.
 - The repository's `production` environment (if retained) has the intended
   reviewer policy. Deployment approval is an operator decision, not a CI check.
 
@@ -59,6 +62,10 @@ validates production configuration, creates `infra/maintenance-state/`, builds
 images, applies migrations before the new API starts, starts Compose, prunes
 dangling images, and waits up to 60 seconds for `/ready`.
 
+Compose Caddy starts by default. With `HUDDLE_FRONT_DOOR=host`, the script starts
+the same application services while scaling Compose Caddy to zero; the
+host-installed Caddy remains the only listener on ports 80/443.
+
 The hard reset is intentional for a dedicated deployment checkout, but it
 discards tracked local edits there. Keep only operator-owned untracked material
 such as `.env.prod` and TURN certificates on that host; do not hand-edit tracked
@@ -86,14 +93,14 @@ acceptance.
 
 ## Failure handling
 
-| Symptom                       | First response                                                                                                                                               |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Deploy never starts           | Check that `CI` is green on `main`, Actions secrets exist, and the production Environment is not awaiting approval. Manual dispatch isolates trigger issues. |
-| SSH or Docker fails           | Re-run the precondition SSH command; repair the deploy key, account, or Docker-group membership before retrying.                                             |
-| Configuration preflight fails | Run the displayed validator command on the VPS and correct only the reported `.env.prod` value. Do not guess or expose it in logs.                           |
-| Migration fails               | Stop. Inspect Postgres and API logs; never edit an applied migration. Add a forward migration or restore from a verified backup if required.                 |
-| `/ready` times out            | Inspect `docker compose ... logs api postgres redis`; resolve the dependency failure before another deploy.                                                  |
-| Caddy returns `502`           | Confirm the Compose `web` and `api` services are healthy and inspect their logs. The supported front door is the Compose Caddy service, not a host Caddy.    |
+| Symptom                       | First response                                                                                                                                                                                |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Deploy never starts           | Check that `CI` is green on `main`, Actions secrets exist, and the production Environment is not awaiting approval. Manual dispatch isolates trigger issues.                                  |
+| SSH or Docker fails           | Re-run the precondition SSH command; repair the deploy key, account, or Docker-group membership before retrying.                                                                              |
+| Configuration preflight fails | Run the displayed validator command on the VPS and correct only the reported `.env.prod` value. Do not guess or expose it in logs.                                                            |
+| Migration fails               | Stop. Inspect Postgres and API logs; never edit an applied migration. Add a forward migration or restore from a verified backup if required.                                                  |
+| `/ready` times out            | Inspect `docker compose ... logs api postgres redis`; resolve the dependency failure before another deploy.                                                                                   |
+| Caddy returns `502`           | Confirm the `web` and `api` services are healthy and inspect their logs. Check the selected front door: Compose Caddy by default, or the host Caddy site block when `HUDDLE_FRONT_DOOR=host`. |
 
 ## Rollback
 

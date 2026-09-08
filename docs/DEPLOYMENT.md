@@ -10,9 +10,10 @@ Caddy terminates TLS and reverse-proxies the web app, API, and LiveKit signal;
 the web and API run as containers; LiveKit serves WebRTC media directly; and the
 internal stores (Postgres, Redis, MinIO) stay on the Docker network.
 
-The Compose `caddy` service is the only supported front door. It terminates TLS
-and proxies to the web, API, and LiveKit services over the Docker network. Do not
-install or configure a second, host-level Caddy instance for this deployment.
+The Compose `caddy` service is the default front door. It terminates TLS and
+proxies to the web, API, and LiveKit services over the Docker network. A VPS
+that already owns Caddy can instead opt into host mode; exactly one Caddy must
+bind ports 80 and 443. See [Host-installed Caddy](#host-installed-caddy-option).
 
 ```
                           ┌──────────────────── VPS ───────────────────────────────┐
@@ -119,6 +120,9 @@ Edit `.env.prod` and set, at minimum:
 - **Domains:** `APP_DOMAIN`, `API_DOMAIN`, `LIVEKIT_DOMAIN`, `ACME_EMAIL`.
   Production Compose derives public site/API/auth/WSS URLs, CORS, and the
   Google Drive callback from these values; do not add duplicate URL settings.
+- **Front door:** leave `HUDDLE_FRONT_DOOR=compose` for the default Docker
+  Caddy. Set it to `host` only after the host Caddy site block below has been
+  installed and reloaded.
 - **Operator metadata:** `OPERATOR_NAME`, `OPERATOR_CONTACT_URL`, and
   `PROJECT_REPOSITORY_URL`. The preflight refuses to publish a site that could
   accidentally claim the official Huddle operator's identity.
@@ -340,6 +344,34 @@ docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml ps
 Caddy runs in the Compose stack, reads the three domain variables, issues the
 HTTP certificates, and proxies WSS for LiveKit signal automatically.
 
+### Host-installed Caddy option
+
+Use this only when the VPS already runs Caddy and you want that service to own
+ports 80/443. Compose Caddy remains the default for every other deployment.
+
+1. In `/home/huddle/.env.prod`, set `HUDDLE_FRONT_DOOR=host`.
+2. Confirm `WEB_HOST_PORT=3001` and `API_HOST_PORT=3002`, or update the matching
+   upstream ports in [`infra/huddle.caddy`](../infra/huddle.caddy).
+3. Link the versioned site block into the host Caddy import directory, validate,
+   and reload it. This VPS's existing layout uses `/etc/caddy/sites`:
+
+   ```bash
+   sudo ln -sfn /home/huddle/infra/huddle.caddy /etc/caddy/sites/huddle.caddy
+   sudo caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+   sudo systemctl reload caddy
+   ```
+
+   The file is intentionally specific to the Huddle VPS hostnames. If those
+   domains change, update the three site labels before reloading. It handles the
+   same HTTPS/WSS routes and the maintenance static-page marker as Compose
+   Caddy; WebRTC media and TURN still bypass it.
+
+4. Deploy with `bash infra/deploy.sh`. Host mode starts the application services
+   with `--scale caddy=0`, so Docker does not contend for ports 80/443.
+
+Do not run both Caddies. To return to the repository default, set
+`HUDDLE_FRONT_DOOR=compose`, stop the host Caddy, then deploy.
+
 ---
 
 ## 8. Apply database migrations
@@ -489,6 +521,9 @@ docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
   --env-file .env.prod up -d --build
 # then re-run migrations if the pull added any (step 8)
 ```
+
+For `HUDDLE_FRONT_DOOR=host`, append `--scale caddy=0` to the Compose command,
+or use `bash infra/deploy.sh`, which selects this automatically.
 
 > Changing any `NEXT_PUBLIC_*` value requires a `web` **rebuild** (those are
 > compiled into the browser bundle), which `--build` handles.

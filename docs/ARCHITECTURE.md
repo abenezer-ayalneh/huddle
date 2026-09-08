@@ -28,8 +28,9 @@ macOS Control Agent ── bootstrap/API + LiveKit ─────┘
 - **Egress** joins a room to create a composited recording and uploads it to
   MinIO. The API supplies the per-request storage target rather than giving the
   Egress container permanent S3 credentials.
-- **Caddy** is the supported production front door. It terminates HTTPS/WSS;
-  media, TURN, and UDP still reach LiveKit directly.
+- **Caddy** is the production front door. Compose Caddy is the default;
+  `HUDDLE_FRONT_DOOR=host` delegates HTTPS/WSS to an explicitly configured host
+  Caddy. Media, TURN, and UDP still reach LiveKit directly.
 
 ## Managed-room and media flow
 
@@ -150,8 +151,9 @@ surface and Caddy static override are separate recovery paths. See
 - **Local:** `.env`, `pnpm infra:up`, `pnpm dev:api`, and `pnpm dev:web`; see
   [SETUP.md](./SETUP.md). Local tunnel testing is a same-LAN HTTPS path, not a
   production topology.
-- **Production:** base Compose plus `docker-compose.prod.yml`, `.env.prod`, and
-  Compose Caddy; see [DEPLOYMENT.md](./DEPLOYMENT.md). It targets one VPS.
+- **Production:** base Compose plus `docker-compose.prod.yml` and `.env.prod`.
+  Compose Caddy is the default; host Caddy is an explicit per-VPS option. See
+  [DEPLOYMENT.md](./DEPLOYMENT.md). It targets one VPS.
 - **Future scale:** LiveKit is configured to share Redis and can be extended to
   additional SFUs, but every node needs its own reachable UDP/TURN network path.
   The checkout does not establish that a multi-node deployment has been run.

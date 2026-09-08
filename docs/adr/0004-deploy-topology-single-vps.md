@@ -36,6 +36,13 @@ certbot (manual cert wiring, verbose WSS/multi-upstream config), and HAProxy L4
 for the web app). For one host, Caddy is the lowest-friction option and is what
 LiveKit's own self-host docs recommend.
 
+Compose Caddy is the default implementation. An operator with an existing
+host-installed Caddy may set `HUDDLE_FRONT_DOOR=host`; deployment then scales the
+Compose Caddy service to zero and the host site block proxies the same loopback
+web/API/LiveKit endpoints. Exactly one Caddy owns ports 80/443. This exception
+preserves established VPS certificate/service management without making it the
+default for new deployments.
+
 ## TURN: LiveKit embedded TURN/TLS
 
 Clients behind restrictive NATs need a relay. We enable LiveKit's **built-in
@@ -57,9 +64,9 @@ Dev `infra/docker-compose.yml` is unchanged so local phases-0–8 flows keep
 working. A layered **`infra/docker-compose.prod.yml`** (`-f base -f prod`) adds
 Caddy, prod env, `restart: always`, the multi-node-capable LiveKit config, and
 removes host-port exposure for internal services. A **`.env.prod.example`**
-documents the prod-only variables. Chosen over compose `profiles` (interleaves
-dev/prod settings in one busy file) and a fully separate `infra/prod/` tree (more
-duplication to keep in sync).
+documents the prod-only variables, including the opt-in host-Caddy selector.
+Chosen over compose `profiles` (interleaves dev/prod settings in one busy file)
+and a fully separate `infra/prod/` tree (more duplication to keep in sync).
 
 ## CI/CD status update
 

@@ -1,0 +1,38 @@
+# Optional site block for the existing host-installed Caddy on Huddle's VPS.
+#
+# Compose Caddy is the repository default. Use this only with
+# HUDDLE_FRONT_DOOR=host in /home/huddle/.env.prod, then link or copy it into the
+# host Caddy import directory and reload that service. It deliberately proxies
+# only loopback ports published by Docker; do not expose web/api directly.
+#
+# If WEB_HOST_PORT or API_HOST_PORT changes, update the two reverse_proxy targets
+# below to match. The static maintenance rule reads the deployment checkout on
+# every request, so infra/maintenance.sh can toggle it without a Caddy reload.
+
+huddle.abenezer-ayalneh.dev {
+  @maintenance file {
+    root /home/huddle/infra/maintenance-state
+    try_files enabled
+  }
+  handle @maintenance {
+    root * /home/huddle/infra/maintenance
+    rewrite * /index.html
+    header Cache-Control "no-store"
+    header Retry-After "60"
+    header X-Robots-Tag "noindex"
+    file_server {
+      status 503
+    }
+  }
+  handle {
+    reverse_proxy 127.0.0.1:3001
+  }
+}
+
+huddle-api.abenezer-ayalneh.dev {
+  reverse_proxy 127.0.0.1:3002
+}
+
+huddle-livekit.abenezer-ayalneh.dev {
+  reverse_proxy 127.0.0.1:7880
+}

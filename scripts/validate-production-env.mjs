@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const RELEASE_KEYS = ['CONTROL_AGENT_RELEASE_CHANNEL_URL', 'CONTROL_AGENT_RELEASES_URL', 'CONTROL_AGENT_ISSUES_URL', 'CONTROL_AGENT_UPDATE_PUBLIC_KEY'];
+const FRONT_DOORS = ['compose', 'host'];
 
 const REQUIRED_KEYS = [
   'ACME_EMAIL',
@@ -91,6 +92,8 @@ export function validateProductionEnv(env, { root = process.cwd() } = {}) {
       if (!existsSync(resolve(root, file))) errors.push(`${file} is required when TURN_ENABLED=true`);
     }
   }
+  const frontDoor = env.HUDDLE_FRONT_DOOR ?? 'compose';
+  if (!FRONT_DOORS.includes(frontDoor)) errors.push(`HUDDLE_FRONT_DOOR must be one of: ${FRONT_DOORS.join(', ')}`);
   return errors;
 }
 
@@ -103,7 +106,8 @@ function main() {
   const env = parseEnv(source, envFile);
   const errors = validateProductionEnv(env);
   if (errors.length) throw new Error(`Production configuration is invalid:\n- ${errors.join('\n- ')}`);
-  if (args.includes('--print-ready-url')) process.stdout.write(`https://${env.API_DOMAIN}/ready\n`);
+  if (args.includes('--print-front-door')) process.stdout.write(`${env.HUDDLE_FRONT_DOOR ?? 'compose'}\n`);
+  else if (args.includes('--print-ready-url')) process.stdout.write(`https://${env.API_DOMAIN}/ready\n`);
   else process.stdout.write(`Production configuration is valid for ${env.APP_DOMAIN}.\n`);
 }
 

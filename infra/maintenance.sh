@@ -4,11 +4,21 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 compose=(docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml --env-file .env.prod)
 command="${1:-status}"
+front_door="$(node scripts/validate-production-env.mjs --env .env.prod --print-front-door)"
 mkdir -p infra/maintenance-state
+
+validate_front_door() {
+  case "$front_door" in
+    compose) "${compose[@]}" exec -T caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile ;;
+    host) systemctl is-active --quiet caddy || { echo 'Host Caddy is not active.' >&2; exit 1; } ;;
+    *) echo "Unsupported HUDDLE_FRONT_DOOR: $front_door" >&2; exit 1 ;;
+  esac
+}
+
 case "$command" in
   on)
-    # Validate the deployed configuration before changing the override marker.
-    "${compose[@]}" exec -T caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+    # The host mode relies on the already-loaded infra/huddle.caddy site block.
+    validate_front_door
     # This waits the full five minutes and verifies LiveKit rooms have ended.
     "${compose[@]}" run --rm --no-deps api node dist/maintenance-operator.js on
     touch infra/maintenance-state/enabled

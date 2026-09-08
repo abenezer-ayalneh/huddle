@@ -219,9 +219,10 @@ the user; see `docs/adr/0004-deploy-topology-single-vps.md` and
       state; production `LIVEKIT_CONFIG` sets `rtc.use_external_ip` and documents
       adding a second SFU node with its own public UDP range. Media reaches the
       owning node directly; the front door only fronts signal/WSS.
-- [x] **Caddy front door + TLS** — `infra/Caddyfile` + `caddy` service in the
-      prod override; automatic Let's Encrypt certs; reverse-proxies HTTPS/WSS to
-      `web`, `api`, and the LiveKit signal endpoint per-subdomain.
+- [x] **Caddy front door + TLS** — Compose Caddy is the default through
+      `infra/Caddyfile`; an explicit `HUDDLE_FRONT_DOOR=host` option supports an
+      existing host Caddy. Either reverse-proxies HTTPS/WSS to `web`, `api`, and
+      the LiveKit signal endpoint per-subdomain.
 - [x] **TURN** — LiveKit's optional **embedded TURN/TLS** configured through
       `TURN_ENABLED`/`TURN_DOMAIN`
       (cert dir `infra/turn-certs/`); no standalone coturn.
