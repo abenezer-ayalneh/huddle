@@ -34,19 +34,6 @@ jobs:
             cd /home/huddle
             # Sync the tree FIRST so infra/deploy.sh (and any change to it) is on
             # disk before we invoke it — the script can't pull itself into existence.
-            if ! git fetch --prune origin; then
-              case "$(git remote get-url origin)" in
-                git@github.com:*|ssh://git@github.com/*|ssh://git@github.com:*|ssh://github.com/*|ssh://github.com:*)
-                  # The VPS may not have outbound SSH port 22. GitHub's SSH
-                  # service also listens on 443; keep the existing github.com
-                  # host-key identity rather than weakening SSH verification.
-                  echo 'Default GitHub SSH port failed; retrying ssh.github.com:443'
-                  GIT_SSH_COMMAND='ssh -o HostName=ssh.github.com -o Port=443 -o HostKeyAlias=github.com' git fetch --prune origin
-                  ;;
-                *)
-                  exit 1
-                  ;;
-              esac
-            fi
+            git fetch --prune origin
             git reset --hard origin/main
             bash infra/deploy.sh

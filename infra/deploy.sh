@@ -10,25 +10,6 @@ cd "$(dirname "$0")/.."   # repo root, regardless of where this is invoked from
 
 COMPOSE="docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml --env-file .env.prod"
 
-fetch_origin() {
-  if git fetch --prune origin; then return 0; fi
-
-  local origin_url
-  origin_url="$(git remote get-url origin)"
-  case "$origin_url" in
-    git@github.com:*|ssh://git@github.com/*|ssh://git@github.com:*|ssh://github.com/*|ssh://github.com:*)
-      # Some VPS/firewall networks block outbound SSH on port 22. GitHub serves
-      # the same SSH service over 443; retain the established github.com host
-      # key rather than disabling host-key verification for the fallback.
-      echo "==> GitHub SSH default port failed; retrying origin through ssh.github.com:443"
-      GIT_SSH_COMMAND='ssh -o HostName=ssh.github.com -o Port=443 -o HostKeyAlias=github.com' git fetch --prune origin
-      ;;
-    *)
-      return 1
-      ;;
-  esac
-}
-
 # The deploy host only needs Git and Docker. Run the validator in the same
 # Node major line as the application images instead of relying on a host Node
 # installation or a shell-specific PATH (for example, a non-interactive SSH
@@ -44,7 +25,7 @@ validate_production_env() {
 echo "==> Current revision (for rollback): $(git rev-parse --short HEAD)"
 
 echo "==> Fetching and hard-resetting to origin/main"
-fetch_origin
+git fetch --prune origin
 git reset --hard origin/main
 echo "==> Now at: $(git rev-parse --short HEAD)"
 

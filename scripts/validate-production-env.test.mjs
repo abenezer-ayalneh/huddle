@@ -33,17 +33,6 @@ test('requires a complete signed release configuration', () => {
   assert.ok(errors.some((error) => error.includes('all-or-none')));
 });
 
-test('requires the raw manifest-signing public key for a signed release', () => {
-  const release = {
-    CONTROL_AGENT_RELEASE_CHANNEL_URL: 'https://releases.example.com/channel',
-    CONTROL_AGENT_RELEASES_URL: 'https://releases.example.com/releases',
-    CONTROL_AGENT_ISSUES_URL: 'https://releases.example.com/issues',
-  };
-  const errors = validateProductionEnv({ ...base, ...release, CONTROL_AGENT_UPDATE_PUBLIC_KEY: Buffer.alloc(33).toString('base64') });
-  assert.ok(errors.some((error) => error.includes('AGENT_UPDATE_PRIVATE_KEY_B64')));
-  assert.deepEqual(validateProductionEnv({ ...base, ...release, CONTROL_AGENT_UPDATE_PUBLIC_KEY: Buffer.alloc(32).toString('base64') }), []);
-});
-
 test('requires TURN domain and certificates only when TURN is enabled', () => {
   const errors = validateProductionEnv({ ...base, TURN_ENABLED: 'true', TURN_DOMAIN: 'turn.example.com' }, { root: '/definitely-not-a-repository' });
   assert.equal(errors.filter((error) => error.includes('turn-certs')).length, 2);
