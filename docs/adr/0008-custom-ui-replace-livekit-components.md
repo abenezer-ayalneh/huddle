@@ -1,6 +1,13 @@
-# Replace LiveKit UI components with custom cyberpunk-themed components
+# Replace stock LiveKit UI with Huddle-owned call components
 
 Status: accepted
+
+> **Current interpretation (2026-09-08):** the durable decision is ownership of
+> the call UI while retaining LiveKit's media/provider layer. The cyberpunk/dark-
+> only visual direction below is historical; current visual rules live in
+> `apps/web/DESIGN.md`. The package still declares
+> `@livekit/components-styles`, but there is no direct source import in this
+> checkout. Do not treat this ADR as a dependency inventory.
 
 We are removing `@livekit/components-react`'s high-level UI components
 (`VideoConference`, `PreJoin`, `ConnectionStateToast`) and their stylesheet
@@ -23,13 +30,13 @@ full visual control vs. maintaining more rendering code ourselves.
 
 ## What we're replacing
 
-| LiveKit component                     | Custom replacement                                               |
-| ------------------------------------- | ---------------------------------------------------------------- |
-| `VideoConference`                     | `VideoGrid` (auto-grid) + `ControlBar` (floating pill)           |
-| `PreJoin`                             | `PreJoinScreen` (full-screen camera preview + floating controls) |
-| `ConnectionStateToast`                | `ConnectionStatus` (styled toast/HUD indicator)                  |
-| chat panel (inside `VideoConference`) | `ChatPanel` (glass slide-out, `useChat`)                         |
-| `@livekit/components-styles`          | Removed entirely; all styles are Tailwind + custom CSS           |
+| LiveKit component                     | Custom replacement                                                         |
+| ------------------------------------- | -------------------------------------------------------------------------- |
+| `VideoConference`                     | `VideoGrid` (auto-grid) + `ControlBar` (floating pill)                     |
+| `PreJoin`                             | `PreJoinScreen` (full-screen camera preview + floating controls)           |
+| `ConnectionStateToast`                | `ConnectionStatus` (styled toast/HUD indicator)                            |
+| chat panel (inside `VideoConference`) | `ChatPanel` (glass slide-out, `useChat`)                                   |
+| `@livekit/components-styles`          | No direct source import at audit time; custom CSS/Tailwind own the call UI |
 
 **Screen share and chat were features delivered _by_ `VideoConference`** (ADR
 context: Roadmap Phases 4 & 5 were "delivered by the prebuilt component"). They
@@ -76,5 +83,6 @@ correctly; rewriting that is risk for zero visual gain.
   `livekit-client`'s `Room.getLocalDevices()` and related APIs.
 - Future LiveKit features (e.g., new track types, E2EE UI) require manual
   integration rather than a component update.
-- The app becomes dark-only (light mode dropped); the cyberpunk aesthetic
-  requires dark backgrounds for neon glows and glass effects to work.
+- The product can evolve its visual system without giving the stock component
+  DOM ownership back to LiveKit. Consult `apps/web/DESIGN.md` for current theme
+  and accessibility rules.

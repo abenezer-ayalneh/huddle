@@ -1,6 +1,9 @@
 # Ownership and dependency audit
 
 Date: 2026-08-06
+Scope: repository ownership and direct-dependency review. This is not a
+complete transitive-license inventory or proof that the referenced public
+evaluation deployment is currently reachable.
 
 ## Project ownership
 

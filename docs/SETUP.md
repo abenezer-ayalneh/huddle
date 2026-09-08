@@ -1,7 +1,8 @@
 # Local Setup
 
-How to run the whole stack on your machine. Steps marked _(after scaffolding)_
-only work once the apps exist (Phase 0+).
+How to run the current local stack. This is a local-development guide; it does
+not prove production, real-device WebRTC, macOS-permission, or provider-account
+acceptance. See [DOCUMENTATION.md](./DOCUMENTATION.md) for those boundaries.
 
 ## Prerequisites
 
@@ -38,7 +39,7 @@ Local CORS accepts the equivalent loopback origins (`127.0.0.1` and `::1`) on
 the same port automatically. For a custom local hostname or tunnel, set
 `WEB_ORIGIN` to a comma-separated list of exact origins and restart the API.
 
-For **Phase 7 (accounts + scheduling)** also set:
+Also set the account and database values:
 
 ```
 # Postgres (the docker-compose postgres service uses these)
@@ -115,13 +116,13 @@ MinIO's S3 API on `http://localhost:9000` and its web console on
 > `S3_ENDPOINT` (`localhost:9000`) — don't swap them. See
 > `docs/adr/0003-recording-egress-minio.md`.
 
-## 3. Install dependencies _(after scaffolding)_
+## 3. Install dependencies
 
 ```bash
 pnpm install        # from repo root (workspaces)
 ```
 
-## 3b. Apply database migrations (Phase 7)
+## 3b. Apply database migrations
 
 ```bash
 pnpm --filter @huddle/api prisma:deploy   # apply migrations to Postgres
@@ -132,7 +133,7 @@ pnpm --filter @huddle/api prisma:generate # generate the Prisma client
 > `dotenv-cli`. Use `prisma:migrate` (instead of `prisma:deploy`) when changing
 > the schema during development.
 
-## 4. Run the backend _(after scaffolding)_
+## 4. Run the backend
 
 ```bash
 pnpm dev:api        # NestJS in watch mode
@@ -140,7 +141,7 @@ pnpm dev:api        # NestJS in watch mode
 curl http://localhost:3001/health     # -> {"status":"ok"}
 ```
 
-## 5. Run the frontend _(after scaffolding)_
+## 5. Run the frontend
 
 ```bash
 pnpm dev:web        # Next.js dev server
@@ -165,7 +166,7 @@ Cloudflare fronts the web/API/LiveKit signal URLs, but LiveKit media still uses
 your `LIVEKIT_NODE_IP` directly. Treat this as a same-LAN test path, not the
 production deployment.
 
-## 6c. Run the macOS Control Agent (Phase 10)
+## 6c. Run the macOS Control Agent
 
 Remote Control requires the native companion app on the Sharer's Mac. Build the
 unsigned local app and open it with:
@@ -251,82 +252,13 @@ before creating a `control-agent-vX.Y.Z` tag.
 ## Stopping
 
 ```bash
-docker compose -f infra/docker-compose.yml down
+pnpm infra:down
 ```
 
-## Production deployment (Phase 9 — single VPS)
+## Production
 
-> For a complete, start-from-a-fresh-box walkthrough (DNS, Docker install,
-> firewall, TURN certs, backups, troubleshooting), see **[`DEPLOYMENT.md`](./DEPLOYMENT.md)**.
-> The summary below is the quick runbook.
-
-The dev steps above run the apps via `pnpm` against containerized infra. For a
-real deployment we target a **single Linux VPS** with a domain: Caddy terminates
-TLS and reverse-proxies, web + api run as containers, and LiveKit serves media
-directly. See `docs/adr/0004-deploy-topology-single-vps.md` for the why.
-
-**There is no automated CD** (the repo has no remote yet) — this is the manual
-runbook. CI (`.github/workflows/ci.yml`) runs the test/build gate once a GitHub
-remote exists.
-
-### 1. DNS
-
-Point three subdomains at the VPS public IP (A records):
-`app.<domain>`, `api.<domain>`, `livekit.<domain>` (+ optionally
-`turn.<domain>`).
-
-### 2. Firewall
-
-Allow inbound: **80, 443** (Caddy), **3478/udp + 5349** (TURN),
-**50000–50200/udp** (WebRTC media), **7881** (WebRTC/TCP fallback). Everything
-else (Postgres/Redis/MinIO, and 7880) stays off the public interface — the base
-compose binds those stores to `127.0.0.1` and the containers reach each other
-over the Docker network.
-
-### 3. Config
-
-```bash
-cp .env.prod.example .env.prod   # then edit: domains, secrets, ACME_EMAIL
-```
-
-Set `TURN_ENABLED=true` and `TURN_DOMAIN` only when enabling TURN; provision
-its TLS certs into `infra/turn-certs/` (see its README). Production Compose
-renders the LiveKit webhook key from `LIVEKIT_API_KEY`.
-
-### 4. Build & run
-
-```bash
-docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
-  --env-file .env.prod up -d --build
-```
-
-### 5. Apply migrations
-
-```bash
-docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
-  --env-file .env.prod exec api node node_modules/prisma/build/index.js migrate deploy
-```
-
-(Or run `pnpm --filter @huddle/api prisma:deploy` from a checkout whose
-`DATABASE_URL` points at the prod Postgres.)
-
-### 6. Verify
-
-- `curl https://api.<domain>/health` → `{"status":"ok"}`
-- `curl https://api.<domain>/ready` → `200` with `postgres`/`redis` both `ok`
-- Open `https://app.<domain>`, create a room, run a two-window call.
-
-### Updating
-
-```bash
-git pull
-docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
-  --env-file .env.prod up -d --build   # rebuilds changed images, recreates
-```
-
-### Scaling out LiveKit (multi-node)
-
-The topology is multi-node-ready (shared Redis). To add a second SFU node it
-needs its **own public UDP media port range** and node IP — media reaches the
-owning node directly, it does not pass through Caddy. See
-`docs/adr/0004-deploy-topology-single-vps.md`.
+The production source of truth is [DEPLOYMENT.md](./DEPLOYMENT.md); do not use
+this local guide as a shortened deployment procedure. The committed CI/CD
+workflow still requires configured GitHub secrets, a provisioned VPS, and a
+successful external run before it can be treated as active. See
+[RUNBOOK_CICD.md](./RUNBOOK_CICD.md).

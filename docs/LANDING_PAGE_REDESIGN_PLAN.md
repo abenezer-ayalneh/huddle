@@ -1,19 +1,20 @@
 # Signal Handoff Landing-Page Redesign
 
-Status: Approved design plan  
-Date: 2026-08-06
+**Status:** Historical implementation plan (approved 2026-08-06). The design
+direction was applied beyond the landing page; current visual rules are in
+[`apps/web/DESIGN.md`](../apps/web/DESIGN.md). Do not use this plan as an active
+scope boundary or as proof of a public deployment/release.
 
 ## Summary
 
-Redesign only Huddle's public landing experience as a long-form, team-first
+Redesign Huddle's public landing experience as a long-form, team-first
 showcase for agencies collaborating with clients. Position Huddle as
 Apache-2.0 self-hosted software, with the official deployment described as a
 capacity-limited evaluation demo.
 
 The page leads with "Meet, then work together." and demonstrates an agency
-website review through Meet -> Present -> Approve -> Collaborate. Existing
-application layouts/colors and the macOS Control Agent remain unchanged until a
-later approval phase.
+website review through Meet -> Present -> Approve -> Collaborate. The scope
+restrictions below describe the original approval, not the current application.
 
 ## Visual System and Experience
 

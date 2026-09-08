@@ -1,128 +1,71 @@
-# LiveKit Integration Guide
+# LiveKit integration
 
-Everything specific to wiring this app to a **self-hosted** LiveKit server.
+This document records Huddle-specific LiveKit constraints. It intentionally
+does not reproduce SDK tutorials or suggest a generic public token endpoint.
+For the current request/response boundary, use [API_CONTRACT.md](./API_CONTRACT.md);
+for architecture, use [ARCHITECTURE.md](./ARCHITECTURE.md).
 
-> Verify package names/versions and config keys against the current docs at
-> https://docs.livekit.io when you implement — LiveKit evolves quickly.
+## Current integration model
 
-## Packages
+- LiveKit runs as self-hosted infrastructure from `infra/livekit.yaml` and
+  `infra/docker-compose.yml`.
+- The NestJS API uses `livekit-server-sdk` for scoped participant tokens, room
+  administration, Egress, and verified webhooks. The browser uses
+  `livekit-client` and selected React primitives.
+- Tokens originate only from the managed-room flow: Host room creation/host
+  rejoin, Guest admission, Direct Rejoin, and the narrowly scoped Control Agent
+  bootstrap. `POST /token` was intentionally removed because it bypassed
+  waiting-room admission.
+- Browser media and allowed data use the direct WebRTC connection to LiveKit.
+  The API is not in the media path.
+- Huddle implements its own call composition (`CallStage`, `VideoGrid`,
+  `ControlBar`, `ChatPanel`, and `PreJoinScreen`) rather than depending on
+  `VideoConference` or the stock `PreJoin` UI. The SDK remains the media/state
+  layer, not the product UI.
 
-Frontend (`apps/web`):
+## Credentials and URLs
 
-```bash
-npm i livekit-client @livekit/components-react @livekit/components-styles
-```
+`LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, and `LIVEKIT_KEYS` must describe the
+same key pair. Compose injects `LIVEKIT_KEYS` into the server; the API reads the
+key and secret to sign tokens. Do not add keys to `infra/livekit.yaml` or expose
+any of them as `NEXT_PUBLIC_*` values. See [ADR 0001](./adr/0001-livekit-secret-single-source.md).
 
-Backend (`apps/api`):
+`LIVEKIT_URL` is the server-side endpoint. `LIVEKIT_PUBLIC_URL`, when set, is
+the browser-facing signal URL returned in participant-token responses. This lets
+local tunnel testing keep API/Egress traffic local while browsers use public
+WSS. Configure both deliberately; do not infer a public URL from the server
+endpoint.
 
-```bash
-npm i livekit-server-sdk
-```
+## Network requirements
 
-## Core concepts
+The exact Compose mappings are authoritative. In the supplied topology:
 
-- **Room** — a named session participants join. Created on demand.
-- **Participant** — a connected client identity.
-- **Track** — a media stream (camera, mic, screen). Published by one participant,
-  subscribed by others.
-- **Access token** — a short-lived JWT, signed with the API secret, encoding the
-  participant identity and a `VideoGrant` (what they may do in which room).
-- **SFU** — the LiveKit server forwards each publisher's tracks to subscribers; it
-  does not mix them. This is what keeps it scalable.
+| Purpose                             | Port / transport | Notes                                                            |
+| ----------------------------------- | ---------------- | ---------------------------------------------------------------- |
+| LiveKit HTTP, signal, webhook admin | 7880/TCP         | Local direct access; production reaches signal through Caddy/WSS |
+| WebRTC TCP fallback                 | 7881/TCP         | Expose in production firewall/security group                     |
+| WebRTC media                        | 50000–50200/UDP  | Must reach the LiveKit node directly                             |
+| TURN UDP                            | 3478/UDP         | Only when embedded TURN is enabled                               |
+| TURN/TLS                            | 5349/TCP         | Needs the configured TURN certificate and domain                 |
 
-## API key & secret
+`LIVEKIT_NODE_IP` is required for the Docker local path so LiveKit advertises a
+LAN-reachable ICE address rather than the container address. It is not proof
+that an arbitrary remote network can traverse media. Production relies on its
+generated external-IP configuration unless a specific node IP is required; see
+[DEPLOYMENT.md](./DEPLOYMENT.md).
 
-The self-hosted server is configured with one or more API key/secret pairs (in
-`infra/livekit.yaml` or via env). The **backend** uses the same pair to sign
-tokens. Keep both only in server-side env:
+## Webhooks and lifecycle
 
-```
-LIVEKIT_API_KEY=devkey
-LIVEKIT_API_SECRET=<random-long-secret>
-LIVEKIT_URL=ws://localhost:7880        # wss://... in production
-```
+`POST /livekit/webhook` verifies LiveKit signatures before it mutates state.
+It reconciles room finish, participant lifecycle, recording Egress lifecycle,
+Direct Rejoin, and attended Remote Control. It must remain reachable from the
+LiveKit container in every environment. The event details and API outcomes are
+documented in [API_CONTRACT.md](./API_CONTRACT.md).
 
-The frontend receives the public WebSocket URL in server-minted room responses;
-it never receives a LiveKit secret. Production derives that WSS URL from
-`LIVEKIT_DOMAIN` while API/Egress use the internal Docker service URL.
+## Verification boundary
 
-## Token minting (backend, NestJS) — reference shape
-
-```ts
-// apps/api — token.service.ts (illustrative)
-import { AccessToken } from 'livekit-server-sdk';
-
-async function createToken(room: string, identity: string, name?: string) {
-  const at = new AccessToken(process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET, { identity, name, ttl: '1h' });
-  at.addGrant({
-    roomJoin: true,
-    room,
-    canPublish: true,
-    canSubscribe: true,
-  });
-  return at.toJwt(); // returns the JWT string (await if async in your SDK version)
-}
-```
-
-Expose it as `POST /token` returning `{ token, livekitUrl }`. See
-`docs/API_CONTRACT.md`.
-
-## Connecting (frontend) — two options
-
-**Option A — prebuilt components (fastest for MVP):**
-
-```tsx
-import { LiveKitRoom, VideoConference } from '@livekit/components-react';
-import '@livekit/components-styles';
-
-<LiveKitRoom token={token} serverUrl={livekitUrl} connect data-lk-theme="default">
-  <VideoConference />
-</LiveKitRoom>;
-```
-
-`VideoConference` already gives a participant grid, mute/camera controls, and
-device handling — close to MVP out of the box. Customize from there.
-
-**Option B — low-level (`livekit-client`):** use `new Room()` + `room.connect()`
-and render tracks yourself when you need full control over the grid/UI.
-
-Start with Option A for the MVP; drop to Option B where you need custom behavior.
-
-## Self-hosting the server
-
-The LiveKit server runs as the `livekit/livekit-server` container. Generate a
-starter config + keys with the official helper, or use the provided
-`infra/livekit.yaml` + `infra/docker-compose.yml` in this repo.
-
-### Ports to expose (critical for WebRTC)
-
-| Port        | Proto | Purpose                              |
-| ----------- | ----- | ------------------------------------ |
-| 7880        | TCP   | HTTP/WebSocket signaling + API       |
-| 7881        | TCP   | WebRTC over TCP (fallback)           |
-| 50000–60000 | UDP   | WebRTC media (RTP/RTCP)              |
-| 3478        | UDP   | TURN (for clients behind strict NAT) |
-
-If media connects but you see no audio/video, it's almost always the **UDP
-range** or **TURN** not being reachable. Check this first.
-
-### TLS
-
-Browsers require HTTPS/WSS for camera+mic except on `localhost`. For any
-non-local testing, terminate TLS (reverse proxy or LiveKit's built-in TLS) and
-use `wss://` URLs.
-
-## Webhooks (later phase, not MVP)
-
-LiveKit can POST room/participant events (e.g. `participant_joined`,
-`room_finished`) to a backend endpoint, verified with the API key. Useful for
-analytics, recording triggers, and presence. Add a `POST /livekit/webhook`
-handler in NestJS when that phase arrives — out of scope for the MVP.
-
-## Gotchas checklist
-
-- [ ] Frontend receives the server-selected public LiveKit URL; secret stays server-only.
-- [ ] Token `room` and `identity` are set server-side, not trusted from client.
-- [ ] UDP media range + TURN are reachable end to end.
-- [ ] `wss://` (not `ws://`) anywhere that isn't `localhost`.
-- [ ] `livekit-client` and `livekit-server-sdk` versions kept in sync.
+A typecheck, component test, or headless browser does not establish a working
+PeerConnection, real screen capture, NAT/TURN traversal, Egress media, or the
+Control Agent's macOS permissions. Use the manual local smoke test in
+[SETUP.md](./SETUP.md), the production checks in [DEPLOYMENT.md](./DEPLOYMENT.md),
+and the remaining roadmap acceptance items.

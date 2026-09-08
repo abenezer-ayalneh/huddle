@@ -1,7 +1,16 @@
 # Roadmap
 
-Phased build order. **Finish a phase before starting the next.** Each phase ends
-with something you can actually use. The MVP is Phases 0–3.
+Phased build record and current acceptance tracker. The MVP is Phases 0–3;
+later phases extend it. Earlier checkpoints preserve the decisions made at that
+time, so an old component name or endpoint is **historical context**, not an
+instruction to reintroduce it. Current API behavior belongs in
+[API_CONTRACT.md](./API_CONTRACT.md), and current architecture belongs in
+[ARCHITECTURE.md](./ARCHITECTURE.md).
+
+Checked items mean the repository contains the intended implementation or
+automation. They do not prove real WebRTC media, physical macOS permissions,
+external providers, a public release, or a deployed service. Those gaps stay as
+explicit unchecked acceptance work.
 
 ## Phase 0 — Foundations
 
@@ -14,10 +23,12 @@ with something you can actually use. The MVP is Phases 0–3.
 
 ## Phase 1 — Token + connect (thin slice)
 
-- [x] `POST /token` in NestJS using `livekit-server-sdk` (see API_CONTRACT).
+- [x] Historical public `POST /token` thin slice (removed in Phase 6 because it
+      bypassed managed-room admission).
 - [x] Frontend lobby: enter room + display name.
 - [x] Frontend fetches a token and connects with `<LiveKitRoom>`.
-- [x] Render `<VideoConference>` (prebuilt grid + controls).
+- [x] Historical prebuilt call shell; later replaced by Huddle-owned call UI
+      (ADR 0008).
 - **Done when:** one browser can join a room and see its own published video.
 
 ## Phase 2 — Multi-participant call (MVP core)
@@ -28,19 +39,15 @@ with something you can actually use. The MVP is Phases 0–3.
 - [x] Leave call returns to lobby cleanly (F8).
 - **Done when:** PRD acceptance criteria for a 2–3 person call pass.
 
-> Implemented via the prebuilt `<VideoConference>` (grid + control bar + audio
-> renderer) wired with `video audio connect` and `onDisconnected → lobby`.
-> Rooms create on demand (verified server-side).
+> **Historical implementation note:** this checkpoint used the prebuilt
+> `VideoConference` shell and on-demand rooms. Managed rooms and the custom
+> `CallStage`/`VideoGrid`/`ControlBar` composition superseded that path. The
+> participant-call requirement remains; the old component names do not.
 >
 > \*Items marked with an asterisk depend on live WebRTC media, which **cannot be
 > exercised in a headless/CI browser** (PeerConnection fails to establish). The
 > code path is complete and the UI renders; final A/V acceptance is a **manual
 > two-device test** — see `docs/SETUP.md` §"Smoke test a call".
->
-> Note: the prebuilt control bar shows Screen-share and Chat buttons (Phase 4/5).
-> We deliberately leave them visible for the MVP rather than build a custom
-> control bar — they come free with `<VideoConference>`. Don't "fix" this.
-> (The Screen-share button is the Phase 4 control — see below.)
 
 ## Phase 3 — Polish the MVP
 
@@ -52,57 +59,45 @@ with something you can actually use. The MVP is Phases 0–3.
 - **Done when:** the full PRD MVP acceptance checklist passes against self-hosted
   LiveKit. **This is the MVP milestone.**
 
-> Implemented in `apps/web/src/app/rooms/[room]/RoomClient.tsx`: a three-step
-> flow — prebuilt `<PreJoin>` (self-preview + camera/mic pickers, F7) → token
-> fetch → `<LiveKitRoom>` publishing the chosen devices. `<ConnectionStateToast>`
-> surfaces connecting/reconnecting/disconnected (F9). Errors (denied
-> camera/mic via `PreJoin onError`, token/API failure via the fetch catch, lost
-> connection via `LiveKitRoom onError`) render a retry / back-to-lobby screen.
-> Pre-join, lobby, and the call grid use responsive layouts; `<PreJoin>` /
-> `<VideoConference>` come responsively styled from `@livekit/components-styles`.
+> **Current implementation note:** `RoomClient`, `GuestGate`, `CallStage`, and
+> the custom `PreJoinScreen` implement the managed-room entry flow. `LiveKitRoom`
+> remains the media connection, while connection/error/device recovery are
+> Huddle-owned surfaces. The original stock `PreJoin`/`VideoConference` note is
+> superseded by ADR 0008.
 >
 > Live A/V acceptance remains a **manual two-window test** (headless browsers
 > can't establish WebRTC) — see `docs/SETUP.md`.
 
 ---
 
-## Post-MVP (later — do not build until MVP ships)
+## Later capabilities
 
-### Phase 4 — Screen sharing ✅ (delivered by the prebuilt component)
+### Phase 4 — Screen sharing ✅
 
 Publish/stop a screen-share track; show it prominently in the grid.
 
 - [x] Publish / stop a screen-share track.
 - [x] Show the shared screen prominently.
 
-> Like Phase 2's multi-participant grid, this needs **no new feature code**: the
-> prebuilt `<VideoConference>` (already wired in `RoomClient.tsx`) ships a
-> screen-share toggle in its control bar (publish/stop) and **auto-focuses** the
-> screen-share track into the prominent focus layout when it starts. The token
-> grant already permits it (`canPublish: true`, no `canPublishSources`
-> restriction in `apps/api/src/token/token.service.ts`), so no backend change.
+> The original stock-control implementation is historical. The current custom
+> call UI owns Present controls and layout behavior while using the LiveKit track
+> APIs. The managed-room token flow continues to decide publish grants.
 >
 > Browsers gate `getDisplayMedia` behind a user gesture and the headless browser
 > can't capture a screen, so **acceptance is a manual test**: in the call, click
 > the Screen-share button, pick a window/tab, confirm the other participant sees
 > it focused, then stop and confirm it returns to the grid.
 
-### Phase 5 — In-call chat ✅ (delivered by the prebuilt component)
+### Phase 5 — In-call chat ✅
 
 Text messages via LiveKit data channels; simple chat panel.
 
 - [x] Send/receive text messages over the LiveKit data channel.
 - [x] Simple chat panel toggled from the control bar.
 
-> Like Phases 2 and 4, the UI needs **no new feature code**: `<VideoConference>`
-> ships a Chat toggle in its control bar and a `.lk-chat` panel (message list +
-> input form) whose sends ride LiveKit's data channel (`useChat` →
-> `publishData` / text streams).
->
-> One backend change was required: chat rides the data channel, which is gated by
-> the `canPublishData` grant. We now set it explicitly in
-> `apps/api/src/token/token.service.ts` (the server defaults it to true, but the
-> grant is our single source of truth for participant capabilities).
+> The original stock chat panel is historical. The current `ChatPanel` and
+> `ControlBar` use LiveKit chat/data primitives behind Huddle-owned UI. The API
+> still owns the participant capability grant.
 >
 > The data channel rides the same WebRTC connection, so the headless browser
 > can't exercise it — **acceptance is a manual test**: open the chat panel in two
@@ -130,10 +125,10 @@ optional waiting room.
 > account-bound, and limited to the exact LiveKit room SID. Host authority is
 > enforced server-side via `hostKey` (never trusted from the token's role claim).
 >
-> **State** lives in-memory in the API process (single-node). Moving it to Redis
-> is Phase 9 hardening. Backend: `apps/api/src/rooms/*`. Frontend: lobby
-> create-vs-join, `GuestGate` (knock/wait), `HostPanel` (admit/deny + mute/remove
-> overlay inside the call).
+> At this checkpoint Knocks were in process memory. **Current state:** Knocks and
+> Direct Rejoin Grants are Redis-backed with TTL/call-SID boundaries (ADR 0005
+> and ADR 0028). Backend: `apps/api/src/rooms/*`; frontend: lobby
+> create-vs-join, `GuestGate`, and `HostPanel`.
 >
 > Verified: the full create→knock→admit HTTP flow + host-auth (401/409/404) was
 > exercised against the live API and LiveKit, plus 14 unit tests. Live A/V parts
@@ -245,9 +240,11 @@ the user; see `docs/adr/0004-deploy-topology-single-vps.md` and
       containerized web/api via Dockerfiles, prod LiveKit, `restart: always`);
       internal stores bound to `127.0.0.1` in the base; plus `.env.prod.example`.
       Dev compose flow unchanged.
-- [x] **CI now, CD deferred** — `.github/workflows/ci.yml` runs prettier +
-      typecheck + tests + build on push/PR; activates once a GitHub remote
-      exists. CD is the manual runbook in `docs/SETUP.md`.
+- [x] **CI/CD workflow code** — `.github/workflows/ci.yml` runs the quality gate;
+      `.github/workflows/deploy.yml` invokes `infra/deploy.sh` after CI or by
+      dispatch. GitHub secrets, production approval, VPS provisioning, and a
+      successful external deployment remain environment evidence, not checkout
+      evidence; see `docs/RUNBOOK_CICD.md`.
 
 > **Scope note:** target is a single VPS (not k8s, not LiveKit Cloud). True
 > horizontal LiveKit scale is **configured, not exercised** — the single-node
@@ -315,6 +312,9 @@ Phase 10 authority boundary.
       Developer ID-trusted release.
 - [x] Publish the first no-cost Apple-Silicon beta to the public GitHub release
       channel with its SHA-256 checksum.
+- [ ] Verify the recorded public release from GitHub before relying on this
+      historical publication claim; source and release scripts alone cannot
+      establish the current artifact/channel state.
 - [ ] Physical two-browser acceptance of the no-cost Apple-Silicon beta,
       including its one-time Gatekeeper override and macOS privacy permissions.
 - [ ] Pre-tag signed-release-candidate acceptance on physical Apple Silicon and
@@ -337,6 +337,14 @@ Windows and Linux Control Agents remain future phases with no release date.
       WebRTC, Firefox/Safari fallback, iOS, and Android acceptance matrix.
 - [ ] Close stable participant-layout acceptance: equal-grid paging, persisted
       Self-view states, speaking promotion, Present/Pin anchors, and panel reflow.
+
+### Post-roadmap — Owner-controlled maintenance
+
+- [x] Durable owner-configured maintenance state, admission guard, five-minute
+      call shutdown/cleanup worker, browser surfaces, and Caddy static override.
+- [ ] Run release acceptance against an owner/non-owner, open call, recording,
+      Remote Control, restart, and SSH-recovery path. See
+      `docs/RUNBOOK_MAINTENANCE.md`.
 
 Keep this file honest: check boxes as you go, and move items between phases if
 priorities change.

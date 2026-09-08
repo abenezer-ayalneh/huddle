@@ -61,14 +61,13 @@ documents the prod-only variables. Chosen over compose `profiles` (interleaves
 dev/prod settings in one busy file) and a fully separate `infra/prod/` tree (more
 duplication to keep in sync).
 
-## CI now, CD deferred
+## CI/CD status update
 
-There is **no git remote yet**, so there is nothing to deploy _from_. We commit a
-**GitHub Actions CI** workflow that runs the existing gate (prettier + both apps'
-typecheck + tests + build) on push/PR — it activates the moment a GitHub remote
-is added. Automated **CD** (registry push + ssh to the VPS) is deferred to when a
-remote and a provisioned box exist; until then deployment is a documented manual
-runbook (`ssh` + `compose -f … pull && up -d`) in `docs/SETUP.md`.
+This ADR originally deferred CD. The repository now contains the `CI` workflow,
+a serialized SSH deploy workflow, and `infra/deploy.sh`; see
+[`RUNBOOK_CICD.md`](../RUNBOOK_CICD.md). GitHub secrets, production approval, a
+provisioned VPS, and a successful run remain external evidence and are not
+claimed by this checkout.
 
 ## Consequences
 

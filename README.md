@@ -5,19 +5,19 @@ A browser-based, Google Meet–style video conferencing app built on a
 create or schedule meetings; guests join from a shared link through a waiting
 room — no account needed.
 
-> **Status:** Feature-complete through Phase 9, with attended Remote Control
-> (Phase 10) implemented behind the macOS companion-agent workflow. Core calling,
-> host controls, accounts/scheduling, recording, and single-VPS deploy hardening
-> are all implemented. See [`docs/ROADMAP.md`](docs/ROADMAP.md) for per-phase
-> detail and verification notes.
+> **Status:** The MVP through deployment hardening is implemented. Attended
+> Remote Control, Control Agent beta tooling, and desktop Picture-in-Picture are
+> implemented in the checkout with specific physical-device, release, provider,
+> and layout acceptance still open. See [`docs/ROADMAP.md`](docs/ROADMAP.md) and
+> the documentation authority map in [`docs/DOCUMENTATION.md`](docs/DOCUMENTATION.md).
 
 ## Features
 
 - **Calls** — create/join a room, camera + mic publishing, live participant
   grid, mute/camera toggles, leave. Device **pre-join** screen with self-preview
   and connection-state UI.
-- **Screen share & in-call chat** — via the prebuilt LiveKit components (data
-  channel chat, screen-share auto-focus).
+- **Screen share & in-call chat** — custom Huddle controls over LiveKit tracks
+  and data channels.
 - **Accounts & scheduling** — email+password (and optional Google) sign-in via
   BetterAuth; hosts create or schedule meetings that persist and get a stable
   shareable link.
@@ -83,18 +83,19 @@ A Husky pre-commit hook runs prettier (lint-staged) + typecheck + tests.
 
 ## Documentation
 
-| Doc                                                        | Purpose                                        |
-| ---------------------------------------------------------- | ---------------------------------------------- |
-| [CLAUDE.md](CLAUDE.md)                                     | Guide for AI agents / Claude Code working here |
-| [docs/PRD.md](docs/PRD.md)                                 | Product requirements + acceptance criteria     |
-| [docs/ROADMAP.md](docs/ROADMAP.md)                         | Phased build order + what's done               |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)               | System design, data flow, auth model           |
-| [docs/TECH_STACK.md](docs/TECH_STACK.md)                   | Stack choices & rationale                      |
-| [docs/LIVEKIT_INTEGRATION.md](docs/LIVEKIT_INTEGRATION.md) | LiveKit specifics, tokens, ports               |
-| [docs/API_CONTRACT.md](docs/API_CONTRACT.md)               | Backend HTTP API                               |
-| [docs/SETUP.md](docs/SETUP.md)                             | Run everything locally                         |
-| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)                   | Deploy to a single VPS                         |
-| [docs/adr/](docs/adr/)                                     | Architecture decision records                  |
+| Doc                                                        | Purpose                                    |
+| ---------------------------------------------------------- | ------------------------------------------ |
+| [AGENTS.md](AGENTS.md)                                     | Repository-wide guide for AI agents        |
+| [docs/DOCUMENTATION.md](docs/DOCUMENTATION.md)             | Documentation authority and status guide   |
+| [docs/PRD.md](docs/PRD.md)                                 | Product requirements + acceptance criteria |
+| [docs/ROADMAP.md](docs/ROADMAP.md)                         | Phased build order + what's done           |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)               | System design, data flow, auth model       |
+| [docs/TECH_STACK.md](docs/TECH_STACK.md)                   | Stack choices & rationale                  |
+| [docs/LIVEKIT_INTEGRATION.md](docs/LIVEKIT_INTEGRATION.md) | LiveKit specifics, tokens, ports           |
+| [docs/API_CONTRACT.md](docs/API_CONTRACT.md)               | Backend HTTP API                           |
+| [docs/SETUP.md](docs/SETUP.md)                             | Run everything locally                     |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)                   | Deploy to a single VPS                     |
+| [docs/adr/](docs/adr/)                                     | Architecture decision records              |
 
 ## Repo layout
 

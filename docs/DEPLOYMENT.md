@@ -1,9 +1,8 @@
 # Deploying Huddle to a VPS
 
 A complete, start-to-finish guide for running Huddle in production on a single
-Linux VPS with a real domain. It expands on the runbook in
-[`SETUP.md`](./SETUP.md) → _Production deployment_ and assumes nothing beyond a
-fresh server.
+Linux VPS with a real domain. It is the production source of truth; local setup
+intentionally links here rather than duplicating deployment steps.
 
 The production topology is recorded in
 [`docs/adr/0004-deploy-topology-single-vps.md`](./adr/0004-deploy-topology-single-vps.md):
@@ -103,7 +102,8 @@ Notes:
 
 ```bash
 git clone <your-repo-url> huddle && cd huddle
-# (or rsync/scp the working tree up — there is no public remote yet)
+# A configured Git remote is useful for the committed deployment workflow.
+# rsync/scp remains possible for a deliberately disconnected installation.
 ```
 
 ---
@@ -564,7 +564,7 @@ logs -f caddy` and make sure no host process holds :80/:443.
 
 ## Owner-controlled maintenance
 
-See [the maintenance runbook](./MAINTENANCE_PROPOSAL.md) for per-environment owner
+See [the maintenance runbook](./RUNBOOK_MAINTENANCE.md) for per-environment owner
 verification, the five-minute call shutdown, and the SSH static-page override.
 Apply the maintenance migrations before starting the updated API, and create
 `infra/maintenance-state/` as the deployment user before recreating Caddy.

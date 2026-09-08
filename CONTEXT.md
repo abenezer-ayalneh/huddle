@@ -1,8 +1,10 @@
 # Huddle
 
-Self-hosted, browser-based video conferencing (a Google Meet–style product) built
-on LiveKit. This glossary fixes the language used across `apps/web`, `apps/api`,
-and the docs so the same concept always has the same name.
+Self-hosted, browser-based video conferencing built on LiveKit. This glossary is
+the source of truth for product language and non-obvious user-facing behavior
+across `apps/web`, `apps/api`, and the docs. It is not a deployment-status or
+external-release record; use `docs/DOCUMENTATION.md` and `docs/ROADMAP.md` for
+those boundaries.
 
 ## Public surfaces
 
@@ -101,15 +103,15 @@ _Avoid_: Cancel, retract
 
 **Device Check**:
 The camera/microphone self-preview plus device selection a participant completes
-before media starts (built on LiveKit's `PreJoin`). For a guest it runs **before**
+before media starts (implemented by Huddle's `PreJoinScreen` over LiveKit media
+APIs). For a guest it runs **before**
 the knock and gates it — the guest must get through the Device Check and press the
 join button before the knock is sent. For a host it runs before connecting to the
 call. The participant's selections (which camera/mic, and whether each is on) are
 carried forward into the call. Passing the Device Check is the guest's act of
 "agreeing" to the camera/voice setup; there is no separate consent step. Its
 pickers are pre-filled from, and save back to, the Device Preference.
-_Avoid_: Pre-join (the LiveKit component name — fine in code, but "Device Check"
-is the domain term), camera test, AV check, permission prompt
+_Avoid_: Pre-join, camera test, AV check, permission prompt
 
 ### Devices
 

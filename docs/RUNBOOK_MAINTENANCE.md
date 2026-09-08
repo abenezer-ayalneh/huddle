@@ -1,7 +1,9 @@
-# Owner-controlled maintenance
+# Runbook: owner-controlled maintenance
 
-Implemented in the application and production Compose configuration. Production
-activation requires deploying this revision and configuring the target account.
+**Status:** Implemented in the checkout and production Compose configuration.
+Production activation still requires this revision to be deployed and the target
+account to be configured. This runbook does not prove a particular VPS has done
+so.
 
 ## Behavior
 

@@ -1,7 +1,12 @@
-# Product Requirements — MVP
+# Product Requirements — MVP baseline (historical)
 
-Project codename: **vid-** · A self-hosted, browser-based video conferencing app
-(Google Meet–style) built on LiveKit.
+Historical project codename: **vid-**. This is the original MVP requirements
+baseline, retained because it explains the non-negotiable calling foundation and
+its acceptance intent. It is **not** the current product/API specification:
+managed rooms replaced free-form room creation, and later work added accounts,
+recording, Remote Control, maintenance, and PiP. Read [ROADMAP.md](./ROADMAP.md)
+for current status and [API_CONTRACT.md](./API_CONTRACT.md) before acting on a
+request/response detail.
 
 ## 1. Goal
 
@@ -108,8 +113,9 @@ phone/SIP dial-in. None of these in the MVP.
   stays single-instance). Observability = health/ready + structured logs +
   exposed LiveKit Prometheus endpoint + compose healthchecks (no
   dashboards yet). Prod config via `docker-compose.prod.yml` override +
-  `.env.prod.example`. **CI** (GitHub Actions gate) committed now; **CD** deferred
-  (no git remote yet) to a manual runbook. See
+  `.env.prod.example`. The repository now also contains CI and a VPS deploy
+  workflow; their actual GitHub/VPS activation remains external to this checkout.
+  See
   `docs/adr/0004-deploy-topology-single-vps.md` and
   `docs/adr/0005-knock-state-to-redis.md`.
 

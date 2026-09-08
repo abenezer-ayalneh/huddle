@@ -1,11 +1,15 @@
 # API Contract (Backend)
 
 NestJS backend (`apps/api`). Base URL in dev: `http://localhost:3001`.
-All requests/responses are JSON. This contract is the source of truth for the
-frontend ↔ backend boundary.
+All custom requests/responses are JSON. This contract is the source of truth for
+the frontend ↔ backend boundary; the controller implementation is the executable
+evidence when a mismatch is found.
 
-> Only the endpoints needed for the MVP are specified. Add new endpoints here
-> before implementing them.
+> This documents the managed-room, recording, Remote Control, maintenance, and
+> operational endpoints currently implemented in the repository. BetterAuth
+> owns `/api/auth/*`; its upstream routes are summarized rather than copied.
+> Update this document with a custom HTTP boundary change, not for internal
+> refactors or generated/auth-provider details.
 
 ## Faults & the error envelope
 
@@ -35,34 +39,35 @@ Two classes share the envelope but get different UX (see `CONTEXT.md` →
 
 ### Server-emitted codes
 
-| `code`                                | status  | class          | meaning / origin                                 | recovery action |
-| ------------------------------------- | ------- | -------------- | ------------------------------------------------ | --------------- |
-| `SESSION_EXPIRED`                     | 401     | Fault          | session-gated endpoint, no/expired session       | Sign in         |
-| `UPSTREAM_UNAVAILABLE`                | 502/503 | Fault          | a dependency call failed (LiveKit, MinIO, Redis) | Retry           |
-| `INTERNAL`                            | 500     | Fault          | unhandled / misconfigured server error           | Reload          |
-| `VALIDATION`                          | 400     | Fault          | `ValidationPipe` rejected the body (client bug)  | (generic)       |
-| `NOT_HOST`                            | 401/403 | Domain Outcome | host action without a valid `x-host-key`         | (tailored)      |
-| `NOT_PARTICIPANT`                     | 401/404 | Domain Outcome | invalid participant token or disconnected target | (tailored)      |
-| `ROOM_NOT_FOUND`                      | 404     | Domain Outcome | unknown room (guest link, host-token)            | (tailored)      |
-| `KNOCK_NOT_FOUND`                     | 404     | Domain Outcome | unknown / expired / withdrawn knock              | (tailored)      |
-| `NAME_REQUIRED`                       | 400     | Domain Outcome | knock with no display name                       | (inline)        |
-| `DIRECT_REJOIN_NOT_ALLOWED`           | 403     | Domain Outcome | no active call-scoped rejoin grant for account   | Ask to join     |
-| `RECORDING_IN_PROGRESS`               | 409     | Domain Outcome | start/approve while one is already active        | (tailored)      |
-| `NOT_RECORDING_OWNER`                 | 403     | Domain Outcome | `stop-by-participant` you didn't start           | (tailored)      |
-| `RECORDING_NOT_READY`                 | 409     | Domain Outcome | download before the recording is `completed`     | (tailored)      |
-| `RECORDING_NOT_FOUND`                 | 404     | Domain Outcome | unknown recording for the room                   | (tailored)      |
-| `RECORDING_EXPIRED`                   | 410     | Domain Outcome | local MP4 was deleted after retention expiry     | (tailored)      |
-| `RECORDING_SHARE_UNAVAILABLE`         | 409     | Domain Outcome | Drive was not enabled at recording start         | (tailored)      |
-| `RECORDING_SHARE_NOT_ALLOWED`         | 403     | Domain Outcome | anonymous, Host, or mismatched-account consent   | (tailored)      |
-| `DOWNLOAD_TOKEN_INVALID`              | 401     | Domain Outcome | missing/expired/forged recording download token  | (native)        |
-| `REMOTE_CONTROL_IN_PROGRESS`          | 409     | Domain Outcome | a request/session already owns the room          | (tailored)      |
-| `REMOTE_CONTROL_NOT_FOUND`            | 404     | Domain Outcome | unknown, consumed, or expired request/session    | (tailored)      |
-| `REMOTE_CONTROL_NOT_ALLOWED`          | 403     | Domain Outcome | caller is not the required Sharer/Controller     | (tailored)      |
-| `REMOTE_CONTROL_PRESENT_ACTIVE`       | 409     | Domain Outcome | Present is active, so control cannot start       | (tailored)      |
-| `REMOTE_CONTROL_RENEWAL_REQUIRED`     | 409     | Domain Outcome | the 30-minute reconfirmation deadline passed     | (tailored)      |
-| `REMOTE_CONTROL_HELPER_NOT_CONNECTED` | 409     | Domain Outcome | helper bootstrap/session is not connected        | (tailored)      |
-| `REMOTE_CONTROL_BOOTSTRAP_INVALID`    | 401     | Domain Outcome | helper code is wrong, expired, or already used   | (native)        |
-| `WEBHOOK_UNVERIFIED`                  | 401     | —              | bad LiveKit webhook signature (server-to-server) | n/a             |
+| `code`                                | status  | class          | meaning / origin                                        | recovery action     |
+| ------------------------------------- | ------- | -------------- | ------------------------------------------------------- | ------------------- |
+| `SESSION_EXPIRED`                     | 401     | Fault          | session-gated endpoint, no/expired session              | Sign in             |
+| `UPSTREAM_UNAVAILABLE`                | 502/503 | Fault          | a dependency call failed (LiveKit, MinIO, Redis)        | Retry               |
+| `INTERNAL`                            | 500     | Fault          | unhandled / misconfigured server error                  | Reload              |
+| `VALIDATION`                          | 400     | Fault          | `ValidationPipe` rejected the body (client bug)         | (generic)           |
+| `NOT_HOST`                            | 401/403 | Domain Outcome | host action without a valid `x-host-key`                | (tailored)          |
+| `NOT_PARTICIPANT`                     | 401/404 | Domain Outcome | invalid participant token or disconnected target        | (tailored)          |
+| `ROOM_NOT_FOUND`                      | 404     | Domain Outcome | unknown room (guest link, host-token)                   | (tailored)          |
+| `KNOCK_NOT_FOUND`                     | 404     | Domain Outcome | unknown / expired / withdrawn knock                     | (tailored)          |
+| `NAME_REQUIRED`                       | 400     | Domain Outcome | knock with no display name                              | (inline)            |
+| `DIRECT_REJOIN_NOT_ALLOWED`           | 403     | Domain Outcome | no active call-scoped rejoin grant for account          | Ask to join         |
+| `RECORDING_IN_PROGRESS`               | 409     | Domain Outcome | start/approve while one is already active               | (tailored)          |
+| `NOT_RECORDING_OWNER`                 | 403     | Domain Outcome | `stop-by-participant` you didn't start                  | (tailored)          |
+| `RECORDING_NOT_READY`                 | 409     | Domain Outcome | download before the recording is `completed`            | (tailored)          |
+| `RECORDING_NOT_FOUND`                 | 404     | Domain Outcome | unknown recording for the room                          | (tailored)          |
+| `RECORDING_EXPIRED`                   | 410     | Domain Outcome | local MP4 was deleted after retention expiry            | (tailored)          |
+| `RECORDING_SHARE_UNAVAILABLE`         | 409     | Domain Outcome | Drive was not enabled at recording start                | (tailored)          |
+| `RECORDING_SHARE_NOT_ALLOWED`         | 403     | Domain Outcome | anonymous, Host, or mismatched-account consent          | (tailored)          |
+| `DOWNLOAD_TOKEN_INVALID`              | 401     | Domain Outcome | missing/expired/forged recording download token         | (native)            |
+| `REMOTE_CONTROL_IN_PROGRESS`          | 409     | Domain Outcome | a request/session already owns the room                 | (tailored)          |
+| `REMOTE_CONTROL_NOT_FOUND`            | 404     | Domain Outcome | unknown, consumed, or expired request/session           | (tailored)          |
+| `REMOTE_CONTROL_NOT_ALLOWED`          | 403     | Domain Outcome | caller is not the required Sharer/Controller            | (tailored)          |
+| `REMOTE_CONTROL_PRESENT_ACTIVE`       | 409     | Domain Outcome | Present is active, so control cannot start              | (tailored)          |
+| `REMOTE_CONTROL_RENEWAL_REQUIRED`     | 409     | Domain Outcome | the 30-minute reconfirmation deadline passed            | (tailored)          |
+| `REMOTE_CONTROL_HELPER_NOT_CONNECTED` | 409     | Domain Outcome | helper bootstrap/session is not connected               | (tailored)          |
+| `REMOTE_CONTROL_BOOTSTRAP_INVALID`    | 401     | Domain Outcome | helper code is wrong, expired, or already used          | (native)            |
+| `MAINTENANCE`                         | 503     | Domain Outcome | admission is paused during owner-controlled maintenance | maintenance surface |
+| `WEBHOOK_UNVERIFIED`                  | 401     | —              | bad LiveKit webhook signature (server-to-server)        | n/a                 |
 
 > A **knock denial** is not in this table: it is a `200` poll returning
 > `status: "denied"`, never an error response.
@@ -113,7 +118,7 @@ The standalone public token endpoint was removed in Phase 6. It let anyone mint
 a join token for any room name, which would bypass the managed-room **waiting
 room**. Tokens are now minted only by the managed-room flow below (`POST /rooms`
 for the host, admit for guests), where identity and grants are decided
-server-side. See "Phase 6 — Host controls & managed rooms".
+server-side. See "Managed rooms and host controls".
 
 ## GET /health
 
@@ -143,23 +148,23 @@ rotation; `/health` is for liveness/restart decisions.
 { "status": "unavailable", "checks": { "postgres": "ok", "redis": "down" } }
 ```
 
-## Phase 6 — Host controls & managed rooms
+## Managed rooms and host controls
 
-Phase 6 replaces "join a free-text room on demand" with **managed rooms**: a host
-explicitly creates a room, and guests must **knock** and be **admitted** (waiting
-room). Host-only actions are authorized by a per-room `hostKey` returned at
-creation and sent in the `x-host-key` header. Server-side state (host key, host
-identity, pending knocks) is held **in-memory in the API process** (single-node);
-moving it to Redis is Phase 9 hardening.
+Huddle uses **managed rooms**: a Host explicitly creates a room and Guests must
+**knock** and be **admitted** through the waiting room. Host-only actions are
+authorized by a per-room `hostKey` returned at creation and sent in the
+`x-host-key` header. Room ownership and host capabilities are durable Postgres
+records; pending Knocks and Direct Rejoin Grants are Redis-backed, TTL/call-scoped
+state. They are not in-memory process state.
 
 > Host identity carries `metadata: { "role": "host" }` in its LiveKit token so the
 > frontend can show host UI. Authority for admin actions is **never** trusted from
 > that claim — it is enforced server-side via `hostKey`.
 
-### POST /rooms _(updated in Phase 7 — now requires a session)_
+### POST /rooms _(session)_
 
-Create a managed room and mint the host's token. **Requires a BetterAuth session**
-(see "Phase 7"); the signed-in user becomes the room's owner and host. The host's
+Create a managed room and mint the host's token. **Requires a BetterAuth session**;
+the signed-in user becomes the room's owner and host. The host's
 display name comes from the account, not the request. Rooms have **no title** —
 the server always generates a unique **Room Code** (a Meet-style identifier like
 `abz-mnpq-rfk`); the client cannot supply a name or slug.
@@ -175,7 +180,7 @@ the server always generates a unique **Room Code** (a Meet-style identifier like
 - `hostKey` — opaque secret; the client stores it and sends it as `x-host-key`.
   **401** if not signed in.
 
-### GET /rooms/mine _(session)_ — Phase 7
+### GET /rooms/mine _(session)_
 
 List the signed-in user's **upcoming scheduled meetings only** (those with a
 future `scheduledStart`). Instant meetings and past ones are not returned.
@@ -186,7 +191,7 @@ Requires a BetterAuth session.
 - `room` is the Room Code. Includes `hostKey` because the caller owns these rooms.
   **401** if not signed in.
 
-### POST /rooms/:room/host-token _(session)_ — Phase 7
+### POST /rooms/:room/host-token _(session)_
 
 The owner mints a fresh host token to (re)join their own room (e.g. starting a
 scheduled meeting). Requires a session **and** ownership.
@@ -194,7 +199,7 @@ scheduled meeting). Requires a session **and** ownership.
 **Response 200:** same shape as `POST /rooms`. **401** if not signed in; **403**
 if signed in but not the owner; **404** if the room doesn't exist.
 
-### GET /rooms/:room — Phase 7
+### GET /rooms/:room
 
 Public room info for a guest landing on a shared link. Does **not** leak the host key.
 
@@ -355,7 +360,7 @@ Anonymous Guests, Hosts, mismatched accounts, an inactive recording, or a
 recording whose Drive connection was not present at start are rejected. This
 creates no public link or folder permission.
 
-## Remote Control _(post-Phase 9; docs/adr/0024)_
+## Remote Control _(docs/adr/0024)_
 
 Remote Control is participant-authorized, not Host-authorized. All human actions
 below require the caller's LiveKit join token in `x-participant-token`; the
@@ -672,7 +677,7 @@ invalid signatures → **401**.
 **Host-auth failures** (missing/invalid `x-host-key`) → **401** on all _(host)_
 endpoints.
 
-## Phase 7 — Accounts & auth
+## Accounts and auth
 
 BetterAuth is mounted at **`/api/auth/*`** inside the same API (login, OAuth
 callbacks, session). The frontend uses the BetterAuth client (`better-auth/react`)
@@ -685,6 +690,26 @@ email`, `POST /api/auth/sign-in/email`, and `/api/auth/sign-in/social`.
 - The session is a cookie set on the API origin. Session-gated endpoints
   (`POST /rooms`, `GET /rooms/mine`, `POST /rooms/:room/host-token`) read it; the
   client must send `credentials: "include"`.
+
+## Owner-controlled maintenance
+
+Maintenance is a server-enforced admission/shutdown policy. It deliberately
+leaves health, authentication, existing stop/deny paths, lifecycle webhooks,
+and existing authorization rules available. The full operational procedure is
+[RUNBOOK_MAINTENANCE.md](./RUNBOOK_MAINTENANCE.md).
+
+| Method | Path                  | Authorization                                         | Result                                                                                                        |
+| ------ | --------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| GET    | `/maintenance/status` | public                                                | `no-store` current `{ phase, startsAt, message, serverTime }`                                                 |
+| GET    | `/maintenance/access` | optional session                                      | `no-store` `{ owner: boolean }`; it discloses no owner identity                                               |
+| GET    | `/maintenance/admin`  | configured owner session                              | `no-store` current maintenance status                                                                         |
+| POST   | `/maintenance/admin`  | configured owner session + exact `Origin: WEB_ORIGIN` | body `{ enabled: boolean, message?: string }`; schedules a fixed five-minute warning or reopens after cleanup |
+
+When admission is closed, guarded create/join/admit/recording-start/new-Remote-
+Control routes return the normal error envelope with `503` and code
+`MAINTENANCE`. Clients use it to show the maintenance surface rather than an
+unexpected-fault flow. An unset `MAINTENANCE_OWNER_USER_ID` grants no browser
+owner access.
 
 ## CORS
 

@@ -4,94 +4,62 @@ Guidance for Codex (and any AI agent) working in this repository.
 
 ## What this project is
 
-A self-hosted, browser-based video conferencing app (a Google Meet–style product)
-built on **LiveKit** (open-source WebRTC SFU). The app is **implemented through
-Phase 10** (attended Remote Control, macOS-first): `apps/web` (Next.js) +
-`apps/api` (NestJS),
-with `infra/` holding the dev and prod (`docker-compose.prod.yml`) stacks.
+Huddle is a self-hosted, browser-based meeting product built on LiveKit. The
+repository contains a Next.js web app, NestJS API, Swift/SwiftUI macOS Control
+Agent, and Docker-based local/production infrastructure.
 
-Read the docs in `docs/` first — especially `docs/ROADMAP.md` (phase status) and
-the ADRs in `docs/adr/` — before changing anything.
+The MVP (Phases 0–3) is historical and complete. Later calling, managed-room,
+recording, deployment, attended Remote Control, Control Agent beta, and desktop
+Picture-in-Picture work is present to varying levels of implementation and
+acceptance. Do not infer completion from a phase number or a test alone: read
+[`docs/DOCUMENTATION.md`](docs/DOCUMENTATION.md), then
+[`docs/ROADMAP.md`](docs/ROADMAP.md), before changing behavior.
 
-## Scope (read this before building)
+## Scope and security invariants
 
-The first milestone is an **MVP**, not full Meet parity. Build only what the
-current phase calls for. See `docs/ROADMAP.md` for phases and `docs/PRD.md` for
-exact requirements.
-
-MVP = create/join a room, publish & subscribe to camera + mic, participant grid,
-mute/unmute, leave call. Screen share, chat, recording, and scheduling are
-**later phases** — do not build them unless the active phase says so.
-
-Phase 10 Remote Control is an explicit exception to the MVP scope: it is an
-attended, room-scoped feature using the native macOS Control Agent. Keep its
-consent, identity binding, 30-minute renewal, bounded ephemeral plain-text
-Clipboard Sharing, and file/audio/unattended-access exclusions intact; do not
-turn it into unattended access.
+- Keep meetings browser-based. The macOS Control Agent is a narrow companion
+  only for selected-display capture and approved OS input.
+- Never expose the LiveKit API secret or host authority to the browser. The API
+  decides identity, room scope, and grants; host actions require the server-held
+  room capability.
+- Managed rooms have no public token-minting endpoint. Do not reintroduce
+  `POST /token` or a path that bypasses the waiting room.
+- Remote Control remains attended, room-scoped, identity-bound, and renewable
+  every 30 minutes. Preserve explicit consent, either-party Stop, Present
+  mutual exclusion, bounded ephemeral plain-text clipboard sharing, and the
+  exclusions for unattended access, files, rich/binary clipboard, and desktop
+  audio.
+- Treat source/build checks as insufficient for live WebRTC, physical macOS
+  permissions, signed/notarized releases, external OAuth, or deployed service
+  claims. Preserve the manual acceptance gaps in the roadmap.
 
 ## Target stack
 
-| Layer        | Choice                                         |
-| ------------ | ---------------------------------------------- |
-| Frontend     | Next.js (App Router, TypeScript, React)        |
-| Realtime UI  | `@livekit/components-react`, `livekit-client`  |
-| Backend      | NestJS (TypeScript)                            |
-| Token mgmt   | `livekit-server-sdk` (server-side JWT)         |
-| Media server | Self-hosted LiveKit (`livekit/livekit-server`) |
-| State store  | Redis (required for LiveKit multi-node)        |
-| Platform     | Web browsers only (desktop + mobile web)       |
+| Layer                | Choice                                                                |
+| -------------------- | --------------------------------------------------------------------- |
+| Web / API            | Next.js (App Router, TypeScript) / NestJS (TypeScript)                |
+| Live media           | Self-hosted LiveKit with the React client and server SDK              |
+| State                | Postgres/Prisma for durable records; Redis for shared ephemeral state |
+| Recording            | LiveKit Egress with MinIO; optional private Google Drive delivery     |
+| Privileged companion | Swift/SwiftUI macOS Control Agent                                     |
+| Deployment           | Docker Compose, Caddy, and embedded LiveKit TURN                      |
 
 Full rationale is in `docs/TECH_STACK.md`.
 
-## Intended repo layout (create as you build)
+Use pnpm workspaces. Keep secrets in environment files, never source. Update the
+relevant contract, roadmap status, runbook, or ADR when a behavior or decision
+changes; do not make public/deployment claims without matching external evidence.
 
-```
-.
-├── AGENTS.md                # this file
-├── README.md
-├── docs/                    # planning & design docs (source of truth)
-├── infra/                   # LiveKit + Redis config, docker-compose
-├── apps/
-│   ├── web/                 # Next.js frontend
-│   └── api/                 # NestJS backend (token + room service)
-├── packages/                # shared TS types/utils (optional, add when needed)
-├── .env.example
-└── .gitignore
-```
-
-Use a workspace/monorepo (npm or pnpm workspaces). Keep frontend and backend in
-separate apps under `apps/`. Do not put secrets in code — read from env.
-
-## Key architectural rules
-
-- **The browser never gets the LiveKit API secret.** The NestJS backend mints a
-  short-lived JWT access token per participant; the frontend uses that token to
-  connect directly to the LiveKit server over WebRTC.
-- **LiveKit server is infra, not app code.** It runs as a container (see
-  `infra/`). The app talks to it via the client SDK (media) and server SDK
-  (tokens, room admin, webhooks).
-- **Keep token logic on the server.** Identity, room name, and grants are decided
-  server-side, never trusted from the client.
-- See `docs/ARCHITECTURE.md` and `docs/LIVEKIT_INTEGRATION.md` for the full flow.
-
-## Common commands (fill in as code lands)
-
-These are the intended commands; wire them up when scaffolding each app.
+## Common commands
 
 ```bash
-# infra: start self-hosted LiveKit + Redis locally
-docker compose -f infra/docker-compose.yml up -d
-
-# backend (apps/api)
-npm run start:dev        # NestJS in watch mode
-
-# frontend (apps/web)
-npm run dev              # Next.js dev server
-
-# quality gates (add real scripts when set up)
-npm run lint
-npm run test
-npm run build
+pnpm infra:up / pnpm infra:down
+pnpm dev:api / pnpm dev:web
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+swift test --package-path apps/control-agent
 ```
 
 ## Conventions
@@ -105,20 +73,13 @@ npm run build
 
 ## Where to look
 
-| I need to know…            | Read…                         |
-| -------------------------- | ----------------------------- |
-| What to build & acceptance | `docs/PRD.md`                 |
-| Build order / phases       | `docs/ROADMAP.md`             |
-| System design & data flow  | `docs/ARCHITECTURE.md`        |
-| Stack choices & why        | `docs/TECH_STACK.md`          |
-| LiveKit specifics & tokens | `docs/LIVEKIT_INTEGRATION.md` |
-| HTTP API shape             | `docs/API_CONTRACT.md`        |
-| Local setup steps          | `docs/SETUP.md`               |
-| Deploying to a VPS         | `docs/DEPLOYMENT.md`          |
-
-```
-
-```
+| I need to know…                               | Read…                                                     |
+| --------------------------------------------- | --------------------------------------------------------- |
+| Documentation authority and status boundaries | `docs/DOCUMENTATION.md`                                   |
+| Requirements / current phase status           | `docs/PRD.md` / `docs/ROADMAP.md`                         |
+| Architecture / HTTP boundary                  | `docs/ARCHITECTURE.md` / `docs/API_CONTRACT.md`           |
+| Decisions                                     | `docs/adr/README.md` and the relevant ADR                 |
+| Local / production operation                  | `docs/SETUP.md` / `docs/DEPLOYMENT.md` / relevant runbook |
 
 <!-- BEGIN @agent-native/skills -->
 
