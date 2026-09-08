@@ -57,6 +57,10 @@ replacement.
 - Remote Control begins inside an active room. The Controller sends a Request
   Control action, the Sharer explicitly approves it, then the Sharer launches
   the macOS Control Agent and selects an entire physical display.
+- Mobile browsers keep the meeting experience, but do not offer Remote Control
+  requests, Control Agent handoff, desktop input, clipboard actions, or
+  keyboard-only call shortcuts. A mobile participant can still safely deny a
+  received request or stop a session they already belong to.
 - The core deployment uses Next.js, NestJS, self-hosted LiveKit, Redis,
   Postgres, MinIO, Caddy, and Docker Compose. Google sign-in and Google Drive
   delivery are optional integrations and do not change the self-hosted product

@@ -24,6 +24,7 @@ import MeetingLoadingScreen from '@/components/call/MeetingLoadingScreen';
 import ErrorBoundary from '@/components/faults/ErrorBoundary';
 import LandingThemeProvider from '@/components/landing/LandingThemeProvider';
 import { usePresentation } from '@/components/call/usePresentation';
+import { useMobileBrowserCapabilities } from '@/lib/mobileBrowserCapabilities';
 import { useRecording } from '@/components/call/useRecording';
 import { useRemoteControl } from '@/components/call/useRemoteControl';
 import { setCallNoticeTrayOffset } from '@/lib/systemNotices';
@@ -252,6 +253,7 @@ function CallView({
   const recording = useRecording({ room, token, isHost, hostKey });
   const remoteControl = useRemoteControl({ room, participantToken: token });
   const presentation = usePresentation(isHost, !!remoteControl.session);
+  const mobileCapabilities = useMobileBrowserCapabilities();
 
   // Background Call + Picture-in-Picture. VideoGrid reports the feed that owns
   // the native stage; the rich surface reads the same room tracks directly.
@@ -313,7 +315,7 @@ function CallView({
         onPinnedIdentityChange={setPinnedIdentity}
         remoteControlSession={remoteControl.session}
         isRemoteSharer={remoteControl.iAmSharer}
-        onRequestControl={(identity) => void remoteControl.requestControl(identity)}
+        onRequestControl={mobileCapabilities.canUseDesktopRemoteControl ? (identity) => void remoteControl.requestControl(identity) : undefined}
         remoteControlStatus={
           remoteControl.session ? (
             <ErrorBoundary label="Remote control status" fallback={null}>
@@ -327,12 +329,13 @@ function CallView({
                 onStop={remoteControl.stop}
                 onRenew={remoteControl.renew}
                 onCopyReceivedClipboard={remoteControl.copyReceivedClipboard}
+                canUseDesktopRemoteControl={mobileCapabilities.canUseDesktopRemoteControl}
               />
             </ErrorBoundary>
           ) : undefined
         }
         remoteControlInput={
-          remoteControl.iAmController && remoteControl.session?.agentConnected ? (
+          mobileCapabilities.canUseDesktopRemoteControl && remoteControl.iAmController && remoteControl.session?.agentConnected ? (
             <RemoteControlSurface
               sendInput={remoteControl.sendInput}
               onClipboardCopy={remoteControl.sendClipboardCopy}
@@ -362,6 +365,8 @@ function CallView({
         onRecordClick={recordMode ? onRecordClick : undefined}
         recordBusy={recording.busy}
         remoteControlActive={!!remoteControl.session}
+        presentationSupported={mobileCapabilities.canPresent}
+        shortcutsSupported={!mobileCapabilities.isMobileBrowser}
         onPopOut={pipSupported ? () => void (pipActive ? exitPip() : enterPip('manual')) : undefined}
         pipActive={pipActive}
         pipRichSupported={pipRichSupported}
@@ -388,6 +393,7 @@ function CallView({
             onApprove={remoteControl.approve}
             onDeny={remoteControl.deny}
             onDismiss={remoteControl.dismissNotice}
+            canApprove={mobileCapabilities.canUseDesktopRemoteControl}
           />
           <RecordingToast
             incoming={recording.incoming}
@@ -411,12 +417,14 @@ function CallView({
       </CallNoticeTray>
       <CallTimer hidden={hostPanelOpen} showThemeToggle={!isHost} />
       <ConnectionStatus />
-      <AgentLaunchDialog
-        bootstrap={remoteControl.helperBootstrap}
-        onReopen={remoteControl.reopenAgent}
-        onAgentUnavailable={remoteControl.notifyAgentUnavailable}
-        onDismiss={remoteControl.dismissHelperBootstrap}
-      />
+      {mobileCapabilities.canUseDesktopRemoteControl && (
+        <AgentLaunchDialog
+          bootstrap={remoteControl.helperBootstrap}
+          onReopen={remoteControl.reopenAgent}
+          onAgentUnavailable={remoteControl.notifyAgentUnavailable}
+          onDismiss={remoteControl.dismissHelperBootstrap}
+        />
+      )}
       {overlay}
       {pipFailure && (
         <div

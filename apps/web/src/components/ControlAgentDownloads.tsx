@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { getNoCostControlAgentBeta } from '@/lib/controlAgentFreeBeta';
 import type { ControlAgentRelease } from '@/lib/controlAgentReleaseShared';
 import { formatBytes } from '@/lib/controlAgentReleaseShared';
+import { useMobileBrowserCapabilities } from '@/lib/mobileBrowserCapabilities';
 
 type DetectedPlatform = 'mac' | 'windows' | 'linux' | 'other';
 type DetectedArchitecture = 'arm64' | 'x86_64' | 'unknown';
@@ -34,6 +35,7 @@ function detectPlatform(): { platform: DetectedPlatform; architecture: DetectedA
 
 export default function ControlAgentDownloads({ release, repositoryUrl }: { release: ControlAgentRelease | null; repositoryUrl: string }) {
   const [detected, setDetected] = useState<{ platform: DetectedPlatform; architecture: DetectedArchitecture }>({ platform: 'other', architecture: 'unknown' });
+  const { isMobileBrowser } = useMobileBrowserCapabilities();
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => setDetected(detectPlatform()));
@@ -44,6 +46,20 @@ export default function ControlAgentDownloads({ release, repositoryUrl }: { rele
   const noCostBeta = release?.verified ? null : getNoCostControlAgentBeta(repositoryUrl);
   const macDetected = detected.platform === 'mac';
   const architectureLabel = detected.architecture === 'arm64' ? 'Apple Silicon' : detected.architecture === 'x86_64' ? 'Intel' : null;
+
+  if (isMobileBrowser) {
+    return (
+      <section className="downloads-release-station" aria-labelledby="downloads-mobile-title">
+        <div className="downloads-release-station__header">
+          <div>
+            <p className="downloads-station-label">macOS companion</p>
+            <h2 id="downloads-mobile-title">The Control Agent requires a Mac.</h2>
+          </div>
+        </div>
+        <p className="downloads-unavailable">Use a desktop macOS browser to download, install, and prepare the Control Agent for Remote Control.</p>
+      </section>
+    );
+  }
 
   return (
     <div className="downloads-agent">

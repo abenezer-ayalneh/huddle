@@ -20,6 +20,9 @@ type PushToTalk = {
 };
 
 type Props = {
+  // Mobile browser controls remain available, but keyboard-only shortcuts and
+  // push-to-talk are intentionally desktop-only affordances.
+  enabled?: boolean;
   // Flip the microphone (Cmd/Ctrl+D). Callers gate on `pending`.
   onToggleAudio: () => void;
   // Flip the camera (Cmd/Ctrl+E).
@@ -46,6 +49,7 @@ export function useCallShortcuts(props: Props): void {
   // Latest props without re-binding the listeners every render.
   const ref = useRef(props);
   useEffect(() => {
+    if (props.enabled === false) return;
     ref.current = props;
   });
 
@@ -124,7 +128,7 @@ export function useCallShortcuts(props: Props): void {
       window.removeEventListener('blur', reMute);
       reMute();
     };
-  }, []);
+  }, [props.enabled]);
 }
 
 // '⌘' on macOS, 'Ctrl' elsewhere — for tooltip hints. useSyncExternalStore so

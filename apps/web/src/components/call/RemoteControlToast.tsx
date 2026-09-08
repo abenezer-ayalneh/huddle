@@ -13,6 +13,7 @@ export default function RemoteControlToast({
   onApprove,
   onDeny,
   onDismiss,
+  canApprove = true,
 }: {
   incoming: RemoteControlRequestSummary | null;
   outgoing: RemoteControlRequestSummary | null;
@@ -21,6 +22,7 @@ export default function RemoteControlToast({
   onApprove: () => void;
   onDeny: () => void;
   onDismiss: () => void;
+  canApprove?: boolean;
 }) {
   if (incoming) {
     return (
@@ -36,8 +38,9 @@ export default function RemoteControlToast({
               <strong className="text-cyan">{incoming.controllerName}</strong> wants to control your desktop.
             </p>
             <p className="mt-1 text-xs text-white/65">
-              Everyone in this room will see the desktop. Remote Control includes mouse and keyboard input, plus plain-text clipboard sharing with{' '}
-              {incoming.controllerName}.
+              {canApprove
+                ? `Everyone in this room will see the desktop. Remote Control includes mouse and keyboard input, plus plain-text clipboard sharing with ${incoming.controllerName}.`
+                : 'Remote Control requires a desktop browser and a macOS Control Agent. You can safely deny this request from mobile.'}
             </p>
           </div>
         </div>
@@ -55,14 +58,16 @@ export default function RemoteControlToast({
             <X className="h-3.5 w-3.5" />
             Deny
           </button>
-          <button
-            type="button"
-            onClick={onApprove}
-            className="signal-call-consent-action inline-flex items-center gap-1.5 rounded-lg bg-cyan/20 px-3 py-1.5 text-xs text-cyan ring-1 ring-cyan/45 hover:bg-cyan/30"
-          >
-            <Check className="h-3.5 w-3.5" />
-            Approve
-          </button>
+          {canApprove && (
+            <button
+              type="button"
+              onClick={onApprove}
+              className="signal-call-consent-action inline-flex items-center gap-1.5 rounded-lg bg-cyan/20 px-3 py-1.5 text-xs text-cyan ring-1 ring-cyan/45 hover:bg-cyan/30"
+            >
+              <Check className="h-3.5 w-3.5" />
+              Approve
+            </button>
+          )}
         </div>
       </div>
     );

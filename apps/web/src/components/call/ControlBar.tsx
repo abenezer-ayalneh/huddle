@@ -45,6 +45,8 @@ export default function ControlBar({
   pipRichSupported = false,
   pipAutoPreference,
   onPipAutoPreferenceChange,
+  presentationSupported = true,
+  shortcutsSupported = true,
 }: {
   onLeave: () => void;
   chatOpen: boolean;
@@ -69,6 +71,8 @@ export default function ControlBar({
   pipRichSupported?: boolean;
   pipAutoPreference?: PipAutoPreference;
   onPipAutoPreferenceChange?: (preference: PipAutoPreference) => void;
+  presentationSupported?: boolean;
+  shortcutsSupported?: boolean;
 }) {
   // Device Recovery (docs/adr/0023): classify a failed mic/camera toggle so a
   // badge + recovery dialog can explain a blocked / busy / missing device. A
@@ -149,6 +153,7 @@ export default function ControlBar({
   // the mic with an explicit on/off so a quick tap still ends muted.
   const mod = useModifierKeyLabel();
   useCallShortcuts({
+    enabled: shortcutsSupported,
     onToggleAudio: () => {
       if (micCause) void reRequest('microphone');
       else if (!mic.pending) void mic.toggle();
@@ -200,7 +205,13 @@ export default function ControlBar({
           {showMuteReminder && <MuteReminderBubble />}
           <MergedControlButton
             icon={mic.enabled ? Mic : MicOff}
-            label={micCause ? 'Fix microphone access' : mic.enabled ? `Mute microphone (${mod}D)` : `Unmute microphone (${mod}D) · Hold Space to talk`}
+            label={
+              micCause
+                ? 'Fix microphone access'
+                : mic.enabled
+                  ? `Mute microphone${shortcutsSupported ? ` (${mod}D)` : ''}`
+                  : `Unmute microphone${shortcutsSupported ? ` (${mod}D) · Hold Space to talk` : ''}`
+            }
             menuLabel="Switch microphone or speaker"
             active={mic.enabled}
             danger={!mic.enabled}
@@ -212,7 +223,7 @@ export default function ControlBar({
         </div>
         <MergedControlButton
           icon={cam.enabled ? Video : VideoOff}
-          label={camCause ? 'Fix camera access' : cam.enabled ? `Turn camera off (${mod}E)` : `Turn camera on (${mod}E)`}
+          label={camCause ? 'Fix camera access' : `${cam.enabled ? 'Turn camera off' : 'Turn camera on'}${shortcutsSupported ? ` (${mod}E)` : ''}`}
           menuLabel="Switch camera"
           active={cam.enabled}
           danger={!cam.enabled}
@@ -246,6 +257,7 @@ export default function ControlBar({
           recordMode={recordMode}
           onRecordClick={onRecordClick}
           recordBusy={recordBusy}
+          presentationSupported={presentationSupported}
         />
 
         <span className="signal-call-controls-divider mx-1 h-7 w-px bg-white/10" />
@@ -279,6 +291,7 @@ function MoreControls({
   recordMode,
   onRecordClick,
   recordBusy,
+  presentationSupported,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -296,6 +309,7 @@ function MoreControls({
   recordMode?: 'request' | 'pending' | 'recording';
   onRecordClick?: () => void;
   recordBusy: boolean;
+  presentationSupported: boolean;
 }) {
   const recordLabel =
     recordMode === 'recording'
@@ -317,14 +331,16 @@ function MoreControls({
         {indicator && <span aria-hidden="true" className={`signal-call-more-indicator signal-call-more-indicator-${indicator}`} />}
       </PopoverTrigger>
       <PopoverContent side="top" sideOffset={14} className="signal-call-more-popover w-64 gap-1.5 rounded-xl p-1.5">
-        <MoreControlAction
-          icon={presenting ? MonitorOff : MonitorUp}
-          label={shareLabel}
-          active={presenting}
-          disabled={presentDisabled}
-          onClick={onShareClick}
-          close={() => onOpenChange(false)}
-        />
+        {presentationSupported && (
+          <MoreControlAction
+            icon={presenting ? MonitorOff : MonitorUp}
+            label={shareLabel}
+            active={presenting}
+            disabled={presentDisabled}
+            onClick={onShareClick}
+            close={() => onOpenChange(false)}
+          />
+        )}
         {onPopOut && (
           <MoreControlAction
             icon={PictureInPicture2}

@@ -12,6 +12,7 @@ import DeviceAlertBadge from './DeviceAlertBadge';
 import DeviceRecoveryDialog, { type RecoveryTarget } from './DeviceRecoveryDialog';
 import { useMediaPermissions } from './useMediaPermissions';
 import { useCallShortcuts, useModifierKeyLabel } from './useCallShortcuts';
+import { useMobileBrowserCapabilities } from '@/lib/mobileBrowserCapabilities';
 
 type Defaults = {
   username?: string;
@@ -345,7 +346,9 @@ function PreJoinExperience({
   // the Device Check too. No push-to-talk here — there is nothing to talk into
   // before joining.
   const mod = useModifierKeyLabel();
+  const { isMobileBrowser } = useMobileBrowserCapabilities();
   useCallShortcuts({
+    enabled: !isMobileBrowser,
     onToggleAudio: () => (audioCause ? void reRequest('microphone') : toggleAudio()),
     onToggleCamera: () => {
       if (videoStarting) return;
@@ -431,9 +434,9 @@ function PreJoinExperience({
                 on={audioEnabled}
                 onIcon={Mic}
                 offIcon={MicOff}
-                label={audioCause ? 'Allow microphone access' : `${audioEnabled ? 'Microphone on' : 'Microphone off'} (${mod}D)`}
+                label={audioCause ? 'Allow microphone access' : `${audioEnabled ? 'Microphone on' : 'Microphone off'}${isMobileBrowser ? '' : ` (${mod}D)`}`}
                 name="Microphone"
-                shortcut={`${mod}D`}
+                shortcut={isMobileBrowser ? undefined : `${mod}D`}
                 alert={!!audioCause}
                 onClick={audioCause ? () => void reRequest('microphone') : toggleAudio}
               />
@@ -441,9 +444,15 @@ function PreJoinExperience({
                 on={videoEnabled}
                 onIcon={Video}
                 offIcon={VideoOff}
-                label={videoStarting ? 'Starting camera' : videoCause ? 'Allow camera access' : `${videoEnabled ? 'Camera on' : 'Camera off'} (${mod}E)`}
+                label={
+                  videoStarting
+                    ? 'Starting camera'
+                    : videoCause
+                      ? 'Allow camera access'
+                      : `${videoEnabled ? 'Camera on' : 'Camera off'}${isMobileBrowser ? '' : ` (${mod}E)`}`
+                }
                 name="Camera"
-                shortcut={`${mod}E`}
+                shortcut={isMobileBrowser ? undefined : `${mod}E`}
                 alert={!!videoCause}
                 pending={videoStarting}
                 disabled={videoStarting}
@@ -509,7 +518,7 @@ function ToggleButton({
   offIcon: typeof Mic;
   label: string;
   name: string;
-  shortcut: string;
+  shortcut?: string;
   onClick: () => void;
   alert?: boolean;
   pending?: boolean;
@@ -533,7 +542,7 @@ function ToggleButton({
       <span className="prejoin-device-toggle-copy">
         <strong>{name}</strong>
         <small>
-          {pending ? 'Starting…' : showOff ? (alert ? 'Allow access' : 'Off') : 'On'} <kbd>{shortcut}</kbd>
+          {pending ? 'Starting…' : showOff ? (alert ? 'Allow access' : 'Off') : 'On'} {shortcut && <kbd>{shortcut}</kbd>}
         </small>
       </span>
       {alert && <DeviceAlertBadge />}

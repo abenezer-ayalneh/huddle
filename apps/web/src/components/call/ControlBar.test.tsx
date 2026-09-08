@@ -80,6 +80,14 @@ describe('ControlBar secondary controls', () => {
     expect(screen.queryByRole('button', { name: /record/i })).toBeNull();
   });
 
+  it('hides Present when screen capture is unavailable', () => {
+    renderControlBar({ presentationSupported: false });
+
+    fireEvent.click(screen.getByRole('button', { name: 'More controls' }));
+
+    expect(screen.queryByRole('button', { name: 'Share screen' })).toBeNull();
+  });
+
   it('reports active secondary actions and gives recording priority to the dock indicator', () => {
     const { rerender } = render(
       <ControlBar

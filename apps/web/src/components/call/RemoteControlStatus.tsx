@@ -24,6 +24,7 @@ export default function RemoteControlStatus({
   onStop,
   onRenew,
   onCopyReceivedClipboard,
+  canUseDesktopRemoteControl = true,
 }: {
   session: RemoteControlSession;
   iAmSharer: boolean;
@@ -34,6 +35,7 @@ export default function RemoteControlStatus({
   onStop: () => void;
   onRenew: () => void;
   onCopyReceivedClipboard: () => void | Promise<void>;
+  canUseDesktopRemoteControl?: boolean;
 }) {
   const minutes = renewalRemainingMs == null ? null : Math.ceil(renewalRemainingMs / 60_000);
   const active = session.agentConnected;
@@ -76,7 +78,7 @@ export default function RemoteControlStatus({
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-2">
-          {iAmSharer && minutes != null && (
+          {iAmSharer && canUseDesktopRemoteControl && minutes != null && (
             <button
               type="button"
               onClick={() => setRenewalConfirmationOpen(true)}
@@ -94,7 +96,7 @@ export default function RemoteControlStatus({
               Stop
             </button>
           )}
-          {iAmController && clipboardCopyPending && (
+          {iAmController && canUseDesktopRemoteControl && clipboardCopyPending && (
             <button
               type="button"
               onClick={() => void onCopyReceivedClipboard()}
