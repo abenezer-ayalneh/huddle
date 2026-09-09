@@ -33,6 +33,11 @@ test('requires a complete signed release configuration', () => {
   assert.ok(errors.some((error) => error.includes('all-or-none')));
 });
 
+test('requires a complete separate Windows release configuration', () => {
+  const errors = validateProductionEnv({ ...base, WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL: 'https://releases.example.com/windows' });
+  assert.ok(errors.some((error) => error.includes('Windows Control Agent release configuration is all-or-none')));
+});
+
 test('requires TURN domain and certificates only when TURN is enabled', () => {
   const errors = validateProductionEnv({ ...base, TURN_ENABLED: 'true', TURN_DOMAIN: 'turn.example.com' }, { root: '/definitely-not-a-repository' });
   assert.equal(errors.filter((error) => error.includes('turn-certs')).length, 2);

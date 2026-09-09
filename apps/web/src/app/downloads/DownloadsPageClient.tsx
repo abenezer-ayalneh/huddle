@@ -7,13 +7,17 @@ import HuddleBrandThemeHeader from '@/components/HuddleBrandThemeHeader';
 import LandingThemeProvider from '@/components/landing/LandingThemeProvider';
 import { getNoCostControlAgentBeta } from '@/lib/controlAgentFreeBeta';
 import type { ControlAgentRelease } from '@/lib/controlAgentReleaseShared';
+import type { WindowsControlAgentRelease } from '@/lib/windowsControlAgentReleaseShared';
 
 type DownloadsPageClientProps = {
   release: ControlAgentRelease | null;
+  windowsRelease: WindowsControlAgentRelease | null;
   repositoryUrl: string;
   operatorContactUrl: string;
   releaseNotesFallbackUrl: string | null;
   issuesUrl: string | null;
+  windowsReleaseNotesFallbackUrl: string | null;
+  windowsIssuesUrl: string | null;
 };
 
 function DownloadsNavigation() {
@@ -34,9 +38,20 @@ function DownloadsNavigation() {
   );
 }
 
-export default function DownloadsPageClient({ release, repositoryUrl, operatorContactUrl, releaseNotesFallbackUrl, issuesUrl }: DownloadsPageClientProps) {
+export default function DownloadsPageClient({
+  release,
+  windowsRelease,
+  repositoryUrl,
+  operatorContactUrl,
+  releaseNotesFallbackUrl,
+  issuesUrl,
+  windowsReleaseNotesFallbackUrl,
+  windowsIssuesUrl,
+}: DownloadsPageClientProps) {
   const hasVerifiedSignedRelease = release?.verified === true;
+  const hasVerifiedWindowsRelease = windowsRelease?.verified === true;
   const hasNoCostBeta = !hasVerifiedSignedRelease && getNoCostControlAgentBeta(repositoryUrl) !== null;
+  const hasAnyRelease = hasVerifiedSignedRelease || hasVerifiedWindowsRelease || hasNoCostBeta;
 
   return (
     <LandingThemeProvider>
@@ -57,16 +72,16 @@ export default function DownloadsPageClient({ release, repositoryUrl, operatorCo
               </p>
               <h1 id="downloads-title">Give the Sharer a safe local switch.</h1>
               <p className="downloads-lede">
-                {hasVerifiedSignedRelease
-                  ? 'The Control Agent is a signed, notarized macOS companion. It shares one entire selected physical display — including the menu bar, Dock, desktop, all windows, and the agent — only after the Sharer approves Remote Control in the room and confirms locally.'
-                  : hasNoCostBeta
-                    ? 'The Apple Silicon Control Agent beta is available now. It is ad-hoc signed and unnotarized: verify its published checksum, then use macOS Privacy & Security → Open Anyway. A signed, notarized two-architecture channel is still being prepared.'
-                    : 'This deployment has not configured a verified Control Agent release. Remote Control downloads are unavailable until the operator completes that signed-release setup.'}
+                {hasVerifiedSignedRelease || hasVerifiedWindowsRelease
+                  ? 'The Control Agent is an attended companion for the Sharer’s macOS or Windows desktop. It shares one entire selected physical display only after approval in the active room and a local Start confirmation.'
+                  : hasAnyRelease
+                    ? 'The public beta is available for the listed desktop platforms. Verify its published checksum before installing. An unsigned Windows installer has no publisher trust; a macOS ad-hoc build is not notarized.'
+                    : 'This deployment has not configured a Control Agent release. Remote Control downloads are unavailable until the operator completes the release setup.'}
               </p>
               <div className="downloads-boundary-line">
                 <ShieldCheck className="size-5" aria-hidden="true" />
                 <p>
-                  <strong>No unattended access.</strong> Windows and Linux agents are coming soon.
+                  <strong>No unattended access.</strong> The Controller stays in the browser on every supported platform.
                 </p>
               </div>
               <dl className="downloads-boundaries">
@@ -85,7 +100,7 @@ export default function DownloadsPageClient({ release, repositoryUrl, operatorCo
               </dl>
             </div>
 
-            <ControlAgentDownloads release={release} repositoryUrl={repositoryUrl} />
+            <ControlAgentDownloads release={release} windowsRelease={windowsRelease} repositoryUrl={repositoryUrl} />
           </div>
         </section>
 
@@ -97,13 +112,13 @@ export default function DownloadsPageClient({ release, repositoryUrl, operatorCo
             </div>
             <div className="downloads-integrity-content">
               <p>
-                {hasVerifiedSignedRelease
-                  ? 'Every signed beta artifact is published with a SHA-256 checksum and a signed release manifest. The agent checks for required updates before redeeming a new session; it never installs updates silently.'
-                  : hasNoCostBeta
-                    ? 'This public Apple Silicon beta is a deliberate, limited fallback. Its DMG has a published SHA-256 checksum, but it is not Developer ID-signed, notarized, or substituted into the trusted release channel.'
+                {hasVerifiedSignedRelease || hasVerifiedWindowsRelease
+                  ? 'Every verified beta release publishes a SHA-256 checksum and a platform-specific signed release manifest. The agent checks for required updates before redeeming a new session; it never installs updates silently.'
+                  : hasAnyRelease
+                    ? 'Each public beta has a SHA-256 checksum. That checksum verifies downloaded bytes; it does not turn an unsigned Windows installer or an unnotarized macOS app into a publisher-trusted release.'
                     : 'Downloads are intentionally disabled rather than falling back to an unsigned or unrelated artifact.'}
               </p>
-              {releaseNotesFallbackUrl || issuesUrl ? (
+              {releaseNotesFallbackUrl || issuesUrl || windowsReleaseNotesFallbackUrl || windowsIssuesUrl ? (
                 <div className="downloads-integrity-links">
                   {releaseNotesFallbackUrl ? (
                     <a href={release?.releaseNotesUrl ?? releaseNotesFallbackUrl} target="_blank" rel="noreferrer">
@@ -113,6 +128,16 @@ export default function DownloadsPageClient({ release, repositoryUrl, operatorCo
                   {issuesUrl ? (
                     <a href={issuesUrl} target="_blank" rel="noreferrer">
                       <ExternalLink className="size-4" aria-hidden="true" /> Report a beta problem
+                    </a>
+                  ) : null}
+                  {windowsReleaseNotesFallbackUrl ? (
+                    <a href={windowsRelease?.releaseNotesUrl ?? windowsReleaseNotesFallbackUrl} target="_blank" rel="noreferrer">
+                      <ExternalLink className="size-4" aria-hidden="true" /> Windows release notes
+                    </a>
+                  ) : null}
+                  {windowsIssuesUrl ? (
+                    <a href={windowsIssuesUrl} target="_blank" rel="noreferrer">
+                      <ExternalLink className="size-4" aria-hidden="true" /> Report a Windows beta problem
                     </a>
                   ) : null}
                 </div>

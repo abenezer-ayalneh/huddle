@@ -40,7 +40,7 @@ export default function RemoteControlToast({
             <p className="mt-1 text-xs text-white/65">
               {canApprove
                 ? `Everyone in this room will see the desktop. Remote Control includes mouse and keyboard input, plus plain-text clipboard sharing with ${incoming.controllerName}.`
-                : 'Remote Control requires a desktop browser and a macOS Control Agent. You can safely deny this request from mobile.'}
+                : 'Remote Control requires a desktop browser and a supported Control Agent. You can safely deny this request from mobile.'}
             </p>
           </div>
         </div>

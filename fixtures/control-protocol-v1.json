@@ -1,0 +1,69 @@
+{
+  "packets": [
+    {
+      "name": "normalized pointer move",
+      "valid": true,
+      "payload": {
+        "v": 1,
+        "type": "remote-control:input",
+        "sessionId": "session-1",
+        "sequence": 1,
+        "event": { "kind": "move", "x": 0.25, "y": 0.75 }
+      }
+    },
+    {
+      "name": "keyboard event without optional key text",
+      "valid": true,
+      "payload": {
+        "v": 1,
+        "type": "remote-control:input",
+        "sessionId": "session-1",
+        "sequence": 2,
+        "event": { "kind": "key", "action": "down", "code": "KeyA", "modifiers": ["meta"] }
+      }
+    },
+    {
+      "name": "clipboard paste within the shared bound",
+      "valid": true,
+      "payload": {
+        "v": 1,
+        "type": "remote-control:clipboard-paste",
+        "sessionId": "session-1",
+        "sequence": 3,
+        "text": "plain text only"
+      }
+    },
+    {
+      "name": "root extra field",
+      "valid": false,
+      "payload": {
+        "v": 1,
+        "type": "remote-control:clipboard-copy",
+        "sessionId": "session-1",
+        "sequence": 4,
+        "extra": true
+      }
+    },
+    {
+      "name": "fractional sequence",
+      "valid": false,
+      "payload": {
+        "v": 1,
+        "type": "remote-control:clipboard-copy",
+        "sessionId": "session-1",
+        "sequence": 4.5
+      }
+    },
+    {
+      "name": "empty clipboard",
+      "valid": false,
+      "payload": {
+        "v": 1,
+        "type": "remote-control:clipboard-paste",
+        "sessionId": "session-1",
+        "sequence": 5,
+        "text": ""
+      }
+    }
+  ]
+}

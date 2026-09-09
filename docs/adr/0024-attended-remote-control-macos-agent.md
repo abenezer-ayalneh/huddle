@@ -2,6 +2,10 @@
 
 Status: accepted
 
+Amended by [ADR 0032](./0032-windows-control-agent.md) for the Windows x64
+implementation. This record remains the source for the original macOS-specific
+capture and permission decisions.
+
 Huddle will support attended, in-call **Remote Control** on macOS. A Controller
 requests control of a Sharer's desktop; the Sharer explicitly approves or denies
 inside the active room. On approval, a signed/notarized native Swift **Control
@@ -45,7 +49,8 @@ Swift SDK, macOS screen capture, and Core Graphics event injection. It requests
 Screen Recording and Accessibility permission with explicit status and recovery
 UI. It publishes no microphone/audio, shares only bounded plain-text clipboard
 changes under ADR 0026, transfers no files, and implements no richer
-remote-desktop features in v1. Windows and Linux are deferred.
+remote-desktop features in v1. Windows is specified by ADR 0032; Linux remains
+deferred.
 
 The beta is distributed with a Developer ID signature and Apple notarization.
 Entitlements are minimal and App Sandbox is not enabled because cross-application

@@ -61,6 +61,10 @@ Huddle has published a no-cost Apple-Silicon beta with a deliberate Gatekeeper
 warning instead of Apple trust; physical two-browser acceptance remains a
 separate, outstanding gate. A future trusted release still needs an Apple
 release credential set and physical acceptance checklist. Neither path adds
-Windows/Linux agents, telemetry, rich clipboard/file/audio features, or
+Linux agents, telemetry, rich clipboard/file/audio features, or
 unattended access. Attended plain-text Clipboard Sharing remains governed by
 ADR 0026.
+
+Windows distribution is separately defined by ADR 0032: its x64 beta installer
+is unsigned, and its platform-specific signed manifest does not provide Windows
+publisher trust.

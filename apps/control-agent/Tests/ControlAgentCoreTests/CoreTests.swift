@@ -3,6 +3,30 @@ import XCTest
 @testable import ControlAgentCore
 
 final class CoreTests: XCTestCase {
+    func testSharedControlProtocolV1Fixtures() throws {
+        let fixtureURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("fixtures/control-protocol-v1.json")
+        let root = try XCTUnwrap(try JSONSerialization.jsonObject(with: Data(contentsOf: fixtureURL)) as? [String: Any])
+        let fixtures = try XCTUnwrap(root["packets"] as? [[String: Any]])
+
+        for fixture in fixtures {
+            let name = fixture["name"] as? String ?? "unnamed fixture"
+            let payload = try XCTUnwrap(fixture["payload"])
+            let valid = try XCTUnwrap(fixture["valid"] as? Bool)
+            let data = try JSONSerialization.data(withJSONObject: payload)
+            if valid {
+                XCTAssertNoThrow(try ControlPacketDecoder.decode(data), name)
+            } else {
+                XCTAssertThrowsError(try ControlPacketDecoder.decode(data), name)
+            }
+        }
+    }
+
     func testBootstrapRejectsNonLocalHTTPAndAcceptsLocalDev() throws {
         XCTAssertThrowsError(try BootstrapLink.manual(api: "http://example.com", room: "room", sessionID: "session", code: "abcdefgh"))
         let link = try BootstrapLink.manual(api: "http://localhost:3001", room: "room", sessionID: "session", code: "abcdefgh")

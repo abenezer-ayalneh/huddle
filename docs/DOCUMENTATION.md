@@ -41,6 +41,7 @@ mistaken for proof of something it only proposes or records historically.
 | Repeated operations                               | [runbooks](#runbooks)                       | The referenced scripts and workflows                                   |
 | Web product/design rules                          | `apps/web/PRODUCT.md`, `apps/web/DESIGN.md` | Current web routes and components                                      |
 | macOS companion operation                         | `apps/control-agent/README.md`              | Swift source and release scripts                                       |
+| Windows companion operation                       | `apps/control-agent-windows/README.md`      | Flutter app, Win32 bridge, installer, and release workflow             |
 
 ## Status vocabulary
 
@@ -65,6 +66,8 @@ mistaken for proof of something it only proposes or records historically.
 - [CI/CD to the VPS](./RUNBOOK_CICD.md) — GitHub/VPS configuration and recovery.
 - [Owner-controlled maintenance](./RUNBOOK_MAINTENANCE.md) — maintenance
   authority, shutdown, static-page override, and recovery.
+- [Release Windows Control Agent beta](./RUNBOOK_WINDOWS_CONTROL_AGENT_RELEASE.md)
+  — physical acceptance, unsigned installer, signed manifest, and release path.
 
 ## Audit baseline: 2026-09-08
 

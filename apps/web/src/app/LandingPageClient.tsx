@@ -293,7 +293,7 @@ export default function LandingPageClient() {
             <div className="landing-control-intro">
               <span className="landing-mono-label">03 / ATTENDED REMOTE CONTROL</span>
               <h2 id="control-title">Let the client drive. Keep the stop button close.</h2>
-              <p>The agency shares a staging site and runs the macOS Control Agent. The client stays in-browser and asks before anything moves.</p>
+              <p>The agency shares a staging site and runs the desktop Control Agent. The client stays in-browser and asks before anything moves.</p>
               <div className="landing-control-points">
                 <span>
                   <Check /> Sharer approves the request
@@ -511,8 +511,8 @@ export default function LandingPageClient() {
               <details>
                 <summary>What does Remote Control require?</summary>
                 <p>
-                  The meeting stays in the browser. Only the Sharer installs the macOS Control Agent, and each control session is attended, room-scoped,
-                  identity-bound, and renewable every 30 minutes.
+                  The meeting stays in the browser. Only the Sharer installs the supported desktop Control Agent, and each control session is attended,
+                  room-scoped, identity-bound, and renewable every 30 minutes.
                 </p>
               </details>
               <details>

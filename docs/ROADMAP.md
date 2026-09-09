@@ -289,7 +289,7 @@ decisions are in `docs/adr/0024-attended-remote-control-macos-agent.md`.
       Recording/Accessibility consent, and Developer ID release credentials.
 
 **v1 exclusions:** unattended access, rich/binary clipboard sync, file transfer,
-desktop audio, support codes outside a room, Windows/Linux agents, and richer
+desktop audio, support codes outside a room, Linux agents, and richer
 desktop suite features. Plain-text Clipboard Sharing is defined in ADR 0026.
 
 ### Phase 11 — Public macOS Control Agent beta
@@ -297,8 +297,8 @@ desktop suite features. Plain-text Clipboard Sharing is defined in ADR 0026.
 Make the attended macOS companion installable by Sharers without weakening the
 Phase 10 authority boundary.
 
-- [x] Public OS-aware Downloads page with arm64/x86_64 DMGs and Windows/Linux
-      coming-soon states.
+- [x] Public OS-aware Downloads page with arm64/x86_64 DMGs and separate Windows
+      x64 release-channel support.
 - [x] Sharer-only launch recovery: bootstrap rotation, full-link paste fallback,
       explicit origin trust, permission preparation, and display selection.
 - [x] Signed update manifest with advisory updates, required-version blocking,
@@ -321,7 +321,31 @@ Phase 10 authority boundary.
 - [ ] Pre-tag signed-release-candidate acceptance on physical Apple Silicon and
       Intel Macs, followed by the first public beta tag.
 
-Windows and Linux Control Agents remain future phases with no release date.
+Linux Control Agents remain future work with no release date.
+
+### Phase 13 — Windows Control Agent public beta
+
+Port the existing attended Remote Control companion to Windows 10 22H2 and
+Windows 11 x64 without widening the browser/API authority boundary. See
+ADR 0032.
+
+- [x] Flutter Windows companion with a C++ bridge for Per-Monitor-V2 display
+      geometry, `SendInput`, bounded Unicode clipboard access, Windows lifecycle
+      termination, and explicit UAC `runas` relaunch before connection.
+- [x] One-time bootstrap, exact-origin trust, server-grant/token/metadata/sender
+      checks, v1 protocol bounds, recipient-targeted clipboard, selected-display
+      switching, local Stop, and manual full-link recovery.
+- [x] Distinct Windows signed-manifest verification, cached required-version
+      enforcement, manual update notice, x64 Inno Setup packaging, quoted link
+      registration, checksum output, Downloads integration, and GitHub workflow.
+- [ ] Physical Windows 10/11 acceptance: ordinary and administrator apps,
+      browser matrix, multi-monitor/DPI/portrait/removal, lock/sleep/reconnect,
+      expiry, cursor-overlay suppression, installer upgrade/uninstall,
+      checksum/manifest failure, and unsigned-publisher behavior.
+
+The Windows installer is intentionally unsigned for this beta. Its release
+manifest authenticates the metadata and expected checksum; a separately verified
+checksum verifies the downloaded bytes, neither provides publisher identity.
 
 ### Phase 12 — Rich desktop Picture-in-Picture
 

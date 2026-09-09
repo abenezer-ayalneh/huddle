@@ -330,7 +330,7 @@ _Avoid_: Request to share, take over request
 ### Remote control
 
 **Selected Display**:
-The entire physical monitor chosen by the Sharer in the macOS Control Agent:
+The entire physical monitor chosen by the Sharer in the native Control Agent:
 menu bar, Dock, desktop, every app window, and the Control Agent window are
 included. The Sharer may change this display locally at any time during the
 same approved Remote Control session. Huddle briefly hides the desktop and
@@ -394,17 +394,20 @@ type secrets; Huddle never records input events or clipboard contents.
 _Avoid_: Operator, driver, support agent
 
 **Control Agent**:
-The signed and notarized native macOS helper app that only the [[Sharer]]
-installs. It captures the Sharer's entire [[Selected Display]], publishes it
-LiveKit room, applies input only from the server-approved [[Controller]], and
-relays bounded plain-text clipboard updates only to that Controller. It joins as
+The native helper app that only the [[Sharer]] installs. The macOS channel is
+signed/notarized when configured; the Windows x64 public beta installer is
+unsigned and its manifest/checksum do not provide publisher trust. It captures
+the Sharer's entire [[Selected Display]], publishes it to the LiveKit room,
+applies input only from the server-approved [[Controller]], and relays bounded
+plain-text clipboard updates only to that Controller. It joins as
 a companion participant hidden from people-facing participant UI, has
 no room Host authority, and holds no standing credential. The installed app is
 inert until the Sharer trusts the Huddle server, chooses a display, and confirms
 Start Remote Control. Its local Change display picker switches immediately
 within the same approved session; its local Stop action disconnects it, which
-ends Remote Control. Windows and Linux downloads are not available in the public
-beta.
+ends Remote Control. Windows supports an explicit local UAC relaunch before
+connection when the Sharer needs to control administrator applications. Linux
+downloads are not available in the public beta.
 _Avoid_: Host (already the room role), daemon, desktop client
 
 ### In-call host controls

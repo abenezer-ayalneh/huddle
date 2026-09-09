@@ -1,0 +1,72 @@
+name: Windows Control Agent release
+
+on:
+  push:
+    tags:
+      - 'windows-control-agent-v*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: windows-control-agent-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-and-publish:
+    runs-on: windows-2022
+    env:
+      WINDOWS_AGENT_UPDATE_PRIVATE_KEY_B64: ${{ secrets.WINDOWS_AGENT_UPDATE_PRIVATE_KEY_B64 }}
+      WINDOWS_AGENT_UPDATE_KEY_ID: ${{ secrets.WINDOWS_AGENT_UPDATE_KEY_ID }}
+      WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL: https://github.com/${{ github.repository }}/releases/download/windows-control-agent-beta
+      WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY: ${{ secrets.WINDOWS_AGENT_UPDATE_PUBLIC_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.3'
+          channel: stable
+      - name: Install Windows packaging tool
+        shell: pwsh
+        run: choco install innosetup --no-progress --yes
+      - name: Resolve packages and run focused tests
+        working-directory: apps/control-agent-windows
+        shell: pwsh
+        run: |
+          flutter pub get
+          flutter analyze
+          flutter test
+      - name: Build unsigned x64 installer
+        id: build
+        shell: pwsh
+        run: |
+          $version = '${{ github.ref_name }}'.Replace('windows-control-agent-v', '')
+          ./apps/control-agent-windows/scripts/build-installer.ps1 -Version $version
+          "version=$version" >> $env:GITHUB_OUTPUT
+      - name: Create checksums and immutable beta release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = '${{ github.ref_name }}'
+          gh release create $tag apps/control-agent-windows/dist/Huddle-Control-Agent-windows-x64.exe apps/control-agent-windows/dist/Huddle-Control-Agent-windows-x64.exe.sha256 --repo $env:GITHUB_REPOSITORY --prerelease --title "Huddle Control Agent ${{ steps.build.outputs.version }} · Windows Public Beta" --generate-notes
+      - name: Create signed Windows release manifest
+        shell: pwsh
+        env:
+          WINDOWS_AGENT_RELEASE_NOTES_URL: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}
+        run: node scripts/create-windows-control-agent-manifest.mjs "${{ steps.build.outputs.version }}" "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}"
+      - name: Upload versioned manifest
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.ref_name }}" apps/control-agent-windows/dist/release-manifest.json apps/control-agent-windows/dist/release-manifest.sig --repo $env:GITHUB_REPOSITORY --clobber
+      - name: Advance signed Windows beta channel
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if (gh release view windows-control-agent-beta --repo $env:GITHUB_REPOSITORY) {
+            gh release upload windows-control-agent-beta apps/control-agent-windows/dist/release-manifest.json apps/control-agent-windows/dist/release-manifest.sig --repo $env:GITHUB_REPOSITORY --clobber
+          } else {
+            gh release create windows-control-agent-beta apps/control-agent-windows/dist/release-manifest.json apps/control-agent-windows/dist/release-manifest.sig --repo $env:GITHUB_REPOSITORY --prerelease --title "Huddle Control Agent · Windows Public Beta Channel" --notes "Signed release manifest for the latest Windows x64 beta. The installer itself is unsigned."
+          }

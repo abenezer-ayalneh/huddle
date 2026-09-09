@@ -6,6 +6,7 @@ import { getNoCostControlAgentBeta } from '@/lib/controlAgentFreeBeta';
 import type { ControlAgentRelease } from '@/lib/controlAgentReleaseShared';
 import { formatBytes } from '@/lib/controlAgentReleaseShared';
 import { useMobileBrowserCapabilities } from '@/lib/mobileBrowserCapabilities';
+import type { WindowsControlAgentRelease } from '@/lib/windowsControlAgentReleaseShared';
 
 type DetectedPlatform = 'mac' | 'windows' | 'linux' | 'other';
 type DetectedArchitecture = 'arm64' | 'x86_64' | 'unknown';
@@ -33,7 +34,15 @@ function detectPlatform(): { platform: DetectedPlatform; architecture: DetectedA
   return { platform, architecture };
 }
 
-export default function ControlAgentDownloads({ release, repositoryUrl }: { release: ControlAgentRelease | null; repositoryUrl: string }) {
+export default function ControlAgentDownloads({
+  release,
+  windowsRelease,
+  repositoryUrl,
+}: {
+  release: ControlAgentRelease | null;
+  windowsRelease: WindowsControlAgentRelease | null;
+  repositoryUrl: string;
+}) {
   const [detected, setDetected] = useState<{ platform: DetectedPlatform; architecture: DetectedArchitecture }>({ platform: 'other', architecture: 'unknown' });
   const { isMobileBrowser } = useMobileBrowserCapabilities();
 
@@ -44,7 +53,9 @@ export default function ControlAgentDownloads({ release, repositoryUrl }: { rele
 
   const download: DownloadArtifact | undefined = release?.verified ? release.downloads.arm64 : undefined;
   const noCostBeta = release?.verified ? null : getNoCostControlAgentBeta(repositoryUrl);
+  const windowsDownload: DownloadArtifact | undefined = windowsRelease?.verified ? windowsRelease.downloads.x64 : undefined;
   const macDetected = detected.platform === 'mac';
+  const windowsDetected = detected.platform === 'windows';
   const architectureLabel = detected.architecture === 'arm64' ? 'Apple Silicon' : detected.architecture === 'x86_64' ? 'Intel' : null;
 
   if (isMobileBrowser) {
@@ -52,11 +63,11 @@ export default function ControlAgentDownloads({ release, repositoryUrl }: { rele
       <section className="downloads-release-station" aria-labelledby="downloads-mobile-title">
         <div className="downloads-release-station__header">
           <div>
-            <p className="downloads-station-label">macOS companion</p>
-            <h2 id="downloads-mobile-title">The Control Agent requires a Mac.</h2>
+            <p className="downloads-station-label">desktop companion</p>
+            <h2 id="downloads-mobile-title">The Control Agent requires a desktop computer.</h2>
           </div>
         </div>
-        <p className="downloads-unavailable">Use a desktop macOS browser to download, install, and prepare the Control Agent for Remote Control.</p>
+        <p className="downloads-unavailable">Use a desktop macOS or Windows browser to download, install, and prepare the Control Agent for Remote Control.</p>
       </section>
     );
   }
@@ -138,6 +149,66 @@ export default function ControlAgentDownloads({ release, repositoryUrl }: { rele
         </div>
       </section>
 
+      <section className="downloads-release-station" aria-labelledby="downloads-windows-title">
+        <div className="downloads-release-station__header">
+          <div>
+            <p className="downloads-station-label">Windows companion</p>
+            <h2 id="downloads-windows-title">Choose the build for this PC.</h2>
+          </div>
+          <span className={windowsRelease?.verified ? 'downloads-release-status is-verified' : 'downloads-release-status'}>
+            {windowsRelease?.verified ? 'Verified manifest' : 'Release unavailable'}
+          </span>
+        </div>
+
+        <div className="downloads-architecture-list">
+          <article className={`downloads-architecture${windowsDetected ? ' is-recommended' : ''}`}>
+            <div className="downloads-architecture__identity">
+              <span className="downloads-architecture__icon" aria-hidden="true">
+                <Monitor className="size-6" strokeWidth={1.6} />
+              </span>
+              <div>
+                <div className="downloads-architecture__title-row">
+                  <h3>Windows · x64</h3>
+                  {windowsDetected ? <span className="downloads-recommended">Recommended</span> : null}
+                </div>
+                <p>Windows 10 22H2 or Windows 11 · 64-bit Intel or AMD</p>
+              </div>
+            </div>
+            <div className="downloads-architecture__meta">
+              <span>
+                <Cpu className="size-3.5" aria-hidden="true" /> {windowsRelease?.verified ? windowsRelease.version : 'Release details unavailable'}
+              </span>
+              {windowsDownload?.sizeBytes ? <span>{formatBytes(windowsDownload.sizeBytes)} · SHA-256 published</span> : null}
+            </div>
+            {windowsDownload ? (
+              <a href={windowsDownload.url} className="downloads-download-button">
+                <Download className="size-4" aria-hidden="true" /> Download Windows x64 installer
+              </a>
+            ) : (
+              <p className="downloads-unavailable">This operator has not configured a Windows Control Agent release.</p>
+            )}
+            {windowsRelease?.verified ? (
+              <p className="downloads-unavailable">
+                Unsigned public beta. Verify the published SHA-256 value, then review the Windows publisher warning before installing. The signed manifest
+                authenticates the release metadata and expected checksum; it does not provide Windows publisher trust.
+              </p>
+            ) : null}
+          </article>
+        </div>
+
+        <div className="downloads-station-foot">
+          <p className="downloads-detection">
+            {windowsDetected ? 'Your browser reports Windows.' : 'This installer is for 64-bit Windows 10 22H2 or Windows 11.'} Downloads are never selected
+            silently.
+          </p>
+          {!windowsRelease?.verified ? (
+            <p className="downloads-release-warning">
+              A signed Windows Control Agent manifest can be configured when a release is ready. The installer itself remains unsigned during this beta.
+            </p>
+          ) : null}
+        </div>
+      </section>
+
       <section className="downloads-handoff-guide" aria-labelledby="downloads-guide-title">
         <div className="downloads-guide-heading">
           <p className="downloads-kicker">Your first handoff</p>
@@ -149,9 +220,9 @@ export default function ControlAgentDownloads({ release, repositoryUrl }: { rele
             <div>
               <strong>Install deliberately</strong>
               <p>
-                {release?.verified
-                  ? 'Open the signed DMG, drag Huddle Control Agent to Applications, then launch it.'
-                  : 'When a verified release is configured, open its DMG, drag Huddle Control Agent to Applications, then launch it.'}
+                {
+                  'On macOS, open the DMG and move the app to Applications. On Windows, run the x64 installer after verifying the configured release or published checksum.'
+                }
               </p>
             </div>
           </li>
@@ -159,7 +230,10 @@ export default function ControlAgentDownloads({ release, repositoryUrl }: { rele
             <ShieldCheck className="size-5" aria-hidden="true" />
             <div>
               <strong>Prepare explicitly</strong>
-              <p>Press Prepare for Remote Control and grant Screen Recording plus Accessibility when macOS asks.</p>
+              <p>
+                Trust the Huddle server, then choose a display locally. macOS asks for Screen Recording and Accessibility; Windows can request local UAC
+                approval for administrator apps.
+              </p>
             </div>
           </li>
           <li>

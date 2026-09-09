@@ -32,6 +32,8 @@ Huddle. Package manifests and lockfiles are the source for exact versions;
 
 ## Deferred or externally verified work
 
-Windows/Linux Control Agents, full multi-node operation, metrics dashboards,
-and physical/provider acceptance remain outside what the source tree proves.
+Linux Control Agents, full multi-node operation, metrics dashboards, and
+physical/provider acceptance remain outside what the source tree proves. The
+Windows Control Agent source and release workflow still require their documented
+physical-device acceptance matrix.
 The current roadmap is authoritative for the work that is intentionally pending.

@@ -21,7 +21,7 @@ const jsonLd = [
       'Device Check and Host-controlled Waiting Room admission',
       'Camera, microphone, Present, and in-call Chat',
       'Visible room-composite Recording with local MinIO retention',
-      'Attended, room-scoped Remote Control through a macOS Control Agent',
+      'Attended, room-scoped Remote Control through a desktop Control Agent',
       'Docker Compose deployment on a VPS or Docker host',
     ],
     author: { '@type': 'Person', name: operatorName, url: operatorContactUrl },

@@ -399,6 +399,15 @@ GitHub Release DMGs. Set `NEXT_PUBLIC_CONTROL_AGENT_UPDATE_PUBLIC_KEY` to the
 same Ed25519 public key embedded in the signed agent bundle so the Downloads page
 can show verified release metadata.
 
+The Windows x64 beta uses a separate manifest channel. Configure all four of
+`WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL`,
+`WINDOWS_CONTROL_AGENT_RELEASES_URL`,
+`WINDOWS_CONTROL_AGENT_ISSUES_URL`, and
+`WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY` together. Production Compose maps
+them to the corresponding `NEXT_PUBLIC_WINDOWS_CONTROL_AGENT_*` build
+arguments. This permits the Downloads page to verify release metadata; it does
+not make the unsigned Windows installer publisher-trusted.
+
 Do not put Developer ID certificates, App Store Connect keys, or the manifest
 private key in the VPS environment. They belong only in protected GitHub release
 secrets.

@@ -18,13 +18,14 @@ for current mechanics.
 
 ## Decision map
 
-| Area                                      | ADRs      | Current reading rule                                                                                                                                                                                       |
-| ----------------------------------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| LiveKit credentials, data, and deployment | 0001–0005 | Keep the API secret server-only, use Postgres for durable records and Redis for ephemeral coordination; the deployment decision is a single VPS, with external rollout evidence separate.                  |
-| Managed rooms and call behavior           | 0006–0023 | Room Codes, custom Huddle call UI, Present, recording consent, device behavior, and error semantics are deliberate. ADR 0008 superseded the early stock LiveKit UI described in historical roadmap phases. |
-| Remote Control and distribution           | 0024–0026 | These form one safety boundary: attended macOS-only control, release/update constraints, and bounded ephemeral plain-text clipboard sharing. Do not weaken an exclusion by reading only one ADR.           |
-| Observability, rejoin, recording delivery | 0027–0029 | Sentry is privacy-scrubbed web/API fault reporting, Direct Rejoin is call-scoped, and Drive delivery/retention is optional with external acceptance still required.                                        |
-| Legal and PiP                             | 0030–0031 | Apache-2.0 repository licensing has its root `LICENSE`/`NOTICE` artifacts; desktop Document PiP supplements mobile/native PiP behavior in ADR 0020.                                                        |
+| Area                                      | ADRs            | Current reading rule                                                                                                                                                                                       |
+| ----------------------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| LiveKit credentials, data, and deployment | 0001–0005       | Keep the API secret server-only, use Postgres for durable records and Redis for ephemeral coordination; the deployment decision is a single VPS, with external rollout evidence separate.                  |
+| Managed rooms and call behavior           | 0006–0023       | Room Codes, custom Huddle call UI, Present, recording consent, device behavior, and error semantics are deliberate. ADR 0008 superseded the early stock LiveKit UI described in historical roadmap phases. |
+| Remote Control and distribution           | 0024–0026, 0032 | These form one safety boundary: attended platform agents, release/update constraints, and bounded ephemeral plain-text clipboard sharing. Do not weaken an exclusion by reading only one ADR.              |
+| Observability, rejoin, recording delivery | 0027–0029       | Sentry is privacy-scrubbed web/API fault reporting, Direct Rejoin is call-scoped, and Drive delivery/retention is optional with external acceptance still required.                                        |
+| Legal and PiP                             | 0030–0031       | Apache-2.0 repository licensing has its root `LICENSE`/`NOTICE` artifacts; desktop Document PiP supplements mobile/native PiP behavior in ADR 0020.                                                        |
+| Windows Control Agent                     | 0032            | Windows x64 reuses Remote Control authority but has its own DPI/input/UAC and unsigned-installer constraints; physical Windows acceptance remains separate.                                                |
 
 ## Notable amendments and historical context
 

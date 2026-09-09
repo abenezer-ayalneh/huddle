@@ -216,6 +216,30 @@ The tag workflow is `.github/workflows/control-agent-release.yml`; record
 physical signed-release-candidate results for both Apple Silicon and Intel
 before creating a `control-agent-vX.Y.Z` tag.
 
+## 6d. Run the Windows Control Agent
+
+The Windows companion targets Windows 10 22H2 and Windows 11 x64. On a Windows
+development machine with Flutter 3.24.3+, Visual Studio's **Desktop development
+with C++** workload, and the Windows SDK installed:
+
+```powershell
+cd apps/control-agent-windows
+flutter pub get
+flutter analyze
+flutter test
+flutter run -d windows
+```
+
+The Sharer opens the same one-time `huddle-control://join` link from the
+browser, trusts the exact API origin, selects one entire display, and presses
+**Start Remote Control**. The agent runs normally by default. Before connecting,
+the Sharer can choose **Allow control of administrator apps** and approve UAC
+locally; secure-desktop prompts, sign-in, Ctrl+Alt+Delete, services, and
+unattended access remain unavailable. See
+[RUNBOOK_WINDOWS_CONTROL_AGENT_RELEASE.md](./RUNBOOK_WINDOWS_CONTROL_AGENT_RELEASE.md)
+for packaging, release configuration, and the required physical acceptance
+matrix.
+
 ## Troubleshooting
 
 - **Camera/mic blocked:** browsers only allow media on `https` or `localhost`.

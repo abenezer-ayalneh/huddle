@@ -517,7 +517,7 @@ the Controller. The API decision remains authoritative.
 
 ### POST /rooms/:room/remote-control/:sessionId/helper-token _(bootstrap bearer)_
 
-Used only by the macOS Control Agent. It deliberately does not use a participant
+Used only by the native Control Agent. It deliberately does not use a participant
 token: the short-lived bootstrap code in the body is the bearer. Redemption is
 atomic and single-use.
 

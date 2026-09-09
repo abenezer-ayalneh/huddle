@@ -121,8 +121,8 @@ export default function PrivacyPage() {
         <p>
           If Sentry is enabled, the web app and API send unexpected error events and stack traces for debugging. Before transmission, Huddle removes user
           identity, headers, cookies, request bodies and query values, email addresses, room and recording identifiers, Control Agent links, and console
-          breadcrumbs. Performance tracing and Session Replay are disabled. The macOS Control Agent has no automatic telemetry; its diagnostic summary is
-          generated and shared only when the user chooses to copy it.
+          breadcrumbs. Performance tracing and Session Replay are disabled. The macOS and Windows Control Agents have no automatic telemetry; their diagnostic
+          summary is generated and shared only when the user chooses to copy it.
         </p>
       </LegalSection>
 

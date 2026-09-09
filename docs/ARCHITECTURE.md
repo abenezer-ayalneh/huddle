@@ -15,7 +15,7 @@ Browser ── HTTPS/API ──> Next.js web <──> NestJS API ──> Postgre
                                                      │
                                               Egress (recording)
 
-macOS Control Agent ── bootstrap/API + LiveKit ─────┘
+macOS / Windows Control Agent ── bootstrap/API + LiveKit ─────┘
 ```
 
 - **Next.js (`apps/web`)** renders the meeting product and connects to LiveKit;
@@ -111,8 +111,9 @@ general remote-support system:
    identity-bound, renewable grant; LiveKit room metadata is display state, not
    the authority.
 3. The Sharer launches the native agent with a short-lived one-time bootstrap.
-   After origin trust, macOS consent, selected-display choice, and local Start,
-   the agent publishes the entire physical display.
+   After origin trust, platform-local permissions or optional Windows elevation,
+   selected-display choice, and local Start, the agent publishes the entire
+   physical display.
 4. Only the approved Controller's versioned, session-scoped packets are
    accepted. The Agent verifies the sender and current grant before injecting
    input or handling an allowed clipboard action.
@@ -120,11 +121,12 @@ general remote-support system:
    Sharer reconfirmation is required every 30 minutes.
 
 The feature excludes unattended access, support codes outside a room, files,
-rich/binary clipboard, desktop audio, and non-macOS agents. Plain-text clipboard
+rich/binary clipboard, desktop audio, and unsupported-platform agents. Plain-text clipboard
 sharing is bounded, recipient-targeted, and ephemeral: no clipboard payload may
 enter HTTP, Redis, Postgres, room metadata, logs, recordings, or audit records.
-The complete decision record is [ADR 0024](./adr/0024-attended-remote-control-macos-agent.md)
-with [ADR 0026](./adr/0026-plain-text-clipboard-sharing.md).
+The complete decision record is [ADR 0024](./adr/0024-attended-remote-control-macos-agent.md),
+[ADR 0032](./adr/0032-windows-control-agent.md), and
+[ADR 0026](./adr/0026-plain-text-clipboard-sharing.md).
 
 ## Control Agent distribution
 

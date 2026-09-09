@@ -1,0 +1,6 @@
+.dart_tool/
+.packages
+build/
+dist/
+windows/flutter/ephemeral/
+windows/flutter/generated_plugin_registrant.*

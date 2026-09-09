@@ -139,8 +139,8 @@ export default function AgentLaunchDialog({
         <div>
           <h2 className="font-display text-lg font-semibold">Opening the Control Agent</h2>
           <p className="mt-1 text-sm text-white/65">
-            Huddle is opening the signed macOS Control Agent. If it is not installed, download it, then return here and press Open Agent again. The launch link
-            is one-time and expires shortly; Open Agent creates a fresh link when needed.
+            Huddle is opening the local Control Agent. If it is not installed, download the build for this Sharer’s computer, then return here and press Open
+            Agent again. The launch link is one-time and expires shortly; Open Agent creates a fresh link when needed.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -160,7 +160,7 @@ export default function AgentLaunchDialog({
             className="rounded-lg bg-white/10 px-3 py-2 text-xs text-white/75 hover:bg-white/20"
           >
             <Download className="mr-1 inline h-3.5 w-3.5" />
-            Download for Mac
+            Open downloads
           </a>
           <button
             type="button"

@@ -178,10 +178,10 @@ export default function TermsPage() {
 
       <LegalSection id="remote-control" title="Attended Remote Control">
         <p>
-          Remote Control is a high-trust, attended feature. The Sharer explicitly approves a connected Controller, launches the macOS Control Agent, selects an
-          entire physical display, grants macOS Screen Recording and Accessibility permissions, and confirms Start locally. The approved Controller can then
-          send mouse, keyboard, Trackpad Scroll, and bounded plain-text Clipboard Sharing input to that display. The Sharer must reconfirm the session every 30
-          minutes and either party can stop it.
+          Remote Control is a high-trust, attended feature. The Sharer explicitly approves a connected Controller, launches the supported local Control Agent,
+          selects an entire physical display, grants the required macOS permissions or explicitly approves Windows elevation for administrator apps, and
+          confirms Start locally. The approved Controller can then send mouse, keyboard, Trackpad Scroll, and bounded plain-text Clipboard Sharing input to that
+          display. The Sharer must reconfirm the session every 30 minutes and either party can stop it.
         </p>
         <LegalCallout title="Stay present and protect sensitive information">
           <p>

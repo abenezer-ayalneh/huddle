@@ -4,6 +4,12 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const RELEASE_KEYS = ['CONTROL_AGENT_RELEASE_CHANNEL_URL', 'CONTROL_AGENT_RELEASES_URL', 'CONTROL_AGENT_ISSUES_URL', 'CONTROL_AGENT_UPDATE_PUBLIC_KEY'];
+const WINDOWS_RELEASE_KEYS = [
+  'WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL',
+  'WINDOWS_CONTROL_AGENT_RELEASES_URL',
+  'WINDOWS_CONTROL_AGENT_ISSUES_URL',
+  'WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY',
+];
 const FRONT_DOORS = ['compose', 'host'];
 
 const REQUIRED_KEYS = [
@@ -82,6 +88,17 @@ export function validateProductionEnv(env, { root = process.cwd() } = {}) {
   if (configuredReleaseKeys.length === RELEASE_KEYS.length) {
     for (const key of RELEASE_KEYS.slice(0, 3)) if (!isHttpsUrl(env[key])) errors.push(`${key} must be an HTTPS URL`);
     if (!isPublicKey(env.CONTROL_AGENT_UPDATE_PUBLIC_KEY)) errors.push('CONTROL_AGENT_UPDATE_PUBLIC_KEY must be a base64-encoded 32-byte Ed25519 public key');
+  }
+
+  const configuredWindowsReleaseKeys = WINDOWS_RELEASE_KEYS.filter((key) => Boolean(env[key]?.trim()));
+  if (configuredWindowsReleaseKeys.length > 0 && configuredWindowsReleaseKeys.length !== WINDOWS_RELEASE_KEYS.length) {
+    errors.push(`Windows Control Agent release configuration is all-or-none: ${WINDOWS_RELEASE_KEYS.join(', ')}`);
+  }
+  if (configuredWindowsReleaseKeys.length === WINDOWS_RELEASE_KEYS.length) {
+    for (const key of WINDOWS_RELEASE_KEYS.slice(0, 3)) if (!isHttpsUrl(env[key])) errors.push(`${key} must be an HTTPS URL`);
+    if (!isPublicKey(env.WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY)) {
+      errors.push('WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY must be a base64-encoded 32-byte Ed25519 public key');
+    }
   }
 
   const turnEnabled = env.TURN_ENABLED ?? 'false';
