@@ -10,7 +10,8 @@ dependencies:
   flutter:
     sdk: flutter
   cryptography: 2.7.0
-  http: 1.2.2
+  flutter_webrtc: 1.6.0
+  http: ^1.6.0
   livekit_client: 2.12.0
   shared_preferences: 2.3.2
 

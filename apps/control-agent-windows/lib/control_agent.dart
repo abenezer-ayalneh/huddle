@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart' as rtc;
 import 'package:http/http.dart' as http;
 import 'package:livekit_client/livekit_client.dart';
 
@@ -15,10 +16,23 @@ import 'core/server_trust.dart';
 import 'livekit/livekit_session.dart';
 import 'platform/windows_bridge.dart';
 
-enum AgentPhase { waitingForLink, trustRequired, readyToConnect, connecting, chooseDisplay, awaitingActivation, readyToStart, active, switchingDisplay, ended, failed }
+enum AgentPhase {
+  waitingForLink,
+  trustRequired,
+  readyToConnect,
+  connecting,
+  chooseDisplay,
+  awaitingActivation,
+  readyToStart,
+  active,
+  switchingDisplay,
+  ended,
+  failed
+}
 
 class WindowsControlAgent extends ChangeNotifier {
-  WindowsControlAgent({LiveKitControlSession? session, ServerTrustStore? trustStore})
+  WindowsControlAgent(
+      {LiveKitControlSession? session, ServerTrustStore? trustStore})
       : _session = session ?? LiveKitControlSession(),
         _trustStore = trustStore ?? ServerTrustStore();
 
@@ -26,7 +40,8 @@ class WindowsControlAgent extends ChangeNotifier {
   final LiveKitControlSession _session;
   final ServerTrustStore _trustStore;
   final WindowsBridge _windows = WindowsBridge.instance;
-  final WindowsReleaseManifestChecker _releaseManifest = WindowsReleaseManifestChecker();
+  final WindowsReleaseManifestChecker _releaseManifest =
+      WindowsReleaseManifestChecker();
   StreamSubscription<ReceivedControlPacket>? _packetSubscription;
   StreamSubscription<String?>? _metadataSubscription;
   StreamSubscription<void>? _disconnectSubscription;
@@ -57,18 +72,21 @@ class WindowsControlAgent extends ChangeNotifier {
   Uri? get apiOrigin => _descriptor?.apiOrigin;
   bool get elevated => _elevated;
   bool get hasLink => _descriptor != null;
-  bool get isSessionActive => _phase == AgentPhase.active || _phase == AgentPhase.switchingDisplay;
+  bool get isSessionActive =>
+      _phase == AgentPhase.active || _phase == AgentPhase.switchingDisplay;
   ReleaseStatus? get releaseStatus => _releaseStatus;
 
   Future<void> initialize(String? link) async {
     _elevated = await _windows.isElevated;
     if (!await _windows.isNativeX64) {
-      _setFailure('Huddle Control Agent supports native x64 Windows only. ARM64 and 32-bit Windows are not part of this beta.');
+      _setFailure(
+          'Huddle Control Agent supports native x64 Windows only. ARM64 and 32-bit Windows are not part of this beta.');
       notifyListeners();
       return;
     }
     if (!_supportsWindowsBuild(await _windows.windowsVersion)) {
-      _setFailure('Huddle Control Agent requires Windows 10 22H2 or Windows 11 on a 64-bit PC.');
+      _setFailure(
+          'Huddle Control Agent requires Windows 10 22H2 or Windows 11 on a 64-bit PC.');
       notifyListeners();
       return;
     }
@@ -79,14 +97,17 @@ class WindowsControlAgent extends ChangeNotifier {
 
   Future<void> acceptLink(String raw) async {
     if (_elevated && _elevatedLinkAccepted) {
-      _setFailure('This elevated Control Agent accepts one launch link only. Close it and obtain a fresh browser approval.');
+      _setFailure(
+          'This elevated Control Agent accepts one launch link only. Close it and obtain a fresh browser approval.');
       return;
     }
     if (_elevated) _elevatedLinkAccepted = true;
     try {
       _descriptor = BootstrapLink.parse(raw);
       _error = null;
-      _phase = await _trustStore.isTrusted(_descriptor!.apiOrigin) ? AgentPhase.readyToConnect : AgentPhase.trustRequired;
+      _phase = await _trustStore.isTrusted(_descriptor!.apiOrigin)
+          ? AgentPhase.readyToConnect
+          : AgentPhase.trustRequired;
     } on BootstrapLinkException catch (error) {
       _setFailure(error.message);
     }
@@ -104,7 +125,8 @@ class WindowsControlAgent extends ChangeNotifier {
   Future<void> restartElevated() async {
     final descriptor = _descriptor;
     if (descriptor == null || _session.connected) return;
-    final link = 'huddle-control://join?api=${Uri.encodeQueryComponent(descriptor.apiOrigin.toString())}&room=${Uri.encodeQueryComponent(descriptor.room)}&session=${Uri.encodeQueryComponent(descriptor.sessionId)}&code=${Uri.encodeQueryComponent(descriptor.bootstrapCode)}';
+    final link =
+        'huddle-control://join?api=${Uri.encodeQueryComponent(descriptor.apiOrigin.toString())}&room=${Uri.encodeQueryComponent(descriptor.room)}&session=${Uri.encodeQueryComponent(descriptor.sessionId)}&code=${Uri.encodeQueryComponent(descriptor.bootstrapCode)}';
     await _windows.restartElevated(link);
   }
 
@@ -115,14 +137,27 @@ class WindowsControlAgent extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      _releaseStatus = await _releaseManifest.check(appVersion, await _windows.windowsVersion);
-      if (_releaseStatus!.blocking) throw const _RequiredUpdateException();
-      if (_releaseStatus!.unsupportedWindows) throw const _UnsupportedWindowsException();
+      _releaseStatus = await _releaseManifest.check(
+          appVersion, await _windows.windowsVersion);
+      if (_releaseStatus!.blocking) {
+        throw const _RequiredUpdateException();
+      }
+      if (_releaseStatus!.unsupportedWindows) {
+        throw const _UnsupportedWindowsException();
+      }
       final response = await _redeem(descriptor);
-      if (response.room != descriptor.room || response.session.sessionId != descriptor.sessionId) throw const FormatException('The server returned a session that does not match this link.');
+      if (response.room != descriptor.room ||
+          response.session.sessionId != descriptor.sessionId) {
+        throw const FormatException(
+            'The server returned a session that does not match this link.');
+      }
       final tokenMetadata = AgentTokenMetadata.fromJwt(response.token);
-      if (tokenMetadata == null || tokenMetadata.room != descriptor.room || tokenMetadata.sessionId != descriptor.sessionId || tokenMetadata.agentIdentity != response.session.agentIdentity) {
-        throw const FormatException('The server returned an invalid Control Agent token.');
+      if (tokenMetadata == null ||
+          tokenMetadata.room != descriptor.room ||
+          tokenMetadata.sessionId != descriptor.sessionId ||
+          tokenMetadata.agentIdentity != response.session.agentIdentity) {
+        throw const FormatException(
+            'The server returned an invalid Control Agent token.');
       }
       _response = response;
       _gate = GrantGate(room: descriptor.room, bootstrap: response.session);
@@ -130,28 +165,38 @@ class WindowsControlAgent extends ChangeNotifier {
       _packetSubscription = _session.packets.listen(_enqueuePacket);
       _metadataSubscription = _session.metadata.listen(_receiveMetadata);
       _disconnectSubscription = _session.disconnects.listen((_) => stop());
-      _projection = RemoteControlProjection.fromRoomMetadata(_session.roomMetadata);
+      _projection =
+          RemoteControlProjection.fromRoomMetadata(_session.roomMetadata);
       _phase = AgentPhase.chooseDisplay;
       _startLifecycleMonitor();
     } on _RequiredUpdateException {
       await _cleanupTransport();
-      _setFailure('This Control Agent version is no longer supported. Install the required update from Huddle Downloads before starting a new session.');
+      _setFailure(
+          'This Control Agent version is no longer supported. Install the required update from Huddle Downloads before starting a new session.');
     } on _UnsupportedWindowsException {
       await _cleanupTransport();
-      _setFailure('This Windows version does not meet the current Control Agent release requirement. Update Windows before starting a new session.');
+      _setFailure(
+          'This Windows version does not meet the current Control Agent release requirement. Update Windows before starting a new session.');
     } catch (_) {
       await _cleanupTransport();
-      _setFailure('The Control Agent could not connect. The approved link may have expired or the Huddle server is unavailable.');
+      _setFailure(
+          'The Control Agent could not connect. The approved link may have expired or the Huddle server is unavailable.');
     }
     notifyListeners();
   }
 
   Future<void> chooseDisplay(BuildContext context) async {
-    if (!_session.connected || _phase == AgentPhase.active || _phase == AgentPhase.switchingDisplay) return;
-    final source = await showDialog<DesktopCapturerSource>(context: context, builder: (_) => ScreenSelectDialog());
+    if (!_session.connected ||
+        _phase == AgentPhase.active ||
+        _phase == AgentPhase.switchingDisplay) {
+      return;
+    }
+    final source = await showDialog<rtc.DesktopCapturerSource>(
+        context: context, builder: (_) => ScreenSelectDialog());
     if (source == null) return;
-    if (source.type != SourceType.Screen) {
-      _error = 'Choose an entire display. Window sharing is not available for Remote Control.';
+    if (source.type != rtc.SourceType.Screen) {
+      _error =
+          'Choose an entire display. Window sharing is not available for Remote Control.';
       notifyListeners();
       return;
     }
@@ -165,7 +210,9 @@ class WindowsControlAgent extends ChangeNotifier {
     _displaySourceId = source.id;
     _displayName = source.name;
     _error = null;
-    _phase = _canPublishNow() ? AgentPhase.readyToStart : AgentPhase.awaitingActivation;
+    _phase = _canPublishNow()
+        ? AgentPhase.readyToStart
+        : AgentPhase.awaitingActivation;
     notifyListeners();
   }
 
@@ -183,13 +230,16 @@ class WindowsControlAgent extends ChangeNotifier {
       await _windows.releaseAll();
       await _session.unpublishDisplay();
       _phase = AgentPhase.readyToStart;
-      _error = 'The selected display could not be published. Choose a display and try again.';
+      _error =
+          'The selected display could not be published. Choose a display and try again.';
     }
     notifyListeners();
   }
 
   Future<void> switchDisplay(BuildContext context) async {
-    if (_phase != AgentPhase.active) return;
+    if (_phase != AgentPhase.active) {
+      return;
+    }
     _phase = AgentPhase.switchingDisplay;
     _stopClipboardMonitor();
     await _windows.releaseAll();
@@ -197,6 +247,7 @@ class WindowsControlAgent extends ChangeNotifier {
     _gate?.resetSequence();
     _phase = AgentPhase.chooseDisplay;
     notifyListeners();
+    if (!context.mounted) return;
     await chooseDisplay(context);
   }
 
@@ -214,7 +265,9 @@ class WindowsControlAgent extends ChangeNotifier {
   }
 
   Future<void> _receivePacket(ReceivedControlPacket received) async {
-    if (_phase != AgentPhase.active || _response == null || _gate == null) return;
+    if (_phase != AgentPhase.active || _response == null || _gate == null) {
+      return;
+    }
     final packet = ControlProtocol.decode(received.data);
     if (packet == null) return;
     final rejection = _gate!.authorize(
@@ -235,7 +288,8 @@ class WindowsControlAgent extends ChangeNotifier {
       await _windows.sendClipboardShortcut('copy');
     } else if (command is ClipboardPasteCommand) {
       await _windows.releaseAll();
-      _expectedClipboardChangeCount = await _windows.writeClipboardText(command.text);
+      _expectedClipboardChangeCount =
+          await _windows.writeClipboardText(command.text);
       _clipboardChangeCount = _expectedClipboardChangeCount!;
       await _windows.sendClipboardShortcut('paste');
     }
@@ -248,7 +302,8 @@ class WindowsControlAgent extends ChangeNotifier {
       } catch (_) {
         // A bridge failure may leave an OS input state uncertain. Ending the
         // attended session releases held input before any later packet can run.
-        if (_phase == AgentPhase.active && await _windows.sessionState == 'display-changed') {
+        if (_phase == AgentPhase.active &&
+            await _windows.sessionState == 'display-changed') {
           await _suspendForDisplayChange();
         } else if (_phase == AgentPhase.active) {
           await stop();
@@ -259,14 +314,19 @@ class WindowsControlAgent extends ChangeNotifier {
 
   void _receiveMetadata(String? metadata) {
     _projection = RemoteControlProjection.fromRoomMetadata(metadata);
-    if (_phase == AgentPhase.awaitingActivation && _canPublishNow() && _displaySourceId != null) _phase = AgentPhase.readyToStart;
+    if (_phase == AgentPhase.awaitingActivation &&
+        _canPublishNow() &&
+        _displaySourceId != null) {
+      _phase = AgentPhase.readyToStart;
+    }
     if (isSessionActive && !_canPublishNow()) unawaited(stop());
     notifyListeners();
   }
 
   void _startClipboardMonitor() {
     _clipboardTimer?.cancel();
-    _clipboardTimer = Timer.periodic(const Duration(milliseconds: 500), (_) => _syncClipboard());
+    _clipboardTimer = Timer.periodic(
+        const Duration(milliseconds: 500), (_) => _syncClipboard());
   }
 
   void _stopClipboardMonitor() {
@@ -276,7 +336,12 @@ class WindowsControlAgent extends ChangeNotifier {
   }
 
   Future<void> _syncClipboard() async {
-    if (_clipboardSyncInFlight || _phase != AgentPhase.active || !_canPublishNow() || _response == null) return;
+    if (_clipboardSyncInFlight ||
+        _phase != AgentPhase.active ||
+        !_canPublishNow() ||
+        _response == null) {
+      return;
+    }
     _clipboardSyncInFlight = true;
     try {
       if (await _windows.sessionState == 'display-changed') {
@@ -291,7 +356,11 @@ class WindowsControlAgent extends ChangeNotifier {
         return;
       }
       final text = await _windows.readClipboardText();
-      if (!ControlProtocol.isTransferableClipboardText(text) || !_canPublishNow() || _response == null) return;
+      if (!ControlProtocol.isTransferableClipboardText(text) ||
+          !_canPublishNow() ||
+          _response == null) {
+        return;
+      }
       _clipboardRevision += 1;
       await _session.publishClipboardUpdate(
         controllerIdentity: _response!.session.controllerIdentity,
@@ -309,7 +378,8 @@ class WindowsControlAgent extends ChangeNotifier {
 
   void _startLifecycleMonitor() {
     _lifecycleTimer?.cancel();
-    _lifecycleTimer = Timer.periodic(const Duration(milliseconds: 250), (_) async {
+    _lifecycleTimer =
+        Timer.periodic(const Duration(milliseconds: 250), (_) async {
       if (_lifecycleCheckInFlight) return;
       _lifecycleCheckInFlight = true;
       try {
@@ -340,7 +410,8 @@ class WindowsControlAgent extends ChangeNotifier {
     _displayName = null;
     await _windows.acknowledgeDisplayChange();
     _phase = AgentPhase.chooseDisplay;
-    _error = 'Your display setup changed. Select a display again before Remote Control can resume.';
+    _error =
+        'Your display setup changed. Select a display again before Remote Control can resume.';
     notifyListeners();
   }
 
@@ -357,11 +428,21 @@ class WindowsControlAgent extends ChangeNotifier {
   }
 
   Future<BootstrapResponse> _redeem(BootstrapDescriptor descriptor) async {
-    final endpoint = descriptor.apiOrigin.resolve('/rooms/${Uri.encodeComponent(descriptor.room)}/remote-control/${Uri.encodeComponent(descriptor.sessionId)}/helper-token');
-    final response = await http.post(endpoint, headers: const {'Content-Type': 'application/json', 'Cache-Control': 'no-store'}, body: jsonEncode({'bootstrapCode': descriptor.bootstrapCode}));
-    if (response.statusCode != 200) throw const HttpException('Control Agent bootstrap rejected');
+    final endpoint = descriptor.apiOrigin.resolve(
+        '/rooms/${Uri.encodeComponent(descriptor.room)}/remote-control/${Uri.encodeComponent(descriptor.sessionId)}/helper-token');
+    final response = await http.post(endpoint,
+        headers: const {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store'
+        },
+        body: jsonEncode({'bootstrapCode': descriptor.bootstrapCode}));
+    if (response.statusCode != 200) {
+      throw const HttpException('Control Agent bootstrap rejected');
+    }
     final json = jsonDecode(response.body);
-    if (json is! Map<String, dynamic>) throw const FormatException('Invalid Control Agent response');
+    if (json is! Map<String, dynamic>) {
+      throw const FormatException('Invalid Control Agent response');
+    }
     return BootstrapResponse.fromJson(json);
   }
 
@@ -384,7 +465,8 @@ class WindowsControlAgent extends ChangeNotifier {
   bool _supportsWindowsBuild(String value) {
     final parts = value.split('.').map(int.tryParse).toList();
     if (parts.length < 3 || parts.any((part) => part == null)) return false;
-    return parts[0]! > 10 || (parts[0] == 10 && parts[1] == 0 && parts[2]! >= 19045);
+    return parts[0]! > 10 ||
+        (parts[0] == 10 && parts[1] == 0 && parts[2]! >= 19045);
   }
 
   @override
