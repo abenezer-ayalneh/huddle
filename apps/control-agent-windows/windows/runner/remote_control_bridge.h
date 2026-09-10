@@ -11,7 +11,7 @@
 
 class RemoteControlBridge {
  public:
-  void RegisterWith(flutter::PluginRegistrarWindows* registrar);
+  void RegisterWith(FlutterDesktopPluginRegistrarRef registrar);
   void SetSessionState(const std::string& state);
 
  private:
@@ -26,6 +26,7 @@ class RemoteControlBridge {
   bool ReadClipboard(std::wstring* value) const;
   bool WriteClipboard(const std::wstring& value) const;
   bool RelaunchElevated(const std::wstring& link, std::string* error) const;
+  std::unique_ptr<flutter::PluginRegistrarWindows> registrar_;
   std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> channel_;
   RECT selected_display_{0, 0, 0, 0};
   std::string session_state_ = "active";

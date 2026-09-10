@@ -5,7 +5,7 @@
 
 #include <flutter/generated_plugin_registrant.h>
 
-FlutterWindow::FlutterWindow(const wchar_t* title) : Win32Window(title), project_(L"data") {}
+FlutterWindow::FlutterWindow(const wchar_t* title) : Win32Window(), project_(L"data") {}
 FlutterWindow::~FlutterWindow() = default;
 
 bool FlutterWindow::OnCreate() {
@@ -27,7 +27,7 @@ void FlutterWindow::OnDestroy() {
 }
 
 LRESULT FlutterWindow::MessageHandler(HWND window, UINT const message, WPARAM const wparam, LPARAM const lparam) noexcept {
-  if (message == WM_WTSSESSION_CHANGE && (wparam == WTS_SESSION_LOCK || wparam == WTS_SESSION_LOGOFF || wparam == WTS_SESSION_REMOTE_DISCONNECT)) {
+  if (message == WM_WTSSESSION_CHANGE && (wparam == WTS_SESSION_LOCK || wparam == WTS_SESSION_LOGOFF || wparam == WTS_REMOTE_DISCONNECT)) {
     control_bridge_.SetSessionState("inactive");
   }
   if (message == WM_POWERBROADCAST && wparam == PBT_APMSUSPEND) control_bridge_.SetSessionState("inactive");

@@ -63,7 +63,7 @@ std::vector<RECT> EnumerateDisplays() {
 }
 
 WORD VirtualKeyForCode(const std::string& code) {
-  static const std::map<std::string, WORD> keys = {
+  static const std::map<std::string, int> keys = {
       {"AltLeft", VK_LMENU},         {"AltRight", VK_RMENU},       {"ArrowDown", VK_DOWN},      {"ArrowLeft", VK_LEFT},
       {"ArrowRight", VK_RIGHT},      {"ArrowUp", VK_UP},           {"Backquote", VK_OEM_3},      {"Backslash", VK_OEM_5},
       {"Backspace", VK_BACK},        {"BracketLeft", VK_OEM_4},    {"BracketRight", VK_OEM_6},  {"CapsLock", VK_CAPITAL},
@@ -85,7 +85,7 @@ WORD VirtualKeyForCode(const std::string& code) {
     if (key >= 1 && key <= 24) return static_cast<WORD>(VK_F1 + key - 1);
   }
   const auto found = keys.find(code);
-  return found == keys.end() ? 0 : found->second;
+  return found == keys.end() ? 0 : static_cast<WORD>(found->second);
 }
 
 WORD VirtualKeyForModifier(const std::string& modifier) {
@@ -176,9 +176,10 @@ std::wstring QuoteArgument(const std::wstring& value) {
 
 }  // namespace
 
-void RemoteControlBridge::RegisterWith(flutter::PluginRegistrarWindows* registrar) {
+void RemoteControlBridge::RegisterWith(FlutterDesktopPluginRegistrarRef registrar) {
+  registrar_ = std::make_unique<flutter::PluginRegistrarWindows>(registrar);
   channel_ = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
-      registrar->messenger(), "com.huddle.control-agent/windows", &flutter::StandardMethodCodec::GetInstance());
+      registrar_->messenger(), "com.huddle.control-agent/windows", &flutter::StandardMethodCodec::GetInstance());
   channel_->SetMethodCallHandler([this](const auto& call, auto result) { HandleMethodCall(call, std::move(result)); });
 }
 

@@ -5,7 +5,8 @@
 
 #include <flutter/dart_project.h>
 #include <flutter/flutter_view_controller.h>
-#include <flutter_win32_window.h>
+
+#include "win32_window.h"
 
 #include "remote_control_bridge.h"
 
