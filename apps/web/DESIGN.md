@@ -305,6 +305,15 @@ navigation visibility, and 1024px for large marketing composition. All audited
 route shells use `overflow-x: clip` or an equivalent bounded layout so routed
 signal lines cannot create horizontal scrolling.
 
+Transactional email uses the same warm Signal Handoff grammar in a conservative
+table-first shell: the Huddle mark and wordmark stay left, the route label stays
+right, and the framed task, purple action, yellow recovery marker, and
+plain-text fallback link stay readable without external fonts or images. The
+baseline remains a 600px desktop-readable column; a `620px` media query reduces
+gutters and action/shadow treatment for capable narrow-screen clients while
+older clients retain the safe single-column table layout. Long fallback URLs
+must wrap within the panel instead of forcing horizontal scroll.
+
 ### Named Rules
 
 **The Brand-left Rule.** Huddle branding stays left and actions stay right at

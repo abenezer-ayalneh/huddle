@@ -66,7 +66,9 @@ describe('buildVerificationMailer', () => {
     expect(message.subject).toBe('Verify your email for Huddle');
     expect(message.text).toContain('https://huddle.example/verify-email?token=abc.def.ghi');
     expect(message.text).toContain("If you didn't create a Huddle account");
-    expect(message.html).toContain('Verify my email');
+    expect(message.html).toContain('ACCOUNT HANDOFF');
+    expect(message.html).toContain('Verify email');
+    expect(message.html).toContain('@media only screen and (max-width: 620px)');
     expect(message.html).toContain('https://huddle.example/verify-email?token=abc.def.ghi');
     expect(message.html).not.toContain('callbackURL');
   });

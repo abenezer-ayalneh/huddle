@@ -59,8 +59,8 @@ async function build(config: ConfigService): Promise<Auth> {
     // address via the link we email them (see emailVerification below).
     emailAndPassword: { enabled: true, requireEmailVerification: true },
     // Deliver the verification link on signup and sign the user in once they
-    // confirm. The sender uses SMTP when configured and otherwise logs the link
-    // (see mailer.ts), so verification works in every environment.
+    // confirm. The sender uses SMTP when configured; an unconfigured local API
+    // deliberately does not deliver a bearer link (see mailer.ts).
     emailVerification: {
       sendOnSignUp: true,
       autoSignInAfterVerification: true,
