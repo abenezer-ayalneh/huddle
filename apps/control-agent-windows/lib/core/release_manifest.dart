@@ -6,10 +6,18 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ReleaseStatus {
-  const ReleaseStatus({required this.configured, required this.blocking, required this.unsupportedWindows, this.availableVersion, this.releaseNotesUrl});
+  const ReleaseStatus({
+    required this.configured,
+    required this.blocking,
+    required this.unsupportedWindows,
+    this.missingNativeArchitecture = false,
+    this.availableVersion,
+    this.releaseNotesUrl,
+  });
   final bool configured;
   final bool blocking;
   final bool unsupportedWindows;
+  final bool missingNativeArchitecture;
   final String? availableVersion;
   final Uri? releaseNotesUrl;
 }
@@ -23,7 +31,8 @@ class WindowsReleaseManifestChecker {
   static const _minimumWindowsKey = 'windows-control-agent-minimum-windows-v1';
   final http.Client _client;
 
-  Future<ReleaseStatus> check(String currentVersion, String currentWindows) async {
+  Future<ReleaseStatus> check(
+      String currentVersion, String currentWindows, String nativeArchitecture) async {
     if (_channel.isEmpty || _publicKey.isEmpty) return const ReleaseStatus(configured: false, blocking: false, unsupportedWindows: false);
     final preferences = await SharedPreferences.getInstance();
     final cachedMinimum = preferences.getString(_minimumKey);
@@ -31,18 +40,21 @@ class WindowsReleaseManifestChecker {
     try {
       final channel = Uri.parse(_channel);
       if (channel.scheme != 'https') throw const FormatException('Release channel must use HTTPS');
+      final channelRoot = channel.path.endsWith('/')
+          ? channel
+          : channel.replace(path: '${channel.path}/');
       final responses = await Future.wait([
-        _client.get(channel.resolve('release-manifest.json'), headers: const {'Cache-Control': 'no-store'}),
-        _client.get(channel.resolve('release-manifest.sig'), headers: const {'Cache-Control': 'no-store'}),
+        _client.get(channelRoot.resolve('release-manifest.json'), headers: const {'Cache-Control': 'no-store'}),
+        _client.get(channelRoot.resolve('release-manifest.sig'), headers: const {'Cache-Control': 'no-store'}),
       ]);
       if (responses.any((response) => response.statusCode != 200)) throw const FormatException('Release channel is unavailable');
       final bytes = responses[0].bodyBytes;
-      final manifest = _decodeManifest(bytes);
       final signature = base64.decode(responses[1].body.trim());
       final key = base64.decode(_publicKey);
       if (key.length != 32 || !(await Ed25519().verify(bytes, signature: Signature(signature, publicKey: SimplePublicKey(key, type: KeyPairType.ed25519))))) {
         throw const FormatException('Release manifest signature is invalid');
       }
+      final manifest = _decodeManifest(bytes, nativeArchitecture);
       final minimum = _maxVersion(cachedMinimum, manifest.minimumSupportedVersion);
       final minimumWindows = _maxWindowsVersion(cachedMinimumWindows, manifest.minimumWindows);
       await preferences.setString(_minimumKey, minimum);
@@ -54,6 +66,13 @@ class WindowsReleaseManifestChecker {
         availableVersion: _compareVersions(manifest.version, currentVersion) > 0 ? manifest.version : null,
         releaseNotesUrl: manifest.releaseNotesUrl,
       );
+    } on _MissingNativeArchitectureArtifact {
+      return const ReleaseStatus(
+        configured: true,
+        blocking: false,
+        unsupportedWindows: false,
+        missingNativeArchitecture: true,
+      );
     } catch (_) {
       return ReleaseStatus(
         configured: true,
@@ -63,18 +82,24 @@ class WindowsReleaseManifestChecker {
     }
   }
 
-  _WindowsManifest _decodeManifest(Uint8List bytes) {
+  _WindowsManifest _decodeManifest(Uint8List bytes, String nativeArchitecture) {
     final decoded = jsonDecode(utf8.decode(bytes));
     if (decoded is! Map<String, dynamic> || decoded['schemaVersion'] != 1 || decoded['channel'] != 'beta') throw const FormatException('Invalid release manifest');
     final downloads = decoded['downloads'];
-    if (downloads is! Map<String, dynamic> || downloads['x64'] is! Map<String, dynamic>) throw const FormatException('Invalid release artifact');
-    final x64 = downloads['x64'] as Map<String, dynamic>;
+    if (downloads is! Map<String, dynamic> ||
+        (nativeArchitecture != 'x64' && nativeArchitecture != 'arm64')) {
+      throw const FormatException('Invalid release artifact');
+    }
+    if (downloads[nativeArchitecture] is! Map<String, dynamic>) {
+      throw const _MissingNativeArchitectureArtifact();
+    }
+    final artifact = downloads[nativeArchitecture] as Map<String, dynamic>;
     final version = _version(decoded['version']);
     final minimum = _version(decoded['minimumSupportedVersion']);
     final minimumWindows = _windowsVersion(decoded['minimumWindows']);
     final releaseNotesUrl = Uri.tryParse(decoded['releaseNotesUrl'] as String? ?? '');
-    final artifact = Uri.tryParse(x64['url'] as String? ?? '');
-    if (releaseNotesUrl == null || releaseNotesUrl.scheme != 'https' || artifact == null || artifact.scheme != 'https' || x64['sha256'] is! String || !RegExp(r'^[A-Fa-f0-9]{64}$').hasMatch(x64['sha256'] as String)) {
+    final artifactUrl = Uri.tryParse(artifact['url'] as String? ?? '');
+    if (releaseNotesUrl == null || releaseNotesUrl.scheme != 'https' || artifactUrl == null || artifactUrl.scheme != 'https' || artifact['sha256'] is! String || !RegExp(r'^[A-Fa-f0-9]{64}$').hasMatch(artifact['sha256'] as String)) {
       throw const FormatException('Invalid release manifest');
     }
     return _WindowsManifest(version: version, minimumSupportedVersion: minimum, minimumWindows: minimumWindows, releaseNotesUrl: releaseNotesUrl);
@@ -91,6 +116,10 @@ class WindowsReleaseManifestChecker {
     if (value is! String || !RegExp(r'^10\.0\.\d{5,}$').hasMatch(value)) throw const FormatException('Invalid Windows version');
     return value;
   }
+}
+
+class _MissingNativeArchitectureArtifact implements Exception {
+  const _MissingNativeArchitectureArtifact();
 }
 
 class _WindowsManifest {

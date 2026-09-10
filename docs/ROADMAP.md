@@ -325,9 +325,9 @@ Linux Control Agents remain future work with no release date.
 
 ### Phase 13 — Windows Control Agent public beta
 
-Port the existing attended Remote Control companion to Windows 10 22H2 and
-Windows 11 x64 without widening the browser/API authority boundary. See
-ADR 0032.
+Port the attended Remote Control companion to Windows 10 22H2 and Windows 11
+on native x64 and ARM64 PCs, plus Windows 10 22H2 x86, without widening the
+browser/API authority boundary. See ADR 0032–0034.
 
 - [x] Flutter Windows companion with a C++ bridge for Per-Monitor-V2 display
       geometry, `SendInput`, bounded Unicode clipboard access, Windows lifecycle
@@ -336,9 +336,16 @@ ADR 0032.
       checks, v1 protocol bounds, recipient-targeted clipboard, selected-display
       switching, local Stop, and manual full-link recovery.
 - [x] Distinct Windows signed-manifest verification, cached required-version
-      enforcement, manual update notice, x64 Inno Setup packaging, quoted link
-      registration, checksum output, Downloads integration, and GitHub workflow.
-- [ ] Physical Windows 10/11 acceptance: ordinary and administrator apps,
+      enforcement, manual update notice, x64 and ARM64 Inno Setup packaging,
+      quoted link registration, checksum output, Downloads integration, and
+      GitHub workflow.
+- [x] Separate Electron 43 x86 companion with an `ia32` Node-API Windows bridge,
+      Chromium LiveKit transport, signed-manifest `x86` artifact gate, checksum,
+      Downloads integration, and GitHub release build. Electron 43 is the final
+      upstream Windows x86 runtime and needs replacement or retirement before
+      its January 2027 end of support.
+- [ ] Physical x64 and ARM64 Windows 10/11, plus native x86 Windows 10 22H2,
+      acceptance: ordinary and administrator apps,
       browser matrix, multi-monitor/DPI/portrait/removal, lock/sleep/reconnect,
       expiry, cursor-overlay suppression, installer upgrade/uninstall,
       checksum/manifest failure, and unsigned-publisher behavior.

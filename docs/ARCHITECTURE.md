@@ -125,7 +125,8 @@ rich/binary clipboard, desktop audio, and unsupported-platform agents. Plain-tex
 sharing is bounded, recipient-targeted, and ephemeral: no clipboard payload may
 enter HTTP, Redis, Postgres, room metadata, logs, recordings, or audit records.
 The complete decision record is [ADR 0024](./adr/0024-attended-remote-control-macos-agent.md),
-[ADR 0032](./adr/0032-windows-control-agent.md), and
+[ADR 0032](./adr/0032-windows-control-agent.md),
+[ADR 0034](./adr/0034-windows-control-agent-x86.md), and
 [ADR 0026](./adr/0026-plain-text-clipboard-sharing.md).
 
 ## Control Agent distribution

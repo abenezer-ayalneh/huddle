@@ -18,14 +18,14 @@ for current mechanics.
 
 ## Decision map
 
-| Area                                      | ADRs            | Current reading rule                                                                                                                                                                                       |
-| ----------------------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| LiveKit credentials, data, and deployment | 0001–0005       | Keep the API secret server-only, use Postgres for durable records and Redis for ephemeral coordination; the deployment decision is a single VPS, with external rollout evidence separate.                  |
-| Managed rooms and call behavior           | 0006–0023       | Room Codes, custom Huddle call UI, Present, recording consent, device behavior, and error semantics are deliberate. ADR 0008 superseded the early stock LiveKit UI described in historical roadmap phases. |
-| Remote Control and distribution           | 0024–0026, 0032 | These form one safety boundary: attended platform agents, release/update constraints, and bounded ephemeral plain-text clipboard sharing. Do not weaken an exclusion by reading only one ADR.              |
-| Observability, rejoin, recording delivery | 0027–0029       | Sentry is privacy-scrubbed web/API fault reporting, Direct Rejoin is call-scoped, and Drive delivery/retention is optional with external acceptance still required.                                        |
-| Legal and PiP                             | 0030–0031       | Apache-2.0 repository licensing has its root `LICENSE`/`NOTICE` artifacts; desktop Document PiP supplements mobile/native PiP behavior in ADR 0020.                                                        |
-| Windows Control Agent                     | 0032            | Windows x64 reuses Remote Control authority but has its own DPI/input/UAC and unsigned-installer constraints; physical Windows acceptance remains separate.                                                |
+| Area                                      | ADRs                 | Current reading rule                                                                                                                                                                                       |
+| ----------------------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| LiveKit credentials, data, and deployment | 0001–0005            | Keep the API secret server-only, use Postgres for durable records and Redis for ephemeral coordination; the deployment decision is a single VPS, with external rollout evidence separate.                  |
+| Managed rooms and call behavior           | 0006–0023            | Room Codes, custom Huddle call UI, Present, recording consent, device behavior, and error semantics are deliberate. ADR 0008 superseded the early stock LiveKit UI described in historical roadmap phases. |
+| Remote Control and distribution           | 0024–0026, 0032–0034 | These form one safety boundary: attended platform agents, release/update constraints, and bounded ephemeral plain-text clipboard sharing. Do not weaken an exclusion by reading only one ADR.              |
+| Observability, rejoin, recording delivery | 0027–0029            | Sentry is privacy-scrubbed web/API fault reporting, Direct Rejoin is call-scoped, and Drive delivery/retention is optional with external acceptance still required.                                        |
+| Legal and PiP                             | 0030–0031            | Apache-2.0 repository licensing has its root `LICENSE`/`NOTICE` artifacts; desktop Document PiP supplements mobile/native PiP behavior in ADR 0020.                                                        |
+| Windows Control Agent                     | 0032–0034            | Windows x64, ARM64, and x86 reuse Remote Control authority but have their own DPI/input/UAC, runtime-maintenance, and unsigned-installer constraints; physical Windows acceptance remains separate.        |
 
 ## Notable amendments and historical context
 
@@ -35,6 +35,9 @@ for current mechanics.
   Codes with no titles.
 - ADR 0031 extends the Picture-in-Picture model in ADR 0020; browser/device
   acceptance remains separate from the decision.
+- ADR 0033 amends ADR 0032's x64-only distribution decision with a native ARM64
+  release path. ADR 0034 adds the separate Electron 43 x86 implementation;
+  Electron 44 and later do not ship Windows x86 binaries.
 - ADR 0004 records an earlier CD deferral. The repository now contains deploy
   workflow code; [RUNBOOK_CICD.md](../RUNBOOK_CICD.md) is the current operational
   status and explicitly leaves GitHub/VPS activation as external evidence.

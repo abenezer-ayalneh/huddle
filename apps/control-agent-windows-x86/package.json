@@ -1,0 +1,70 @@
+{
+  "name": "@huddle/control-agent-windows-x86",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "description": "32-bit Windows Control Agent for attended Huddle Remote Control.",
+  "type": "module",
+  "main": "src/main.mjs",
+  "scripts": {
+    "build:renderer": "node scripts/build-renderer.mjs",
+    "rebuild:native": "node scripts/rebuild-native.mjs --arch=ia32",
+    "build": "node scripts/package.mjs",
+    "typecheck": "node scripts/check-source.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "build": {
+    "appId": "com.huddle.control-agent.x86",
+    "productName": "Huddle Control Agent",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "dist-renderer/**",
+      "src/main.mjs",
+      "src/preload.cjs",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "native/prebuild/ia32/huddle_control_bridge.node",
+        "to": "native/huddle_control_bridge.node"
+      }
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "**/*.node"
+    ],
+    "protocols": [
+      {
+        "name": "Huddle Control Agent",
+        "schemes": [
+          "huddle-control"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "artifactName": "Huddle-Control-Agent-windows-x86.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": false,
+      "runAfterFinish": true
+    }
+  },
+  "dependencies": {
+    "livekit-client": "2.19.1"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "4.0.1",
+    "@types/node": "24.10.0",
+    "electron": "43.3.0",
+    "electron-builder": "26.0.20",
+    "esbuild": "0.25.12",
+    "node-gyp": "11.4.0",
+    "typescript": "5.9.3"
+  }
+}

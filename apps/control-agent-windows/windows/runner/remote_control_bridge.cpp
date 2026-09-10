@@ -191,8 +191,8 @@ void RemoteControlBridge::HandleMethodCall(const flutter::MethodCall<flutter::En
     result->Success();
   } else if (method == "isElevated") {
     result->Success(flutter::EncodableValue(IsElevated()));
-  } else if (method == "isNativeX64") {
-    result->Success(flutter::EncodableValue(IsNativeX64()));
+  } else if (method == "nativeArchitecture") {
+    result->Success(flutter::EncodableValue(NativeArchitecture()));
   } else if (method == "windowsVersion") {
     result->Success(flutter::EncodableValue(WindowsVersion()));
   } else if (method == "sessionState") {
@@ -395,10 +395,21 @@ bool RemoteControlBridge::IsElevated() const {
   return elevated;
 }
 
-bool RemoteControlBridge::IsNativeX64() const {
+std::string RemoteControlBridge::NativeArchitecture() const {
   SYSTEM_INFO info{};
   GetNativeSystemInfo(&info);
-  return info.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64;
+  switch (info.wProcessorArchitecture) {
+    case PROCESSOR_ARCHITECTURE_AMD64:
+      return "x64";
+    case PROCESSOR_ARCHITECTURE_ARM64:
+      return "arm64";
+    case PROCESSOR_ARCHITECTURE_INTEL:
+      return "x86";
+    case PROCESSOR_ARCHITECTURE_ARM:
+      return "arm32";
+    default:
+      return "unknown";
+  }
 }
 
 std::string RemoteControlBridge::WindowsVersion() const {

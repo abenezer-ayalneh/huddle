@@ -218,9 +218,10 @@ before creating a `control-agent-vX.Y.Z` tag.
 
 ## 6d. Run the Windows Control Agent
 
-The Windows companion targets Windows 10 22H2 and Windows 11 x64. On a Windows
-development machine with Flutter 3.24.3+, Visual Studio's **Desktop development
-with C++** workload, and the Windows SDK installed:
+The Flutter Windows companion targets native x64 and ARM64 Windows 10 22H2 and
+Windows 11 PCs. On a matching native Windows development machine with Flutter
+3.44+, Visual Studio's **Desktop development with C++** workload, and the
+Windows SDK installed:
 
 ```powershell
 cd apps/control-agent-windows
@@ -229,6 +230,24 @@ flutter analyze
 flutter test
 flutter run -d windows
 ```
+
+For 32-bit Windows 10 22H2, use the separate Electron x86 agent. It is pinned
+to Electron 43 because Electron 44 removed Windows x86 binaries; it must be
+replaced or retired before Electron 43 reaches end of support in January 2027.
+On Windows with Visual Studio's C++ workload and Python available to `node-gyp`:
+
+```powershell
+corepack enable
+pnpm install --frozen-lockfile
+pnpm --filter @huddle/control-agent-windows-x86 typecheck
+pnpm --filter @huddle/control-agent-windows-x86 test
+$env:WINDOWS_CONTROL_AGENT_VERSION = '0.1.0'
+pnpm --filter @huddle/control-agent-windows-x86 build
+```
+
+This creates `apps/control-agent-windows-x86/dist/Huddle-Control-Agent-windows-x86.exe`.
+It is a separate attended implementation, not a Flutter x86 target; it supports
+Windows 10 22H2 32-bit only because Windows 11 has no 32-bit edition.
 
 The Sharer opens the same one-time `huddle-control://join` link from the
 browser, trusts the exact API origin, selects one entire display, and presses

@@ -9,7 +9,7 @@ import { useMobileBrowserCapabilities } from '@/lib/mobileBrowserCapabilities';
 import type { WindowsControlAgentRelease } from '@/lib/windowsControlAgentReleaseShared';
 
 type DetectedPlatform = 'mac' | 'windows' | 'linux' | 'other';
-type DetectedArchitecture = 'arm64' | 'x86_64' | 'unknown';
+type DetectedArchitecture = 'arm64' | 'x64' | 'x86' | 'unknown';
 type DownloadArtifact = { url: string; sizeBytes?: number };
 
 function detectPlatform(): { platform: DetectedPlatform; architecture: DetectedArchitecture } {
@@ -24,13 +24,15 @@ function detectPlatform(): { platform: DetectedPlatform; architecture: DetectedA
         : /linux/.test(userAgent) || platformText.includes('linux')
           ? 'linux'
           : 'other';
-  const architectureText = (navigator as Navigator & { userAgentData?: { architecture?: string } }).userAgentData?.architecture?.toLowerCase() ?? '';
+  const architectureText = (navigator as Navigator & { userAgentData?: { architecture?: string } }).userAgentData?.architecture?.toLowerCase() ?? userAgent;
   const architecture: DetectedArchitecture =
     architectureText.includes('arm') || architectureText.includes('aarch')
       ? 'arm64'
-      : architectureText.includes('86') || architectureText.includes('x64')
-        ? 'x86_64'
-        : 'unknown';
+      : architectureText.includes('x64') || architectureText.includes('amd64') || architectureText.includes('x86_64')
+        ? 'x64'
+        : architectureText.includes('x86') || architectureText.includes('ia32')
+          ? 'x86'
+          : 'unknown';
   return { platform, architecture };
 }
 
@@ -53,10 +55,11 @@ export default function ControlAgentDownloads({
 
   const download: DownloadArtifact | undefined = release?.verified ? release.downloads.arm64 : undefined;
   const noCostBeta = release?.verified ? null : getNoCostControlAgentBeta(repositoryUrl);
-  const windowsDownload: DownloadArtifact | undefined = windowsRelease?.verified ? windowsRelease.downloads.x64 : undefined;
   const macDetected = detected.platform === 'mac';
   const windowsDetected = detected.platform === 'windows';
-  const architectureLabel = detected.architecture === 'arm64' ? 'Apple Silicon' : detected.architecture === 'x86_64' ? 'Intel' : null;
+  const windowsArchitecture =
+    detected.architecture === 'arm64' || detected.architecture === 'x64' || detected.architecture === 'x86' ? detected.architecture : null;
+  const architectureLabel = detected.architecture === 'arm64' ? 'Apple Silicon' : detected.architecture === 'x64' ? 'Intel' : null;
 
   if (isMobileBrowser) {
     return (
@@ -161,45 +164,81 @@ export default function ControlAgentDownloads({
         </div>
 
         <div className="downloads-architecture-list">
-          <article className={`downloads-architecture${windowsDetected ? ' is-recommended' : ''}`}>
-            <div className="downloads-architecture__identity">
-              <span className="downloads-architecture__icon" aria-hidden="true">
-                <Monitor className="size-6" strokeWidth={1.6} />
-              </span>
-              <div>
-                <div className="downloads-architecture__title-row">
-                  <h3>Windows · x64</h3>
-                  {windowsDetected ? <span className="downloads-recommended">Recommended</span> : null}
+          {(
+            [
+              {
+                architecture: 'x64' as const,
+                description: 'Windows 10 22H2 or Windows 11 · 64-bit Intel or AMD',
+                label: 'Windows · x64',
+              },
+              {
+                architecture: 'arm64' as const,
+                description: 'Windows 10 22H2 or Windows 11 · Snapdragon and other Windows on ARM PCs',
+                label: 'Windows · ARM64',
+              },
+              {
+                architecture: 'x86' as const,
+                description: 'Windows 10 22H2 · 32-bit Intel or AMD PCs',
+                label: 'Windows · x86 (32-bit)',
+              },
+            ] as const
+          ).map(({ architecture, description, label }) => {
+            const artifact: DownloadArtifact | undefined = windowsRelease?.verified ? windowsRelease.downloads[architecture] : undefined;
+            const isRecommended = windowsDetected && windowsArchitecture === architecture;
+
+            return (
+              <article className={`downloads-architecture${isRecommended ? ' is-recommended' : ''}`} key={architecture}>
+                <div className="downloads-architecture__identity">
+                  <span className="downloads-architecture__icon" aria-hidden="true">
+                    <Monitor className="size-6" strokeWidth={1.6} />
+                  </span>
+                  <div>
+                    <div className="downloads-architecture__title-row">
+                      <h3>{label}</h3>
+                      {isRecommended ? <span className="downloads-recommended">Recommended</span> : null}
+                    </div>
+                    <p>{description}</p>
+                  </div>
                 </div>
-                <p>Windows 10 22H2 or Windows 11 · 64-bit Intel or AMD</p>
-              </div>
-            </div>
-            <div className="downloads-architecture__meta">
-              <span>
-                <Cpu className="size-3.5" aria-hidden="true" /> {windowsRelease?.verified ? windowsRelease.version : 'Release details unavailable'}
-              </span>
-              {windowsDownload?.sizeBytes ? <span>{formatBytes(windowsDownload.sizeBytes)} · SHA-256 published</span> : null}
-            </div>
-            {windowsDownload ? (
-              <a href={windowsDownload.url} className="downloads-download-button">
-                <Download className="size-4" aria-hidden="true" /> Download Windows x64 installer
-              </a>
-            ) : (
-              <p className="downloads-unavailable">This operator has not configured a Windows Control Agent release.</p>
-            )}
-            {windowsRelease?.verified ? (
-              <p className="downloads-unavailable">
-                Unsigned public beta. Verify the published SHA-256 value, then review the Windows publisher warning before installing. The signed manifest
-                authenticates the release metadata and expected checksum; it does not provide Windows publisher trust.
-              </p>
-            ) : null}
-          </article>
+                <div className="downloads-architecture__meta">
+                  <span>
+                    <Cpu className="size-3.5" aria-hidden="true" /> {windowsRelease?.verified ? windowsRelease.version : 'Release details unavailable'}
+                  </span>
+                  {artifact?.sizeBytes ? <span>{formatBytes(artifact.sizeBytes)} · SHA-256 published</span> : null}
+                </div>
+                {artifact ? (
+                  <a href={artifact.url} className="downloads-download-button">
+                    <Download className="size-4" aria-hidden="true" /> Download{' '}
+                    {architecture === 'arm64' ? 'Windows ARM64' : architecture === 'x86' ? 'Windows x86' : 'Windows x64'} installer
+                  </a>
+                ) : (
+                  <p className="downloads-unavailable">
+                    This release does not include a Windows {architecture === 'arm64' ? 'ARM64' : architecture === 'x86' ? 'x86' : 'x64'} installer.
+                  </p>
+                )}
+                {windowsRelease?.verified ? (
+                  <p className="downloads-unavailable">
+                    Unsigned public beta. Verify the published SHA-256 value, then review the Windows publisher warning before installing. The signed manifest
+                    authenticates the release metadata and expected checksum; it does not provide Windows publisher trust.
+                  </p>
+                ) : null}
+              </article>
+            );
+          })}
         </div>
 
         <div className="downloads-station-foot">
           <p className="downloads-detection">
-            {windowsDetected ? 'Your browser reports Windows.' : 'This installer is for 64-bit Windows 10 22H2 or Windows 11.'} Downloads are never selected
-            silently.
+            {windowsDetected
+              ? windowsArchitecture === 'arm64'
+                ? 'Your browser reports Windows on ARM.'
+                : windowsArchitecture === 'x64'
+                  ? 'Your browser reports 64-bit Windows.'
+                  : windowsArchitecture === 'x86'
+                    ? 'Your browser reports 32-bit Windows.'
+                    : 'Your browser reports Windows; choose the matching processor architecture.'
+              : 'These installers are for Windows 10 22H2 or later; Windows 11 requires x64 or ARM64.'}{' '}
+            Downloads are never selected silently.
           </p>
           {!windowsRelease?.verified ? (
             <p className="downloads-release-warning">
@@ -221,7 +260,7 @@ export default function ControlAgentDownloads({
               <strong>Install deliberately</strong>
               <p>
                 {
-                  'On macOS, open the DMG and move the app to Applications. On Windows, run the x64 installer after verifying the configured release or published checksum.'
+                  'On macOS, open the DMG and move the app to Applications. On Windows, run the installer that matches the PC processor after verifying the configured release or published checksum.'
                 }
               </p>
             </div>

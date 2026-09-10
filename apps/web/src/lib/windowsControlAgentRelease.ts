@@ -23,7 +23,18 @@ function validWindowsBuild(value: unknown): value is string {
 function isManifest(value: unknown): value is WindowsControlAgentReleaseManifest {
   if (!value || typeof value !== 'object') return false;
   const candidate = value as Partial<WindowsControlAgentReleaseManifest>;
-  const artifact = candidate.downloads?.x64;
+  const artifacts = candidate.downloads;
+  const hasValidArtifact = (architecture: 'x64' | 'arm64' | 'x86') => {
+    const artifact = artifacts?.[architecture];
+    return (
+      !!artifact &&
+      validHttpsUrl(artifact.url) &&
+      typeof artifact.sha256 === 'string' &&
+      /^[a-f0-9]{64}$/i.test(artifact.sha256) &&
+      Number.isSafeInteger(artifact.sizeBytes) &&
+      artifact.sizeBytes > 0
+    );
+  };
   return (
     candidate.schemaVersion === 1 &&
     candidate.channel === 'beta' &&
@@ -33,12 +44,9 @@ function isManifest(value: unknown): value is WindowsControlAgentReleaseManifest
     validWindowsBuild(candidate.minimumWindows) &&
     Number.isFinite(Date.parse(candidate.releasedAt ?? '')) &&
     validHttpsUrl(candidate.releaseNotesUrl) &&
-    !!artifact &&
-    validHttpsUrl(artifact.url) &&
-    typeof artifact.sha256 === 'string' &&
-    /^[a-f0-9]{64}$/i.test(artifact.sha256) &&
-    Number.isSafeInteger(artifact.sizeBytes) &&
-    artifact.sizeBytes > 0
+    hasValidArtifact('x64') &&
+    (artifacts?.arm64 === undefined || hasValidArtifact('arm64')) &&
+    (artifacts?.x86 === undefined || hasValidArtifact('x86'))
   );
 }
 

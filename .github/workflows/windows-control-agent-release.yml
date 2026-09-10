@@ -13,19 +13,39 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-and-publish:
-    runs-on: windows-2022
+  build-and-package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - architecture: x64
+            runner: windows-2022
+          - architecture: arm64
+            runner: windows-11-arm
+    runs-on: ${{ matrix.runner }}
     env:
-      WINDOWS_AGENT_UPDATE_PRIVATE_KEY_B64: ${{ secrets.WINDOWS_AGENT_UPDATE_PRIVATE_KEY_B64 }}
-      WINDOWS_AGENT_UPDATE_KEY_ID: ${{ secrets.WINDOWS_AGENT_UPDATE_KEY_ID }}
       WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL: https://github.com/${{ github.repository }}/releases/download/windows-control-agent-beta
       WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY: ${{ secrets.WINDOWS_AGENT_UPDATE_PUBLIC_KEY }}
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - name: Set up Flutter for x64
+        if: matrix.architecture == 'x64'
+        uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.3'
+          flutter-version: '3.44.0'
           channel: stable
+      - name: Set up native ARM64 Flutter
+        if: matrix.architecture == 'arm64'
+        shell: pwsh
+        run: |
+          $flutterRoot = Join-Path $env:RUNNER_TEMP 'flutter-arm64'
+          git clone --depth 1 --branch 3.44.0 https://github.com/flutter/flutter.git $flutterRoot
+          & "$flutterRoot\bin\flutter.bat" config --no-analytics
+          $dartVersion = & "$flutterRoot\bin\dart.bat" --version 2>&1 | Out-String
+          Write-Host $dartVersion
+          if ($dartVersion -notmatch 'windows_arm64') { throw 'Expected a native ARM64 Dart SDK.' }
+          & "$flutterRoot\bin\flutter.bat" precache --windows
+          "$flutterRoot\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - name: Install Windows packaging tool
         shell: pwsh
         run: choco install innosetup --no-progress --yes
@@ -36,25 +56,85 @@ jobs:
           flutter pub get
           flutter analyze
           flutter test
-      - name: Build unsigned x64 installer
-        id: build
+      - name: Build unsigned installer
         shell: pwsh
         run: |
           $version = '${{ github.ref_name }}'.Replace('windows-control-agent-v', '')
-          ./apps/control-agent-windows/scripts/build-installer.ps1 -Version $version
-          "version=$version" >> $env:GITHUB_OUTPUT
+          ./apps/control-agent-windows/scripts/build-installer.ps1 -Version $version -Architecture '${{ matrix.architecture }}'
+      - name: Upload ${{ matrix.architecture }} installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-control-agent-${{ matrix.architecture }}
+          path: |
+            apps/control-agent-windows/dist/Huddle-Control-Agent-windows-${{ matrix.architecture }}.exe
+            apps/control-agent-windows/dist/Huddle-Control-Agent-windows-${{ matrix.architecture }}.exe.sha256
+          if-no-files-found: error
+
+  build-x86:
+    runs-on: windows-2022
+    env:
+      WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL: https://github.com/${{ github.repository }}/releases/download/windows-control-agent-beta
+      WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY: ${{ secrets.WINDOWS_AGENT_UPDATE_PUBLIC_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.18.0
+      - name: Install locked x86 agent dependencies
+        shell: pwsh
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+      - name: Validate x86 Control Agent contracts
+        shell: pwsh
+        run: |
+          pnpm --filter @huddle/control-agent-windows-x86 typecheck
+          pnpm --filter @huddle/control-agent-windows-x86 test
+      - name: Build unsigned x86 installer
+        shell: pwsh
+        run: |
+          $version = '${{ github.ref_name }}'.Replace('windows-control-agent-v', '')
+          $env:WINDOWS_CONTROL_AGENT_VERSION = $version
+          pnpm --filter @huddle/control-agent-windows-x86 build
+      - name: Upload x86 installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-control-agent-x86
+          path: |
+            apps/control-agent-windows-x86/dist/Huddle-Control-Agent-windows-x86.exe
+            apps/control-agent-windows-x86/dist/Huddle-Control-Agent-windows-x86.exe.sha256
+          if-no-files-found: error
+
+  publish:
+    needs: [build-and-package, build-x86]
+    runs-on: windows-2022
+    env:
+      WINDOWS_AGENT_UPDATE_PRIVATE_KEY_B64: ${{ secrets.WINDOWS_AGENT_UPDATE_PRIVATE_KEY_B64 }}
+      WINDOWS_AGENT_UPDATE_KEY_ID: ${{ secrets.WINDOWS_AGENT_UPDATE_KEY_ID }}
+      WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL: https://github.com/${{ github.repository }}/releases/download/windows-control-agent-beta
+      WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY: ${{ secrets.WINDOWS_AGENT_UPDATE_PUBLIC_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download architecture-specific installers
+        uses: actions/download-artifact@v4
+        with:
+          pattern: windows-control-agent-*
+          path: apps/control-agent-windows/dist
+          merge-multiple: true
       - name: Create checksums and immutable beta release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           $tag = '${{ github.ref_name }}'
-          gh release create $tag apps/control-agent-windows/dist/Huddle-Control-Agent-windows-x64.exe apps/control-agent-windows/dist/Huddle-Control-Agent-windows-x64.exe.sha256 --repo $env:GITHUB_REPOSITORY --prerelease --title "Huddle Control Agent ${{ steps.build.outputs.version }} · Windows Public Beta" --generate-notes
+          gh release create $tag apps/control-agent-windows/dist/Huddle-Control-Agent-windows-x64.exe apps/control-agent-windows/dist/Huddle-Control-Agent-windows-x64.exe.sha256 apps/control-agent-windows/dist/Huddle-Control-Agent-windows-arm64.exe apps/control-agent-windows/dist/Huddle-Control-Agent-windows-arm64.exe.sha256 apps/control-agent-windows/dist/Huddle-Control-Agent-windows-x86.exe apps/control-agent-windows/dist/Huddle-Control-Agent-windows-x86.exe.sha256 --repo $env:GITHUB_REPOSITORY --prerelease --title "Huddle Control Agent ${{ github.ref_name }} · Windows Public Beta" --generate-notes
       - name: Create signed Windows release manifest
         shell: pwsh
         env:
           WINDOWS_AGENT_RELEASE_NOTES_URL: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}
-        run: node scripts/create-windows-control-agent-manifest.mjs "${{ steps.build.outputs.version }}" "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}"
+        run: |
+          $version = '${{ github.ref_name }}'.Replace('windows-control-agent-v', '')
+          node scripts/create-windows-control-agent-manifest.mjs $version "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}"
       - name: Upload versioned manifest
         shell: pwsh
         env:
@@ -68,5 +148,5 @@ jobs:
           if (gh release view windows-control-agent-beta --repo $env:GITHUB_REPOSITORY) {
             gh release upload windows-control-agent-beta apps/control-agent-windows/dist/release-manifest.json apps/control-agent-windows/dist/release-manifest.sig --repo $env:GITHUB_REPOSITORY --clobber
           } else {
-            gh release create windows-control-agent-beta apps/control-agent-windows/dist/release-manifest.json apps/control-agent-windows/dist/release-manifest.sig --repo $env:GITHUB_REPOSITORY --prerelease --title "Huddle Control Agent · Windows Public Beta Channel" --notes "Signed release manifest for the latest Windows x64 beta. The installer itself is unsigned."
+            gh release create windows-control-agent-beta apps/control-agent-windows/dist/release-manifest.json apps/control-agent-windows/dist/release-manifest.sig --repo $env:GITHUB_REPOSITORY --prerelease --title "Huddle Control Agent · Windows Public Beta Channel" --notes "Signed release manifest for the latest Windows x64, ARM64, and x86 beta. The installers are unsigned."
           }

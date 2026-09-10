@@ -6,8 +6,15 @@ const [version, releaseURL, outputDirectory = 'apps/control-agent-windows/dist']
 if (!version || !releaseURL) throw new Error('Usage: node scripts/create-windows-control-agent-manifest.mjs VERSION RELEASE_URL [OUTPUT_DIRECTORY]');
 
 const output = resolve(outputDirectory);
-const filename = 'Huddle-Control-Agent-windows-x64.exe';
-const bytes = readFileSync(resolve(output, filename));
+const artifact = (architecture) => {
+  const filename = `Huddle-Control-Agent-windows-${architecture}.exe`;
+  const bytes = readFileSync(resolve(output, filename));
+  return {
+    url: `${releaseURL}/${filename}`,
+    sha256: createHash('sha256').update(bytes).digest('hex'),
+    sizeBytes: bytes.length,
+  };
+};
 const manifest = {
   schemaVersion: 1,
   channel: 'beta',
@@ -18,11 +25,9 @@ const manifest = {
   releasedAt: new Date().toISOString(),
   releaseNotesUrl: requiredEnv('WINDOWS_AGENT_RELEASE_NOTES_URL'),
   downloads: {
-    x64: {
-      url: `${releaseURL}/${filename}`,
-      sha256: createHash('sha256').update(bytes).digest('hex'),
-      sizeBytes: bytes.length,
-    },
+    x64: artifact('x64'),
+    arm64: artifact('arm64'),
+    x86: artifact('x86'),
   },
 };
 

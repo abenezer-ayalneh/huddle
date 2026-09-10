@@ -399,7 +399,7 @@ GitHub Release DMGs. Set `NEXT_PUBLIC_CONTROL_AGENT_UPDATE_PUBLIC_KEY` to the
 same Ed25519 public key embedded in the signed agent bundle so the Downloads page
 can show verified release metadata.
 
-The Windows x64 beta uses a separate manifest channel. Configure all four of
+The Windows beta for x64, ARM64, and x86 uses a separate manifest channel. Configure all four of
 `WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL`,
 `WINDOWS_CONTROL_AGENT_RELEASES_URL`,
 `WINDOWS_CONTROL_AGENT_ISSUES_URL`, and

@@ -1,6 +1,6 @@
 import { publicConfig } from './public-config';
 
-export type WindowsControlAgentArchitecture = 'x64';
+export type WindowsControlAgentArchitecture = 'x64' | 'arm64' | 'x86';
 
 export type WindowsControlAgentReleaseManifest = {
   schemaVersion: 1;
@@ -11,7 +11,7 @@ export type WindowsControlAgentReleaseManifest = {
   minimumWindows: string;
   releasedAt: string;
   releaseNotesUrl: string;
-  downloads: Record<WindowsControlAgentArchitecture, { url: string; sha256: string; sizeBytes: number }>;
+  downloads: Partial<Record<WindowsControlAgentArchitecture, { url: string; sha256: string; sizeBytes: number }>>;
 };
 
 export type WindowsControlAgentRelease = WindowsControlAgentReleaseManifest & { verified: boolean };

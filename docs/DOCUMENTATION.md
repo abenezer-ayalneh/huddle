@@ -28,20 +28,20 @@ mistaken for proof of something it only proposes or records historically.
 
 ## Source-of-truth map
 
-| Need                                              | Canonical document                          | Supporting evidence                                                    |
-| ------------------------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------- |
-| Current feature status and remaining acceptance   | [ROADMAP.md](./ROADMAP.md)                  | Current source, tests, and environment-specific checks                 |
-| MVP requirements and original acceptance criteria | [PRD.md](./PRD.md)                          | Roadmap revisions and ADRs                                             |
-| Product language and non-obvious behavior         | [`../CONTEXT.md`](../CONTEXT.md)            | `apps/web/PRODUCT.md` for web-product copy                             |
-| Architecture, security boundaries, persistence    | [ARCHITECTURE.md](./ARCHITECTURE.md)        | `infra/`, `apps/api/src/`, and ADRs                                    |
-| HTTP request/response contract                    | [API_CONTRACT.md](./API_CONTRACT.md)        | `apps/api/src/**/*.controller.ts` and client `apps/web/src/lib/api.ts` |
-| Stack choices and rationale                       | [TECH_STACK.md](./TECH_STACK.md)            | package manifests and ADRs                                             |
-| Local development                                 | [SETUP.md](./SETUP.md)                      | `.env.example`, root `package.json`, `infra/docker-compose.yml`        |
-| VPS deployment                                    | [DEPLOYMENT.md](./DEPLOYMENT.md)            | `.env.prod.example`, Compose, Caddy, and deployment scripts            |
-| Repeated operations                               | [runbooks](#runbooks)                       | The referenced scripts and workflows                                   |
-| Web product/design rules                          | `apps/web/PRODUCT.md`, `apps/web/DESIGN.md` | Current web routes and components                                      |
-| macOS companion operation                         | `apps/control-agent/README.md`              | Swift source and release scripts                                       |
-| Windows companion operation                       | `apps/control-agent-windows/README.md`      | Flutter app, Win32 bridge, installer, and release workflow             |
+| Need                                              | Canonical document                                                                 | Supporting evidence                                                                             |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Current feature status and remaining acceptance   | [ROADMAP.md](./ROADMAP.md)                                                         | Current source, tests, and environment-specific checks                                          |
+| MVP requirements and original acceptance criteria | [PRD.md](./PRD.md)                                                                 | Roadmap revisions and ADRs                                                                      |
+| Product language and non-obvious behavior         | [`../CONTEXT.md`](../CONTEXT.md)                                                   | `apps/web/PRODUCT.md` for web-product copy                                                      |
+| Architecture, security boundaries, persistence    | [ARCHITECTURE.md](./ARCHITECTURE.md)                                               | `infra/`, `apps/api/src/`, and ADRs                                                             |
+| HTTP request/response contract                    | [API_CONTRACT.md](./API_CONTRACT.md)                                               | `apps/api/src/**/*.controller.ts` and client `apps/web/src/lib/api.ts`                          |
+| Stack choices and rationale                       | [TECH_STACK.md](./TECH_STACK.md)                                                   | package manifests and ADRs                                                                      |
+| Local development                                 | [SETUP.md](./SETUP.md)                                                             | `.env.example`, root `package.json`, `infra/docker-compose.yml`                                 |
+| VPS deployment                                    | [DEPLOYMENT.md](./DEPLOYMENT.md)                                                   | `.env.prod.example`, Compose, Caddy, and deployment scripts                                     |
+| Repeated operations                               | [runbooks](#runbooks)                                                              | The referenced scripts and workflows                                                            |
+| Web product/design rules                          | `apps/web/PRODUCT.md`, `apps/web/DESIGN.md`                                        | Current web routes and components                                                               |
+| macOS companion operation                         | `apps/control-agent/README.md`                                                     | Swift source and release scripts                                                                |
+| Windows companion operation                       | `apps/control-agent-windows/README.md`, `apps/control-agent-windows-x86/README.md` | Flutter x64/ARM64 app and Electron 43 x86 app, native bridges, installers, and release workflow |
 
 ## Status vocabulary
 

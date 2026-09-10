@@ -11,6 +11,7 @@ import 'core/bootstrap_link.dart';
 import 'core/control_protocol.dart';
 import 'core/grant_gate.dart';
 import 'core/models.dart';
+import 'core/native_architecture.dart';
 import 'core/release_manifest.dart';
 import 'core/server_trust.dart';
 import 'livekit/livekit_session.dart';
@@ -36,7 +37,10 @@ class WindowsControlAgent extends ChangeNotifier {
       : _session = session ?? LiveKitControlSession(),
         _trustStore = trustStore ?? ServerTrustStore();
 
-  static const appVersion = '0.1.0';
+  static const appVersion = String.fromEnvironment(
+    'WINDOWS_CONTROL_AGENT_VERSION',
+    defaultValue: '0.1.0',
+  );
   final LiveKitControlSession _session;
   final ServerTrustStore _trustStore;
   final WindowsBridge _windows = WindowsBridge.instance;
@@ -78,9 +82,9 @@ class WindowsControlAgent extends ChangeNotifier {
 
   Future<void> initialize(String? link) async {
     _elevated = await _windows.isElevated;
-    if (!await _windows.isNativeX64) {
-      _setFailure(
-          'Huddle Control Agent supports native x64 Windows only. ARM64 and 32-bit Windows are not part of this beta.');
+    final nativeArchitecture = await _windows.nativeArchitecture;
+    if (!supportsWindowsControlAgentArchitecture(nativeArchitecture)) {
+      _setFailure(unsupportedWindowsControlAgentArchitectureMessage(nativeArchitecture));
       notifyListeners();
       return;
     }
@@ -138,7 +142,10 @@ class WindowsControlAgent extends ChangeNotifier {
     notifyListeners();
     try {
       _releaseStatus = await _releaseManifest.check(
-          appVersion, await _windows.windowsVersion);
+          appVersion, await _windows.windowsVersion, await _windows.nativeArchitecture);
+      if (_releaseStatus!.missingNativeArchitecture) {
+        throw const _MissingNativeArchitectureReleaseException();
+      }
       if (_releaseStatus!.blocking) {
         throw const _RequiredUpdateException();
       }
@@ -177,6 +184,10 @@ class WindowsControlAgent extends ChangeNotifier {
       await _cleanupTransport();
       _setFailure(
           'This Windows version does not meet the current Control Agent release requirement. Update Windows before starting a new session.');
+    } on _MissingNativeArchitectureReleaseException {
+      await _cleanupTransport();
+      _setFailure(
+          'The configured Control Agent release has no installer for this Windows processor architecture. Install the matching current beta from Huddle Downloads.');
     } catch (_) {
       await _cleanupTransport();
       _setFailure(
@@ -484,4 +495,8 @@ class _RequiredUpdateException implements Exception {
 
 class _UnsupportedWindowsException implements Exception {
   const _UnsupportedWindowsException();
+}
+
+class _MissingNativeArchitectureReleaseException implements Exception {
+  const _MissingNativeArchitectureReleaseException();
 }

@@ -4,6 +4,9 @@
 #ifndef SourceDir
   #error SourceDir must be supplied by the build script
 #endif
+#ifndef Architecture
+  #error Architecture must be supplied by the build script
+#endif
 
 [Setup]
 AppId={{C565B53E-C438-4B93-ABFA-652456E575F5}
@@ -14,13 +17,20 @@ DefaultDirName={autopf}\Huddle Control Agent
 DefaultGroupName=Huddle Control Agent
 DisableProgramGroupPage=yes
 OutputDir=..\dist
-OutputBaseFilename=Huddle-Control-Agent-windows-x64
+OutputBaseFilename=Huddle-Control-Agent-windows-{#Architecture}
 Compression=lzma2
 SolidCompression=yes
 PrivilegesRequired=admin
 MinVersion=10.0.19045
+#if Architecture == "x64"
 ArchitecturesAllowed=x64os
 ArchitecturesInstallIn64BitMode=x64os
+#elif Architecture == "arm64"
+ArchitecturesAllowed=arm64
+ArchitecturesInstallIn64BitMode=arm64
+#else
+  #error Architecture must be x64 or arm64
+#endif
 UninstallDisplayIcon={app}\HuddleControlAgent.exe
 
 [Files]

@@ -7,7 +7,7 @@ class WindowsBridge {
 
   Future<void> configureDpiAwareness() => _channel.invokeMethod<void>('configureDpiAwareness');
   Future<bool> get isElevated async => (await _channel.invokeMethod<bool>('isElevated')) ?? false;
-  Future<bool> get isNativeX64 async => (await _channel.invokeMethod<bool>('isNativeX64')) ?? false;
+  Future<String> get nativeArchitecture async => (await _channel.invokeMethod<String>('nativeArchitecture')) ?? 'unknown';
   Future<String> get windowsVersion async => (await _channel.invokeMethod<String>('windowsVersion')) ?? '0.0.0';
   Future<void> restartElevated(String link) => _channel.invokeMethod<void>('restartElevated', {'link': link});
   Future<void> setCaptureSource(String sourceId) => _channel.invokeMethod<void>('setCaptureSource', {'sourceId': sourceId});

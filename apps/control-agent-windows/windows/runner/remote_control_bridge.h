@@ -20,7 +20,7 @@ class RemoteControlBridge {
   bool ApplyInput(const flutter::EncodableMap& event, std::string* error);
   bool ReleaseAll();
   bool IsElevated() const;
-  bool IsNativeX64() const;
+  std::string NativeArchitecture() const;
   std::string WindowsVersion() const;
   int ClipboardChangeCount() const;
   bool ReadClipboard(std::wstring* value) const;
