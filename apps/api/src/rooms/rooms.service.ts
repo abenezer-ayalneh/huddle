@@ -55,6 +55,9 @@ export class RoomsService {
   // host token + host key so they can join right away.
   async createRoom(host: AuthUser, params: { scheduledStart?: string }): Promise<HostJoinResult> {
     const scheduledStart = params.scheduledStart ? new Date(params.scheduledStart) : null;
+    if (scheduledStart && (!Number.isFinite(scheduledStart.getTime()) || scheduledStart.getTime() <= Date.now())) {
+      throw new BadRequestException(faultBody(FaultCode.VALIDATION, 'Scheduled start must be a future date and time.'));
+    }
     const room = await this.repo.create({
       scheduledStart,
       hostUserId: host.id,

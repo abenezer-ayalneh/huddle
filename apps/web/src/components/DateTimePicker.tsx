@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { isFutureSchedule, roundToNextQuarter, scheduledAt } from './scheduleTime';
 
 const TIME_SLOTS = Array.from({ length: 96 }, (_, i) => {
   const h = Math.floor(i / 4);
@@ -16,22 +17,6 @@ const TIME_SLOTS = Array.from({ length: 96 }, (_, i) => {
   });
   return { value, label };
 });
-
-function roundToNextQuarter(date: Date): string {
-  const h = date.getHours();
-  const m = Math.ceil(date.getMinutes() / 15) * 15;
-  const rounded = new Date(date);
-  rounded.setHours(h, m, 0, 0);
-  if (rounded <= date) rounded.setMinutes(rounded.getMinutes() + 15);
-  return `${String(rounded.getHours()).padStart(2, '0')}:${String(rounded.getMinutes() % 60).padStart(2, '0')}`;
-}
-
-function mergeDayTime(day: Date, time: string): string {
-  const [h, m] = time.split(':').map(Number);
-  const merged = new Date(day);
-  merged.setHours(h, m, 0, 0);
-  return merged.toISOString();
-}
 
 export default function DateTimePicker({
   onSchedule,
@@ -50,7 +35,7 @@ export default function DateTimePicker({
 
   const summary = useMemo(() => {
     if (!selectedDay) return null;
-    const dt = new Date(mergeDayTime(selectedDay, selectedTime));
+    const dt = scheduledAt(selectedDay, selectedTime);
     return dt.toLocaleString(undefined, {
       month: 'short',
       day: 'numeric',
@@ -60,8 +45,8 @@ export default function DateTimePicker({
   }, [selectedDay, selectedTime]);
 
   const handleConfirm = useCallback(() => {
-    if (!selectedDay) return;
-    onSchedule(mergeDayTime(selectedDay, selectedTime));
+    if (!selectedDay || !isFutureSchedule(selectedDay, selectedTime)) return;
+    onSchedule(scheduledAt(selectedDay, selectedTime).toISOString());
     setSelectedDay(undefined);
     setSelectedTime(roundToNextQuarter(new Date()));
     setOpen(false);
@@ -74,6 +59,7 @@ export default function DateTimePicker({
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const selectedTimeIsFuture = selectedDay ? isFutureSchedule(selectedDay, selectedTime) : false;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -89,14 +75,17 @@ export default function DateTimePicker({
 
         <div className="border-t border-border px-3 py-3">
           <div className="flex items-center gap-2">
-            <span className="shrink-0 text-sm font-medium">Time</span>
+            <label htmlFor="meeting-time" className="shrink-0 text-sm font-medium">
+              Time
+            </label>
             <select
+              id="meeting-time"
               value={selectedTime}
               onChange={(e) => setSelectedTime(e.target.value)}
               className="w-full rounded-lg border border-input bg-transparent py-2 pl-2.5 pr-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             >
               {TIME_SLOTS.map((slot) => (
-                <option key={slot.value} value={slot.value}>
+                <option key={slot.value} value={slot.value} disabled={selectedDay ? !isFutureSchedule(selectedDay, slot.value) : false}>
                   {slot.label}
                 </option>
               ))}
@@ -117,8 +106,15 @@ export default function DateTimePicker({
           )}
         </div>
 
+        {selectedDay && !selectedTimeIsFuture && <p className="px-3 pb-2 text-sm text-destructive">Choose a time in the future.</p>}
+
         <div className="border-t border-border px-3 py-3">
-          <button type="button" disabled={!selectedDay || disabled} onClick={handleConfirm} className="lobby-primary-button lobby-primary-button-full">
+          <button
+            type="button"
+            disabled={!selectedDay || !selectedTimeIsFuture || disabled}
+            onClick={handleConfirm}
+            className="lobby-primary-button lobby-primary-button-full"
+          >
             {disabled && <LoadingSpinner className="h-3.5 w-3.5" />}
             {!disabled && 'Schedule'}
           </button>

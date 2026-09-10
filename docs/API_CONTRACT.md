@@ -169,7 +169,7 @@ display name comes from the account, not the request. Rooms have **no title** â€
 the server always generates a unique **Room Code** (a Meet-style identifier like
 `abz-mnpq-rfk`); the client cannot supply a name or slug.
 
-**Request body:** `{ "scheduledStart"?: ISO-8601 }` (or empty `{}` for "start now")
+**Request body:** `{ "scheduledStart"?: ISO-8601 }` (or empty `{}` for "start now"). When supplied, `scheduledStart` must be a future instant; a past or invalid value returns **400** `VALIDATION`.
 **Response 201:** `{ "room", "scheduledStart", "identity", "token", "hostKey", "livekitUrl" }`
 
 - `room` â€” the generated Room Code (URL path + LiveKit room name).

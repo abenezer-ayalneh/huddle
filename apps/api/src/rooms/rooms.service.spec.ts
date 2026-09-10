@@ -91,6 +91,11 @@ describe('RoomsService', () => {
     expect(mine.rooms[0].hostKey).toEqual(expect.any(String));
   });
 
+  it('rejects a scheduled start that is already in the past', async () => {
+    await expect(service.createRoom(ada, { scheduledStart: new Date(Date.now() - 60_000).toISOString() })).rejects.toThrow(BadRequestException);
+    expect(livekit.createRoom).not.toHaveBeenCalled();
+  });
+
   it('lets the owner rejoin but forbids a non-owner', async () => {
     const { room } = await service.createRoom(ada, {});
     await expect(service.hostJoin(room, ada)).resolves.toMatchObject({ room });
