@@ -58,7 +58,7 @@ export default function LoadingSpinner(props: SVGProps<SVGSVGElement>) {
       })}
 
       <polygon points="27,23 27,41 43,32" fill="var(--huddle-logo-play-stroke, #faf4e9)" />
-      <polygon points="30,26 30,38 40,32" fill="var(--huddle-logo-play, #141414)" />
+      <polygon points="29,26 29,38 39,32" fill="var(--huddle-logo-play, #141414)" />
     </svg>
   );
 }
