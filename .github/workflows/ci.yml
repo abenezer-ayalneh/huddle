@@ -49,4 +49,7 @@ jobs:
           NEXT_PUBLIC_OPERATOR_NAME: Huddle CI
           NEXT_PUBLIC_OPERATOR_CONTACT_URL: https://ci.huddle.invalid/contact
           NEXT_PUBLIC_PROJECT_REPOSITORY_URL: https://example.invalid/huddle
-        run: pnpm build
+        # The Electron Windows x86 installer requires Wine and is built by
+        # windows-control-agent-release.yml on a Windows runner. Keep this
+        # Ubuntu job focused on the cross-platform workspace builds.
+        run: pnpm --filter @huddle/api --filter @huddle/web -r build
