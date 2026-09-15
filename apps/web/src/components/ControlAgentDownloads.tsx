@@ -30,7 +30,7 @@ function detectPlatform(): { platform: DetectedPlatform; architecture: DetectedA
       ? 'arm64'
       : architectureText.includes('x64') || architectureText.includes('amd64') || architectureText.includes('x86_64')
         ? 'x64'
-      : 'unknown';
+        : 'unknown';
   return { platform, architecture };
 }
 
@@ -55,8 +55,7 @@ export default function ControlAgentDownloads({
   const noCostBeta = release?.verified ? null : getNoCostControlAgentBeta(repositoryUrl);
   const macDetected = detected.platform === 'mac';
   const windowsDetected = detected.platform === 'windows';
-  const windowsArchitecture =
-    detected.architecture === 'arm64' || detected.architecture === 'x64' ? detected.architecture : null;
+  const windowsArchitecture = detected.architecture === 'arm64' || detected.architecture === 'x64' ? detected.architecture : null;
   const architectureLabel = detected.architecture === 'arm64' ? 'Apple Silicon' : detected.architecture === 'x64' ? 'Intel' : null;
 
   if (isMobileBrowser) {
@@ -201,13 +200,10 @@ export default function ControlAgentDownloads({
                 </div>
                 {artifact ? (
                   <a href={artifact.url} className="downloads-download-button">
-                    <Download className="size-4" aria-hidden="true" /> Download{' '}
-                    {architecture === 'arm64' ? 'Windows ARM64' : 'Windows x64'} installer
+                    <Download className="size-4" aria-hidden="true" /> Download {architecture === 'arm64' ? 'Windows ARM64' : 'Windows x64'} installer
                   </a>
                 ) : (
-                  <p className="downloads-unavailable">
-                    This release does not include a Windows {architecture === 'arm64' ? 'ARM64' : 'x64'} installer.
-                  </p>
+                  <p className="downloads-unavailable">This release does not include a Windows {architecture === 'arm64' ? 'ARM64' : 'x64'} installer.</p>
                 )}
                 {windowsRelease?.verified ? (
                   <p className="downloads-unavailable">

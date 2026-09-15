@@ -25,7 +25,7 @@ for current mechanics.
 | Remote Control and distribution           | 0024–0026, 0032–0034 | These form one safety boundary: attended platform agents, release/update constraints, and bounded ephemeral plain-text clipboard sharing. Do not weaken an exclusion by reading only one ADR.              |
 | Observability, rejoin, recording delivery | 0027–0029            | Sentry is privacy-scrubbed web/API fault reporting, Direct Rejoin is call-scoped, and Drive delivery/retention is optional with external acceptance still required.                                        |
 | Legal and PiP                             | 0030–0031            | Apache-2.0 repository licensing has its root `LICENSE`/`NOTICE` artifacts; desktop Document PiP supplements mobile/native PiP behavior in ADR 0020.                                                        |
-| Windows Control Agent                     | 0032–0035            | Windows x64 and ARM64 reuse Remote Control authority with their own DPI/input/UAC and unsigned-installer constraints; 32-bit Windows support was retired. Physical Windows acceptance remains separate.        |
+| Windows Control Agent                     | 0032–0035            | Windows x64 and ARM64 reuse Remote Control authority with their own DPI/input/UAC and unsigned-installer constraints; 32-bit Windows support was retired. Physical Windows acceptance remains separate.    |
 
 ## Notable amendments and historical context
 
