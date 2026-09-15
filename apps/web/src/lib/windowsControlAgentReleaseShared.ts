@@ -1,6 +1,6 @@
 import { publicConfig } from './public-config';
 
-export type WindowsControlAgentArchitecture = 'x64' | 'arm64' | 'x86';
+export type WindowsControlAgentArchitecture = 'x64' | 'arm64';
 
 export type WindowsControlAgentReleaseManifest = {
   schemaVersion: 1;

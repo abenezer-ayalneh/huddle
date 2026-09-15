@@ -27,7 +27,6 @@ const manifest = {
   downloads: {
     x64: artifact('x64'),
     arm64: artifact('arm64'),
-    x86: artifact('x86'),
   },
 };
 

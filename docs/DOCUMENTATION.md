@@ -41,7 +41,7 @@ mistaken for proof of something it only proposes or records historically.
 | Repeated operations                               | [runbooks](#runbooks)                                                              | The referenced scripts and workflows                                                            |
 | Web product/design rules                          | `apps/web/PRODUCT.md`, `apps/web/DESIGN.md`                                        | Current web routes and components                                                               |
 | macOS companion operation                         | `apps/control-agent/README.md`                                                     | Swift source and release scripts                                                                |
-| Windows companion operation                       | `apps/control-agent-windows/README.md`, `apps/control-agent-windows-x86/README.md` | Flutter x64/ARM64 app and Electron 43 x86 app, native bridges, installers, and release workflow |
+| Windows companion operation                       | `apps/control-agent-windows/README.md` | Flutter x64/ARM64 app, native bridge, installers, and release workflow |
 
 ## Status vocabulary
 

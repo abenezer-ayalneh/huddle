@@ -231,23 +231,7 @@ flutter test
 flutter run -d windows
 ```
 
-For 32-bit Windows 10 22H2, use the separate Electron x86 agent. It is pinned
-to Electron 43 because Electron 44 removed Windows x86 binaries; it must be
-replaced or retired before Electron 43 reaches end of support in January 2027.
-On Windows with Visual Studio's C++ workload and Python available to `node-gyp`:
-
-```powershell
-corepack enable
-pnpm install --frozen-lockfile
-pnpm --filter @huddle/control-agent-windows-x86 typecheck
-pnpm --filter @huddle/control-agent-windows-x86 test
-$env:WINDOWS_CONTROL_AGENT_VERSION = '0.1.0'
-pnpm --filter @huddle/control-agent-windows-x86 build
-```
-
-This creates `apps/control-agent-windows-x86/dist/Huddle-Control-Agent-windows-x86.exe`.
-It is a separate attended implementation, not a Flutter x86 target; it supports
-Windows 10 22H2 32-bit only because Windows 11 has no 32-bit edition.
+32-bit Windows (`x86`) is unsupported. Use a native x64 or ARM64 Windows PC.
 
 The Sharer opens the same one-time `huddle-control://join` link from the
 browser, trusts the exact API origin, selects one entire display, and presses

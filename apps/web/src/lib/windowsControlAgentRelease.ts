@@ -24,7 +24,7 @@ function isManifest(value: unknown): value is WindowsControlAgentReleaseManifest
   if (!value || typeof value !== 'object') return false;
   const candidate = value as Partial<WindowsControlAgentReleaseManifest>;
   const artifacts = candidate.downloads;
-  const hasValidArtifact = (architecture: 'x64' | 'arm64' | 'x86') => {
+  const hasValidArtifact = (architecture: 'x64' | 'arm64') => {
     const artifact = artifacts?.[architecture];
     return (
       !!artifact &&
@@ -45,8 +45,7 @@ function isManifest(value: unknown): value is WindowsControlAgentReleaseManifest
     Number.isFinite(Date.parse(candidate.releasedAt ?? '')) &&
     validHttpsUrl(candidate.releaseNotesUrl) &&
     hasValidArtifact('x64') &&
-    (artifacts?.arm64 === undefined || hasValidArtifact('arm64')) &&
-    (artifacts?.x86 === undefined || hasValidArtifact('x86'))
+    (artifacts?.arm64 === undefined || hasValidArtifact('arm64'))
   );
 }
 

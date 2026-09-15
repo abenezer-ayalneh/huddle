@@ -70,43 +70,8 @@ jobs:
             apps/control-agent-windows/dist/Huddle-Control-Agent-windows-${{ matrix.architecture }}.exe.sha256
           if-no-files-found: error
 
-  build-x86:
-    runs-on: windows-2022
-    env:
-      WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL: https://github.com/${{ github.repository }}/releases/download/windows-control-agent-beta
-      WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY: ${{ secrets.WINDOWS_AGENT_UPDATE_PUBLIC_KEY }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24.18.0
-      - name: Install locked x86 agent dependencies
-        shell: pwsh
-        run: |
-          corepack enable
-          pnpm install --frozen-lockfile
-      - name: Validate x86 Control Agent contracts
-        shell: pwsh
-        run: |
-          pnpm --filter @huddle/control-agent-windows-x86 typecheck
-          pnpm --filter @huddle/control-agent-windows-x86 test
-      - name: Build unsigned x86 installer
-        shell: pwsh
-        run: |
-          $version = '${{ github.ref_name }}'.Replace('windows-control-agent-v', '')
-          $env:WINDOWS_CONTROL_AGENT_VERSION = $version
-          pnpm --filter @huddle/control-agent-windows-x86 build
-      - name: Upload x86 installer
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-control-agent-x86
-          path: |
-            apps/control-agent-windows-x86/dist/Huddle-Control-Agent-windows-x86.exe
-            apps/control-agent-windows-x86/dist/Huddle-Control-Agent-windows-x86.exe.sha256
-          if-no-files-found: error
-
   publish:
-    needs: [build-and-package, build-x86]
+    needs: build-and-package
     runs-on: windows-2022
     env:
       WINDOWS_AGENT_UPDATE_PRIVATE_KEY_B64: ${{ secrets.WINDOWS_AGENT_UPDATE_PRIVATE_KEY_B64 }}
@@ -127,7 +92,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $tag = '${{ github.ref_name }}'
-          gh release create $tag apps/control-agent-windows/dist/Huddle-Control-Agent-windows-x64.exe apps/control-agent-windows/dist/Huddle-Control-Agent-windows-x64.exe.sha256 apps/control-agent-windows/dist/Huddle-Control-Agent-windows-arm64.exe apps/control-agent-windows/dist/Huddle-Control-Agent-windows-arm64.exe.sha256 apps/control-agent-windows/dist/Huddle-Control-Agent-windows-x86.exe apps/control-agent-windows/dist/Huddle-Control-Agent-windows-x86.exe.sha256 --repo $env:GITHUB_REPOSITORY --prerelease --title "Huddle Control Agent ${{ github.ref_name }} · Windows Public Beta" --generate-notes
+          gh release create $tag apps/control-agent-windows/dist/Huddle-Control-Agent-windows-x64.exe apps/control-agent-windows/dist/Huddle-Control-Agent-windows-x64.exe.sha256 apps/control-agent-windows/dist/Huddle-Control-Agent-windows-arm64.exe apps/control-agent-windows/dist/Huddle-Control-Agent-windows-arm64.exe.sha256 --repo $env:GITHUB_REPOSITORY --prerelease --title "Huddle Control Agent ${{ github.ref_name }} · Windows Public Beta" --generate-notes
       - name: Create signed Windows release manifest
         shell: pwsh
         env:
@@ -148,5 +113,5 @@ jobs:
           if (gh release view windows-control-agent-beta --repo $env:GITHUB_REPOSITORY) {
             gh release upload windows-control-agent-beta apps/control-agent-windows/dist/release-manifest.json apps/control-agent-windows/dist/release-manifest.sig --repo $env:GITHUB_REPOSITORY --clobber
           } else {
-            gh release create windows-control-agent-beta apps/control-agent-windows/dist/release-manifest.json apps/control-agent-windows/dist/release-manifest.sig --repo $env:GITHUB_REPOSITORY --prerelease --title "Huddle Control Agent · Windows Public Beta Channel" --notes "Signed release manifest for the latest Windows x64, ARM64, and x86 beta. The installers are unsigned."
+            gh release create windows-control-agent-beta apps/control-agent-windows/dist/release-manifest.json apps/control-agent-windows/dist/release-manifest.sig --repo $env:GITHUB_REPOSITORY --prerelease --title "Huddle Control Agent · Windows Public Beta Channel" --notes "Signed release manifest for the latest Windows x64 and ARM64 beta. The installers are unsigned."
           }

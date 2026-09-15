@@ -1,6 +1,6 @@
 # Windows x86 Control Agent release path
 
-Status: accepted
+Status: superseded by [ADR 0035](./0035-retire-windows-x86-control-agent.md)
 
 This decision amends ADR 0033's 32-bit Windows exclusion. It does not change
 the attended Remote Control authority boundary in ADR 0024, ADR 0026, or ADR

@@ -9,7 +9,7 @@ import { useMobileBrowserCapabilities } from '@/lib/mobileBrowserCapabilities';
 import type { WindowsControlAgentRelease } from '@/lib/windowsControlAgentReleaseShared';
 
 type DetectedPlatform = 'mac' | 'windows' | 'linux' | 'other';
-type DetectedArchitecture = 'arm64' | 'x64' | 'x86' | 'unknown';
+type DetectedArchitecture = 'arm64' | 'x64' | 'unknown';
 type DownloadArtifact = { url: string; sizeBytes?: number };
 
 function detectPlatform(): { platform: DetectedPlatform; architecture: DetectedArchitecture } {
@@ -30,9 +30,7 @@ function detectPlatform(): { platform: DetectedPlatform; architecture: DetectedA
       ? 'arm64'
       : architectureText.includes('x64') || architectureText.includes('amd64') || architectureText.includes('x86_64')
         ? 'x64'
-        : architectureText.includes('x86') || architectureText.includes('ia32')
-          ? 'x86'
-          : 'unknown';
+      : 'unknown';
   return { platform, architecture };
 }
 
@@ -58,7 +56,7 @@ export default function ControlAgentDownloads({
   const macDetected = detected.platform === 'mac';
   const windowsDetected = detected.platform === 'windows';
   const windowsArchitecture =
-    detected.architecture === 'arm64' || detected.architecture === 'x64' || detected.architecture === 'x86' ? detected.architecture : null;
+    detected.architecture === 'arm64' || detected.architecture === 'x64' ? detected.architecture : null;
   const architectureLabel = detected.architecture === 'arm64' ? 'Apple Silicon' : detected.architecture === 'x64' ? 'Intel' : null;
 
   if (isMobileBrowser) {
@@ -176,11 +174,6 @@ export default function ControlAgentDownloads({
                 description: 'Windows 10 22H2 or Windows 11 · Snapdragon and other Windows on ARM PCs',
                 label: 'Windows · ARM64',
               },
-              {
-                architecture: 'x86' as const,
-                description: 'Windows 10 22H2 · 32-bit Intel or AMD PCs',
-                label: 'Windows · x86 (32-bit)',
-              },
             ] as const
           ).map(({ architecture, description, label }) => {
             const artifact: DownloadArtifact | undefined = windowsRelease?.verified ? windowsRelease.downloads[architecture] : undefined;
@@ -209,11 +202,11 @@ export default function ControlAgentDownloads({
                 {artifact ? (
                   <a href={artifact.url} className="downloads-download-button">
                     <Download className="size-4" aria-hidden="true" /> Download{' '}
-                    {architecture === 'arm64' ? 'Windows ARM64' : architecture === 'x86' ? 'Windows x86' : 'Windows x64'} installer
+                    {architecture === 'arm64' ? 'Windows ARM64' : 'Windows x64'} installer
                   </a>
                 ) : (
                   <p className="downloads-unavailable">
-                    This release does not include a Windows {architecture === 'arm64' ? 'ARM64' : architecture === 'x86' ? 'x86' : 'x64'} installer.
+                    This release does not include a Windows {architecture === 'arm64' ? 'ARM64' : 'x64'} installer.
                   </p>
                 )}
                 {windowsRelease?.verified ? (
@@ -234,9 +227,7 @@ export default function ControlAgentDownloads({
                 ? 'Your browser reports Windows on ARM.'
                 : windowsArchitecture === 'x64'
                   ? 'Your browser reports 64-bit Windows.'
-                  : windowsArchitecture === 'x86'
-                    ? 'Your browser reports 32-bit Windows.'
-                    : 'Your browser reports Windows; choose the matching processor architecture.'
+                  : 'Your browser reports Windows; choose the matching processor architecture.'
               : 'These installers are for Windows 10 22H2 or later; Windows 11 requires x64 or ARM64.'}{' '}
             Downloads are never selected silently.
           </p>

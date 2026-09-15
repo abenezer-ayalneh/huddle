@@ -9,10 +9,7 @@ local Start, then joins LiveKit as the existing `control-agent:<sessionId>`
 participant.
 
 This Flutter implementation targets native x64 and ARM64 Windows 10 22H2 and
-Windows 11 PCs. The separate
-[`apps/control-agent-windows-x86`](../control-agent-windows-x86) Electron 43
-implementation provides 32-bit Windows 10 22H2 support; Windows 11 has no
-32-bit edition. This app is Per-Monitor-V2 DPI aware and maps normalized
+Windows 11 PCs; 32-bit Windows is unsupported. This app is Per-Monitor-V2 DPI aware and maps normalized
 browser coordinates through the selected display and Windows virtual desktop. It publishes display video only: no microphone,
 desktop audio, files, rich clipboard, persistent credentials, background
 service, or unattended access is included.
