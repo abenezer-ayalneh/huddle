@@ -27,7 +27,7 @@ export default function MaintenancePage() {
       </p>
       {status?.phase === 'scheduled' && <p>Existing meetings are wrapping up. New meetings and joins are paused.</p>}
       <div className={styles.actions}>
-        <button type="button" onClick={() => window.location.assign('/')} className={styles.button}>
+        <button type="button" onClick={() => window.location.assign('/lobby')} className={styles.button}>
           {status?.phase === 'off' ? 'Return to Huddle' : 'Check again'}
         </button>
         <Link href="/admin/maintenance">Owner sign-in</Link>
