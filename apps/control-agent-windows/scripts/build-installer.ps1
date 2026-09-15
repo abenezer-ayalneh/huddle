@@ -9,10 +9,11 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$projectRoot = Split-Path -Parent $PSScriptRoot
 $releaseDirectory = Join-Path $projectRoot "build\windows\$Architecture\runner\Release"
 $installer = Join-Path $projectRoot 'installer\HuddleControlAgent.iss'
 $dist = Join-Path $projectRoot 'dist'
+$isccCommand = Get-Command -Name $Iscc -CommandType Application -ErrorAction Stop
 
 $buildArguments = @('build', 'windows', '--release', "--dart-define=WINDOWS_CONTROL_AGENT_VERSION=$Version")
 if (($ReleaseChannel.Length -gt 0) -xor ($UpdatePublicKey.Length -gt 0)) { throw 'WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL and WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY must be configured together.' }
@@ -20,8 +21,13 @@ if ($ReleaseChannel.Length -gt 0) {
   $buildArguments += "--dart-define=WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL=$ReleaseChannel"
   $buildArguments += "--dart-define=WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY=$UpdatePublicKey"
 }
-& $Flutter @buildArguments
-if ($LASTEXITCODE -ne 0) { throw 'Flutter Windows build failed.' }
+Push-Location $projectRoot
+try {
+  & $Flutter @buildArguments
+  if ($LASTEXITCODE -ne 0) { throw 'Flutter Windows build failed.' }
+} finally {
+  Pop-Location
+}
 if (!(Test-Path (Join-Path $releaseDirectory 'HuddleControlAgent.exe'))) { throw 'Flutter did not produce HuddleControlAgent.exe.' }
 
 $executable = Join-Path $releaseDirectory 'HuddleControlAgent.exe'
@@ -34,7 +40,7 @@ if ($machine -ne $expectedMachine) {
 }
 
 New-Item -ItemType Directory -Force -Path $dist | Out-Null
-& $Iscc "/DAppVersion=$Version" "/DArchitecture=$Architecture" "/DSourceDir=$releaseDirectory" $installer
+& $isccCommand.Source "/DAppVersion=$Version" "/DArchitecture=$Architecture" "/DSourceDir=$releaseDirectory" $installer
 if ($LASTEXITCODE -ne 0) { throw 'Inno Setup packaging failed.' }
 
 $artifact = Join-Path $dist "Huddle-Control-Agent-windows-$Architecture.exe"

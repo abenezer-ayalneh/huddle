@@ -23,9 +23,11 @@ acceptance.
    suppress it, add and audit a narrowly pinned patch before tagging a beta.
 4. Record whether Windows publisher warnings were shown. The installer is
    unsigned; do not describe checksum or manifest validation as Authenticode.
-5. Configure GitHub secrets `WINDOWS_AGENT_UPDATE_PRIVATE_KEY_B64` and
-   `WINDOWS_AGENT_UPDATE_KEY_ID`. Add the matching public key and channel URL to
-   the deployment's `WINDOWS_CONTROL_AGENT_*` environment configuration.
+5. Configure GitHub secrets `WINDOWS_AGENT_UPDATE_PRIVATE_KEY_B64`,
+   `WINDOWS_AGENT_UPDATE_PUBLIC_KEY`, and `WINDOWS_AGENT_UPDATE_KEY_ID`.
+   Confirm the public key matches the private signing key, then add that same
+   public key and the channel URL to the deployment's
+   `WINDOWS_CONTROL_AGENT_*` environment configuration.
 
 ## Publish
 
