@@ -13,6 +13,7 @@ class RemoteControlBridge {
  public:
   void RegisterWith(FlutterDesktopPluginRegistrarRef registrar);
   void SetSessionState(const std::string& state);
+  void ReceiveLink(const std::wstring& link);
 
  private:
   void HandleMethodCall(const flutter::MethodCall<flutter::EncodableValue>& call, std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);

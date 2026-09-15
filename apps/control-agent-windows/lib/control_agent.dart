@@ -63,6 +63,7 @@ class WindowsControlAgent extends ChangeNotifier {
   AgentPhase _phase = AgentPhase.waitingForLink;
   bool _elevated = false;
   bool _elevatedLinkAccepted = false;
+  bool _acceptingLink = false;
   bool _stopping = false;
   int _clipboardChangeCount = 0;
   int? _expectedClipboardChangeCount;
@@ -84,7 +85,8 @@ class WindowsControlAgent extends ChangeNotifier {
     _elevated = await _windows.isElevated;
     final nativeArchitecture = await _windows.nativeArchitecture;
     if (!supportsWindowsControlAgentArchitecture(nativeArchitecture)) {
-      _setFailure(unsupportedWindowsControlAgentArchitectureMessage(nativeArchitecture));
+      _setFailure(unsupportedWindowsControlAgentArchitectureMessage(
+          nativeArchitecture));
       notifyListeners();
       return;
     }
@@ -100,30 +102,56 @@ class WindowsControlAgent extends ChangeNotifier {
   }
 
   Future<void> acceptLink(String raw) async {
+    if (_acceptingLink ||
+        _stopping ||
+        _session.connected ||
+        {
+          AgentPhase.trustRequired,
+          AgentPhase.readyToConnect,
+          AgentPhase.connecting,
+          AgentPhase.chooseDisplay,
+          AgentPhase.awaitingActivation,
+          AgentPhase.readyToStart,
+          AgentPhase.active,
+          AgentPhase.switchingDisplay,
+        }.contains(_phase)) {
+      _error =
+          'Stop the current Control Agent session before opening another link.';
+      notifyListeners();
+      return;
+    }
     if (_elevated && _elevatedLinkAccepted) {
       _setFailure(
           'This elevated Control Agent accepts one launch link only. Close it and obtain a fresh browser approval.');
+      notifyListeners();
       return;
     }
-    if (_elevated) _elevatedLinkAccepted = true;
+    _acceptingLink = true;
+    var connectAutomatically = false;
     try {
       _descriptor = BootstrapLink.parse(raw);
       _error = null;
-      _phase = await _trustStore.isTrusted(_descriptor!.apiOrigin)
-          ? AgentPhase.readyToConnect
-          : AgentPhase.trustRequired;
+      if (_elevated) _elevatedLinkAccepted = true;
+      final trusted = await _trustStore.isTrusted(_descriptor!.apiOrigin);
+      _phase = trusted ? AgentPhase.readyToConnect : AgentPhase.trustRequired;
+      connectAutomatically = trusted;
     } on BootstrapLinkException catch (error) {
       _setFailure(error.message);
+    } finally {
+      _acceptingLink = false;
     }
     notifyListeners();
+    if (connectAutomatically) unawaited(connect());
   }
 
   Future<void> trustServer() async {
     final descriptor = _descriptor;
-    if (descriptor == null) return;
+    if (descriptor == null || _phase != AgentPhase.trustRequired) return;
     await _trustStore.trust(descriptor.apiOrigin);
+    if (_descriptor != descriptor || _phase != AgentPhase.trustRequired) return;
     _phase = AgentPhase.readyToConnect;
     notifyListeners();
+    await connect();
   }
 
   Future<void> restartElevated() async {
@@ -134,6 +162,25 @@ class WindowsControlAgent extends ChangeNotifier {
     await _windows.restartElevated(link);
   }
 
+  Future<bool> restartElevatedWithLink(String raw) async {
+    try {
+      final descriptor = BootstrapLink.parse(raw);
+      final link =
+          'huddle-control://join?api=${Uri.encodeQueryComponent(descriptor.apiOrigin.toString())}&room=${Uri.encodeQueryComponent(descriptor.room)}&session=${Uri.encodeQueryComponent(descriptor.sessionId)}&code=${Uri.encodeQueryComponent(descriptor.bootstrapCode)}';
+      await _windows.restartElevated(link);
+      return true;
+    } on BootstrapLinkException catch (error) {
+      _error = error.message;
+      notifyListeners();
+      return false;
+    } catch (_) {
+      _error =
+          'Windows elevation was cancelled or unavailable. No Remote Control session was started.';
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<void> connect() async {
     final descriptor = _descriptor;
     if (descriptor == null || _phase != AgentPhase.readyToConnect) return;
@@ -141,8 +188,8 @@ class WindowsControlAgent extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      _releaseStatus = await _releaseManifest.check(
-          appVersion, await _windows.windowsVersion, await _windows.nativeArchitecture);
+      _releaseStatus = await _releaseManifest.check(appVersion,
+          await _windows.windowsVersion, await _windows.nativeArchitecture);
       if (_releaseStatus!.missingNativeArchitecture) {
         throw const _MissingNativeArchitectureReleaseException();
       }

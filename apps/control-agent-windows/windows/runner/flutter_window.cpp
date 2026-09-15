@@ -8,6 +8,15 @@
 FlutterWindow::FlutterWindow(const wchar_t* title) : Win32Window(), project_(L"data") {}
 FlutterWindow::~FlutterWindow() = default;
 
+namespace {
+constexpr ULONG_PTR kHuddleControlLinkMessage = 0x48554444;  // "HUDD"
+constexpr DWORD kMaximumControlLinkBytes = 8 * 1024;
+}
+
+void FlutterWindow::ReceiveControlLink(const std::wstring& link) {
+  control_bridge_.ReceiveLink(link);
+}
+
 bool FlutterWindow::OnCreate() {
   if (!Win32Window::OnCreate()) return false;
   RECT frame = GetClientArea();
@@ -27,6 +36,20 @@ void FlutterWindow::OnDestroy() {
 }
 
 LRESULT FlutterWindow::MessageHandler(HWND window, UINT const message, WPARAM const wparam, LPARAM const lparam) noexcept {
+  if (message == WM_COPYDATA) {
+    const auto* data = reinterpret_cast<const COPYDATASTRUCT*>(lparam);
+    if (data != nullptr && data->dwData == kHuddleControlLinkMessage && data->lpData != nullptr &&
+        data->cbData > sizeof(wchar_t) && data->cbData <= kMaximumControlLinkBytes &&
+        data->cbData % sizeof(wchar_t) == 0) {
+      const auto* raw = static_cast<const wchar_t*>(data->lpData);
+      const size_t length = data->cbData / sizeof(wchar_t) - 1;
+      if (raw[length] == L'\0') {
+        ReceiveControlLink(std::wstring(raw, length));
+        return 1;
+      }
+    }
+    return 0;
+  }
   if (message == WM_WTSSESSION_CHANGE && (wparam == WTS_SESSION_LOCK || wparam == WTS_SESSION_LOGOFF || wparam == WTS_REMOTE_DISCONNECT)) {
     control_bridge_.SetSessionState("inactive");
   }

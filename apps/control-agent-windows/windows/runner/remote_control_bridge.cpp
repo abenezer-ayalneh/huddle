@@ -185,6 +185,14 @@ void RemoteControlBridge::RegisterWith(FlutterDesktopPluginRegistrarRef registra
 
 void RemoteControlBridge::SetSessionState(const std::string& state) { session_state_ = state; }
 
+void RemoteControlBridge::ReceiveLink(const std::wstring& link) {
+  if (!channel_) return;
+  const std::string utf8 = ToUtf8(link);
+  if (utf8.empty()) return;
+  channel_->InvokeMethod(
+      "openLink", std::make_unique<flutter::EncodableValue>(utf8));
+}
+
 void RemoteControlBridge::HandleMethodCall(const flutter::MethodCall<flutter::EncodableValue>& call, std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
   const auto& method = call.method_name();
   if (method == "configureDpiAwareness") {

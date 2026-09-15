@@ -27,9 +27,12 @@ flutter test
 flutter run -d windows
 ```
 
-The app runs `asInvoker` by default. Before a connection begins, the Sharer may
-choose **Allow control of administrator apps**. Windows presents UAC locally and
-restarts the app elevated with the same still-unredeemed bootstrap. Switching
+The app runs `asInvoker` by default. A trusted browser-approved link connects
+the companion directly to the room, then leaves display selection and the local
+**Start Remote Control** action with the Sharer. If administrator applications
+need control, use the app's manual-link fallback and select **Open in
+administrator-app mode** before opening the link; Windows presents UAC locally
+and restarts the app elevated with the still-unredeemed bootstrap. Switching
 mode after connection is intentionally unavailable: stop the attended session,
 then obtain a fresh approval in the browser. UAC secure desktop, sign-in,
 Ctrl+Alt+Delete, Windows services, and background/unattended control are always

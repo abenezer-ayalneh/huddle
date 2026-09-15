@@ -14,6 +14,7 @@ class FlutterWindow : public Win32Window {
  public:
   explicit FlutterWindow(const wchar_t* title);
   ~FlutterWindow() override;
+  void ReceiveControlLink(const std::wstring& link);
 
  protected:
   bool OnCreate() override;
