@@ -25,9 +25,10 @@ acceptance.
    unsigned; do not describe checksum or manifest validation as Authenticode.
 5. Configure GitHub secrets `WINDOWS_AGENT_UPDATE_PRIVATE_KEY_B64`,
    `WINDOWS_AGENT_UPDATE_PUBLIC_KEY`, and `WINDOWS_AGENT_UPDATE_KEY_ID`.
-   Confirm the public key matches the private signing key, then add that same
-   public key and the channel URL to the deployment's
-   `WINDOWS_CONTROL_AGENT_*` environment configuration.
+   Confirm the public key matches the private signing key. The production deploy
+   synchronizes that public key and the fixed Windows beta-channel URLs into its
+   gitignored `WINDOWS_CONTROL_AGENT_*` environment configuration before it
+   rebuilds the Downloads page.
 
 ## Publish
 
