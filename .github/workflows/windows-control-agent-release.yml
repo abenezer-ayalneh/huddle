@@ -13,7 +13,22 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  release-preflight:
+    runs-on: ubuntu-latest
+    env:
+      WINDOWS_AGENT_UPDATE_PRIVATE_KEY_B64: ${{ secrets.WINDOWS_AGENT_UPDATE_PRIVATE_KEY_B64 }}
+      WINDOWS_AGENT_UPDATE_PUBLIC_KEY: ${{ secrets.WINDOWS_AGENT_UPDATE_PUBLIC_KEY }}
+      WINDOWS_AGENT_UPDATE_KEY_ID: ${{ secrets.WINDOWS_AGENT_UPDATE_KEY_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.18.0
+      - name: Validate Windows release signing configuration
+        run: node scripts/validate-windows-control-agent-signing-key.mjs
+
   build-and-package:
+    needs: release-preflight
     strategy:
       fail-fast: false
       matrix:
