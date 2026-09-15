@@ -38,25 +38,18 @@ jobs:
           script: |
             set -e
             cd /home/huddle
-            upsert_env() {
-              key="$1"
-              value="$(printenv "$key")"
-              if [ -z "$value" ]; then
-                echo "Missing required deploy value: $key" >&2
-                exit 1
-              fi
-              temporary_env="$(mktemp .env.prod.XXXXXX)"
-              awk -v key="$key" -v value="$value" '
-                $0 ~ "^" key "=" { print key "=" value; found = 1; next }
-                { print }
-                END { if (!found) print key "=" value }
-              ' .env.prod > "$temporary_env"
-              mv "$temporary_env" .env.prod
-            }
-            upsert_env WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL
-            upsert_env WINDOWS_CONTROL_AGENT_RELEASES_URL
-            upsert_env WINDOWS_CONTROL_AGENT_ISSUES_URL
-            upsert_env WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY
+            test -n "$WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL"
+            grep -q '^WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL=' .env.prod || printf '\nWINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL=%s\n' "$WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL" >> .env.prod
+            sed -i "s|^WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL=.*$|WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL=$WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL|" .env.prod
+            test -n "$WINDOWS_CONTROL_AGENT_RELEASES_URL"
+            grep -q '^WINDOWS_CONTROL_AGENT_RELEASES_URL=' .env.prod || printf '\nWINDOWS_CONTROL_AGENT_RELEASES_URL=%s\n' "$WINDOWS_CONTROL_AGENT_RELEASES_URL" >> .env.prod
+            sed -i "s|^WINDOWS_CONTROL_AGENT_RELEASES_URL=.*$|WINDOWS_CONTROL_AGENT_RELEASES_URL=$WINDOWS_CONTROL_AGENT_RELEASES_URL|" .env.prod
+            test -n "$WINDOWS_CONTROL_AGENT_ISSUES_URL"
+            grep -q '^WINDOWS_CONTROL_AGENT_ISSUES_URL=' .env.prod || printf '\nWINDOWS_CONTROL_AGENT_ISSUES_URL=%s\n' "$WINDOWS_CONTROL_AGENT_ISSUES_URL" >> .env.prod
+            sed -i "s|^WINDOWS_CONTROL_AGENT_ISSUES_URL=.*$|WINDOWS_CONTROL_AGENT_ISSUES_URL=$WINDOWS_CONTROL_AGENT_ISSUES_URL|" .env.prod
+            test -n "$WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY"
+            grep -q '^WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY=' .env.prod || printf '\nWINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY=%s\n' "$WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY" >> .env.prod
+            sed -i "s|^WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY=.*$|WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY=$WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY|" .env.prod
             # Sync the tree FIRST so infra/deploy.sh (and any change to it) is on
             # disk before we invoke it — the script can't pull itself into existence.
             git fetch --prune origin
