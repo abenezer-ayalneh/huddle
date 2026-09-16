@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:livekit_client/livekit_client.dart';
 
 import 'core/bootstrap_link.dart';
+import 'core/connection_failure.dart';
 import 'core/control_protocol.dart';
 import 'core/grant_gate.dart';
 import 'core/models.dart';
@@ -59,6 +60,8 @@ class WindowsControlAgent extends ChangeNotifier {
   String? _displaySourceId;
   String? _displayName;
   String? _error;
+  AgentConnectionStage? _connectionStage;
+  AgentConnectionStage? _lastConnectionStage;
   ReleaseStatus? _releaseStatus;
   AgentPhase _phase = AgentPhase.waitingForLink;
   bool _elevated = false;
@@ -80,6 +83,7 @@ class WindowsControlAgent extends ChangeNotifier {
   bool get isSessionActive =>
       _phase == AgentPhase.active || _phase == AgentPhase.switchingDisplay;
   ReleaseStatus? get releaseStatus => _releaseStatus;
+  String? get lastConnectionStage => _lastConnectionStage?.diagnosticLabel;
 
   Future<void> initialize(String? link) async {
     _elevated = await _windows.isElevated;
@@ -186,6 +190,8 @@ class WindowsControlAgent extends ChangeNotifier {
     if (descriptor == null || _phase != AgentPhase.readyToConnect) return;
     _phase = AgentPhase.connecting;
     _error = null;
+    _connectionStage = AgentConnectionStage.releaseManifest;
+    _lastConnectionStage = null;
     notifyListeners();
     try {
       _releaseStatus = await _releaseManifest.check(appVersion,
@@ -199,7 +205,9 @@ class WindowsControlAgent extends ChangeNotifier {
       if (_releaseStatus!.unsupportedWindows) {
         throw const _UnsupportedWindowsException();
       }
+      _connectionStage = AgentConnectionStage.bootstrapRedemption;
       final response = await _redeem(descriptor);
+      _connectionStage = AgentConnectionStage.responseValidation;
       if (response.room != descriptor.room ||
           response.session.sessionId != descriptor.sessionId) {
         throw const FormatException(
@@ -215,6 +223,7 @@ class WindowsControlAgent extends ChangeNotifier {
       }
       _response = response;
       _gate = GrantGate(room: descriptor.room, bootstrap: response.session);
+      _connectionStage = AgentConnectionStage.livekitConnection;
       await _session.connect(response);
       _packetSubscription = _session.packets.listen(_enqueuePacket);
       _metadataSubscription = _session.metadata.listen(_receiveMetadata);
@@ -222,6 +231,7 @@ class WindowsControlAgent extends ChangeNotifier {
       _projection =
           RemoteControlProjection.fromRoomMetadata(_session.roomMetadata);
       _phase = AgentPhase.chooseDisplay;
+      _connectionStage = null;
       _startLifecycleMonitor();
     } on _RequiredUpdateException {
       await _cleanupTransport();
@@ -235,10 +245,15 @@ class WindowsControlAgent extends ChangeNotifier {
       await _cleanupTransport();
       _setFailure(
           'The configured Control Agent release has no installer for this Windows processor architecture. Install the matching current beta from Huddle Downloads.');
-    } catch (_) {
+    } catch (error) {
+      _lastConnectionStage = _connectionStage;
       await _cleanupTransport();
-      _setFailure(
-          'The Control Agent could not connect. The approved link may have expired or the Huddle server is unavailable.');
+      _setFailure(safeConnectionFailureMessage(
+        _connectionStage ?? AgentConnectionStage.livekitConnection,
+        error,
+      ));
+    } finally {
+      _connectionStage = null;
     }
     notifyListeners();
   }
@@ -488,14 +503,16 @@ class WindowsControlAgent extends ChangeNotifier {
   Future<BootstrapResponse> _redeem(BootstrapDescriptor descriptor) async {
     final endpoint = descriptor.apiOrigin.resolve(
         '/rooms/${Uri.encodeComponent(descriptor.room)}/remote-control/${Uri.encodeComponent(descriptor.sessionId)}/helper-token');
-    final response = await http.post(endpoint,
-        headers: const {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-store'
-        },
-        body: jsonEncode({'bootstrapCode': descriptor.bootstrapCode}));
+    final response = await http
+        .post(endpoint,
+            headers: const {
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-store'
+            },
+            body: jsonEncode({'bootstrapCode': descriptor.bootstrapCode}))
+        .timeout(const Duration(seconds: 15));
     if (response.statusCode != 200) {
-      throw const HttpException('Control Agent bootstrap rejected');
+      throw BootstrapRedemptionException(response.statusCode);
     }
     final json = jsonDecode(response.body);
     if (json is! Map<String, dynamic>) {
@@ -505,14 +522,24 @@ class WindowsControlAgent extends ChangeNotifier {
   }
 
   Future<void> _cleanupTransport() async {
-    await _packetSubscription?.cancel();
-    await _metadataSubscription?.cancel();
-    await _disconnectSubscription?.cancel();
+    try {
+      await _packetSubscription?.cancel();
+    } catch (_) {}
+    try {
+      await _metadataSubscription?.cancel();
+    } catch (_) {}
+    try {
+      await _disconnectSubscription?.cancel();
+    } catch (_) {}
     _packetSubscription = null;
     _metadataSubscription = null;
     _disconnectSubscription = null;
-    await _session.unpublishDisplay();
-    await _session.disconnect();
+    try {
+      await _session.unpublishDisplay();
+    } catch (_) {}
+    try {
+      await _session.disconnect();
+    } catch (_) {}
   }
 
   void _setFailure(String message) {

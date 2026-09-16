@@ -33,6 +33,9 @@ class LiveKitControlSession {
     }
     final room = Room(
         roomOptions: const RoomOptions(adaptiveStream: false, dynacast: false));
+    // Keep the in-flight Room reachable. A failed handshake must be able to
+    // dispose the native resources before the Sharer tries a fresh bootstrap.
+    _room = room;
     _listener = room.createListener()
       ..on<DataReceivedEvent>((event) {
         if (event.topic != remoteControlTopic || event.participant == null) {
@@ -43,9 +46,16 @@ class LiveKitControlSession {
       })
       ..on<RoomMetadataChangedEvent>((event) => _metadata.add(event.metadata))
       ..on<RoomDisconnectedEvent>((_) => _disconnects.add(null));
-    await room.connect(response.livekitUrl, response.token);
-    _room = room;
-    _metadata.add(room.metadata);
+    try {
+      await room.connect(response.livekitUrl, response.token);
+      // `disconnect` can run while a native connection attempt is unwinding.
+      // Do not revive a session the Sharer has already stopped or cleaned up.
+      if (!identical(_room, room)) return;
+      _metadata.add(room.metadata);
+    } catch (_) {
+      if (identical(_room, room)) await disconnect();
+      rethrow;
+    }
   }
 
   Future<void> publishSelectedDisplay(String sourceId) async {
@@ -101,8 +111,16 @@ class LiveKitControlSession {
     _listener?.dispose();
     _listener = null;
     if (room != null) {
-      await room.disconnect();
-      await room.dispose();
+      try {
+        await room.disconnect();
+      } catch (_) {
+        // The join may have failed before LiveKit completed its handshake.
+      }
+      try {
+        await room.dispose();
+      } catch (_) {
+        // Releasing the native room remains best-effort during a failed join.
+      }
     }
   }
 

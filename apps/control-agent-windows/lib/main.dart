@@ -205,7 +205,7 @@ class _ControlAgentAppState extends State<ControlAgentApp> {
                       TextButton(
                         onPressed: () async {
                           final diagnostics =
-                              'Huddle Control Agent Windows ${WindowsControlAgent.appVersion}\nElevated: ${_agent.elevated ? 'yes' : 'no'}\nConnection state: ${_agent.phase.name}';
+                              'Huddle Control Agent Windows ${WindowsControlAgent.appVersion}\nElevated: ${_agent.elevated ? 'yes' : 'no'}\nConnection state: ${_agent.phase.name}${_agent.lastConnectionStage == null ? '' : '\nConnection step: ${_agent.lastConnectionStage}'}';
                           await WindowsBridge.instance
                               .writeClipboardText(diagnostics);
                         },
