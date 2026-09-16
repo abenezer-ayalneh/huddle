@@ -7,9 +7,13 @@ acceptance.
 ## Architecture-only prereleases
 
 On 2026-09-16, [`windows-control-agent-arm64-v0.1.0`](https://github.com/abenezer-ayalneh/huddle/releases/tag/windows-control-agent-arm64-v0.1.0)
-was published as an unsigned GitHub prerelease containing the native ARM64
-installer and its SHA-256 sidecar. It is a deliberately separate testing
-artifact, not an advance of `windows-control-agent-beta`:
+and [`windows-control-agent-x64-v0.1.0`](https://github.com/abenezer-ayalneh/huddle/releases/tag/windows-control-agent-x64-v0.1.0)
+were published as unsigned GitHub prereleases. Each contains its matching
+native installer and SHA-256 sidecar. The x64 artifact was built, analyzed,
+and tested on a native GitHub x64 runner in
+[run 35060018153](https://github.com/abenezer-ayalneh/huddle/actions/runs/35060018153).
+They are deliberately separate testing artifacts, not an advance of
+`windows-control-agent-beta`:
 
 - It contains no x64 installer and no signed release manifest.
 - The Downloads page will not offer it as a verified release channel.
