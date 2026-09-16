@@ -221,8 +221,8 @@ export default function ControlAgentDownloads({
                     Unsigned public beta. Verify the{' '}
                     <a href={windowsPublicBeta[architecture].checksumUrl} target="_blank" rel="noreferrer">
                       published SHA-256 checksum <ExternalLink className="inline size-3" aria-hidden="true" />
-                    </a>
-                    {' '}before installing, then review the Windows publisher warning. This architecture-specific prerelease is not a signed manifest release.
+                    </a>{' '}
+                    before installing, then review the Windows publisher warning. This architecture-specific prerelease is not a signed manifest release.
                   </p>
                 ) : null}
               </article>

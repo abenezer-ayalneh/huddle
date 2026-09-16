@@ -1,9 +1,6 @@
 import type { WindowsControlAgentArchitecture } from './windowsControlAgentReleaseShared';
 
-export type WindowsControlAgentPublicBeta = Record<
-  WindowsControlAgentArchitecture,
-  { downloadUrl: string; checksumUrl: string }
->;
+export type WindowsControlAgentPublicBeta = Record<WindowsControlAgentArchitecture, { downloadUrl: string; checksumUrl: string }>;
 
 /**
  * The first public Windows builds are intentionally separate architecture-only
