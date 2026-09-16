@@ -39,7 +39,8 @@ prerelease.
    `build-installer.ps1 -Architecture x64` and
    `build-installer.ps1 -Architecture arm64`. Confirm the app launches from a
    `huddle-control://join` link, Program Files installation uses quoted link
-   arguments, and uninstall removes the protocol registration.
+   arguments, the executable, Start menu entry, and protocol association show
+   the Huddle icon, and uninstall removes the protocol registration.
 3. Exercise two browser participants against each physical Huddle environment:
    normal and elevated app input; two displays with mixed DPI and a portrait
    display; display switch/removal; Ctrl/Cmd copy and paste; lock, sleep,

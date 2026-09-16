@@ -65,8 +65,10 @@ processor architecture:
 ```
 
 It produces an architecture-specific installer in `dist/`, installs to Program
-Files, and registers the `huddle-control` link using a quoted executable and
-argument. The beta installer is deliberately unsigned:
+Files, creates a Start menu entry, and registers the `huddle-control` link
+using a quoted executable and argument. The Huddle app icon is embedded in the
+executable and used by the installed app, Start menu entry, and protocol
+association. The beta installer is deliberately unsigned:
 the SHA-256 checksum and signed release manifest verify release metadata and
 artifact bytes, but do not provide Windows publisher trust. See
 [`docs/RUNBOOK_WINDOWS_CONTROL_AGENT_RELEASE.md`](../../docs/RUNBOOK_WINDOWS_CONTROL_AGENT_RELEASE.md)

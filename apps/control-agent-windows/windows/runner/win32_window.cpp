@@ -3,6 +3,8 @@
 #include <dwmapi.h>
 #include <flutter_windows.h>
 
+#include "resource.h"
+
 namespace {
 
 #ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
@@ -43,8 +45,9 @@ class WindowClassRegistrar {
     if (!class_registered_) {
       WNDCLASS window_class{};
       window_class.hCursor = LoadCursor(nullptr, IDC_ARROW);
-      window_class.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
       window_class.hInstance = GetModuleHandle(nullptr);
+      window_class.hIcon = LoadIcon(window_class.hInstance, MAKEINTRESOURCE(IDI_APP_ICON));
+      if (window_class.hIcon == nullptr) window_class.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
       window_class.lpszClassName = kWindowClassName;
       window_class.style = CS_HREDRAW | CS_VREDRAW;
       window_class.lpfnWndProc = Win32Window::WndProc;

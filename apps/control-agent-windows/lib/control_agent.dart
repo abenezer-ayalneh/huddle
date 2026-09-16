@@ -166,6 +166,10 @@ class WindowsControlAgent extends ChangeNotifier {
     await _windows.restartElevated(link);
   }
 
+  Future<void> forgetTrustedServers() async {
+    await _trustStore.forgetAll();
+  }
+
   Future<bool> restartElevatedWithLink(String raw) async {
     try {
       final descriptor = BootstrapLink.parse(raw);

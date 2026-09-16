@@ -2,6 +2,7 @@ add_executable(${BINARY_NAME} WIN32
   "flutter_window.cpp"
   "main.cpp"
   "remote_control_bridge.cpp"
+  "runner.rc"
   "runner.exe.manifest"
   "utils.cpp"
   "win32_window.cpp"

@@ -36,7 +36,11 @@ UninstallDisplayIcon={app}\HuddleControlAgent.exe
 [Files]
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
+[Icons]
+Name: "{autoprograms}\Huddle Control Agent"; Filename: "{app}\HuddleControlAgent.exe"; IconFilename: "{app}\HuddleControlAgent.exe"; IconIndex: 0
+
 [Registry]
 Root: HKCR; Subkey: "huddle-control"; ValueType: string; ValueName: ""; ValueData: "URL:Huddle Control Agent"; Flags: uninsdeletekey
 Root: HKCR; Subkey: "huddle-control"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""
+Root: HKCR; Subkey: "huddle-control\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: """{app}\HuddleControlAgent.exe"",0"
 Root: HKCR; Subkey: "huddle-control\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\HuddleControlAgent.exe"" --link ""%1"""

@@ -101,7 +101,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE, _In_ wchar_t*
   ::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
   FlutterWindow window(L"Huddle Control Agent");
   Win32Window::Point origin(10, 10);
-  Win32Window::Size size(760, 760);
+  Win32Window::Size size(700, 800);
   if (!window.Create(L"Huddle Control Agent", origin, size)) return EXIT_FAILURE;
   window.SetQuitOnClose(true);
   window.Show();
