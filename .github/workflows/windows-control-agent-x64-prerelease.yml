@@ -1,0 +1,75 @@
+name: Windows Control Agent x64 prerelease
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: SemVer version for the x64 prerelease
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: windows-control-agent-x64-prerelease-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  build-and-package:
+    runs-on: windows-2022
+    env:
+      WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL: https://github.com/${{ github.repository }}/releases/download/windows-control-agent-beta
+      WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY: ${{ secrets.WINDOWS_AGENT_UPDATE_PUBLIC_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.0'
+          channel: stable
+      - name: Install Windows packaging tool
+        shell: pwsh
+        run: choco install innosetup --no-progress --yes
+      - name: Resolve packages and run focused tests
+        working-directory: apps/control-agent-windows
+        shell: pwsh
+        run: |
+          flutter pub get
+          flutter analyze
+          flutter test
+      - name: Build x64 installer
+        shell: pwsh
+        run: |
+          $version = '${{ inputs.version }}'
+          if ($version -notmatch '^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$') { throw 'version must be SemVer.' }
+          ./apps/control-agent-windows/scripts/build-installer.ps1 -Version $version -Architecture x64
+      - name: Upload x64 installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-control-agent-x64
+          path: |
+            apps/control-agent-windows/dist/Huddle-Control-Agent-windows-x64.exe
+            apps/control-agent-windows/dist/Huddle-Control-Agent-windows-x64.exe.sha256
+          if-no-files-found: error
+
+  publish:
+    needs: build-and-package
+    runs-on: windows-2022
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-control-agent-x64
+          path: apps/control-agent-windows/dist
+      - name: Publish x64-only prerelease
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = '${{ inputs.version }}'
+          $tag = "windows-control-agent-x64-v$version"
+          $notes = @'
+          x64-only unsigned public beta for 64-bit Intel and AMD Windows PCs (Windows 10 22H2 or Windows 11).
+
+          This prerelease contains the native x64 installer and its SHA-256 sidecar. Verify the published checksum before installation and review the Windows publisher warning. It does not advance the signed dual-architecture `windows-control-agent-beta` manifest channel; it is not evidence of full attended Remote Control acceptance.
+          '@
+          gh release create $tag apps/control-agent-windows/dist/Huddle-Control-Agent-windows-x64.exe apps/control-agent-windows/dist/Huddle-Control-Agent-windows-x64.exe.sha256 --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --prerelease --title "Huddle Control Agent $version · Windows x64 Public Beta" --notes $notes

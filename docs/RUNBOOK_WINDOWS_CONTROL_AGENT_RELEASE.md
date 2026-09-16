@@ -4,7 +4,7 @@ This runbook releases the attended Windows x64 and ARM64 beta. It does not autho
 production deployment or turn source checks into physical Remote Control
 acceptance.
 
-## Published ARM64-only prerelease
+## Architecture-only prereleases
 
 On 2026-09-16, [`windows-control-agent-arm64-v0.1.0`](https://github.com/abenezer-ayalneh/huddle/releases/tag/windows-control-agent-arm64-v0.1.0)
 was published as an unsigned GitHub prerelease containing the native ARM64
@@ -17,6 +17,12 @@ artifact, not an advance of `windows-control-agent-beta`:
 
 The normal dual-architecture release process below remains required before
 advancing the signed beta channel.
+
+Use the `Windows Control Agent x64 prerelease` workflow only for a matching
+x64-only testing artifact. It builds and packages on `windows-2022`, performs
+the focused Flutter checks, and publishes `windows-control-agent-x64-vX.Y.Z`.
+It has the same manifest and full-acceptance exclusions as the ARM64-only
+prerelease.
 
 ## Before a tag
 
