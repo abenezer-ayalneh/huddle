@@ -6,13 +6,10 @@ import ControlAgentDownloads from '@/components/ControlAgentDownloads';
 import HuddleBrandThemeHeader from '@/components/HuddleBrandThemeHeader';
 import LandingThemeProvider from '@/components/landing/LandingThemeProvider';
 import { getNoCostControlAgentBeta } from '@/lib/controlAgentFreeBeta';
-import { getWindowsControlAgentPublicBeta } from '@/lib/windowsControlAgentPublicBeta';
-import type { ControlAgentRelease } from '@/lib/controlAgentReleaseShared';
-import type { WindowsControlAgentRelease } from '@/lib/windowsControlAgentReleaseShared';
+import type { WindowsControlAgentPublicBeta } from '@/lib/windowsControlAgentPublicBeta';
 
 type DownloadsPageClientProps = {
-  release: ControlAgentRelease | null;
-  windowsRelease: WindowsControlAgentRelease | null;
+  windowsPublicBeta: WindowsControlAgentPublicBeta | null;
   repositoryUrl: string;
   operatorContactUrl: string;
 };
@@ -35,12 +32,8 @@ function DownloadsNavigation() {
   );
 }
 
-export default function DownloadsPageClient({ release, windowsRelease, repositoryUrl, operatorContactUrl }: DownloadsPageClientProps) {
-  const hasVerifiedSignedRelease = release?.verified === true;
-  const hasVerifiedWindowsRelease = windowsRelease?.verified === true;
-  const hasNoCostBeta = !hasVerifiedSignedRelease && getNoCostControlAgentBeta(repositoryUrl) !== null;
-  const hasWindowsPublicBeta = !hasVerifiedWindowsRelease && getWindowsControlAgentPublicBeta(repositoryUrl) !== null;
-  const hasAnyRelease = hasVerifiedSignedRelease || hasVerifiedWindowsRelease || hasNoCostBeta || hasWindowsPublicBeta;
+export default function DownloadsPageClient({ windowsPublicBeta, repositoryUrl, operatorContactUrl }: DownloadsPageClientProps) {
+  const hasAnyRelease = getNoCostControlAgentBeta(repositoryUrl) !== null || windowsPublicBeta !== null;
 
   return (
     <LandingThemeProvider>
@@ -61,11 +54,9 @@ export default function DownloadsPageClient({ release, windowsRelease, repositor
               </p>
               <h1 id="downloads-title">Give the Sharer a safe local switch.</h1>
               <p className="downloads-lede">
-                {hasVerifiedSignedRelease || hasVerifiedWindowsRelease
-                  ? 'The Control Agent is an attended companion for the Sharer’s macOS or Windows desktop. It shares one entire selected physical display only after approval in the active room and a local Start confirmation.'
-                  : hasAnyRelease
-                    ? 'Choose the installer that matches the Sharer’s desktop. It shares one entire selected physical display only after approval in the active room and a local Start confirmation.'
-                    : 'This deployment has not configured a Control Agent release. Remote Control downloads are unavailable until the operator completes the release setup.'}
+                {hasAnyRelease
+                  ? 'Choose the installer that matches the Sharer’s desktop. It shares one entire selected physical display only after approval in the active room and a local Start confirmation.'
+                  : 'Control Agent downloads are temporarily unavailable. Please check the project releases and try again shortly.'}
               </p>
               <div className="downloads-boundary-line">
                 <ShieldCheck className="size-5" aria-hidden="true" />
@@ -89,7 +80,7 @@ export default function DownloadsPageClient({ release, windowsRelease, repositor
               </dl>
             </div>
 
-            <ControlAgentDownloads release={release} windowsRelease={windowsRelease} repositoryUrl={repositoryUrl} />
+            <ControlAgentDownloads repositoryUrl={repositoryUrl} windowsPublicBeta={windowsPublicBeta} />
           </div>
         </section>
 

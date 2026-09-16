@@ -181,9 +181,9 @@ The browser opens a one-time `huddle-control://join` link after Sharer consent.
 The agent redeems that code once, joins LiveKit with a server-minted token that
 may publish the entire selected physical display and recipient-targeted
 plain-text clipboard updates, and asks macOS for Screen Recording and
-Accessibility permission. A
-production build must be signed with Developer ID, notarized, and distributed as
-a trusted `.app`/`.dmg`; signing credentials are not part of the repository.
+Accessibility permission. The public beta is unsigned and unnotarized; verify
+its SHA-256 checksum and use macOS Privacy & Security → Open Anyway when
+required.
 Remote Control ends if either human, the agent, or the room disconnects, and the
 Sharer or Controller can stop it from Huddle.
 
@@ -211,10 +211,8 @@ the result into the repository's Control Agent issue form. The agent never sends
 diagnostics automatically; do not include room links, bootstrap codes, tokens, or
 private screen content.
 
-Release credentials and the Ed25519 update-signing key are environment-owned.
-The tag workflow is `.github/workflows/control-agent-release.yml`; record
-physical signed-release-candidate results for both Apple Silicon and Intel
-before creating a `control-agent-vX.Y.Z` tag.
+Record physical Apple Silicon and Intel results before creating a public beta
+tag. The default Downloads page links to the unsigned Apple-Silicon beta.
 
 ## 6d. Run the Windows Control Agent
 

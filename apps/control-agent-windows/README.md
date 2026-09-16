@@ -38,22 +38,16 @@ then obtain a fresh approval in the browser. UAC secure desktop, sign-in,
 Ctrl+Alt+Delete, Windows services, and background/unattended control are always
 out of scope.
 
-## Release configuration and packaging
+## Packaging
 
-The release manifest is optional in local builds. A beta release configures the
-following compile-time values in CI; both must be present together:
+Public beta installers use only the version supplied to the build:
 
 ```powershell
-flutter build windows --release `
-  --dart-define=WINDOWS_CONTROL_AGENT_VERSION=0.1.0 `
-  --dart-define=WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL=https://github.com/OWNER/REPO/releases/download/windows-control-agent-beta `
-  --dart-define=WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY=BASE64_ED25519_PUBLIC_KEY
+flutter build windows --release --dart-define=WINDOWS_CONTROL_AGENT_VERSION=0.1.1
 ```
 
-The app verifies the platform-specific signed manifest before redeeming a new
-bootstrap. A cached minimum-version requirement remains effective when the
-channel is unavailable. An available update is advisory and manual; the agent
-never installs updates, especially during an elevated or active session.
+Updates are manual. Download the newer installer from Huddle's Downloads page
+and install it after ending any active Remote Control session.
 
 Create the unsigned installer on a Windows computer with the matching native
 processor architecture:
@@ -68,8 +62,6 @@ It produces an architecture-specific installer in `dist/`, installs to Program
 Files, creates a Start menu entry, and registers the `huddle-control` link
 using a quoted executable and argument. The Huddle app icon is embedded in the
 executable and used by the installed app, Start menu entry, and protocol
-association. The beta installer is deliberately unsigned:
-the SHA-256 checksum and signed release manifest verify release metadata and
-artifact bytes, but do not provide Windows publisher trust. See
+association. Verify its SHA-256 checksum before opening it. See
 [`docs/RUNBOOK_WINDOWS_CONTROL_AGENT_RELEASE.md`](../../docs/RUNBOOK_WINDOWS_CONTROL_AGENT_RELEASE.md)
 for the release procedure and physical acceptance matrix.

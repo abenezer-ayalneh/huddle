@@ -19,11 +19,6 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     environment: production # remove this line if you skipped Step 4
-    env:
-      WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL: https://github.com/abenezer-ayalneh/huddle/releases/download/windows-control-agent-beta
-      WINDOWS_CONTROL_AGENT_RELEASES_URL: https://github.com/abenezer-ayalneh/huddle/releases/tag/windows-control-agent-beta
-      WINDOWS_CONTROL_AGENT_ISSUES_URL: https://github.com/abenezer-ayalneh/huddle/issues
-      WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY: ${{ secrets.WINDOWS_AGENT_UPDATE_PUBLIC_KEY }}
     steps:
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.0
@@ -34,22 +29,9 @@ jobs:
           port: ${{ secrets.VPS_PORT }}
           command_timeout: 30m # building both images on a small VPS is slow
           script_stop: true # abort on the first failing command
-          envs: WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL,WINDOWS_CONTROL_AGENT_RELEASES_URL,WINDOWS_CONTROL_AGENT_ISSUES_URL,WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY
           script: |
             set -e
             cd /home/huddle
-            test -n "$WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL"
-            grep -q '^WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL=' .env.prod || printf '\nWINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL=%s\n' "$WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL" >> .env.prod
-            sed -i "s|^WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL=.*$|WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL=$WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL|" .env.prod
-            test -n "$WINDOWS_CONTROL_AGENT_RELEASES_URL"
-            grep -q '^WINDOWS_CONTROL_AGENT_RELEASES_URL=' .env.prod || printf '\nWINDOWS_CONTROL_AGENT_RELEASES_URL=%s\n' "$WINDOWS_CONTROL_AGENT_RELEASES_URL" >> .env.prod
-            sed -i "s|^WINDOWS_CONTROL_AGENT_RELEASES_URL=.*$|WINDOWS_CONTROL_AGENT_RELEASES_URL=$WINDOWS_CONTROL_AGENT_RELEASES_URL|" .env.prod
-            test -n "$WINDOWS_CONTROL_AGENT_ISSUES_URL"
-            grep -q '^WINDOWS_CONTROL_AGENT_ISSUES_URL=' .env.prod || printf '\nWINDOWS_CONTROL_AGENT_ISSUES_URL=%s\n' "$WINDOWS_CONTROL_AGENT_ISSUES_URL" >> .env.prod
-            sed -i "s|^WINDOWS_CONTROL_AGENT_ISSUES_URL=.*$|WINDOWS_CONTROL_AGENT_ISSUES_URL=$WINDOWS_CONTROL_AGENT_ISSUES_URL|" .env.prod
-            test -n "$WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY"
-            grep -q '^WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY=' .env.prod || printf '\nWINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY=%s\n' "$WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY" >> .env.prod
-            sed -i "s|^WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY=.*$|WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY=$WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY|" .env.prod
             # Sync the tree FIRST so infra/deploy.sh (and any change to it) is on
             # disk before we invoke it — the script can't pull itself into existence.
             git fetch --prune origin

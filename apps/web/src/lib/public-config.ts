@@ -1,22 +1,5 @@
 type Environment = Record<string, string | undefined>;
 
-export type ControlAgentReleaseConfig = {
-  channelUrl: string;
-  releasesUrl: string;
-  issuesUrl: string;
-  updatePublicKey: string;
-};
-
-// Windows artifacts have their own channel and signing key. Keeping this
-// separate from the macOS channel prevents an unsigned Windows beta from ever
-// being interpreted as a macOS release (or vice versa).
-export type WindowsControlAgentReleaseConfig = {
-  channelUrl: string;
-  releasesUrl: string;
-  issuesUrl: string;
-  updatePublicKey: string;
-};
-
 export type PublicConfig = {
   siteUrl: string;
   apiUrl: string;
@@ -24,8 +7,6 @@ export type PublicConfig = {
   operatorName: string;
   operatorContactUrl: string;
   projectRepositoryUrl: string;
-  controlAgentRelease: ControlAgentReleaseConfig | null;
-  windowsControlAgentRelease: WindowsControlAgentReleaseConfig | null;
 };
 
 function required(env: Environment, name: string): string {
@@ -46,42 +27,6 @@ function url(env: Environment, name: string): string {
 }
 
 export function readPublicConfig(env: Environment = process.env): PublicConfig {
-  const releaseValues = {
-    channelUrl: env.NEXT_PUBLIC_CONTROL_AGENT_RELEASE_CHANNEL_URL?.trim() ?? '',
-    releasesUrl: env.NEXT_PUBLIC_CONTROL_AGENT_RELEASES_URL?.trim() ?? '',
-    issuesUrl: env.NEXT_PUBLIC_CONTROL_AGENT_ISSUES_URL?.trim() ?? '',
-    updatePublicKey: env.NEXT_PUBLIC_CONTROL_AGENT_UPDATE_PUBLIC_KEY?.trim() ?? '',
-  };
-  const releaseCount = Object.values(releaseValues).filter(Boolean).length;
-  if (releaseCount !== 0 && releaseCount !== 4) throw new Error('Control Agent release configuration must be all-or-none');
-  if (releaseCount === 4) {
-    for (const [name, value] of Object.entries(releaseValues).slice(0, 3)) {
-      try {
-        if (new URL(value).protocol !== 'https:') throw new Error('not HTTPS');
-      } catch {
-        throw new Error(`Control Agent ${name} must be an HTTPS URL`);
-      }
-    }
-  }
-
-  const windowsReleaseValues = {
-    channelUrl: env.NEXT_PUBLIC_WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL?.trim() ?? '',
-    releasesUrl: env.NEXT_PUBLIC_WINDOWS_CONTROL_AGENT_RELEASES_URL?.trim() ?? '',
-    issuesUrl: env.NEXT_PUBLIC_WINDOWS_CONTROL_AGENT_ISSUES_URL?.trim() ?? '',
-    updatePublicKey: env.NEXT_PUBLIC_WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY?.trim() ?? '',
-  };
-  const windowsReleaseCount = Object.values(windowsReleaseValues).filter(Boolean).length;
-  if (windowsReleaseCount !== 0 && windowsReleaseCount !== 4) throw new Error('Windows Control Agent release configuration must be all-or-none');
-  if (windowsReleaseCount === 4) {
-    for (const [name, value] of Object.entries(windowsReleaseValues).slice(0, 3)) {
-      try {
-        if (new URL(value).protocol !== 'https:') throw new Error('not HTTPS');
-      } catch {
-        throw new Error(`Windows Control Agent ${name} must be an HTTPS URL`);
-      }
-    }
-  }
-
   return {
     siteUrl: url(env, 'NEXT_PUBLIC_SITE_URL'),
     apiUrl: url(env, 'NEXT_PUBLIC_API_URL'),
@@ -89,8 +34,6 @@ export function readPublicConfig(env: Environment = process.env): PublicConfig {
     operatorName: required(env, 'NEXT_PUBLIC_OPERATOR_NAME'),
     operatorContactUrl: url(env, 'NEXT_PUBLIC_OPERATOR_CONTACT_URL'),
     projectRepositoryUrl: url(env, 'NEXT_PUBLIC_PROJECT_REPOSITORY_URL'),
-    controlAgentRelease: releaseCount === 4 ? releaseValues : null,
-    windowsControlAgentRelease: windowsReleaseCount === 4 ? windowsReleaseValues : null,
   };
 }
 
@@ -104,14 +47,6 @@ const publicEnvironment: Environment = {
   NEXT_PUBLIC_OPERATOR_NAME: process.env.NEXT_PUBLIC_OPERATOR_NAME,
   NEXT_PUBLIC_OPERATOR_CONTACT_URL: process.env.NEXT_PUBLIC_OPERATOR_CONTACT_URL,
   NEXT_PUBLIC_PROJECT_REPOSITORY_URL: process.env.NEXT_PUBLIC_PROJECT_REPOSITORY_URL,
-  NEXT_PUBLIC_CONTROL_AGENT_RELEASE_CHANNEL_URL: process.env.NEXT_PUBLIC_CONTROL_AGENT_RELEASE_CHANNEL_URL,
-  NEXT_PUBLIC_CONTROL_AGENT_RELEASES_URL: process.env.NEXT_PUBLIC_CONTROL_AGENT_RELEASES_URL,
-  NEXT_PUBLIC_CONTROL_AGENT_ISSUES_URL: process.env.NEXT_PUBLIC_CONTROL_AGENT_ISSUES_URL,
-  NEXT_PUBLIC_CONTROL_AGENT_UPDATE_PUBLIC_KEY: process.env.NEXT_PUBLIC_CONTROL_AGENT_UPDATE_PUBLIC_KEY,
-  NEXT_PUBLIC_WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL: process.env.NEXT_PUBLIC_WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL,
-  NEXT_PUBLIC_WINDOWS_CONTROL_AGENT_RELEASES_URL: process.env.NEXT_PUBLIC_WINDOWS_CONTROL_AGENT_RELEASES_URL,
-  NEXT_PUBLIC_WINDOWS_CONTROL_AGENT_ISSUES_URL: process.env.NEXT_PUBLIC_WINDOWS_CONTROL_AGENT_ISSUES_URL,
-  NEXT_PUBLIC_WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY: process.env.NEXT_PUBLIC_WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY,
 };
 
 export const publicConfig = readPublicConfig(publicEnvironment);

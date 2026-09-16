@@ -14,10 +14,10 @@ swift test --package-path apps/control-agent/Vendor/client-sdk-swift --filter Ma
 ```
 
 The executable accepts a one-time `huddle-control://join?...` URL either from
-macOS Launch Services or by pasting the complete link into its window. It checks
-the signed release channel, asks the Sharer to trust the exact Huddle server
-origin once, redeems the bootstrap code, and waits for an explicit display
-selection plus **Start Remote Control** confirmation before publishing.
+macOS Launch Services or by pasting the complete link into its window. It asks
+the Sharer to trust the exact Huddle server origin once, redeems the bootstrap
+code, and waits for an explicit display selection plus **Start Remote Control**
+confirmation before publishing.
 
 The app uses Huddle's dark visual system and guides the Sharer through server
 trust, macOS permissions, and display selection. The selected display is the
@@ -34,13 +34,9 @@ under **Having trouble?** without competing with the primary session flow.
 ./apps/control-agent/scripts/build-app.sh
 ```
 
-The resulting app is locally signed when an Apple Development identity is
-available, but it is not a trusted public release. A Developer ID certificate,
-hardened runtime, notarization, and a separately published update channel are
-required for Gatekeeper-recognized direct distribution; those credentials and
-signing identities are intentionally not stored in this repository. The build
-script embeds the LiveKit runtime frameworks in the app bundle, so the `.app`
-can run outside SwiftPM's `.build` directory.
+The build script embeds the LiveKit runtime frameworks in the app bundle, so the
+`.app` can run outside SwiftPM's `.build` directory. For public distribution,
+use the beta packaging commands below and publish the DMG with its checksum.
 
 ### Build a no-cost Apple-Silicon public beta
 
@@ -49,29 +45,16 @@ can run outside SwiftPM's `.build` directory.
 ./apps/control-agent/scripts/publish-free-beta.sh
 ```
 
-The first command creates an arm64 DMG and an adjacent SHA-256 checksum using
-an ad-hoc signature; the second publishes it to the permanent
-`control-agent-free-beta` GitHub prerelease. A free GitHub account with write
-access is enough, but it must be authenticated locally first.
+The first command creates an arm64 DMG and an adjacent SHA-256 checksum; the
+second publishes them to the permanent `control-agent-free-beta` GitHub
+prerelease. A free GitHub account with write access is enough, but it must be
+authenticated locally first.
 
-This path deliberately has **no Developer ID signature and no notarization**.
+This path is unsigned and unnotarized.
 macOS will show a warning on first launch; after verifying the checksum from the
 same GitHub release, the tester must explicitly choose **Open Anyway** in
 **System Settings → Privacy & Security**. It is a testing/public-beta path only,
-never a substitute for the trusted release flow below.
-
-It does have an optional updater: once, before the first updater build, create
-the free local Sparkle key (the private key remains in your login Keychain):
-
-```bash
-./apps/control-agent/scripts/configure-free-beta-updater.sh
-```
-
-`build-free-beta.sh` reads that account's public key into the app; `publish-free-beta.sh`
-uses the same account to publish an Ed25519-signed appcast and immutable
-versioned DMG. No private key is exported and no Developer ID, notarization, or
-GitHub Actions secret is involved. Existing 0.1.1 builds do not contain Sparkle,
-so they must install the first updater-enabled beta manually.
+and newer versions are installed manually from the Downloads page.
 
 ### Regenerate the app icon
 
@@ -108,27 +91,6 @@ to the rebuilt app:
 tccutil reset ScreenCapture com.huddle.control-agent
 tccutil reset Accessibility com.huddle.control-agent
 ```
-
-With the required Apple credentials available in the environment, the release
-helpers are:
-
-```bash
-./apps/control-agent/scripts/sign-and-notarize.sh
-./apps/control-agent/scripts/package-dmg.sh
-ARCHITECTURE=arm64 ./apps/control-agent/scripts/package-dmg.sh
-ARCHITECTURE=x86_64 ./apps/control-agent/scripts/package-dmg.sh
-```
-
-The trusted public beta release workflow is `.github/workflows/control-agent-release.yml`.
-It builds native arm64 and x86_64 artifacts, signs nested frameworks before the
-app, notarizes both the app and final DMG, publishes SHA-256 checksums, and
-advances the signed `control-agent-beta` channel manifest. Apple Developer ID,
-notarytool, and the separate Ed25519 update-signing key remain GitHub secrets.
-
-Before creating a `control-agent-vX.Y.Z` tag, record signed-release-candidate
-acceptance on a physical Apple Silicon Mac and Intel Mac. The tag publishes
-immediately after the automated build because the physical gate is a documented
-pre-tag release requirement.
 
 The user must grant Screen Recording and Accessibility permissions in macOS
 System Settings. During an active, approved Remote Control session, the agent

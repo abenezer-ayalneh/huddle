@@ -13,7 +13,7 @@ const base = {
   MAINTENANCE_OWNER_USER_ID: 'verified-owner-id',
 };
 
-test('accepts a complete production environment without a Control Agent release', () => {
+test('accepts a complete production environment', () => {
   assert.deepEqual(validateProductionEnv(base), []);
 });
 
@@ -26,16 +26,6 @@ test('rejects missing production metadata and malformed domains', () => {
   assert.ok(errors.some((error) => error.includes('OPERATOR_NAME is required')));
   assert.ok(errors.some((error) => error.includes('API_DOMAIN must be a hostname')));
   assert.ok(errors.some((error) => error.includes('MAINTENANCE_OWNER_USER_ID is required')));
-});
-
-test('requires a complete signed release configuration', () => {
-  const errors = validateProductionEnv({ ...base, CONTROL_AGENT_RELEASE_CHANNEL_URL: 'https://releases.example.com' });
-  assert.ok(errors.some((error) => error.includes('all-or-none')));
-});
-
-test('requires a complete separate Windows release configuration', () => {
-  const errors = validateProductionEnv({ ...base, WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL: 'https://releases.example.com/windows' });
-  assert.ok(errors.some((error) => error.includes('Windows Control Agent release configuration is all-or-none')));
 });
 
 test('requires TURN domain and certificates only when TURN is enabled', () => {

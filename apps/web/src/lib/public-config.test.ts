@@ -18,25 +18,11 @@ beforeAll(async () => {
   ({ readPublicConfig } = await import('./public-config'));
 });
 
-describe('Windows Control Agent release configuration', () => {
-  it('requires the separate Windows channel to be complete', () => {
-    expect(() =>
-      readPublicConfig({
-        ...baseEnvironment,
-        NEXT_PUBLIC_WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL: 'https://example.com/windows',
-      }),
-    ).toThrow('Windows Control Agent release configuration must be all-or-none');
-  });
-
-  it('keeps the signed Windows manifest channel distinct from macOS', () => {
-    const config = readPublicConfig({
-      ...baseEnvironment,
-      NEXT_PUBLIC_WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL: 'https://example.com/windows',
-      NEXT_PUBLIC_WINDOWS_CONTROL_AGENT_RELEASES_URL: 'https://github.com/example/huddle/releases',
-      NEXT_PUBLIC_WINDOWS_CONTROL_AGENT_ISSUES_URL: 'https://github.com/example/huddle/issues',
-      NEXT_PUBLIC_WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY: 'A'.repeat(44),
+describe('Public configuration', () => {
+  it('returns the operator and repository metadata needed by public pages', () => {
+    expect(readPublicConfig(baseEnvironment)).toMatchObject({
+      operatorName: 'Huddle',
+      projectRepositoryUrl: 'https://github.com/example/huddle',
     });
-    expect(config.controlAgentRelease).toBeNull();
-    expect(config.windowsControlAgentRelease?.channelUrl).toBe('https://example.com/windows');
   });
 });

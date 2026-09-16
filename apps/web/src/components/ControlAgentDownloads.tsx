@@ -2,27 +2,21 @@
 
 import { Apple, CheckCircle2, Download, Monitor, ShieldCheck } from 'lucide-react';
 import { getNoCostControlAgentBeta } from '@/lib/controlAgentFreeBeta';
-import type { ControlAgentRelease } from '@/lib/controlAgentReleaseShared';
 import { useMobileBrowserCapabilities } from '@/lib/mobileBrowserCapabilities';
-import type { WindowsControlAgentRelease } from '@/lib/windowsControlAgentReleaseShared';
-import { getWindowsControlAgentPublicBeta } from '@/lib/windowsControlAgentPublicBeta';
+import type { WindowsControlAgentPublicBeta } from '@/lib/windowsControlAgentPublicBeta';
 
 type DownloadArtifact = { url: string };
 
 export default function ControlAgentDownloads({
-  release,
-  windowsRelease,
   repositoryUrl,
+  windowsPublicBeta,
 }: {
-  release: ControlAgentRelease | null;
-  windowsRelease: WindowsControlAgentRelease | null;
   repositoryUrl: string;
+  windowsPublicBeta: WindowsControlAgentPublicBeta | null;
 }) {
   const { isMobileBrowser } = useMobileBrowserCapabilities();
 
-  const download: DownloadArtifact | undefined = release?.verified ? release.downloads.arm64 : undefined;
-  const noCostBeta = release?.verified ? null : getNoCostControlAgentBeta(repositoryUrl);
-  const windowsPublicBeta = windowsRelease?.verified ? null : getWindowsControlAgentPublicBeta(repositoryUrl);
+  const noCostBeta = getNoCostControlAgentBeta(repositoryUrl);
 
   if (isMobileBrowser) {
     return (
@@ -50,7 +44,7 @@ export default function ControlAgentDownloads({
 
         <div className="downloads-architecture-list">
           {(() => {
-            const artifact = download ?? (noCostBeta ? { url: noCostBeta.downloadUrl } : undefined);
+            const artifact = noCostBeta ? { url: noCostBeta.downloadUrl } : undefined;
 
             return (
               <article className="downloads-architecture">
@@ -68,7 +62,7 @@ export default function ControlAgentDownloads({
                     <Download className="size-4" aria-hidden="true" /> Download Apple Silicon DMG
                   </a>
                 ) : (
-                  <p className="downloads-unavailable">This operator has not configured a verified Control Agent release.</p>
+                  <p className="downloads-unavailable">The Apple Silicon installer is temporarily unavailable. Please try again shortly.</p>
                 )}
               </article>
             );
@@ -88,11 +82,7 @@ export default function ControlAgentDownloads({
               },
             ] as const
           ).map(({ architecture, description, label }) => {
-            const artifact: DownloadArtifact | undefined = windowsRelease?.verified
-              ? windowsRelease.downloads[architecture]
-              : windowsPublicBeta
-                ? { url: windowsPublicBeta[architecture].downloadUrl }
-                : undefined;
+            const artifact: DownloadArtifact | undefined = windowsPublicBeta ? { url: windowsPublicBeta[architecture].downloadUrl } : undefined;
 
             return (
               <article className="downloads-architecture" key={architecture}>

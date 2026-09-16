@@ -72,10 +72,10 @@ codesign --force --sign "$SIGN_IDENTITY" --entitlements "$ROOT/Entitlements.plis
 codesign --verify --deep --strict "$APP"
 
 if [[ "$SIGN_IDENTITY" == "-" ]]; then
-  echo "Built ad-hoc signed $APP"
+  echo "Built local $APP"
   echo "Warning: macOS treats every ad-hoc rebuild as a new privacy client. Set CODE_SIGN_IDENTITY to an Apple Development identity to retain permissions."
 else
-  echo "Built locally signed $APP with $SIGN_IDENTITY"
+  echo "Built local $APP with $SIGN_IDENTITY"
 fi
 echo "Built architecture: $ARCHITECTURE"
-echo "For distribution, sign with Developer ID + hardened runtime and notarize the app before publishing it."
+echo "For public beta distribution, publish the DMG and its SHA-256 checksum together."

@@ -278,12 +278,10 @@ decisions are in `docs/adr/0024-attended-remote-control-macos-agent.md`.
       Sharer-only enabled state, native Controller Copy/Paste shortcuts,
       recipient-targeted agent updates, echo suppression, and latest-value
       browser fallback.
-- [x] Developer ID signing, notarization, and beta `.app`/`.dmg` release helper
-      scripts/docs (credentials and the actual notarized artifact remain
-      environment-owned).
+- [x] Beta `.app`/`.dmg` release helper scripts and documentation.
 - [x] Automated verification: API unit tests, web lint/typecheck/build, and
       Swift core tests plus the `HuddleControlAgent` executable build.
-- [ ] Manual two-browser + **signed** Control Agent acceptance (including
+- [ ] Manual two-browser + Control Agent acceptance (including
       forged input, Recording warning, all disconnect paths, and
       reconfirmation expiry). This requires a physical macOS device, Screen
       Recording/Accessibility consent, and Developer ID release credentials.
@@ -297,20 +295,12 @@ desktop suite features. Plain-text Clipboard Sharing is defined in ADR 0026.
 Make the attended macOS companion installable by Sharers without weakening the
 Phase 10 authority boundary.
 
-- [x] Public OS-aware Downloads page with arm64/x86_64 DMGs and separate Windows
-      x64 release-channel support.
+- [x] Public OS-aware Downloads page with the Apple-Silicon beta and Windows
+      x64/ARM64 prerelease support.
 - [x] Sharer-only launch recovery: bootstrap rotation, full-link paste fallback,
       explicit origin trust, permission preparation, and display selection.
-- [x] Signed update manifest with advisory updates, required-version blocking,
-      cached outage behavior, checksums, and sanitized user-initiated diagnostics.
-- [x] Opt-in Sparkle updater: architecture-specific Ed25519 appcasts, visible
-      manual check, default-off automatic install, and active-session pause.
-- [x] Native-architecture GitHub release workflow for Developer ID signing,
-      app/DMG notarization, and the beta channel manifest.
 - [x] No-cost Apple-Silicon DMG packaging, checksum publication script, and an
-      explicitly unnotarized Downloads-page fallback. Its optional Sparkle
-      updater uses local-Keychain Ed25519 signatures and must not be called a
-      Developer ID-trusted release.
+      explicitly unnotarized Downloads-page default.
 - [x] Publish the first no-cost Apple-Silicon beta to the public GitHub release
       channel with its SHA-256 checksum.
 - [ ] Verify the recorded public release from GitHub before relying on this
@@ -318,8 +308,8 @@ Phase 10 authority boundary.
       establish the current artifact/channel state.
 - [ ] Physical two-browser acceptance of the no-cost Apple-Silicon beta,
       including its one-time Gatekeeper override and macOS privacy permissions.
-- [ ] Pre-tag signed-release-candidate acceptance on physical Apple Silicon and
-      Intel Macs, followed by the first public beta tag.
+- [ ] Pre-tag physical acceptance on Apple Silicon and Intel Macs, followed by
+      the first public beta tag.
 
 Linux Control Agents remain future work with no release date.
 
@@ -335,20 +325,18 @@ boundary. See ADR 0032, ADR 0033, and ADR 0035.
 - [x] One-time bootstrap, exact-origin trust, server-grant/token/metadata/sender
       checks, v1 protocol bounds, recipient-targeted clipboard, selected-display
       switching, local Stop, and manual full-link recovery.
-- [x] Distinct Windows signed-manifest verification, cached required-version
-      enforcement, manual update notice, x64 and ARM64 Inno Setup packaging,
-      quoted link registration, checksum output, Downloads integration, and
-      GitHub workflow.
+- [x] x64 and ARM64 Inno Setup packaging, quoted link registration, checksum
+      output, Downloads integration, and GitHub workflow.
 - [x] Retired the separate Electron x86 companion and its release path; native
       32-bit Windows is unsupported.
 - [ ] Physical x64 and ARM64 Windows 10/11 acceptance: ordinary and administrator apps,
       browser matrix, multi-monitor/DPI/portrait/removal, lock/sleep/reconnect,
       expiry, cursor-overlay suppression, installer upgrade/uninstall,
-      checksum/manifest failure, and unsigned-publisher behavior.
+      checksum failure, and unsigned-publisher behavior.
 
-The Windows installer is intentionally unsigned for this beta. Its release
-manifest authenticates the metadata and expected checksum; a separately verified
-checksum verifies the downloaded bytes, neither provides publisher identity.
+The Windows installer is intentionally unsigned for this beta. Verify the
+published checksum before opening it; the installer does not provide publisher
+identity.
 
 ### Phase 12 — Rich desktop Picture-in-Picture
 

@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import DownloadsPageClient from './DownloadsPageClient';
-import { getControlAgentRelease } from '@/lib/controlAgentRelease';
 import { publicConfig } from '@/lib/public-config';
-import { getWindowsControlAgentRelease } from '@/lib/windowsControlAgentRelease';
+import { getWindowsControlAgentPublicBeta } from '@/lib/windowsControlAgentPublicBeta';
 
 /**
  * THESIS: make selecting a native companion feel deliberate, not incidental.
@@ -17,15 +16,15 @@ export const metadata: Metadata = {
   alternates: { canonical: '/downloads' },
 };
 
-export const revalidate = 3600;
+// GitHub's release list is the source for the current Windows installer.
+export const revalidate = 60;
 
 export default async function DownloadsPage() {
-  const [release, windowsRelease] = await Promise.all([getControlAgentRelease(), getWindowsControlAgentRelease()]);
+  const windowsPublicBeta = await getWindowsControlAgentPublicBeta(publicConfig.projectRepositoryUrl);
 
   return (
     <DownloadsPageClient
-      release={release}
-      windowsRelease={windowsRelease}
+      windowsPublicBeta={windowsPublicBeta}
       repositoryUrl={publicConfig.projectRepositoryUrl}
       operatorContactUrl={publicConfig.operatorContactUrl}
     />

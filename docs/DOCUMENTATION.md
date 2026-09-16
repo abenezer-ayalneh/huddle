@@ -67,7 +67,7 @@ mistaken for proof of something it only proposes or records historically.
 - [Owner-controlled maintenance](./RUNBOOK_MAINTENANCE.md) — maintenance
   authority, shutdown, static-page override, and recovery.
 - [Release Windows Control Agent beta](./RUNBOOK_WINDOWS_CONTROL_AGENT_RELEASE.md)
-  — physical acceptance, unsigned installer, signed manifest, and release path.
+  — physical acceptance, unsigned installers, checksums, and release path.
 
 ## Audit baseline: 2026-09-08
 

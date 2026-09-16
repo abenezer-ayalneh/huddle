@@ -3,8 +3,6 @@ import { publicConfig } from '@/lib/public-config';
 export const dynamic = 'force-static';
 
 export function GET() {
-  const release = publicConfig.controlAgentRelease;
-  const windowsRelease = publicConfig.windowsControlAgentRelease;
   const body = `# Huddle
 
 Huddle is self-hosted, browser-based video conferencing built on LiveKit.
@@ -15,7 +13,7 @@ Huddle is self-hosted, browser-based video conferencing built on LiveKit.
 - **Operator contact:** ${publicConfig.operatorContactUrl}
 - **Repository:** ${publicConfig.projectRepositoryUrl}
 - **Deployment:** ${publicConfig.siteUrl}
-- **Control Agent downloads:** ${release || windowsRelease ? 'Configured platform-specific release channel' : 'Unavailable until the operator configures a platform release'}
+- **Control Agent downloads:** Platform-specific public beta downloads are available from \`/downloads\`.
 
 ## Product boundaries
 

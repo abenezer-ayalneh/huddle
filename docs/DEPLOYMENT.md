@@ -389,61 +389,24 @@ docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
 
 ---
 
-## 9. Control Agent release channel
+## 9. Control Agent public beta downloads
 
-The web deployment links to the public beta channel through
-`NEXT_PUBLIC_CONTROL_AGENT_RELEASE_CHANNEL_URL` and
-`NEXT_PUBLIC_CONTROL_AGENT_RELEASES_URL`. The signed channel contains only the
-release manifest and signature; its manifest points to immutable, versioned
-GitHub Release DMGs. Set `NEXT_PUBLIC_CONTROL_AGENT_UPDATE_PUBLIC_KEY` to the
-same Ed25519 public key embedded in the signed agent bundle so the Downloads page
-can show verified release metadata.
+The Downloads page needs no release-related deployment configuration. It links
+to the permanent Apple-Silicon public beta and reads the public GitHub release
+list to select the newest Windows prerelease with both x64 and ARM64 installers.
+Each artifact has a SHA-256 sidecar. The Windows release list refreshes at most
+once per minute.
 
-The Windows beta for x64 and ARM64 uses a separate manifest channel. Configure all four of
-`WINDOWS_CONTROL_AGENT_RELEASE_CHANNEL_URL`,
-`WINDOWS_CONTROL_AGENT_RELEASES_URL`,
-`WINDOWS_CONTROL_AGENT_ISSUES_URL`, and
-`WINDOWS_CONTROL_AGENT_UPDATE_PUBLIC_KEY` together. Production Compose maps
-them to the corresponding `NEXT_PUBLIC_WINDOWS_CONTROL_AGENT_*` build
-arguments. This permits the Downloads page to verify release metadata; it does
-not make the unsigned Windows installer publisher-trusted.
-
-Do not put Developer ID certificates, App Store Connect keys, or the manifest
-private key in the VPS environment. They belong only in protected GitHub release
-secrets.
-
-The future Developer ID channel may use a separate Sparkle key in GitHub release
-secrets. The current no-cost beta instead keeps its Sparkle private key in the
-publisher's login Keychain under `huddle-control-agent-free-beta`; it is neither
-exported nor placed on the VPS or in GitHub. Its public key is embedded into the
-ad-hoc app during the local build, and publication signs an immutable arm64 DMG
-plus the `control-agent-free-beta` appcast with that local key.
-
-### No-cost Apple-Silicon beta
-
-The Downloads page also has a permanent fallback link for the arm64
-`control-agent-free-beta` GitHub prerelease. It needs no VPS environment value:
-build and publish it from an Apple-Silicon Mac with:
+Publish the Apple-Silicon beta from an Apple-Silicon Mac with:
 
 ```bash
 ./apps/control-agent/scripts/build-free-beta.sh
 ./apps/control-agent/scripts/publish-free-beta.sh
 ```
 
-Before the first updater-enabled build, create the local Sparkle key once:
-
-```bash
-./apps/control-agent/scripts/configure-free-beta-updater.sh
-```
-
-Publish the GitHub release before deploying the page change, so the direct
-download link never points at a missing asset. This is an ad-hoc signed,
-unnotarized beta with a SHA-256 checksum, not a replacement for the Developer
-ID channel above. The permanent beta release contains a signed Sparkle appcast
-whose archive points to an immutable versioned release; the page must retain its
-Gatekeeper warning and must never claim that this artifact is notarized or has a
-Developer ID signature. Existing pre-updater beta builds need one manual install
-of the updater-enabled DMG.
+Publish the GitHub release before deploying a page change, so the direct
+download link never points at a missing asset. The beta is unsigned and
+unnotarized; retain its Gatekeeper warning and publish its SHA-256 checksum.
 
 ## 10. Verify
 

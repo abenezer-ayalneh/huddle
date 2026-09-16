@@ -3,11 +3,7 @@ export type NoCostControlAgentBeta = {
   checksumUrl: string;
 };
 
-/**
- * The public arm64 beta is intentionally separate from the signed/notarized
- * release-manifest channel. It is a fixed GitHub prerelease with a published
- * checksum, not a fallback for a configured-but-invalid signed release.
- */
+/** The default Apple-Silicon beta is a GitHub prerelease with a checksum. */
 export function getNoCostControlAgentBeta(repositoryUrl: string): NoCostControlAgentBeta | null {
   try {
     const repository = new URL(repositoryUrl);
