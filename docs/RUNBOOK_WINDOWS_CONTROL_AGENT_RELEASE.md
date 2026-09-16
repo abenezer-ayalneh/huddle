@@ -4,6 +4,20 @@ This runbook releases the attended Windows x64 and ARM64 beta. It does not autho
 production deployment or turn source checks into physical Remote Control
 acceptance.
 
+## Published ARM64-only prerelease
+
+On 2026-09-16, [`windows-control-agent-arm64-v0.1.0`](https://github.com/abenezer-ayalneh/huddle/releases/tag/windows-control-agent-arm64-v0.1.0)
+was published as an unsigned GitHub prerelease containing the native ARM64
+installer and its SHA-256 sidecar. It is a deliberately separate testing
+artifact, not an advance of `windows-control-agent-beta`:
+
+- It contains no x64 installer and no signed release manifest.
+- The Downloads page will not offer it as a verified release channel.
+- It does not supply x64 or full attended Remote Control acceptance evidence.
+
+The normal dual-architecture release process below remains required before
+advancing the signed beta channel.
+
 ## Before a tag
 
 1. On native x64 and native ARM64 Windows 10 22H2 or Windows 11, run
