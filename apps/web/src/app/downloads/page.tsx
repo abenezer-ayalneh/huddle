@@ -1,10 +1,8 @@
 import type { Metadata } from 'next';
 import DownloadsPageClient from './DownloadsPageClient';
 import { getControlAgentRelease } from '@/lib/controlAgentRelease';
-import { CONTROL_AGENT_RELEASE } from '@/lib/controlAgentReleaseShared';
 import { publicConfig } from '@/lib/public-config';
 import { getWindowsControlAgentRelease } from '@/lib/windowsControlAgentRelease';
-import { WINDOWS_CONTROL_AGENT_RELEASE } from '@/lib/windowsControlAgentReleaseShared';
 
 /**
  * THESIS: make selecting a native companion feel deliberate, not incidental.
@@ -30,10 +28,6 @@ export default async function DownloadsPage() {
       windowsRelease={windowsRelease}
       repositoryUrl={publicConfig.projectRepositoryUrl}
       operatorContactUrl={publicConfig.operatorContactUrl}
-      releaseNotesFallbackUrl={CONTROL_AGENT_RELEASE?.releasesUrl ?? null}
-      issuesUrl={CONTROL_AGENT_RELEASE?.issuesUrl ?? null}
-      windowsReleaseNotesFallbackUrl={WINDOWS_CONTROL_AGENT_RELEASE?.releasesUrl ?? null}
-      windowsIssuesUrl={WINDOWS_CONTROL_AGENT_RELEASE?.issuesUrl ?? null}
     />
   );
 }

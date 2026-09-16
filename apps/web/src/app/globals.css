@@ -8354,8 +8354,7 @@ html[data-theme='dark'] .downloads-shell {
 }
 
 .downloads-back-link:active,
-.downloads-download-button:active,
-.downloads-integrity-links a:active {
+.downloads-download-button:active {
   transform: translateY(1px);
 }
 
@@ -8441,9 +8440,7 @@ html[data-theme='dark'] .downloads-shell {
   color: var(--downloads-purple);
 }
 
-.downloads-boundary-line p,
-.downloads-detection,
-.downloads-release-warning {
+.downloads-boundary-line p {
   margin: 0;
 }
 
@@ -8541,8 +8538,7 @@ html[data-theme='dark'] .downloads-shell {
 }
 
 .downloads-release-station__header h2,
-.downloads-handoff-guide h2,
-.downloads-integrity h2 {
+.downloads-handoff-guide h2 {
   margin: 7px 0 0;
   color: var(--downloads-ink);
   font-family:
@@ -8555,30 +8551,6 @@ html[data-theme='dark'] .downloads-shell {
   line-height: 1.04;
 }
 
-.downloads-release-status,
-.downloads-recommended {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  min-height: 28px;
-  padding: 5px 9px;
-  border: 1px solid var(--downloads-border);
-  border-radius: 999px;
-  color: var(--downloads-muted);
-  font-family: var(--font-plex-mono), monospace;
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.downloads-release-status.is-verified,
-.downloads-recommended {
-  border-color: color-mix(in srgb, var(--downloads-yellow) 66%, var(--downloads-border));
-  background: color-mix(in srgb, var(--downloads-yellow) 19%, transparent);
-  color: var(--downloads-ink);
-}
-
 .downloads-architecture {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -8586,10 +8558,6 @@ html[data-theme='dark'] .downloads-shell {
   padding: 24px 30px 24px 36px;
   border-bottom: 1px solid var(--downloads-border);
   transition: background-color 140ms ease;
-}
-
-.downloads-architecture.is-recommended {
-  background: color-mix(in srgb, var(--downloads-yellow) 12%, transparent);
 }
 
 .downloads-architecture:hover {
@@ -8616,12 +8584,6 @@ html[data-theme='dark'] .downloads-shell {
   background: color-mix(in srgb, var(--downloads-bg) 62%, transparent);
 }
 
-.downloads-architecture__title-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
 .downloads-architecture h3 {
   margin: 0;
   color: var(--downloads-ink);
@@ -8635,9 +8597,6 @@ html[data-theme='dark'] .downloads-shell {
 }
 
 .downloads-architecture__identity p,
-.downloads-architecture__meta,
-.downloads-detection,
-.downloads-release-warning,
 .downloads-unavailable {
   color: var(--downloads-muted);
   font-size: 12px;
@@ -8646,24 +8605,6 @@ html[data-theme='dark'] .downloads-shell {
 
 .downloads-architecture__identity p {
   margin: 5px 0 0;
-}
-
-.downloads-architecture__meta {
-  display: flex;
-  grid-column: 1;
-  flex-wrap: wrap;
-  gap: 14px;
-  margin-top: 17px;
-  color: var(--downloads-faint);
-  font-family: var(--font-plex-mono), monospace;
-  font-size: 10px;
-  letter-spacing: 0.02em;
-}
-
-.downloads-architecture__meta span {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
 }
 
 .downloads-shell .downloads-download-button {
@@ -8701,16 +8642,6 @@ html[data-theme='dark'] .downloads-shell {
   color: var(--downloads-muted);
   font-weight: 700;
   text-align: right;
-}
-
-.downloads-station-foot {
-  padding: 17px 30px 20px 36px;
-  background: color-mix(in srgb, var(--downloads-surface-strong) 56%, transparent);
-}
-
-.downloads-release-warning {
-  margin-top: 6px;
-  color: var(--downloads-muted);
 }
 
 .downloads-handoff-guide {
@@ -8764,64 +8695,6 @@ html[data-theme='dark'] .downloads-shell {
   line-height: 1.55;
 }
 
-.downloads-integrity {
-  padding: 0 0 clamp(66px, 9vw, 120px);
-}
-
-.downloads-integrity-frame {
-  display: grid;
-  grid-template-columns: minmax(220px, 0.75fr) minmax(0, 1.25fr);
-  gap: clamp(30px, 8vw, 118px);
-  padding: clamp(30px, 4vw, 52px);
-  border: 1px solid var(--downloads-border-strong);
-  border-radius: 16px;
-  background: var(--downloads-surface-strong);
-  box-shadow: 10px 10px 0 color-mix(in srgb, var(--downloads-yellow) 30%, transparent);
-}
-
-.downloads-integrity-heading h2 {
-  max-width: 11ch;
-}
-
-.downloads-integrity-content {
-  max-width: 60ch;
-}
-
-.downloads-integrity-content > p {
-  margin: 0;
-  color: var(--downloads-muted);
-  font-size: 16px;
-  line-height: 1.75;
-}
-
-.downloads-integrity-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 24px;
-}
-
-.downloads-integrity-links a {
-  display: inline-flex;
-  min-height: 40px;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--downloads-purple);
-  color: var(--downloads-purple);
-  font-size: 13px;
-  font-weight: 800;
-  transition:
-    background-color 140ms ease,
-    color 140ms ease,
-    transform 140ms ease;
-}
-
-.downloads-integrity-links a:hover {
-  background: color-mix(in srgb, var(--downloads-purple) 10%, transparent);
-  color: var(--downloads-purple-dark);
-}
-
 .downloads-footer {
   padding: 28px 0 34px;
   border-top: 1px solid var(--downloads-border);
@@ -8846,8 +8719,7 @@ html[data-theme='dark'] .downloads-shell {
 
 @media (max-width: 980px) {
   .downloads-hero-grid,
-  .downloads-handoff-guide,
-  .downloads-integrity-frame {
+  .downloads-handoff-guide {
     grid-template-columns: 1fr;
   }
 
@@ -8925,12 +8797,6 @@ html[data-theme='dark'] .downloads-shell {
     font-size: 25px;
   }
 
-  .downloads-release-status {
-    max-width: 108px;
-    line-height: 1.25;
-    text-align: center;
-  }
-
   .downloads-architecture {
     grid-template-columns: 1fr;
     gap: 16px;
@@ -8941,23 +8807,11 @@ html[data-theme='dark'] .downloads-shell {
     align-items: flex-start;
   }
 
-  .downloads-architecture__title-row {
-    flex-wrap: wrap;
-  }
-
-  .downloads-architecture__meta {
-    margin-top: 0;
-  }
-
   .downloads-download-button,
   .downloads-unavailable {
     width: 100%;
     max-width: none;
     text-align: center;
-  }
-
-  .downloads-station-foot {
-    padding: 16px 20px 18px 27px;
   }
 
   .downloads-handoff-guide {
@@ -8968,18 +8822,6 @@ html[data-theme='dark'] .downloads-shell {
   .downloads-guide-list {
     grid-template-columns: 1fr;
     gap: 18px;
-  }
-
-  .downloads-integrity-frame {
-    gap: 26px;
-    padding: 26px 22px;
-    border-radius: 12px;
-    box-shadow: 7px 7px 0 color-mix(in srgb, var(--downloads-yellow) 30%, transparent);
-  }
-
-  .downloads-integrity-content > p {
-    font-size: 15px;
-    line-height: 1.65;
   }
 
   .downloads-signal-routes {

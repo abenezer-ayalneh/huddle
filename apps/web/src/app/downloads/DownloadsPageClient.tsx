@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, ExternalLink, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import ControlAgentDownloads from '@/components/ControlAgentDownloads';
 import HuddleBrandThemeHeader from '@/components/HuddleBrandThemeHeader';
@@ -15,10 +15,6 @@ type DownloadsPageClientProps = {
   windowsRelease: WindowsControlAgentRelease | null;
   repositoryUrl: string;
   operatorContactUrl: string;
-  releaseNotesFallbackUrl: string | null;
-  issuesUrl: string | null;
-  windowsReleaseNotesFallbackUrl: string | null;
-  windowsIssuesUrl: string | null;
 };
 
 function DownloadsNavigation() {
@@ -39,16 +35,7 @@ function DownloadsNavigation() {
   );
 }
 
-export default function DownloadsPageClient({
-  release,
-  windowsRelease,
-  repositoryUrl,
-  operatorContactUrl,
-  releaseNotesFallbackUrl,
-  issuesUrl,
-  windowsReleaseNotesFallbackUrl,
-  windowsIssuesUrl,
-}: DownloadsPageClientProps) {
+export default function DownloadsPageClient({ release, windowsRelease, repositoryUrl, operatorContactUrl }: DownloadsPageClientProps) {
   const hasVerifiedSignedRelease = release?.verified === true;
   const hasVerifiedWindowsRelease = windowsRelease?.verified === true;
   const hasNoCostBeta = !hasVerifiedSignedRelease && getNoCostControlAgentBeta(repositoryUrl) !== null;
@@ -77,7 +64,7 @@ export default function DownloadsPageClient({
                 {hasVerifiedSignedRelease || hasVerifiedWindowsRelease
                   ? 'The Control Agent is an attended companion for the Sharer’s macOS or Windows desktop. It shares one entire selected physical display only after approval in the active room and a local Start confirmation.'
                   : hasAnyRelease
-                    ? 'The public beta is available for the listed desktop platforms. Verify its published checksum before installing. An unsigned Windows installer has no publisher trust; a macOS ad-hoc build is not notarized.'
+                    ? 'Choose the installer that matches the Sharer’s desktop. It shares one entire selected physical display only after approval in the active room and a local Start confirmation.'
                     : 'This deployment has not configured a Control Agent release. Remote Control downloads are unavailable until the operator completes the release setup.'}
               </p>
               <div className="downloads-boundary-line">
@@ -103,48 +90,6 @@ export default function DownloadsPageClient({
             </div>
 
             <ControlAgentDownloads release={release} windowsRelease={windowsRelease} repositoryUrl={repositoryUrl} />
-          </div>
-        </section>
-
-        <section className="downloads-integrity" aria-labelledby="downloads-integrity-title">
-          <div className="downloads-container downloads-integrity-frame">
-            <div className="downloads-integrity-heading">
-              <p className="downloads-kicker">Release integrity</p>
-              <h2 id="downloads-integrity-title">A download is part of the handoff.</h2>
-            </div>
-            <div className="downloads-integrity-content">
-              <p>
-                {hasVerifiedSignedRelease || hasVerifiedWindowsRelease
-                  ? 'Every verified beta release publishes a SHA-256 checksum and a platform-specific signed release manifest. The agent checks for required updates before redeeming a new session; it never installs updates silently.'
-                  : hasAnyRelease
-                    ? 'Each public beta has a SHA-256 checksum. That checksum verifies downloaded bytes; it does not turn an unsigned Windows installer or an unnotarized macOS app into a publisher-trusted release.'
-                    : 'Downloads are intentionally disabled rather than falling back to an unsigned or unrelated artifact.'}
-              </p>
-              {releaseNotesFallbackUrl || issuesUrl || windowsReleaseNotesFallbackUrl || windowsIssuesUrl ? (
-                <div className="downloads-integrity-links">
-                  {releaseNotesFallbackUrl ? (
-                    <a href={release?.releaseNotesUrl ?? releaseNotesFallbackUrl} target="_blank" rel="noreferrer">
-                      <ExternalLink className="size-4" aria-hidden="true" /> Release notes
-                    </a>
-                  ) : null}
-                  {issuesUrl ? (
-                    <a href={issuesUrl} target="_blank" rel="noreferrer">
-                      <ExternalLink className="size-4" aria-hidden="true" /> Report a beta problem
-                    </a>
-                  ) : null}
-                  {windowsReleaseNotesFallbackUrl ? (
-                    <a href={windowsRelease?.releaseNotesUrl ?? windowsReleaseNotesFallbackUrl} target="_blank" rel="noreferrer">
-                      <ExternalLink className="size-4" aria-hidden="true" /> Windows release notes
-                    </a>
-                  ) : null}
-                  {windowsIssuesUrl ? (
-                    <a href={windowsIssuesUrl} target="_blank" rel="noreferrer">
-                      <ExternalLink className="size-4" aria-hidden="true" /> Report a Windows beta problem
-                    </a>
-                  ) : null}
-                </div>
-              ) : null}
-            </div>
           </div>
         </section>
 
