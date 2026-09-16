@@ -19,7 +19,11 @@ function githubRepositoryPath(repositoryUrl: string): string | null {
 }
 
 function hasInstallerAssets(release: GitHubRelease): release is GitHubRelease & { tag_name: string } {
-  if (release.draft === true || typeof release.tag_name !== 'string' || !/^windows-control-agent-v\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(release.tag_name)) {
+  if (
+    release.draft === true ||
+    typeof release.tag_name !== 'string' ||
+    !/^windows-control-agent-v\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(release.tag_name)
+  ) {
     return false;
   }
   if (!Array.isArray(release.assets)) return false;
@@ -37,10 +41,7 @@ function hasInstallerAssets(release: GitHubRelease): release is GitHubRelease & 
  * installer has a SHA-256 sidecar, and all links remain on the configured
  * GitHub repository.
  */
-export async function getWindowsControlAgentPublicBeta(
-  repositoryUrl: string,
-  fetchImpl: typeof fetch = fetch,
-): Promise<WindowsControlAgentPublicBeta | null> {
+export async function getWindowsControlAgentPublicBeta(repositoryUrl: string, fetchImpl: typeof fetch = fetch): Promise<WindowsControlAgentPublicBeta | null> {
   const path = githubRepositoryPath(repositoryUrl);
   if (!path) return null;
 

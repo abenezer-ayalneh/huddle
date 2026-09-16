@@ -196,8 +196,8 @@ export default function TermsPage() {
           <li>Sharers must supervise the session, review the selected display, and stop immediately if behavior is unexpected.</li>
           <li>Remote Control is not a support code, background agent, or unattended-access product. Attempting to convert it into one violates these Terms.</li>
           <li>
-            The Control Agent may be distributed as beta software. Review the Downloads page for the current platform, checksum, permission, and update
-            status before installation.
+            The Control Agent may be distributed as beta software. Review the Downloads page for the current platform, checksum, permission, and update status
+            before installation.
           </li>
           <li>
             Huddle does not store input events or clipboard contents, but the parties remain responsible for the actions they take and information they expose.

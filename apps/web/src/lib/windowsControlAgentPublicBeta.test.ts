@@ -19,13 +19,11 @@ describe('getWindowsControlAgentPublicBeta', () => {
     await expect(getWindowsControlAgentPublicBeta('https://github.com/abenezer-ayalneh/huddle/', fetchReleaseList as typeof fetch)).resolves.toEqual({
       x64: {
         downloadUrl: 'https://github.com/abenezer-ayalneh/huddle/releases/download/windows-control-agent-v0.1.1/Huddle-Control-Agent-windows-x64.exe',
-        checksumUrl:
-          'https://github.com/abenezer-ayalneh/huddle/releases/download/windows-control-agent-v0.1.1/Huddle-Control-Agent-windows-x64.exe.sha256',
+        checksumUrl: 'https://github.com/abenezer-ayalneh/huddle/releases/download/windows-control-agent-v0.1.1/Huddle-Control-Agent-windows-x64.exe.sha256',
       },
       arm64: {
         downloadUrl: 'https://github.com/abenezer-ayalneh/huddle/releases/download/windows-control-agent-v0.1.1/Huddle-Control-Agent-windows-arm64.exe',
-        checksumUrl:
-          'https://github.com/abenezer-ayalneh/huddle/releases/download/windows-control-agent-v0.1.1/Huddle-Control-Agent-windows-arm64.exe.sha256',
+        checksumUrl: 'https://github.com/abenezer-ayalneh/huddle/releases/download/windows-control-agent-v0.1.1/Huddle-Control-Agent-windows-arm64.exe.sha256',
       },
     });
   });
