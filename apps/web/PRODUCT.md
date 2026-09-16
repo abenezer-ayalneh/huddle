@@ -92,10 +92,10 @@ replacement.
   ephemeral and must not enter HTTP, Redis, Postgres, room metadata, logs,
   recordings, or audit records.
 - Unattended access, support codes outside a room, rich or binary clipboard
-  transfer, files, desktop audio, and Windows or Linux Control Agents are out of
-  scope. Bounded plain-text Clipboard Sharing is ephemeral and room-scoped. The
-  macOS Control Agent is the only native companion; the meeting itself remains
-  browser-based.
+  transfer, files, desktop audio, and Linux Control Agents are out of scope.
+  Bounded plain-text Clipboard Sharing is ephemeral and room-scoped. macOS and
+  Windows x64/ARM64 Control Agents are narrow native companions; the meeting
+  itself remains browser-based.
 - Live WebRTC behavior, physical macOS permissions, signed Control Agent
   releases, and external-provider integrations require real-device or
   account-bound acceptance. Source, tests, and builds alone do not establish

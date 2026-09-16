@@ -16,7 +16,9 @@ They are deliberately separate testing artifacts, not an advance of
 `windows-control-agent-beta`:
 
 - It contains no x64 installer and no signed release manifest.
-- The Downloads page will not offer it as a verified release channel.
+- The Downloads page offers each installer as an explicitly unsigned,
+  architecture-specific prerelease; it must not label either as a verified
+  release channel.
 - It does not supply x64 or full attended Remote Control acceptance evidence.
 
 The normal dual-architecture release process below remains required before

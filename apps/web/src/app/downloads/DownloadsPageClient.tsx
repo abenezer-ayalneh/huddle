@@ -6,6 +6,7 @@ import ControlAgentDownloads from '@/components/ControlAgentDownloads';
 import HuddleBrandThemeHeader from '@/components/HuddleBrandThemeHeader';
 import LandingThemeProvider from '@/components/landing/LandingThemeProvider';
 import { getNoCostControlAgentBeta } from '@/lib/controlAgentFreeBeta';
+import { getWindowsControlAgentPublicBeta } from '@/lib/windowsControlAgentPublicBeta';
 import type { ControlAgentRelease } from '@/lib/controlAgentReleaseShared';
 import type { WindowsControlAgentRelease } from '@/lib/windowsControlAgentReleaseShared';
 
@@ -51,7 +52,8 @@ export default function DownloadsPageClient({
   const hasVerifiedSignedRelease = release?.verified === true;
   const hasVerifiedWindowsRelease = windowsRelease?.verified === true;
   const hasNoCostBeta = !hasVerifiedSignedRelease && getNoCostControlAgentBeta(repositoryUrl) !== null;
-  const hasAnyRelease = hasVerifiedSignedRelease || hasVerifiedWindowsRelease || hasNoCostBeta;
+  const hasWindowsPublicBeta = !hasVerifiedWindowsRelease && getWindowsControlAgentPublicBeta(repositoryUrl) !== null;
+  const hasAnyRelease = hasVerifiedSignedRelease || hasVerifiedWindowsRelease || hasNoCostBeta || hasWindowsPublicBeta;
 
   return (
     <LandingThemeProvider>

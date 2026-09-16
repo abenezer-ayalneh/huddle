@@ -7,6 +7,7 @@ import type { ControlAgentRelease } from '@/lib/controlAgentReleaseShared';
 import { formatBytes } from '@/lib/controlAgentReleaseShared';
 import { useMobileBrowserCapabilities } from '@/lib/mobileBrowserCapabilities';
 import type { WindowsControlAgentRelease } from '@/lib/windowsControlAgentReleaseShared';
+import { getWindowsControlAgentPublicBeta } from '@/lib/windowsControlAgentPublicBeta';
 
 type DetectedPlatform = 'mac' | 'windows' | 'linux' | 'other';
 type DetectedArchitecture = 'arm64' | 'x64' | 'unknown';
@@ -53,6 +54,7 @@ export default function ControlAgentDownloads({
 
   const download: DownloadArtifact | undefined = release?.verified ? release.downloads.arm64 : undefined;
   const noCostBeta = release?.verified ? null : getNoCostControlAgentBeta(repositoryUrl);
+  const windowsPublicBeta = windowsRelease?.verified ? null : getWindowsControlAgentPublicBeta(repositoryUrl);
   const macDetected = detected.platform === 'mac';
   const windowsDetected = detected.platform === 'windows';
   const windowsArchitecture = detected.architecture === 'arm64' || detected.architecture === 'x64' ? detected.architecture : null;
@@ -156,7 +158,7 @@ export default function ControlAgentDownloads({
             <h2 id="downloads-windows-title">Choose the build for this PC.</h2>
           </div>
           <span className={windowsRelease?.verified ? 'downloads-release-status is-verified' : 'downloads-release-status'}>
-            {windowsRelease?.verified ? 'Verified manifest' : 'Release unavailable'}
+            {windowsRelease?.verified ? 'Verified manifest' : windowsPublicBeta ? 'Public beta' : 'Release unavailable'}
           </span>
         </div>
 
@@ -175,7 +177,11 @@ export default function ControlAgentDownloads({
               },
             ] as const
           ).map(({ architecture, description, label }) => {
-            const artifact: DownloadArtifact | undefined = windowsRelease?.verified ? windowsRelease.downloads[architecture] : undefined;
+            const artifact: DownloadArtifact | undefined = windowsRelease?.verified
+              ? windowsRelease.downloads[architecture]
+              : windowsPublicBeta
+                ? { url: windowsPublicBeta[architecture].downloadUrl }
+                : undefined;
             const isRecommended = windowsDetected && windowsArchitecture === architecture;
 
             return (
@@ -210,6 +216,14 @@ export default function ControlAgentDownloads({
                     Unsigned public beta. Verify the published SHA-256 value, then review the Windows publisher warning before installing. The signed manifest
                     authenticates the release metadata and expected checksum; it does not provide Windows publisher trust.
                   </p>
+                ) : windowsPublicBeta ? (
+                  <p className="downloads-unavailable">
+                    Unsigned public beta. Verify the{' '}
+                    <a href={windowsPublicBeta[architecture].checksumUrl} target="_blank" rel="noreferrer">
+                      published SHA-256 checksum <ExternalLink className="inline size-3" aria-hidden="true" />
+                    </a>
+                    {' '}before installing, then review the Windows publisher warning. This architecture-specific prerelease is not a signed manifest release.
+                  </p>
                 ) : null}
               </article>
             );
@@ -229,7 +243,9 @@ export default function ControlAgentDownloads({
           </p>
           {!windowsRelease?.verified ? (
             <p className="downloads-release-warning">
-              A signed Windows Control Agent manifest can be configured when a release is ready. The installer itself remains unsigned during this beta.
+              {windowsPublicBeta
+                ? 'Both released installers are available as architecture-specific prereleases. A signed dual-architecture manifest channel will be added after its release process is complete.'
+                : 'A signed Windows Control Agent manifest can be configured when a release is ready. The installer itself remains unsigned during this beta.'}
             </p>
           ) : null}
         </div>
