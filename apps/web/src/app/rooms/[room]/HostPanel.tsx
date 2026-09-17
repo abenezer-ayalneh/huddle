@@ -9,25 +9,7 @@ import CallThemeToggle from '@/components/call/CallThemeToggle';
 import { useDismissOnOutside } from '@/components/call/useDismissOnOutside';
 import RecordingControls from './RecordingControls';
 import { isControlAgentParticipant } from '@/lib/controlProtocol';
-
-function playDing() {
-  try {
-    const ctx = new AudioContext();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(880, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.15);
-    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
-    osc.connect(gain).connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.2);
-    osc.onended = () => ctx.close();
-  } catch {
-    // Audio blocked or unavailable — glow still works.
-  }
-}
+import { playCallDing } from '@/components/call/callSounds';
 
 export default function HostPanel({ room, hostKey, onWaitingCountChange }: { room: string; hostKey: string; onWaitingCountChange?: (count: number) => void }) {
   const participants = useRemoteParticipants();
@@ -57,9 +39,9 @@ export default function HostPanel({ room, hostKey, onWaitingCountChange }: { roo
     }
     seenKnockIds.current = currentIds;
     if (newCount === 0) return;
-    playDing();
+    playCallDing();
     for (let i = 1; i < newCount; i++) {
-      setTimeout(() => playDing(), i * 250);
+      setTimeout(() => playCallDing(), i * 250);
     }
   }, [knocks]);
 

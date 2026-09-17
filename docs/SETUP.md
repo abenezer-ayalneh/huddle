@@ -154,7 +154,9 @@ pnpm dev:web        # Next.js dev server
    password, or Google if configured) to host.
 2. Create (or schedule) a meeting; copy its link.
 3. Open the link in a second window, enter a name, and **knock**.
-4. Back in the host window, **admit** the guest. You should see/hear both.
+4. Back in the host window, **admit** the guest. You should see/hear both, and
+   the host and guest should hear a brief join cue when the guest reaches the
+   room.
 
 ## 6b. Test from other LAN devices with HTTPS
 

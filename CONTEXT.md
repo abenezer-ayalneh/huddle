@@ -160,6 +160,18 @@ recovery instead of a toggle.
 _Avoid_: Permission prompt (that is the browser's own dialog, not ours), permission
 error, camera/mic error, blocked-device toast
 
+### In-call presence
+
+**Participant Join Cue**:
+A brief, best-effort sound played when a human participant enters: participants
+already connected hear it on the LiveKit participant connection event, and the
+admitted or rejoining participant hears the same cue when their own call
+connects. It is not played for a pending [[Knock]] or the Host's Admit action
+alone, so it announces the person who actually reached the room. The companion
+[[Control Agent]] is silent.
+
+_Avoid_: Join notification, admission sound, waiting-room ding
+
 ### Mute feedback
 
 **Mute Reminder**:

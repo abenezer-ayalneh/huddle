@@ -27,6 +27,7 @@ import { usePresentation } from '@/components/call/usePresentation';
 import { useMobileBrowserCapabilities } from '@/lib/mobileBrowserCapabilities';
 import { useRecording } from '@/components/call/useRecording';
 import { useRemoteControl } from '@/components/call/useRemoteControl';
+import { useParticipantJoinSound } from '@/components/call/useParticipantJoinSound';
 import { setCallNoticeTrayOffset } from '@/lib/systemNotices';
 import MaintenanceWarning from '@/components/maintenance/MaintenanceWarning';
 import LeaveConfirmDialog from './LeaveConfirmDialog';
@@ -200,6 +201,7 @@ export default function CallStage({
               onLeaveClick={() => setShowLeaveDialog(true)}
               onLeaveConfirm={confirmLeave}
               overlay={overlay}
+              announceLocalJoin={initialChoices !== undefined}
               isHost={isHost}
               hostKey={hostKey}
               hostWaitingCount={hostWaitingCount}
@@ -223,6 +225,7 @@ function CallView({
   onLeaveClick,
   onLeaveConfirm,
   overlay,
+  announceLocalJoin,
   isHost,
   hostKey,
   hostWaitingCount,
@@ -233,11 +236,13 @@ function CallView({
   onLeaveClick: () => void;
   onLeaveConfirm: () => void;
   overlay?: ReactNode;
+  announceLocalJoin: boolean;
   isHost: boolean;
   hostKey?: string;
   hostWaitingCount: number;
 }) {
   const { chatMessages, send, isSending } = useChat();
+  useParticipantJoinSound(announceLocalJoin);
   const [chatOpen, setChatOpen] = useState(false);
   const [pipChatOpen, setPipChatOpen] = useState(false);
   const [pipChatDraft, setPipChatDraft] = useState('');

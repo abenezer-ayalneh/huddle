@@ -36,6 +36,7 @@ explicit unchecked acceptance work.
 - [x] Two+ browsers join the same room and see/hear each other.\*
 - [x] Participant grid updates on join/leave (F4).\*
 - [x] Mute/unmute audio (F5) and camera on/off (F6), reflected to others.\*
+- [x] Brief join cue for the joining participant and participants already in the call when a human joins.
 - [x] Leave call returns to lobby cleanly (F8).
 - **Done when:** PRD acceptance criteria for a 2–3 person call pass.
 

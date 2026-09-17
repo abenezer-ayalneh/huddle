@@ -47,8 +47,8 @@ replacement.
   Waiting Room, and enters after the Host chooses Admit. An eligible signed-in
   Guest may use a call-scoped Direct Rejoin Grant after leaving or disconnecting.
 - Participants use camera, microphone, participant layouts, Present, in-call
-  chat, device switching and recovery, call shortcuts, and background-call
-  behavior from a modern desktop or mobile browser. Capable desktop browsers
+  chat, brief join cues, device switching and recovery, call shortcuts, and
+  background-call behavior from a modern desktop or mobile browser. Capable desktop browsers
   also offer a rich Picture-in-Picture companion; mobile and unsupported
   browsers retain the native single-feed fallback.
 - The Host manages admission, Mute on Entry, participant mute or removal, and
@@ -73,8 +73,9 @@ replacement.
 - Managed Rooms use generated Room Codes. Hosts must have an account; Guests
   can join anonymously through a shared link.
 - The calling experience includes camera and microphone publishing, live
-  participant layouts, mute and camera controls, connection recovery, Present,
-  chat, host controls, scheduling, Recording, and progressive desktop
+  participant layouts, brief join cues for participants already in the call and
+  the admitted participant, mute and camera controls, connection recovery,
+  Present, chat, host controls, scheduling, Recording, and progressive desktop
   Picture-in-Picture. Rich PiP is a view of the existing call, not a second
   media or authority path.
 - Direct Rejoin is available only to an admitted signed-in Guest for the same
