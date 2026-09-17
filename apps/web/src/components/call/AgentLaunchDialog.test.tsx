@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import AgentLaunchDialog from './AgentLaunchDialog';
 
@@ -17,18 +17,21 @@ afterEach(() => {
 });
 
 describe('AgentLaunchDialog recovery', () => {
-  it('shows the compact recovery popup and a new-tab downloads link after three seconds', async () => {
+  it('does not spend the one-time link until the Sharer explicitly opens the agent', async () => {
     const onAgentUnavailable = vi.fn();
     render(<AgentLaunchDialog bootstrap={bootstrap} onReopen={vi.fn()} onAgentUnavailable={onAgentUnavailable} onDismiss={vi.fn()} />);
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(2_999);
+      await vi.advanceTimersByTimeAsync(3_000);
     });
     expect(screen.getByRole('dialog')).toBeTruthy();
     expect(onAgentUnavailable).not.toHaveBeenCalled();
+    expect(document.querySelector('iframe')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /open agent/i }));
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(1);
+      await vi.advanceTimersByTimeAsync(3_000);
     });
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(screen.getByRole('status').textContent).toContain('Control Agent not detected');
@@ -39,6 +42,7 @@ describe('AgentLaunchDialog recovery', () => {
   it('cancels the fallback when the browser becomes hidden', async () => {
     const onAgentUnavailable = vi.fn();
     render(<AgentLaunchDialog bootstrap={bootstrap} onReopen={vi.fn()} onAgentUnavailable={onAgentUnavailable} onDismiss={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: /open agent/i }));
 
     Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
     await act(async () => {
