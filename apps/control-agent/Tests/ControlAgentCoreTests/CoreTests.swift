@@ -87,15 +87,18 @@ final class CoreTests: XCTestCase {
 
     func testPermissionPreparationPromptsAccessibilityOnlyWhenScreenRecordingIsGranted() {
         let runtime = FakePermissionRuntime(
-            snapshots: [PermissionSnapshot(screenRecordingGranted: true, accessibilityGranted: false)],
+            snapshots: [
+                PermissionSnapshot(screenRecordingGranted: true, accessibilityGranted: false),
+                PermissionSnapshot(screenRecordingGranted: true, accessibilityGranted: true),
+            ],
             screenRecordingRequestResult: false,
         )
 
         let result = PermissionPreparation.perform(using: runtime)
 
         XCTAssertEqual(result.action, .accessibility)
-        XCTAssertEqual(result.snapshot, PermissionSnapshot(screenRecordingGranted: true, accessibilityGranted: false))
-        XCTAssertEqual(runtime.snapshotReadCount, 1)
+        XCTAssertEqual(result.snapshot, PermissionSnapshot(screenRecordingGranted: true, accessibilityGranted: true))
+        XCTAssertEqual(runtime.snapshotReadCount, 2)
         XCTAssertEqual(runtime.screenRecordingRequestCount, 0)
         XCTAssertEqual(runtime.accessibilityPromptCount, 1)
         XCTAssertEqual(runtime.screenRecordingSettingsOpenCount, 0)
@@ -123,6 +126,7 @@ final class CoreTests: XCTestCase {
                 PermissionSnapshot(screenRecordingGranted: false, accessibilityGranted: false),
                 PermissionSnapshot(screenRecordingGranted: true, accessibilityGranted: false),
                 PermissionSnapshot(screenRecordingGranted: true, accessibilityGranted: false),
+                PermissionSnapshot(screenRecordingGranted: true, accessibilityGranted: true),
             ],
             screenRecordingRequestResult: true,
         )
@@ -132,7 +136,7 @@ final class CoreTests: XCTestCase {
 
         XCTAssertEqual(first.action, .screenRecording(requestGranted: true, didOpenSettings: nil))
         XCTAssertEqual(second.action, .accessibility)
-        XCTAssertEqual(runtime.snapshotReadCount, 3)
+        XCTAssertEqual(runtime.snapshotReadCount, 4)
         XCTAssertEqual(runtime.screenRecordingRequestCount, 1)
         XCTAssertEqual(runtime.accessibilityPromptCount, 1)
         XCTAssertEqual(runtime.screenRecordingSettingsOpenCount, 0)

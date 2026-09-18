@@ -76,8 +76,14 @@ package enum PermissionPreparation {
                 ),
             )
         case .accessibility:
+            // Re-read after the prompt just as we do for Screen Recording:
+            // retaining the pre-prompt snapshot leaves the badge showing
+            // "Required" after the app has become trusted.
             runtime.promptForAccessibilityAccess()
-            return PermissionPreparationResult(snapshot: snapshot, action: .accessibility)
+            return PermissionPreparationResult(
+                snapshot: runtime.readPermissionSnapshot(),
+                action: .accessibility,
+            )
         case nil:
             return PermissionPreparationResult(snapshot: snapshot, action: .none)
         }
