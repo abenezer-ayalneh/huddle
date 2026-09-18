@@ -1,76 +1,40 @@
 'use client';
 
 import { Check, Copy, Download, ExternalLink } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { API_URL } from '@/lib/api';
 import type { HelperBootstrap } from './useRemoteControl';
 
 export default function AgentLaunchDialog({
   bootstrap,
   onReopen,
-  onAgentUnavailable,
   onDismiss,
 }: {
   bootstrap: HelperBootstrap | null;
   onReopen: () => Promise<HelperBootstrap | null>;
-  onAgentUnavailable: () => void;
   onDismiss: () => void;
 }) {
   const [copied, setCopied] = useState(false);
   const [opening, setOpening] = useState(false);
-  const [handoffUnavailableSessionId, setHandoffUnavailableSessionId] = useState<string | null>(null);
-  const cancelLaunchMonitor = useRef<(() => void) | null>(null);
+  const [launchedSessionId, setLaunchedSessionId] = useState<string | null>(null);
   const deepLink = useMemo(() => {
     if (!bootstrap) return '';
     const query = new URLSearchParams({ room: bootstrap.room, session: bootstrap.sessionId, code: bootstrap.code, api: API_URL });
     return `huddle-control://join?${query.toString()}`;
   }, [bootstrap]);
 
-  useEffect(() => () => cancelLaunchMonitor.current?.(), []);
-
   const launch = (link: string, sessionId: string) => {
-    cancelLaunchMonitor.current?.();
-    let handedOff = false;
-    let timer: number | null = null;
-    let frame: HTMLIFrameElement | null = null;
-    const cleanupMonitor = () => {
-      if (timer !== null) window.clearTimeout(timer);
-      frame?.remove();
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-      window.removeEventListener('pagehide', onPageHide);
-      window.removeEventListener('blur', markHandedOff);
-      if (cancelLaunchMonitor.current === cleanupMonitor) cancelLaunchMonitor.current = null;
-    };
-    const markHandedOff = () => {
-      if (handedOff) return;
-      handedOff = true;
-      cleanupMonitor();
-    };
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') markHandedOff();
-    };
-    const onPageHide = () => markHandedOff();
-
     // Only launch after an explicit click. Auto-launching when the dialog
     // mounted could redeem this one-time code in the standard process before
     // the Sharer copied it into the agent's administrator-mode fallback. A
-    // native protocol handoff can blur the browser without hiding its tab,
-    // which is the normal Windows launch path.
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    window.addEventListener('pagehide', onPageHide);
-    window.addEventListener('blur', markHandedOff);
-    frame = document.createElement('iframe');
+    // Browser focus and visibility are not reliable evidence of whether a
+    // native protocol handler opened. The server-confirmed agent connection
+    // remains the authoritative session transition.
+    const frame = document.createElement('iframe');
     frame.style.display = 'none';
     frame.src = link;
     document.body.appendChild(frame);
-    timer = window.setTimeout(() => {
-      if (!handedOff) {
-        setHandoffUnavailableSessionId(sessionId);
-        onAgentUnavailable();
-      }
-      cleanupMonitor();
-    }, 3_000);
-    cancelLaunchMonitor.current = cleanupMonitor;
+    setLaunchedSessionId(sessionId);
   };
 
   if (!bootstrap) return null;
@@ -83,7 +47,6 @@ export default function AgentLaunchDialog({
   };
 
   const retry = async () => {
-    setHandoffUnavailableSessionId(null);
     setOpening(true);
     const fresh = await onReopen();
     if (fresh) {
@@ -93,42 +56,8 @@ export default function AgentLaunchDialog({
     setOpening(false);
   };
 
-  if (handoffUnavailableSessionId === bootstrap.sessionId) {
-    return (
-      <div
-        role="status"
-        aria-live="polite"
-        className="signal-call-agent-recovery glass-strong pointer-events-auto fixed right-4 top-4 z-50 w-[min(92vw,26rem)] rounded-xl p-4 text-white shadow-[0_12px_36px_oklch(0_0_0/0.35)] ring-1 ring-amber-200/30"
-      >
-        <h2 className="text-sm font-semibold">Control Agent not detected</h2>
-        <p className="mt-1 text-xs leading-5 text-white/70">
-          Huddle could not confirm that the Control Agent opened. If it is not installed, download it, then return to this call and try again.
-        </p>
-        <div className="mt-3 flex justify-end gap-2">
-          <a
-            href="/downloads?from=remote-control"
-            target="_blank"
-            rel="noreferrer"
-            className="rounded-lg bg-cyan/15 px-3 py-2 text-xs font-semibold text-cyan ring-1 ring-cyan/35 hover:bg-cyan/25"
-          >
-            <Download className="mr-1 inline h-3.5 w-3.5" />
-            Open downloads
-          </a>
-          <button
-            type="button"
-            disabled={opening}
-            onClick={() => void retry()}
-            className="rounded-lg bg-white/10 px-3 py-2 text-xs text-white/80 hover:bg-white/20"
-          >
-            {opening ? 'Preparing…' : 'Try again'}
-          </button>
-          <button type="button" onClick={onDismiss} className="rounded-lg bg-white/10 px-3 py-2 text-xs text-white/65 hover:bg-white/20">
-            Close
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const hasLaunched = launchedSessionId === bootstrap?.sessionId;
+
   return (
     <div
       role="dialog"
@@ -173,11 +102,11 @@ export default function AgentLaunchDialog({
           <button
             type="button"
             disabled={opening}
-            onClick={() => launch(deepLink, bootstrap.sessionId)}
+            onClick={() => (hasLaunched ? void retry() : launch(deepLink, bootstrap.sessionId))}
             className="rounded-lg bg-cyan/15 px-3 py-2 text-xs text-cyan ring-1 ring-cyan/35 hover:bg-cyan/25"
           >
             <ExternalLink className="mr-1 inline h-3.5 w-3.5" />
-            Open Agent
+            {opening ? 'Preparing…' : hasLaunched ? 'Try again' : 'Open Agent'}
           </button>
           <button type="button" onClick={onDismiss} className="rounded-lg bg-white/10 px-3 py-2 text-xs text-white/75 hover:bg-white/20">
             Close

@@ -225,7 +225,7 @@ model RemoteControlSession {
   controllerIdentity String
   controllerName     String
   agentIdentity      String?
-  // requested | active | denied | ended | expired | failed
+  // requested | active | denied | withdrawn | ended | expired | failed
   status             String    @default("requested")
   startedAt          DateTime?
   endedAt            DateTime?

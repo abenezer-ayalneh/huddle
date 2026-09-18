@@ -408,6 +408,7 @@ function CallView({
             recordingActive={recording.recordingActive}
             onApprove={remoteControl.approve}
             onDeny={remoteControl.deny}
+            onWithdraw={remoteControl.withdraw}
             onDismiss={remoteControl.dismissNotice}
             canApprove={mobileCapabilities.canUseDesktopRemoteControl}
           />
@@ -434,12 +435,7 @@ function CallView({
       <CallTimer showThemeToggle={!isHost} />
       <ConnectionStatus />
       {mobileCapabilities.canUseDesktopRemoteControl && (
-        <AgentLaunchDialog
-          bootstrap={remoteControl.helperBootstrap}
-          onReopen={remoteControl.reopenAgent}
-          onAgentUnavailable={remoteControl.notifyAgentUnavailable}
-          onDismiss={remoteControl.dismissHelperBootstrap}
-        />
+        <AgentLaunchDialog bootstrap={remoteControl.helperBootstrap} onReopen={remoteControl.reopenAgent} onDismiss={remoteControl.dismissHelperBootstrap} />
       )}
       {overlay}
       {pipFailure && (

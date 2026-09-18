@@ -59,6 +59,10 @@ export class RemoteControlRepository {
     return this.transitionRequested(id, 'denied', 'sharer_denied', endedAt);
   }
 
+  async withdraw(id: string, endedAt: Date): Promise<boolean> {
+    return this.transitionRequested(id, 'withdrawn', 'controller_withdrew', endedAt);
+  }
+
   async expireRequest(id: string, endedAt: Date): Promise<boolean> {
     return this.transitionRequested(id, 'expired', 'request_timeout', endedAt);
   }
@@ -110,7 +114,7 @@ export class RemoteControlRepository {
     });
   }
 
-  private async transitionRequested(id: string, status: 'denied' | 'expired' | 'failed', endReason: string, endedAt: Date): Promise<boolean> {
+  private async transitionRequested(id: string, status: 'denied' | 'withdrawn' | 'expired' | 'failed', endReason: string, endedAt: Date): Promise<boolean> {
     const result = await this.prisma.remoteControlSession.updateMany({
       where: { id, status: 'requested' },
       data: { status, endReason, endedAt },

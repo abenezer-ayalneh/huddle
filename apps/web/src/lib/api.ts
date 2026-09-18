@@ -335,6 +335,12 @@ export const api = {
       headers: { 'x-participant-token': participantToken },
     }),
 
+  withdrawRemoteControl: (room: string, requestId: string, participantToken: string) =>
+    request<{ status: 'withdrawn' }>(`/rooms/${encodeURIComponent(room)}/remote-control/requests/${encodeURIComponent(requestId)}/withdraw`, {
+      method: 'POST',
+      headers: { 'x-participant-token': participantToken },
+    }),
+
   stopRemoteControl: (room: string, sessionId: string, participantToken: string, timeoutMs?: number) =>
     request<{ status: 'ended'; endedAt: string }>(`/rooms/${encodeURIComponent(room)}/remote-control/${encodeURIComponent(sessionId)}/stop`, {
       method: 'POST',

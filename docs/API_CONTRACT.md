@@ -515,6 +515,18 @@ Only the target Sharer may deny. Consumes the request and completes the audit as
 The Sharer then sends a reliable, addressed `remote-control:denied` UI packet to
 the Controller. The API decision remains authoritative.
 
+### POST /rooms/:room/remote-control/requests/:requestId/withdraw _(Controller)_
+
+Only the requesting Controller may withdraw an unapproved request. It atomically
+consumes the pending request, completes its audit row as `withdrawn`, and frees
+the room for a later request. If the Sharer approved first, this returns the
+normal already-resolved request outcome and does not end the resulting session.
+
+**Response 200:** `{ "status": "withdrawn" }`
+
+The Controller then sends a reliable, addressed `remote-control:withdrawn` UI
+packet to dismiss the Sharer's prompt. The API decision remains authoritative.
+
 ### POST /rooms/:room/remote-control/:sessionId/helper-token _(bootstrap bearer)_
 
 Used only by the native Control Agent. It deliberately does not use a participant
@@ -608,16 +620,16 @@ rejected by browsers and agents. Remote Control startup and helper-token
 redemption require `protocolVersion: 2`; a mismatch returns
 `REMOTE_CONTROL_PROTOCOL_UNSUPPORTED` with an update-required outcome.
 
-| type                               | sender → recipient              | purpose                                                                        |
-| ---------------------------------- | ------------------------------- | ------------------------------------------------------------------------------ |
-| `remote-control:request`           | Controller → Sharer             | carries a server-issued request id to wake consent UI                          |
-| `remote-control:denied`            | Sharer → Controller             | transient denial UX after the API decision                                     |
-| `remote-control:agent-unavailable` | Sharer → Controller             | addressed recovery hint when the Control Agent handoff is not detected         |
-| `remote-control:input`             | Controller → Control Agent      | `{ sessionId, sequence, event }`; transport only, never authority              |
-| `remote-control:clipboard-copy`    | Controller → Control Agent      | `{ sessionId, sequence }`; injects the Sharer's native Copy shortcut           |
-| `remote-control:clipboard-paste`   | Controller → Control Agent      | `{ sessionId, sequence, text }`; writes bounded plain text, then injects Paste |
-| `remote-control:clipboard-update`  | Control Agent → Controller      | `{ sessionId, revision, text }`; recipient-targeted Sharer plain-text update   |
-| `remote-control:stop-intent`       | Sharer/Controller → peers/Agent | `{ sessionId }`; immediate local safety teardown, never new authority          |
+| type                              | sender → recipient              | purpose                                                                        |
+| --------------------------------- | ------------------------------- | ------------------------------------------------------------------------------ |
+| `remote-control:request`          | Controller → Sharer             | carries a server-issued request id to wake consent UI                          |
+| `remote-control:denied`           | Sharer → Controller             | transient denial UX after the API decision                                     |
+| `remote-control:withdrawn`        | Controller → Sharer             | transient dismissal after the API withdraws the pending request                |
+| `remote-control:input`            | Controller → Control Agent      | `{ sessionId, sequence, event }`; transport only, never authority              |
+| `remote-control:clipboard-copy`   | Controller → Control Agent      | `{ sessionId, sequence }`; injects the Sharer's native Copy shortcut           |
+| `remote-control:clipboard-paste`  | Controller → Control Agent      | `{ sessionId, sequence, text }`; writes bounded plain text, then injects Paste |
+| `remote-control:clipboard-update` | Control Agent → Controller      | `{ sessionId, revision, text }`; recipient-targeted Sharer plain-text update   |
+| `remote-control:stop-intent`      | Sharer/Controller → peers/Agent | `{ sessionId }`; immediate local safety teardown, never new authority          |
 
 Input events are bounded, normalized mouse `move/down/up/scroll`, keyboard `key`
 down/up, and `release-all`. Pointer coordinates are in `[0,1]` of the published
@@ -632,13 +644,6 @@ are rejected whole. There is no file, audio, rich-content, or binary-content
 message in protocol v2. `stop-intent` is accepted only for the active session
 from its exact Sharer or Controller; agents additionally validate the
 SFU-attested grant before acting.
-
-`remote-control:agent-unavailable` is reliable and carries only the awaiting
-session's `sessionId`. Browsers send it only from the exact Sharer to the exact
-Controller after a best-effort custom-scheme handoff timeout. A receiving
-browser accepts it only when the sender identity, Controller identity, session
-id, and `awaiting-agent` status all match current room metadata; it is a
-transient recovery hint, not proof that the agent is absent.
 
 ### GET /recordings/mine _(session)_
 

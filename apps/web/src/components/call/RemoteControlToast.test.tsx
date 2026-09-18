@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import RemoteControlToast from './RemoteControlToast';
 
@@ -26,6 +26,7 @@ describe('RemoteControlToast mobile safety', () => {
         recordingActive={false}
         onApprove={vi.fn()}
         onDeny={vi.fn()}
+        onWithdraw={vi.fn()}
         onDismiss={vi.fn()}
         canApprove={false}
       />,
@@ -34,5 +35,34 @@ describe('RemoteControlToast mobile safety', () => {
     expect(screen.getByRole('button', { name: 'Deny' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Approve' })).toBeNull();
     expect(screen.getByRole('dialog').textContent).toContain('requires a desktop browser');
+  });
+
+  it('lets the Controller withdraw an outgoing request', () => {
+    const onWithdraw = vi.fn();
+    render(
+      <RemoteControlToast
+        incoming={null}
+        outgoing={{
+          requestId: 'request-id',
+          room: 'design-review',
+          sharerIdentity: 'sharer',
+          sharerName: 'Ada',
+          controllerIdentity: 'controller',
+          controllerName: 'Bo',
+          requestedAt: '2026-09-02T10:00:00.000Z',
+          expiresAt: '2026-09-02T10:00:30.000Z',
+          expiresInMs: 25_000,
+        }}
+        notice={null}
+        recordingActive={false}
+        onApprove={vi.fn()}
+        onDeny={vi.fn()}
+        onWithdraw={onWithdraw}
+        onDismiss={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(onWithdraw).toHaveBeenCalledTimes(1);
   });
 });

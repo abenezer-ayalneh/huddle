@@ -258,6 +258,23 @@ export class RemoteControlService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  async withdraw(room: string, requestId: string, participant: CallParticipant): Promise<{ status: 'withdrawn' }> {
+    const pending = await this.requirePending(room, requestId);
+    if (participant.identity !== pending.controllerIdentity) {
+      throw this.notAllowed('Only the requesting Controller may withdraw Remote Control');
+    }
+    const consumed = await this.state.consumePending(room, requestId);
+    if (!consumed) throw this.notFound('Remote Control request was already resolved or expired');
+
+    try {
+      const withdrawn = await this.audit.withdraw(requestId, new Date());
+      if (!withdrawn) throw this.notFound('Remote Control request was already resolved');
+      return { status: 'withdrawn' };
+    } finally {
+      await this.state.releasePending(room, requestId);
+    }
+  }
+
   async redeemHelperToken(
     room: string,
     sessionId: string,

@@ -2,17 +2,10 @@ import { describe, expect, it } from 'vitest';
 import sharedFixtures from '../../../../fixtures/control-protocol-v1.json';
 import { decodeRemoteControlMessage, encodeRemoteControlMessage } from './controlProtocol';
 
-describe('remote-control:agent-unavailable', () => {
-  it('round-trips a bounded session notice', () => {
-    const message = { v: 2 as const, type: 'remote-control:agent-unavailable' as const, sessionId: 'session-123' };
+describe('Remote Control protocol bounds', () => {
+  it('round-trips a bounded withdrawal notice', () => {
+    const message = { v: 2 as const, type: 'remote-control:withdrawn' as const, requestId: 'request-123' };
     expect(decodeRemoteControlMessage(encodeRemoteControlMessage(message))).toEqual(message);
-  });
-
-  it('rejects extra fields and malformed session ids', () => {
-    const extra = new TextEncoder().encode(JSON.stringify({ v: 2, type: 'remote-control:agent-unavailable', sessionId: 'session-123', reason: 'missing' }));
-    const empty = new TextEncoder().encode(JSON.stringify({ v: 2, type: 'remote-control:agent-unavailable', sessionId: '' }));
-    expect(decodeRemoteControlMessage(extra)).toBeNull();
-    expect(decodeRemoteControlMessage(empty)).toBeNull();
   });
 
   it('rejects packets over the shared data-message budget', () => {

@@ -28,7 +28,7 @@ export type HelperBootstrap = {
   expiresAt: string;
 };
 
-type Action = 'request' | 'approve' | 'deny' | 'stop' | 'renew' | 'reopen';
+type Action = 'request' | 'approve' | 'deny' | 'withdraw' | 'stop' | 'renew' | 'reopen';
 
 const NOTICE_MS = 5_000;
 const REQUEST_RECOVERY_POLL_MS = 1_000;
@@ -59,11 +59,13 @@ function domainOutcome(code: string, action: Action): string | null {
     case 'REMOTE_CONTROL_NOT_ALLOWED':
       return action === 'approve' || action === 'deny'
         ? 'Only the requested Sharer can respond to this Remote Control request.'
-        : action === 'renew'
-          ? 'Only the Sharer can reconfirm Remote Control.'
-          : action === 'reopen'
-            ? 'Only the Sharer can reopen the Control Agent.'
-            : 'Only the Sharer or Controller can stop this Remote Control session.';
+        : action === 'withdraw'
+          ? 'Only the requesting Controller can withdraw this Remote Control request.'
+          : action === 'renew'
+            ? 'Only the Sharer can reconfirm Remote Control.'
+            : action === 'reopen'
+              ? 'Only the Sharer can reopen the Control Agent.'
+              : 'Only the Sharer or Controller can stop this Remote Control session.';
     case 'REMOTE_CONTROL_PRESENT_ACTIVE':
       return 'Remote Control cannot start while someone is presenting.';
     case 'REMOTE_CONTROL_RENEWAL_REQUIRED':
@@ -109,7 +111,6 @@ export function useRemoteControl({ room, participantToken, onTerminalStop }: { r
   const verificationRef = useRef(0);
   const sequenceRef = useRef(0);
   const clipboardRevisionRef = useRef(0);
-  const unavailableNoticeSessionRef = useRef<string | null>(null);
 
   const showNotice = useCallback((next: RemoteControlNotice) => {
     setNotice(next);
@@ -201,14 +202,12 @@ export function useRemoteControl({ room, participantToken, onTerminalStop }: { r
       }
 
       if (
-        message.type === 'remote-control:agent-unavailable' &&
-        session &&
-        iAmController &&
-        session.status === 'awaiting-agent' &&
-        message.sessionId === session.sessionId &&
-        participant.identity === session.sharerIdentity
+        message.type === 'remote-control:withdrawn' &&
+        incomingRequest &&
+        message.requestId === incomingRequest.requestId &&
+        participant.identity === incomingRequest.controllerIdentity
       ) {
-        showNotice({ tone: 'info', message: 'The Sharer may need to install the Control Agent before Remote Control can start.' });
+        setIncomingRequest(null);
         return;
       }
 
@@ -244,7 +243,7 @@ export function useRemoteControl({ room, participantToken, onTerminalStop }: { r
       mounted = false;
       lkRoom.off(RoomEvent.DataReceived, handleData);
     };
-  }, [iAmController, lkRoom, localIdentity, outgoingRequest, participantToken, receiveClipboardUpdate, room, session, showNotice]);
+  }, [iAmController, incomingRequest, lkRoom, localIdentity, outgoingRequest, participantToken, receiveClipboardUpdate, room, session, showNotice]);
 
   // The addressed LiveKit message above remains the fast path. Polling only
   // while there is no Remote Control state gives the intended Sharer a bounded
@@ -446,21 +445,6 @@ export function useRemoteControl({ room, participantToken, onTerminalStop }: { r
     }
   }, [handleActionError, iAmSharer, participantToken, room, session]);
 
-  const notifyAgentUnavailable = useCallback(() => {
-    const sessionId = session?.sessionId;
-    const controllerIdentity = session?.controllerIdentity;
-    if (!sessionId || !controllerIdentity || !iAmSharer || session?.status !== 'awaiting-agent' || unavailableNoticeSessionRef.current === sessionId) return;
-    unavailableNoticeSessionRef.current = sessionId;
-    void sendRemoteControlMessage(localParticipant, [controllerIdentity], {
-      v: 2,
-      type: 'remote-control:agent-unavailable',
-      sessionId,
-    }).catch(() => {
-      // Recovery guidance is best-effort and must not surface a transport fault
-      // over the Sharer's local download path.
-    });
-  }, [iAmSharer, localParticipant, session?.controllerIdentity, session?.sessionId, session?.status]);
-
   const deny = useCallback(async () => {
     if (!incomingRequest || incomingRequest.sharerIdentity !== localIdentity) return;
     const denied = incomingRequest;
@@ -484,6 +468,31 @@ export function useRemoteControl({ room, participantToken, onTerminalStop }: { r
       setBusy(null);
     }
   }, [handleActionError, incomingRequest, localIdentity, localParticipant, participantToken, room]);
+
+  const withdraw = useCallback(async () => {
+    if (!outgoingRequest || outgoingRequest.controllerIdentity !== localIdentity) return;
+    setBusy('withdraw');
+    try {
+      await api.withdrawRemoteControl(room, outgoingRequest.requestId, participantToken);
+      setOutgoingRequest(null);
+      showNotice({ tone: 'info', message: 'Remote Control request withdrawn.' });
+      try {
+        await sendRemoteControlMessage(localParticipant, [outgoingRequest.sharerIdentity], {
+          v: 2,
+          type: 'remote-control:withdrawn',
+          requestId: outgoingRequest.requestId,
+        });
+      } catch {
+        // The API has already withdrawn the request. The Sharer's prompt will
+        // expire safely if this best-effort UI update is missed.
+      }
+    } catch (error) {
+      if (isFaultError(error) && error.code === 'REMOTE_CONTROL_NOT_FOUND') setOutgoingRequest(null);
+      handleActionError(error, 'withdraw');
+    } finally {
+      setBusy(null);
+    }
+  }, [handleActionError, localIdentity, localParticipant, outgoingRequest, participantToken, room, showNotice]);
 
   const stop = useCallback(async () => {
     if (!session || (!iAmSharer && !iAmController)) return;
@@ -642,8 +651,8 @@ export function useRemoteControl({ room, participantToken, onTerminalStop }: { r
     stopping: !!session && stoppingSessionId === session.sessionId,
     requestControl,
     approve,
+    withdraw,
     reopenAgent,
-    notifyAgentUnavailable,
     deny,
     stop,
     renew,

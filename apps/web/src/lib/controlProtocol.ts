@@ -45,7 +45,7 @@ export type RemoteControlInputEvent =
 export type RemoteControlMessage =
   | { v: 2; type: 'remote-control:request'; requestId: string }
   | { v: 2; type: 'remote-control:denied'; requestId: string }
-  | { v: 2; type: 'remote-control:agent-unavailable'; sessionId: string }
+  | { v: 2; type: 'remote-control:withdrawn'; requestId: string }
   | { v: 2; type: 'remote-control:stop-intent'; sessionId: string }
   | { v: 2; type: 'remote-control:input'; sessionId: string; sequence: number; event: RemoteControlInputEvent }
   | { v: 2; type: 'remote-control:clipboard-copy'; sessionId: string; sequence: number }
@@ -158,9 +158,9 @@ export function decodeRemoteControlMessage(data: Uint8Array): RemoteControlMessa
     switch (value.type) {
       case 'remote-control:request':
       case 'remote-control:denied':
+      case 'remote-control:withdrawn':
         if (!hasOnlyKeys(value, ['v', 'type', 'requestId']) || !isBoundedString(value.requestId)) return null;
         return { v: 2, type: value.type, requestId: value.requestId };
-      case 'remote-control:agent-unavailable':
       case 'remote-control:stop-intent':
         if (!hasOnlyKeys(value, ['v', 'type', 'sessionId']) || !isBoundedString(value.sessionId)) return null;
         return { v: 2, type: value.type, sessionId: value.sessionId };

@@ -54,6 +54,13 @@ export class RemoteControlController {
     return this.remoteControl.deny(room, requestId, participant);
   }
 
+  @UseGuards(ParticipantGuard)
+  @Post('requests/:requestId/withdraw')
+  @HttpCode(200)
+  async withdraw(@Param('room') room: string, @Param('requestId') requestId: string, @Participant() participant: CallParticipant) {
+    return this.remoteControl.withdraw(room, requestId, participant);
+  }
+
   @Post(':sessionId/helper-token')
   @HttpCode(200)
   @BlockDuringMaintenance()

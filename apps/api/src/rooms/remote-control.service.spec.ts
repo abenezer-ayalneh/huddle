@@ -109,6 +109,7 @@ describe('RemoteControlService', () => {
       findById: jest.fn(),
       activate: jest.fn(),
       deny: jest.fn(),
+      withdraw: jest.fn(),
       updateRenewal: jest.fn().mockResolvedValue(true),
       endActive: jest.fn().mockResolvedValue(true),
       findActiveByRoom: jest.fn(),
@@ -240,6 +241,29 @@ describe('RemoteControlService', () => {
     await expect(service.getPendingRequest(room.slug, sharer)).resolves.toEqual({ request: null });
     expect(state.releasePending).toHaveBeenCalledWith(room.slug, 'request-id');
     expect(audit.expireRequest).toHaveBeenCalledWith('request-id', expect.any(Date));
+  });
+
+  it('lets the requesting Controller atomically withdraw a pending request', async () => {
+    const pending = pendingRequest();
+    state.getPending.mockResolvedValue(pending);
+    state.consumePending.mockResolvedValue(pending);
+    audit.withdraw.mockResolvedValue(true);
+
+    await expect(service.withdraw(room.slug, pending.requestId, controller)).resolves.toEqual({ status: 'withdrawn' });
+
+    expect(state.consumePending).toHaveBeenCalledWith(room.slug, pending.requestId);
+    expect(audit.withdraw).toHaveBeenCalledWith(pending.requestId, expect.any(Date));
+    expect(state.releasePending).toHaveBeenCalledWith(room.slug, pending.requestId);
+  });
+
+  it('does not let the Sharer withdraw the Controller request', async () => {
+    const pending = pendingRequest();
+    state.getPending.mockResolvedValue(pending);
+
+    await expect(service.withdraw(room.slug, pending.requestId, sharer)).rejects.toThrow(ForbiddenException);
+
+    expect(state.consumePending).not.toHaveBeenCalled();
+    expect(audit.withdraw).not.toHaveBeenCalled();
   });
 
   it('does not let a bystander stop the active grant', async () => {

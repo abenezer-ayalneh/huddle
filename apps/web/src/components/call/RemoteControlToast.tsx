@@ -12,6 +12,7 @@ export default function RemoteControlToast({
   recordingActive,
   onApprove,
   onDeny,
+  onWithdraw,
   onDismiss,
   canApprove = true,
 }: {
@@ -21,6 +22,7 @@ export default function RemoteControlToast({
   recordingActive: boolean;
   onApprove: () => void;
   onDeny: () => void;
+  onWithdraw: () => void;
   onDismiss: () => void;
   canApprove?: boolean;
 }) {
@@ -74,9 +76,14 @@ export default function RemoteControlToast({
   }
   if (outgoing)
     return (
-      <div role="status" className="signal-call-notice-pill pointer-events-auto rounded-full bg-black/75 px-4 py-2 text-sm text-white/85 ring-1 ring-cyan/35">
-        <LoadingSpinner aria-hidden="true" className="mr-2 inline h-4 w-4" />
-        Waiting for {outgoing.sharerName} to approve Remote Control…
+      <div className="signal-call-notice-pill pointer-events-auto flex items-center gap-2 rounded-full bg-black/75 px-4 py-2 text-sm text-white/85 ring-1 ring-cyan/35">
+        <span role="status">
+          <LoadingSpinner aria-hidden="true" className="mr-2 inline h-4 w-4" />
+          Waiting for {outgoing.sharerName} to approve Remote Control…
+        </span>
+        <button type="button" onClick={onWithdraw} className="rounded-md px-1.5 py-0.5 text-xs text-white/65 hover:bg-white/10 hover:text-white">
+          Cancel
+        </button>
       </div>
     );
   if (!notice) return null;
