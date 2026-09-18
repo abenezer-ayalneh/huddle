@@ -45,16 +45,35 @@ use the beta packaging commands below and publish the DMG with its checksum.
 ./apps/control-agent/scripts/publish-free-beta.sh
 ```
 
-The first command creates an arm64 DMG and an adjacent SHA-256 checksum; the
-second publishes them to the permanent `control-agent-free-beta` GitHub
-prerelease. A free GitHub account with write access is enough, but it must be
-authenticated locally first.
+The first command creates an arm64 DMG and an adjacent SHA-256 checksum. The
+second publishes an immutable versioned DMG and advances the permanent
+`control-agent-free-beta` GitHub prerelease with the current DMG, checksum, and
+signed appcast. A free GitHub account with write access is enough, but it must
+be authenticated locally first.
 
-This path is unsigned and unnotarized.
+This path is ad-hoc signed and unnotarized.
 macOS will show a warning on first launch; after verifying the checksum from the
 same GitHub release, the tester must explicitly choose **Open Anyway** in
 **System Settings → Privacy & Security**. It is a testing/public-beta path only,
-and newer versions are installed manually from the Downloads page.
+and is not a substitute for Developer ID signing or notarization.
+
+It does have an optional updater. Before the first updater-enabled build, create
+the local Sparkle key once:
+
+```bash
+./apps/control-agent/scripts/configure-free-beta-updater.sh
+```
+
+The private key remains in the publisher's login Keychain. The built app embeds
+its public key; publication produces an Ed25519-signed appcast that points only
+to the immutable versioned DMG. Automatic updates remain off by default and are
+paused while Remote Control is active. Older beta builds without a feed or
+public key require one manual install of an updater-enabled beta.
+
+For every public rollout, follow the
+[macOS Control Agent release runbook](../../docs/RUNBOOK_MACOS_CONTROL_AGENT_RELEASE.md).
+It verifies the deployed appcast and immutable archive rather than relying on
+local packaging output alone.
 
 ### Regenerate the app icon
 

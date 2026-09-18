@@ -1139,7 +1139,7 @@ struct AgentView: View {
                             .foregroundStyle(HuddleTheme.muted)
                     }
                 } else {
-                    Text("This build has no update channel. Download a newer public beta manually when one is available.")
+                    Text("This beta is not updater-enabled. Install the latest public beta manually once to enable in-app updates.")
                         .font(.caption)
                         .foregroundStyle(HuddleTheme.muted)
                 }

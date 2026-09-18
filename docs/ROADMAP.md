@@ -301,7 +301,8 @@ Phase 10 authority boundary.
 - [x] Sharer-only launch recovery: bootstrap rotation, full-link paste fallback,
       explicit origin trust, permission preparation, and display selection.
 - [x] No-cost Apple-Silicon DMG packaging, checksum publication script, and an
-      explicitly unnotarized Downloads-page default.
+      explicitly unnotarized Downloads-page default with an opt-in,
+      Ed25519-signed Sparkle updater that points to immutable DMGs.
 - [x] Publish the first no-cost Apple-Silicon beta to the public GitHub release
       channel with its SHA-256 checksum.
 - [ ] Verify the recorded public release from GitHub before relying on this

@@ -400,13 +400,21 @@ once per minute.
 Publish the Apple-Silicon beta from an Apple-Silicon Mac with:
 
 ```bash
+./apps/control-agent/scripts/configure-free-beta-updater.sh # once, before the first updater-enabled build
 ./apps/control-agent/scripts/build-free-beta.sh
 ./apps/control-agent/scripts/publish-free-beta.sh
 ```
 
 Publish the GitHub release before deploying a page change, so the direct
-download link never points at a missing asset. The beta is unsigned and
+download link never points at a missing asset. The beta is ad-hoc signed and
 unnotarized; retain its Gatekeeper warning and publish its SHA-256 checksum.
+The local Sparkle private key remains in the publisher's login Keychain;
+publication embeds its public key into the app and uploads a signed appcast
+whose archive is an immutable versioned DMG. Existing builds without that
+embedded updater configuration require one manual transition install.
+Follow [the macOS Control Agent release runbook](./RUNBOOK_MACOS_CONTROL_AGENT_RELEASE.md)
+for the release preflight, remote appcast checks, physical update test, and
+recovery procedure.
 
 ## 10. Verify
 
