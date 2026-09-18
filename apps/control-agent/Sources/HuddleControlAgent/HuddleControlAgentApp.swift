@@ -877,7 +877,7 @@ struct AgentView: View {
         }
         .frame(minWidth: 560, minHeight: 680)
         .onAppear { model.refreshPermissions() }
-        .onChange(of: scenePhase) { _, phase in
+        .onChange(of: scenePhase) { phase in
             // System Settings can change TCC while this window is inactive.
             // Re-read both APIs whenever the app becomes active so the UI
             // represents the currently running app, not its launch snapshot.
