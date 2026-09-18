@@ -4,7 +4,7 @@ import { useRoomContext } from '@livekit/components-react';
 import { RoomEvent, type RemoteParticipant } from 'livekit-client';
 import { useEffect, useRef } from 'react';
 import { isControlAgentParticipant } from '@/lib/controlProtocol';
-import { playCallDing } from './callSounds';
+import { playRoomJoinedSound } from './callSounds';
 
 /**
  * Announce human participants as they enter a call. Existing participants hear
@@ -18,13 +18,13 @@ export function useParticipantJoinSound(announceLocalJoin = false): void {
   useEffect(() => {
     if (!announceLocalJoin || localJoinAnnounced.current) return;
     localJoinAnnounced.current = true;
-    playCallDing();
+    playRoomJoinedSound();
   }, [announceLocalJoin]);
 
   useEffect(() => {
     function handleParticipantConnected(participant: RemoteParticipant) {
       if (isControlAgentParticipant(participant)) return;
-      playCallDing();
+      playRoomJoinedSound();
     }
 
     room.on(RoomEvent.ParticipantConnected, handleParticipantConnected);

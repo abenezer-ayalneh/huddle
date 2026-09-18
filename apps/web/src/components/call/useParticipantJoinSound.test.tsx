@@ -3,34 +3,17 @@ import { RoomEvent } from 'livekit-client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useParticipantJoinSound } from './useParticipantJoinSound';
 
-const { roomMock, useRoomContextMock, audioContextMock, contextMock, oscillatorMock, gainMock } = vi.hoisted(() => {
-  const oscillator = {
-    type: '',
-    frequency: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
-    connect: vi.fn(),
-    start: vi.fn(),
-    stop: vi.fn(),
-    onended: null as (() => void) | null,
-  };
-  const gain = {
-    gain: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
-    connect: vi.fn(),
-  };
-  const context = {
-    currentTime: 10,
-    destination: {},
-    createOscillator: vi.fn(() => oscillator),
-    createGain: vi.fn(() => gain),
-    resume: vi.fn(() => Promise.resolve()),
-    close: vi.fn(() => Promise.resolve()),
+const { roomMock, useRoomContextMock, audioConstructorMock, audioMock } = vi.hoisted(() => {
+  const audio = {
+    preload: '',
+    volume: 1,
+    play: vi.fn(() => Promise.resolve()),
   };
   return {
     roomMock: { on: vi.fn(), off: vi.fn() },
     useRoomContextMock: vi.fn(),
-    audioContextMock: vi.fn(() => context),
-    contextMock: context,
-    oscillatorMock: oscillator,
-    gainMock: gain,
+    audioConstructorMock: vi.fn(() => audio),
+    audioMock: audio,
   };
 });
 
@@ -45,12 +28,10 @@ function HookHarness({ announceLocalJoin = false }: { announceLocalJoin?: boolea
 
 beforeEach(() => {
   useRoomContextMock.mockReturnValue(roomMock);
-  audioContextMock.mockImplementation(function () {
-    return contextMock;
+  audioConstructorMock.mockImplementation(function () {
+    return audioMock;
   });
-  vi.stubGlobal('AudioContext', audioContextMock);
-  oscillatorMock.connect.mockReturnValue(gainMock);
-  gainMock.connect.mockReturnValue(contextMock.destination);
+  vi.stubGlobal('Audio', audioConstructorMock);
 });
 
 afterEach(() => {
@@ -69,15 +50,16 @@ describe('useParticipantJoinSound', () => {
       handler({ identity: 'guest-1', metadata: '' });
     });
 
-    expect(audioContextMock).toHaveBeenCalledTimes(1);
-    expect(oscillatorMock.start).toHaveBeenCalledTimes(1);
-    expect(oscillatorMock.stop).toHaveBeenCalledWith(10.2);
+    expect(audioConstructorMock).toHaveBeenCalledWith('/sounds/room-joined.mp3');
+    expect(audioMock.preload).toBe('auto');
+    expect(audioMock.volume).toBe(0.45);
+    expect(audioMock.play).toHaveBeenCalledTimes(1);
 
     unmount();
     expect(roomMock.off).toHaveBeenCalledWith(RoomEvent.ParticipantConnected, handler);
   });
 
-  it('plays one cue for an admitted participant when their call connects', async () => {
+  it('plays one cue for the local participant when their call connects', async () => {
     const { rerender } = render(<HookHarness announceLocalJoin />);
 
     await act(async () => {
@@ -85,7 +67,7 @@ describe('useParticipantJoinSound', () => {
     });
     rerender(<HookHarness announceLocalJoin />);
 
-    expect(audioContextMock).toHaveBeenCalledTimes(1);
+    expect(audioConstructorMock).toHaveBeenCalledTimes(1);
   });
 
   it('does not announce a Control Agent connection', async () => {
@@ -97,6 +79,6 @@ describe('useParticipantJoinSound', () => {
       handler({ identity: 'agent-session-2', metadata: JSON.stringify({ role: 'control-agent' }) });
     });
 
-    expect(audioContextMock).not.toHaveBeenCalled();
+    expect(audioConstructorMock).not.toHaveBeenCalled();
   });
 });

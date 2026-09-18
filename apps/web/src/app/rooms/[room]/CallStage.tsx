@@ -201,7 +201,10 @@ export default function CallStage({
               onLeaveClick={() => setShowLeaveDialog(true)}
               onLeaveConfirm={confirmLeave}
               overlay={overlay}
-              announceLocalJoin={initialChoices !== undefined}
+              // LiveKit only emits ParticipantConnected for remote participants.
+              // Every person entering the room therefore needs their own local
+              // cue, including the host who completes the in-stage device check.
+              announceLocalJoin
               isHost={isHost}
               hostKey={hostKey}
               hostWaitingCount={hostWaitingCount}

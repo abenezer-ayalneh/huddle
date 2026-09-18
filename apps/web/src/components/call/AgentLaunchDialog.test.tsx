@@ -52,4 +52,36 @@ describe('AgentLaunchDialog recovery', () => {
     expect(onAgentUnavailable).not.toHaveBeenCalled();
     expect(screen.getByRole('dialog')).toBeTruthy();
   });
+
+  it('cancels the fallback when Windows hands focus to the Control Agent', async () => {
+    const onAgentUnavailable = vi.fn();
+    render(<AgentLaunchDialog bootstrap={bootstrap} onReopen={vi.fn()} onAgentUnavailable={onAgentUnavailable} onDismiss={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: /open agent/i }));
+
+    await act(async () => {
+      window.dispatchEvent(new Event('blur'));
+      await vi.advanceTimersByTimeAsync(3_000);
+    });
+
+    expect(onAgentUnavailable).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    expect(document.querySelector('iframe')).toBeNull();
+  });
+
+  it('launches the freshly rotated link when retrying', async () => {
+    const fresh = { ...bootstrap, code: 'fresh-bootstrap-code' };
+    const onReopen = vi.fn().mockResolvedValue(fresh);
+    render(<AgentLaunchDialog bootstrap={bootstrap} onReopen={onReopen} onAgentUnavailable={vi.fn()} onDismiss={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: /open agent/i }));
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3_000);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /try again/i }));
+    });
+
+    expect(onReopen).toHaveBeenCalledTimes(1);
+    expect(document.querySelector('iframe')?.getAttribute('src')).toContain('code=fresh-bootstrap-code');
+  });
 });

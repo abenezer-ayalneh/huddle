@@ -38,6 +38,7 @@ export default function AgentLaunchDialog({
       frame?.remove();
       document.removeEventListener('visibilitychange', onVisibilityChange);
       window.removeEventListener('pagehide', onPageHide);
+      window.removeEventListener('blur', markHandedOff);
       if (cancelLaunchMonitor.current === cleanupMonitor) cancelLaunchMonitor.current = null;
     };
     const markHandedOff = () => {
@@ -52,12 +53,15 @@ export default function AgentLaunchDialog({
 
     // Only launch after an explicit click. Auto-launching when the dialog
     // mounted could redeem this one-time code in the standard process before
-    // the Sharer copied it into the agent's administrator-mode fallback.
+    // the Sharer copied it into the agent's administrator-mode fallback. A
+    // native protocol handoff can blur the browser without hiding its tab,
+    // which is the normal Windows launch path.
     document.addEventListener('visibilitychange', onVisibilityChange);
     window.addEventListener('pagehide', onPageHide);
+    window.addEventListener('blur', markHandedOff);
     frame = document.createElement('iframe');
     frame.style.display = 'none';
-    frame.src = deepLink;
+    frame.src = link;
     document.body.appendChild(frame);
     timer = window.setTimeout(() => {
       if (!handedOff) {

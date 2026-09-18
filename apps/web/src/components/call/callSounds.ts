@@ -1,6 +1,22 @@
 const DING_DURATION_S = 0.2;
+export const ROOM_JOINED_SOUND_SRC = '/sounds/room-joined.mp3';
 
-/** Play a short, best-effort in-call notification tone. */
+/** Play the generated, short room-joined sound. */
+export function playRoomJoinedSound(): void {
+  if (typeof Audio === 'undefined') return;
+  try {
+    const audio = new Audio(ROOM_JOINED_SOUND_SRC);
+    audio.preload = 'auto';
+    audio.volume = 0.45;
+    void audio.play().catch(() => {
+      // Browser audio may be blocked; the call continues without the cue.
+    });
+  } catch {
+    // Audio unavailable — the call continues without the cue.
+  }
+}
+
+/** Play the existing short waiting-room notification tone. */
 export function playCallDing(): void {
   let ctx: AudioContext | null = null;
   try {
