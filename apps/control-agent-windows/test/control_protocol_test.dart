@@ -6,7 +6,7 @@ import 'package:huddle_control_agent_windows/core/control_protocol.dart';
 
 void main() {
   test(
-      'accepts the shared v1 protocol fixtures used by the browser and macOS agent',
+      'accepts the shared v2 protocol fixtures used by the browser and macOS agent',
       () {
     final file = File('../../fixtures/control-protocol-v1.json');
     final fixtures = (jsonDecode(file.readAsStringSync())
@@ -21,7 +21,7 @@ void main() {
   test('accepts a bounded packet and rejects replay-safe malformed variants',
       () {
     final valid = utf8.encode(jsonEncode({
-      'v': 1,
+      'v': 2,
       'type': 'remote-control:input',
       'sessionId': 'session-1',
       'sequence': 4,
@@ -36,7 +36,7 @@ void main() {
     expect(ControlProtocol.decode(valid)?.sequence, 4);
 
     final extra = utf8.encode(jsonEncode({
-      'v': 1,
+      'v': 2,
       'type': 'remote-control:clipboard-copy',
       'sessionId': 'session-1',
       'sequence': 4,
@@ -49,9 +49,9 @@ void main() {
         isNull);
   });
 
-  test('keeps keyboard packets compatible with the browser v1 schema', () {
+  test('keeps keyboard packets compatible with the browser v2 schema', () {
     final withoutOptionalKey = utf8.encode(jsonEncode({
-      'v': 1,
+      'v': 2,
       'type': 'remote-control:input',
       'sessionId': 'session-1',
       'sequence': 5,
@@ -65,7 +65,7 @@ void main() {
     expect(ControlProtocol.decode(withoutOptionalKey), isNotNull);
 
     final unknownCode = utf8.encode(jsonEncode({
-      'v': 1,
+      'v': 2,
       'type': 'remote-control:input',
       'sessionId': 'session-1',
       'sequence': 6,
