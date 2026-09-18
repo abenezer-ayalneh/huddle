@@ -272,9 +272,10 @@ decisions are in `docs/adr/0024-attended-remote-control-macos-agent.md`.
 - [x] Remote Control UI refinement: participant-scoped Request Control placement,
       non-obscuring room-wide status rail, single captured desktop cursor for the
       Controller, and a Huddle-branded guided Control Agent window/app icon.
-- [x] Swift/SwiftUI macOS Control Agent: permission status, one-time bootstrap,
-      LiveKit join, desktop publish, server-grant validation, input injection,
-      local disconnect/Stop, and companion participant filtering.
+- [x] Swift/SwiftUI macOS Control Agent: permission status/reset/recovery,
+      one-time bootstrap, LiveKit join, desktop publish, server-grant
+      validation, input injection, local disconnect/Stop, and companion
+      participant filtering.
 - [x] Plain-text Clipboard Sharing: explicit approval/reconfirmation disclosure,
       Sharer-only enabled state, native Controller Copy/Paste shortcuts,
       recipient-targeted agent updates, echo suppression, and latest-value

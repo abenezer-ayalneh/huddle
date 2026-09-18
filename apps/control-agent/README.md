@@ -51,13 +51,14 @@ second publishes an immutable versioned DMG and advances the permanent
 signed appcast. A free GitHub account with write access is enough, but it must
 be authenticated locally first.
 
-This path requires a persistent Apple Development or Developer ID application
-identity and is unnotarized. The persistent identity is required so an update
-does not lose the Mac's Screen Recording or Accessibility grant.
-macOS will show a warning on first launch; after verifying the checksum from the
-same GitHub release, the tester must explicitly choose **Open Anyway** in
-**System Settings → Privacy & Security**. It is a testing/public-beta path only,
-and is not a substitute for Developer ID signing or notarization.
+This path deliberately produces an ad-hoc-signed, unnotarized build for every
+release. macOS treats each installed release as a new Screen Recording and
+Accessibility client, so testers must approve those permissions again after
+installing or updating. macOS will show a warning on first launch; after
+verifying the checksum from the same GitHub release, the tester must explicitly
+choose **Open Anyway** in **System Settings → Privacy & Security**. It is a
+testing/public-beta path only, and is not a substitute for Developer ID signing
+or notarization.
 
 It does have an optional updater. Before the first updater-enabled build, create
 the local Sparkle key once:
@@ -102,11 +103,12 @@ security find-identity -v -p codesigning
 CODE_SIGN_IDENTITY='Apple Development: Your Name (TEAMID)' ./apps/control-agent/scripts/build-app.sh
 ```
 
-Use `CODE_SIGN_IDENTITY=-` only when no development certificate is available.
-That ad-hoc fallback changes identity on every build, so macOS can show an older
-Huddle entry as allowed while the new build reports both permissions missing.
-After switching identities, reset only Huddle's old grants and grant them again
-to the rebuilt app:
+Use `CODE_SIGN_IDENTITY=-` only when a fresh ad-hoc identity is intended. That
+signature changes on every build, so macOS can show an older Huddle entry as
+allowed while the new build reports both permissions missing. The no-cost beta
+release script intentionally forces this mode; grant the permissions to every
+installed beta release. After switching identities, reset only Huddle's old
+grants and grant them again to the rebuilt app:
 
 ```bash
 tccutil reset ScreenCapture com.huddle.control-agent
@@ -123,6 +125,12 @@ Sharer where to grant it manually. macOS may require quitting and reopening the
 agent before a newly granted Screen Recording permission takes effect. Return to
 the agent after granting each permission; its badges refresh automatically and
 the next click continues with only a permission that is still missing.
+
+For a clean local test state, **Reset permissions…** in the agent runs the
+scoped equivalent of `tccutil reset All com.huddle.control-agent`. It is blocked
+while Remote Control is active, asks for confirmation, and resets only this
+agent's TCC decisions. Quit and reopen the agent before granting Screen Recording
+and Accessibility again.
 
 During an active, approved Remote Control session, the agent
 observes and relays only transferable plain-text clipboard changes to the exact

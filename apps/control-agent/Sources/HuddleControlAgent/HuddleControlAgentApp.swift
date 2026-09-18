@@ -154,6 +154,25 @@ final class AgentModel: ObservableObject {
         }
     }
 
+    func resetPermissions() {
+        guard !screenPublished, !switchingDisplay else {
+            error = "Stop Remote Control before resetting this Mac's privacy permissions."
+            return
+        }
+
+        if let message = MacOSTCCPermissionReset.perform() {
+            error = "Could not reset Huddle Control Agent permissions. \(message)"
+            return
+        }
+
+        // TCC can cache the running process's old decision. Keep the UI safe
+        // until the app is relaunched and macOS has applied the reset.
+        screenPermission = false
+        accessibilityPermission = false
+        error = nil
+        status = "Permissions reset. Quit and reopen Huddle Control Agent, then prepare it again."
+    }
+
     private let permissionRuntime = MacOSPermissionRuntime()
 
     private func apply(_ snapshot: PermissionSnapshot) {
@@ -183,6 +202,30 @@ private final class MacOSPermissionRuntime: PermissionPreparationRuntime {
 
     func openScreenRecordingSettings() -> Bool {
         NSWorkspace.shared.open(PermissionSettingsFallback.screenRecordingURL)
+    }
+}
+
+private enum MacOSTCCPermissionReset {
+    static func perform() -> String? {
+        let process = Process()
+        let errorPipe = Pipe()
+        process.executableURL = URL(fileURLWithPath: PermissionReset.executablePath)
+        process.arguments = PermissionReset.arguments
+        process.standardError = errorPipe
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+        } catch {
+            return error.localizedDescription
+        }
+
+        guard process.terminationStatus != 0 else { return nil }
+        let details = String(
+            data: errorPipe.fileHandleForReading.readDataToEndOfFile(),
+            encoding: .utf8,
+        )?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return details?.isEmpty == false ? details : "tccutil exited with status \(process.terminationStatus)."
     }
 }
 
@@ -870,6 +913,7 @@ private struct PermissionBadge: View {
 struct AgentView: View {
     @ObservedObject var model: AgentModel
     @State private var helpExpanded = false
+    @State private var permissionResetConfirmationPresented = false
     @Environment(\.scenePhase) private var scenePhase
 
     private var permissionsReady: Bool {
@@ -913,6 +957,18 @@ struct AgentView: View {
             // Re-read both APIs whenever the app becomes active so the UI
             // represents the currently running app, not its launch snapshot.
             if phase == .active { model.refreshPermissions() }
+        }
+        .confirmationDialog(
+            "Reset privacy permissions?",
+            isPresented: $permissionResetConfirmationPresented,
+            titleVisibility: .visible,
+        ) {
+            Button("Reset all Huddle permissions", role: .destructive) {
+                model.resetPermissions()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This runs tccutil reset All com.huddle.control-agent. It resets only this app's macOS privacy decisions. Quit and reopen Huddle Control Agent before granting Screen Recording and Accessibility again.")
         }
     }
 
@@ -1004,6 +1060,10 @@ struct AgentView: View {
                         .buttonStyle(HuddleButtonStyle(tone: permissionsReady ? .secondary : .primary))
                     Button("Refresh") { model.refreshPermissions() }
                         .buttonStyle(HuddleButtonStyle(tone: .secondary))
+                    Button("Reset permissions…") { permissionResetConfirmationPresented = true }
+                        .buttonStyle(HuddleButtonStyle(tone: .danger))
+                        .disabled(model.screenPublished || model.switchingDisplay)
+                        .help("Reset all macOS privacy decisions for Huddle Control Agent")
                 }
             }
         }

@@ -68,6 +68,9 @@ mistaken for proof of something it only proposes or records historically.
   authority, shutdown, static-page override, and recovery.
 - [Release Windows Control Agent beta](./RUNBOOK_WINDOWS_CONTROL_AGENT_RELEASE.md)
   — physical acceptance, unsigned installers, checksums, and release path.
+- [Release macOS Control Agent](./RUNBOOK_MACOS_CONTROL_AGENT_RELEASE.md)
+  — no-cost and Developer ID release lanes, Sparkle feed verification, immutable
+  artifacts, and physical update acceptance.
 
 ## Audit baseline: 2026-09-08
 

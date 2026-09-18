@@ -140,7 +140,7 @@ jobs:
 
       - name: Create architecture-specific signed Sparkle appcasts
         env:
-          RELEASE_URL: https://github.com/${{ github.repository }}/releases/download/${{ steps.release.outputs.tag }}
+          RELEASE_URL: https://github.com/${{ github.repository }}/releases/download/${{ steps.release.outputs.tag }}/
         shell: bash
         run: |
           set -euo pipefail

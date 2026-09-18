@@ -173,6 +173,11 @@ final class CoreTests: XCTestCase {
         )
     }
 
+    func testPermissionResetIsScopedToTheAgentBundle() {
+        XCTAssertEqual(PermissionReset.executablePath, "/usr/bin/tccutil")
+        XCTAssertEqual(PermissionReset.arguments, ["reset", "All", "com.huddle.control-agent"])
+    }
+
     func testSharedControlProtocolV2Fixtures() throws {
         let fixtureURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

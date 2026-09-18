@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Publish only the output made by build-free-beta.sh. This remains an
-# unnotarized public beta, but its persistent app-signing identity preserves
-# macOS privacy grants and its immutable updater archive/appcast are signed
-# with the local Sparkle Ed25519 key in the login Keychain.
+# Publish only the output made by build-free-beta.sh. This remains an ad-hoc,
+# unnotarized public beta, but its immutable updater archive and appcast are
+# signed with the local Sparkle Ed25519 key in the login Keychain.
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPOSITORY="${GITHUB_REPOSITORY:-abenezer-ayalneh/huddle}"
 TAG="${CONTROL_AGENT_FREE_BETA_TAG:-control-agent-free-beta}"
@@ -56,7 +55,7 @@ if gh release view "$VERSION_TAG" --repo "$REPOSITORY" >/dev/null 2>&1; then
 else
   gh release create "$VERSION_TAG" "$STAGING/$ASSET_NAME" "$STAGING/$CHECKSUM_NAME" --repo "$REPOSITORY" --target main --prerelease \
     --title "Huddle Control Agent $VERSION ($BUILD_VERSION) · Apple Silicon no-cost beta" \
-    --notes 'Persistent-identity signed and unnotarized Apple-Silicon beta. Verify the SHA-256 checksum, then use macOS Privacy & Security → Open Anyway. The archive is an immutable source for the Ed25519-signed Sparkle update channel.'
+    --notes 'Ad-hoc signed and unnotarized Apple-Silicon beta. Verify the SHA-256 checksum, then use macOS Privacy & Security → Open Anyway. Grant Screen Recording and Accessibility again for this installed release. The archive is an immutable source for the Ed25519-signed Sparkle update channel.'
 fi
 
 # The permanent appcast is a one-item pointer to the current immutable release.
@@ -72,11 +71,11 @@ rm -f "$APPCAST"
 if gh release view "$TAG" --repo "$REPOSITORY" >/dev/null 2>&1; then
   gh release upload "$TAG" "$DMG" "$CHECKSUM" "$APPCAST" --repo "$REPOSITORY" --clobber
   gh release edit "$TAG" --repo "$REPOSITORY" --title 'Huddle Control Agent · Apple Silicon no-cost beta' \
-    --notes 'Persistent-identity signed and unnotarized Apple-Silicon beta. Verify the attached SHA-256 checksum before opening the DMG, then use macOS Privacy & Security → Open Anyway. Installed versions with the Sparkle updater receive only immutable Ed25519-signed archives from this channel.'
+    --notes 'Ad-hoc signed and unnotarized Apple-Silicon beta. Verify the attached SHA-256 checksum before opening the DMG, then use macOS Privacy & Security → Open Anyway. Grant Screen Recording and Accessibility again for this installed release. Installed versions with the Sparkle updater receive only immutable Ed25519-signed archives from this channel.'
 else
   gh release create "$TAG" "$DMG" "$CHECKSUM" "$APPCAST" --repo "$REPOSITORY" --target main --prerelease \
     --title 'Huddle Control Agent · Apple Silicon no-cost beta' \
-    --notes 'Persistent-identity signed and unnotarized Apple-Silicon beta. Verify the attached SHA-256 checksum before opening the DMG, then use macOS Privacy & Security → Open Anyway. Installed versions with the Sparkle updater receive only immutable Ed25519-signed archives from this channel.'
+    --notes 'Ad-hoc signed and unnotarized Apple-Silicon beta. Verify the attached SHA-256 checksum before opening the DMG, then use macOS Privacy & Security → Open Anyway. Grant Screen Recording and Accessibility again for this installed release. Installed versions with the Sparkle updater receive only immutable Ed25519-signed archives from this channel.'
 fi
 
 echo "Published https://github.com/$REPOSITORY/releases/tag/$TAG"
