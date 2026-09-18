@@ -33,6 +33,10 @@ unnotarized Gatekeeper warning.
 - The permanent no-cost appcast contains exactly one entry for the current
   immutable archive. Generate it fresh for each rollout; do not merge stale
   feed history that can retain duplicate or malformed archive URLs.
+- Before reporting success, confirm the immutable release has its versioned
+  DMG and checksum, and the permanent channel has its appcast, manual DMG, and
+  checksum. A partial mutable-channel upload leaves Downloads broken even when
+  Sparkle can discover an update.
 - `generate_appcast --download-url-prefix` must end with `/`. Without it,
   Sparkle generates `.../releases/download/Huddle-…dmg` and drops the release
   tag from the archive URL.
@@ -152,7 +156,9 @@ The script publishes or verifies the immutable
 `appcast-arm64.xml`.
 
 **Expected result:** it prints the permanent channel URL. The Downloads page
-uses the permanent DMG; Sparkle uses the immutable versioned DMG.
+uses the permanent DMG; Sparkle uses the immutable versioned DMG. The script
+verifies every required immutable and permanent-channel asset before printing
+success.
 
 **If it fails after creating the versioned release:** never delete or overwrite
 that archive. Complete the remote checks and repair only the mutable channel, or
@@ -237,6 +243,7 @@ archive URL retains the tag and ends in the matching DMG. Its
 | Appcast URL is `.../releases/download/Huddle-…` | Generator prefix lacks its trailing `/`                | Keep the immutable DMG. Regenerate and upload only the signed permanent appcast, then repeat remote verification.                      |
 | Appcast lacks a current archive or signature    | The channel update did not complete                    | Do not direct users to it. Regenerate the appcast from the exact immutable DMG and re-upload it.                                       |
 | Appcast has duplicate or stale archive entries  | An existing feed was merged during generation          | Regenerate a fresh one-entry appcast from the current immutable DMG, upload it to the mutable channel, and repeat remote verification. |
+| Permanent channel lacks its manual DMG          | Partial GitHub asset upload                            | Re-upload the matching DMG to the mutable channel, then repeat remote verification before reporting the rollout.                       |
 | Staged and permanent DMGs have different hashes | A stale manual asset is served                         | Stop rollout claims. Upload the matching DMG and checksum, then repeat remote checks.                                                  |
 | Versioned tag already has different bytes       | Build number was reused                                | Leave it intact, increase `CFBundleVersion`, rebuild, and publish a new tag.                                                           |
 | Key lookup or appcast signing fails             | Login Keychain key unavailable                         | Stop publication and recover the established key. Do not silently rotate it.                                                           |
