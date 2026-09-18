@@ -142,20 +142,51 @@ final class AgentModel: ObservableObject {
     }
 
     func refreshPermissions() {
-        screenPermission = CGPreflightScreenCaptureAccess()
-        accessibilityPermission = AXIsProcessTrusted()
+        apply(permissionRuntime.readPermissionSnapshot())
     }
 
     func requestPermissions() {
-        if !screenPermission { screenPermission = CGRequestScreenCaptureAccess() }
-        if !accessibilityPermission {
-            // The C global is imported as mutable shared state under Swift 6
-            // strict concurrency. This is the documented Accessibility key.
-            accessibilityPermission = AXIsProcessTrustedWithOptions(["AXTrustedCheckOptionPrompt": true] as CFDictionary)
+        let result = PermissionPreparation.perform(using: permissionRuntime)
+        apply(result.snapshot)
+
+        if let message = result.action.recoveryMessage {
+            error = message
         }
-        refreshPermissions()
     }
 
+    private let permissionRuntime = MacOSPermissionRuntime()
+
+    private func apply(_ snapshot: PermissionSnapshot) {
+        screenPermission = snapshot.screenRecordingGranted
+        accessibilityPermission = snapshot.accessibilityGranted
+    }
+}
+
+@MainActor
+private final class MacOSPermissionRuntime: PermissionPreparationRuntime {
+    func readPermissionSnapshot() -> PermissionSnapshot {
+        PermissionSnapshot(
+            screenRecordingGranted: CGPreflightScreenCaptureAccess(),
+            accessibilityGranted: AXIsProcessTrusted(),
+        )
+    }
+
+    func requestScreenRecordingAccess() -> Bool {
+        CGRequestScreenCaptureAccess()
+    }
+
+    func promptForAccessibilityAccess() {
+        // The C global is imported as mutable shared state under Swift 6
+        // strict concurrency. This is the documented Accessibility key.
+        _ = AXIsProcessTrustedWithOptions(["AXTrustedCheckOptionPrompt": true] as CFDictionary)
+    }
+
+    func openScreenRecordingSettings() -> Bool {
+        NSWorkspace.shared.open(PermissionSettingsFallback.screenRecordingURL)
+    }
+}
+
+extension AgentModel {
     func stop() {
         Task { await agent?.stop() }
         agent = nil

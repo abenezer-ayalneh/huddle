@@ -93,7 +93,17 @@ tccutil reset Accessibility com.huddle.control-agent
 ```
 
 The user must grant Screen Recording and Accessibility permissions in macOS
-System Settings. During an active, approved Remote Control session, the agent
+System Settings. **Prepare for Remote Control** rechecks the current app's
+permissions every time it is clicked and requests only one missing permission:
+Screen Recording first, then Accessibility. macOS handles the first-time
+prompts. When Screen Recording was previously denied and macOS cannot prompt
+again, the agent opens its Settings pane instead; if that fails, it tells the
+Sharer where to grant it manually. macOS may require quitting and reopening the
+agent before a newly granted Screen Recording permission takes effect. Return to
+the agent after granting each permission; its badges refresh automatically and
+the next click continues with only a permission that is still missing.
+
+During an active, approved Remote Control session, the agent
 observes and relays only transferable plain-text clipboard changes to the exact
 Controller, accepts Controller text only through the native Paste shortcut, and
 never persists or uploads clipboard contents. It has no rich/binary clipboard,
