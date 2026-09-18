@@ -21,6 +21,7 @@ export default function VideoGrid({
   onRequestControl,
   remoteControlStatus,
   remoteControlInput,
+  suppressLocalPresentation = false,
 }: {
   // When the local participant is the Presenter, they see their own shared
   // track through the protected local-only PresenterPreview below.
@@ -45,6 +46,9 @@ export default function VideoGrid({
   // own row below stage content so it never covers the published desktop.
   remoteControlStatus?: ReactNode;
   remoteControlInput?: ReactNode;
+  // A local Stop may still be reconciling with the browser. Do not resurrect
+  // its preview while the underlying track is being silently retried.
+  suppressLocalPresentation?: boolean;
 }) {
   const tracks = useTracks(
     [
@@ -60,8 +64,8 @@ export default function VideoGrid({
   const screenTrack = useMemo(() => {
     const screenTracks = tracks.filter((t) => t.source === Track.Source.ScreenShare);
     if (remoteControlSession) return screenTracks.find((t) => t.participant.identity === remoteControlSession.agentIdentity) ?? null;
-    return screenTracks.find((t) => !isControlAgentParticipant(t.participant)) ?? null;
-  }, [remoteControlSession, tracks]);
+    return screenTracks.find((t) => !isControlAgentParticipant(t.participant) && (!suppressLocalPresentation || !t.participant.isLocal)) ?? null;
+  }, [remoteControlSession, suppressLocalPresentation, tracks]);
   const cameraTracks = useMemo(() => tracks.filter((t) => t.source === Track.Source.Camera && !isControlAgentParticipant(t.participant)), [tracks]);
 
   // The local camera leaves the grid: with others present it floats as the

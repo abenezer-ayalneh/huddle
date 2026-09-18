@@ -82,6 +82,7 @@ replacement.
   active call. It is not standing room access and is revoked when the call ends
   or the Host removes that Guest.
 - Recording must remain visible to everyone through the Recording Indicator.
+  Stopping hides only the local affordance; confirmed room metadata clears it.
   Local copies have finite retention; optional Google Drive delivery is private
   and separately connected by the Host.
 - Remote Control is attended, room-scoped, identity-bound, and mutually

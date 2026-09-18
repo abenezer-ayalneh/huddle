@@ -187,6 +187,7 @@ export class LivekitService {
     sharerIdentity: string;
     controllerIdentity: string;
     agentIdentity: string;
+    protocolVersion: 2;
   }): Promise<string> {
     const at = new AccessToken(this.apiKey, this.apiSecret, {
       identity: opts.agentIdentity,
@@ -203,6 +204,7 @@ export class LivekitService {
         sharerIdentity: opts.sharerIdentity,
         controllerIdentity: opts.controllerIdentity,
         agentIdentity: opts.agentIdentity,
+        protocolVersion: opts.protocolVersion,
       }),
     });
     at.addGrant({

@@ -6,10 +6,22 @@ import { api, type RecordingSummary } from '@/lib/api';
 import IconButton from '@/components/IconButton';
 import IconLink from '@/components/IconLink';
 
-export default function RecordingControls({ room, hostKey, compact = false }: { room: string; hostKey: string; compact?: boolean }) {
+export default function RecordingControls({
+  room,
+  hostKey,
+  onLeave,
+  compact = false,
+}: {
+  room: string;
+  hostKey: string;
+  onLeave: () => void;
+  compact?: boolean;
+}) {
   const [recordings, setRecordings] = useState<RecordingSummary[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [stopping, setStopping] = useState(false);
+  const [stopFailure, setStopFailure] = useState(false);
 
   const active = recordings.find((r) => r.status === 'starting' || r.status === 'active');
 
@@ -48,31 +60,47 @@ export default function RecordingControls({ room, hostKey, compact = false }: { 
     }
   };
 
-  const stop = async (id: string) => {
+  const stop = async (id: string, retry = false) => {
+    if (stopping && !retry) return;
+    setStopping(true);
     setBusy(true);
     setError(null);
-    try {
-      await api.stopRecording(room, id, hostKey);
-      await refresh();
-    } catch {
-      setError("Couldn't stop recording.");
-    } finally {
-      setBusy(false);
+    setStopFailure(false);
+    const deadline = Date.now() + 10_000;
+    let pause = 250;
+    while (Date.now() < deadline) {
+      try {
+        await api.stopRecording(room, id, hostKey);
+        await refresh();
+        setBusy(false);
+        return;
+      } catch {
+        await new Promise<void>((resolve) => window.setTimeout(resolve, pause));
+        pause = Math.min(pause * 2, 2_000);
+      }
     }
+    setBusy(false);
+    setStopFailure(true);
   };
+
+  useEffect(() => {
+    if (!active && stopping) setStopping(false);
+  }, [active, stopping]);
 
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         {active ? (
-          <IconButton
-            icon={Square}
-            label="Stop recording"
-            size="sm"
-            className="bg-red-500 text-black hover:bg-red-400"
-            disabled={busy}
-            onClick={() => stop(active.id)}
-          />
+          stopping ? null : (
+            <IconButton
+              icon={Square}
+              label="Stop recording"
+              size="sm"
+              className="bg-red-500 text-black hover:bg-red-400"
+              disabled={busy}
+              onClick={() => stop(active.id)}
+            />
+          )
         ) : (
           <IconButton
             icon={Circle}
@@ -93,6 +121,17 @@ export default function RecordingControls({ room, hostKey, compact = false }: { 
       </div>
 
       {error && <p className="text-xs text-red-400">{error}</p>}
+      {stopFailure && active && (
+        <p role="alert" className="text-xs text-amber-200">
+          Recording may still be active.{' '}
+          <button type="button" className="font-semibold underline" onClick={() => void stop(active.id, true)}>
+            Retry
+          </button>{' '}
+          <button type="button" className="font-semibold underline" onClick={onLeave}>
+            Leave
+          </button>
+        </p>
+      )}
 
       {recordings.length > 0 && (
         <ul className="space-y-1.5">

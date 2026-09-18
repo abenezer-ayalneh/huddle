@@ -249,7 +249,7 @@ function CallView({
   const [pinnedIdentity, setPinnedIdentity] = useState<string | null>(null);
 
   const recording = useRecording({ room, token, isHost, hostKey });
-  const remoteControl = useRemoteControl({ room, participantToken: token });
+  const remoteControl = useRemoteControl({ room, participantToken: token, onTerminalStop: onLeaveConfirm });
   const presentation = usePresentation(isHost, !!remoteControl.session);
   const mobileCapabilities = useMobileBrowserCapabilities();
 
@@ -279,7 +279,7 @@ function CallView({
   // hidden in those cases (the room-wide RecordingIndicator still shows state).
   const recordMode: 'request' | 'pending' | 'recording' | undefined = isHost
     ? undefined
-    : recording.iAmRecorder
+    : recording.iAmRecorder && !recording.stopping
       ? 'recording'
       : recording.recordingActive
         ? undefined
@@ -306,6 +306,7 @@ function CallView({
     <>
       <VideoGrid
         iAmPresenting={presentation.iAmPresenting}
+        suppressLocalPresentation={presentation.stopping}
         onStopPresenting={presentation.handleShareClick}
         onStageTrackChange={setStageTrack}
         localName={displayName}
@@ -315,7 +316,7 @@ function CallView({
         isRemoteSharer={remoteControl.iAmSharer}
         onRequestControl={mobileCapabilities.canUseDesktopRemoteControl ? (identity) => void remoteControl.requestControl(identity) : undefined}
         remoteControlStatus={
-          remoteControl.session ? (
+          remoteControl.session && !remoteControl.stopping ? (
             <ErrorBoundary label="Remote control status" fallback={null}>
               <RemoteControlStatus
                 session={remoteControl.session}
@@ -363,7 +364,7 @@ function CallView({
         onRecordClick={recordMode ? onRecordClick : undefined}
         recordBusy={recording.busy}
         remoteControlActive={!!remoteControl.session}
-        presentationSupported={mobileCapabilities.canPresent}
+        presentationSupported={mobileCapabilities.canPresent && !presentation.stopping}
         shortcutsSupported={!mobileCapabilities.isMobileBrowser}
         onPopOut={pipSupported ? () => void (pipActive ? exitPip() : enterPip('manual')) : undefined}
         pipActive={pipActive}
@@ -374,6 +375,20 @@ function CallView({
       <CallNoticeTray>
         <ErrorBoundary label="Call toasts" fallback={null}>
           <RecordingIndicator active={recording.recordingActive} startedAt={recording.recordingStartedAt} />
+          {recording.stopFailure && (
+            <div
+              role="alert"
+              className="flex items-center gap-2 rounded-xl border border-amber-400/40 bg-amber-950/90 px-3 py-2 text-xs text-amber-100 shadow-lg"
+            >
+              <span>Recording may still be active.</span>
+              <button type="button" className="font-semibold underline" onClick={() => void recording.retryStopRecording()}>
+                Retry
+              </button>
+              <button type="button" className="font-semibold underline" onClick={onLeaveClick}>
+                Leave
+              </button>
+            </div>
+          )}
           {recording.recordingActive && recording.recordingId && (
             <RecordingShareConsent
               key={recording.recordingId}

@@ -1,7 +1,7 @@
 import { BlockDuringMaintenance } from '../maintenance/maintenance.guard';
 import { Body, Controller, Get, Header, HttpCode, Param, Post, UseGuards } from '@nestjs/common';
 import { Participant, ParticipantGuard, type CallParticipant } from './participant.guard';
-import { RedeemControlAgentTokenDto, RequestRemoteControlDto } from './dto/remote-control.dto';
+import { RedeemControlAgentTokenDto, RemoteControlProtocolDto, RequestRemoteControlDto } from './dto/remote-control.dto';
 import { RemoteControlService } from './remote-control.service';
 
 // Human Remote Control actions are participant-token-authorized. The helper
@@ -15,7 +15,7 @@ export class RemoteControlController {
   @Post('requests')
   @BlockDuringMaintenance()
   async request(@Param('room') room: string, @Body() dto: RequestRemoteControlDto, @Participant() participant: CallParticipant) {
-    return this.remoteControl.requestControl(room, participant, dto.sharerIdentity);
+    return this.remoteControl.requestControl(room, participant, dto.sharerIdentity, dto.protocolVersion);
   }
 
   // Keep this static route ahead of :requestId so Nest never treats "pending"
@@ -38,8 +38,13 @@ export class RemoteControlController {
   @Post('requests/:requestId/approve')
   @HttpCode(200)
   @BlockDuringMaintenance()
-  async approve(@Param('room') room: string, @Param('requestId') requestId: string, @Participant() participant: CallParticipant) {
-    return this.remoteControl.approve(room, requestId, participant);
+  async approve(
+    @Param('room') room: string,
+    @Param('requestId') requestId: string,
+    @Body() dto: RemoteControlProtocolDto,
+    @Participant() participant: CallParticipant,
+  ) {
+    return this.remoteControl.approve(room, requestId, participant, dto.protocolVersion);
   }
 
   @UseGuards(ParticipantGuard)
@@ -53,7 +58,7 @@ export class RemoteControlController {
   @HttpCode(200)
   @BlockDuringMaintenance()
   async helperToken(@Param('room') room: string, @Param('sessionId') sessionId: string, @Body() dto: RedeemControlAgentTokenDto) {
-    return this.remoteControl.redeemHelperToken(room, sessionId, dto.bootstrapCode);
+    return this.remoteControl.redeemHelperToken(room, sessionId, dto.bootstrapCode, dto.protocolVersion);
   }
 
   @UseGuards(ParticipantGuard)

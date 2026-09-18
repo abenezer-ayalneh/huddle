@@ -110,7 +110,7 @@ describe('useRemoteControl pending recovery', () => {
 
     const handler = roomMock.on.mock.calls.find(([event]) => event === RoomEvent.DataReceived)?.[1];
     expect(handler).toBeTypeOf('function');
-    const packet = encodeRemoteControlMessage({ v: 1, type: 'remote-control:agent-unavailable', sessionId: 'session-123' });
+    const packet = encodeRemoteControlMessage({ v: 2, type: 'remote-control:agent-unavailable', sessionId: 'session-123' });
 
     await act(async () => {
       handler(packet, { identity: 'another-participant' }, undefined, 'huddle:remote-control');

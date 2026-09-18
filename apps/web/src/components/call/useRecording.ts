@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { RECORD_TOPIC, broadcastRecordMessage, decode, sendRecordMessage } from '@/lib/recordProtocol';
 
 export type IncomingRecordRequest = {
+  requestId: string;
   requesterId: string;
   requesterName: string;
 };
@@ -51,8 +52,11 @@ export function useRecording({ room, token, isHost, hostKey }: { room: string; t
   const [outcome, setOutcome] = useState<RecordOutcome | null>(null);
   const [iAmRecorder, setIAmRecorder] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [stopping, setStopping] = useState(false);
+  const [stopFailure, setStopFailure] = useState(false);
 
   const pendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingRequestIdRef = useRef<string | null>(null);
   const outcomeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wasActiveRef = useRef(false);
 
@@ -87,12 +91,16 @@ export function useRecording({ room, token, isHost, hostKey }: { room: string; t
       switch (msg.type) {
         case 'record:request':
           // Only the host acts on requests; ignore our own broadcast echo.
-          if (isHost) setIncoming({ requesterId: msg.requesterId, requesterName: msg.requesterName });
+          if (isHost) setIncoming({ requestId: msg.requestId, requesterId: msg.requesterId, requesterName: msg.requesterName });
+          break;
+        case 'record:cancel':
+          setIncoming((current) => (current?.requestId === msg.requestId && current.requesterId === msg.requesterId ? null : current));
           break;
         case 'record:approve':
           setPhase((prev) => {
-            if (prev !== 'pending') return prev;
+            if (prev !== 'pending' || pendingRequestIdRef.current !== msg.requestId) return prev;
             clearPendingTimer();
+            pendingRequestIdRef.current = null;
             // Approval means the host already started the recording, attributed
             // to us — take ownership so the Stop button shows immediately, even
             // before the room metadata flag propagates.
@@ -103,8 +111,9 @@ export function useRecording({ room, token, isHost, hostKey }: { room: string; t
           break;
         case 'record:deny':
           setPhase((prev) => {
-            if (prev !== 'pending') return prev;
+            if (prev !== 'pending' || pendingRequestIdRef.current !== msg.requestId) return prev;
             clearPendingTimer();
+            pendingRequestIdRef.current = null;
             showOutcome({ kind: 'denied' });
             return 'idle';
           });
@@ -138,16 +147,20 @@ export function useRecording({ room, token, isHost, hostKey }: { room: string; t
 
   // --- Requester (non-host) actions ---
   const requestToRecord = useCallback(async () => {
+    const requestId = crypto.randomUUID();
+    pendingRequestIdRef.current = requestId;
+    setPhase('pending');
     await broadcastRecordMessage(localParticipant, {
       type: 'record:request',
+      requestId,
       requesterId: localParticipant.identity,
       requesterName: localParticipant.name || localParticipant.identity,
     });
-    setPhase('pending');
     clearPendingTimer();
     pendingTimerRef.current = setTimeout(() => {
       setPhase((prev) => {
         if (prev !== 'pending') return prev;
+        pendingRequestIdRef.current = null;
         showOutcome({ kind: 'timed-out' });
         return 'idle';
       });
@@ -156,20 +169,48 @@ export function useRecording({ room, token, isHost, hostKey }: { room: string; t
   }, [localParticipant, showOutcome]);
 
   const cancelRequest = useCallback(() => {
+    const requestId = pendingRequestIdRef.current;
+    pendingRequestIdRef.current = null;
     clearPendingTimer();
     setPhase('idle');
-  }, []);
-
-  const stopRecording = useCallback(async () => {
-    setBusy(true);
-    try {
-      await api.stopRecordingAsParticipant(room, token);
-    } catch {
-      // The host may have stopped it already; metadata will reconcile.
-    } finally {
-      setBusy(false);
+    if (requestId) {
+      void broadcastRecordMessage(localParticipant, {
+        type: 'record:cancel',
+        requestId,
+        requesterId: localParticipant.identity,
+      }).catch(() => undefined);
     }
-  }, [room, token]);
+  }, [localParticipant]);
+
+  const stopRecording = useCallback(
+    async (retry = false) => {
+      if (stopping && !retry) return;
+      // Keep the metadata-backed indicator intact; only the local Stop action
+      // disappears while the authoritative end state catches up.
+      setStopping(true);
+      setStopFailure(false);
+      setBusy(true);
+      const deadline = Date.now() + 10_000;
+      let pause = 250;
+      while (Date.now() < deadline) {
+        try {
+          await api.stopRecordingAsParticipant(room, token, 2_000);
+          setBusy(false);
+          return;
+        } catch {
+          await new Promise<void>((resolve) => window.setTimeout(resolve, pause));
+          pause = Math.min(pause * 2, 2_000);
+        }
+      }
+      setBusy(false);
+      setStopFailure(true);
+    },
+    [room, stopping, token],
+  );
+
+  useEffect(() => {
+    if (!recordingActive && stopping) setStopping(false);
+  }, [recordingActive, stopping]);
 
   // --- Host actions ---
   const approve = useCallback(async () => {
@@ -178,10 +219,10 @@ export function useRecording({ room, token, isHost, hostKey }: { room: string; t
     setIncoming(null);
     try {
       await api.approveRecording(room, target, hostKey);
-      await sendRecordMessage(localParticipant, target, { type: 'record:approve' });
+      await sendRecordMessage(localParticipant, target, { type: 'record:approve', requestId: incoming.requestId });
     } catch {
       // If the grant write failed, tell them no rather than leave a dead button.
-      await sendRecordMessage(localParticipant, target, { type: 'record:deny' });
+      await sendRecordMessage(localParticipant, target, { type: 'record:deny', requestId: incoming.requestId });
     }
   }, [incoming, hostKey, room, localParticipant]);
 
@@ -189,7 +230,7 @@ export function useRecording({ room, token, isHost, hostKey }: { room: string; t
     if (!incoming) return;
     const target = incoming.requesterId;
     setIncoming(null);
-    await sendRecordMessage(localParticipant, target, { type: 'record:deny' });
+    await sendRecordMessage(localParticipant, target, { type: 'record:deny', requestId: incoming.requestId });
   }, [incoming, localParticipant]);
 
   return {
@@ -200,6 +241,8 @@ export function useRecording({ room, token, isHost, hostKey }: { room: string; t
     iAmRecorder,
     phase,
     busy,
+    stopping,
+    stopFailure,
     // Host-side
     incoming,
     approve,
@@ -208,6 +251,7 @@ export function useRecording({ room, token, isHost, hostKey }: { room: string; t
     requestToRecord,
     cancelRequest,
     stopRecording,
+    retryStopRecording: () => stopRecording(true),
     outcome,
     dismissOutcome: () => setOutcome(null),
   };

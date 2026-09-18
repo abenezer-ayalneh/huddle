@@ -3,7 +3,7 @@ import XCTest
 @testable import ControlAgentCore
 
 final class CoreTests: XCTestCase {
-    func testSharedControlProtocolV1Fixtures() throws {
+    func testSharedControlProtocolV2Fixtures() throws {
         let fixtureURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
@@ -35,18 +35,20 @@ final class CoreTests: XCTestCase {
 
     func testDecoderBoundsAndInputShape() throws {
         let payload = try JSONSerialization.data(withJSONObject: [
-            "v": 1, "type": "remote-control:input", "sessionId": "session", "sequence": 1,
+            "v": 2, "type": "remote-control:input", "sessionId": "session", "sequence": 1,
             "event": ["kind": "key", "action": "down", "code": "KeyA", "modifiers": ["meta"]],
         ])
         let decoded = try ControlPacketDecoder.decode(payload)
         XCTAssertEqual(decoded.sequence, 1)
         XCTAssertEqual(decoded.command, .input(.key(action: .down, code: "KeyA", key: nil, modifiers: [.meta])))
+        let v1 = try JSONSerialization.data(withJSONObject: ["v": 1, "type": "remote-control:stop-intent", "sessionId": "session"])
+        XCTAssertThrowsError(try ControlPacketDecoder.decode(v1))
         XCTAssertThrowsError(try ControlPacketDecoder.decode(Data(repeating: 0, count: maximumControlPacketBytes + 1)))
     }
 
     func testScrollPacketsAndAccumulatorPreserveTrackpadMotion() throws {
         let scroll = try JSONSerialization.data(withJSONObject: [
-            "v": 1, "type": "remote-control:input", "sessionId": "session", "sequence": 2,
+            "v": 2, "type": "remote-control:input", "sessionId": "session", "sequence": 2,
             "event": ["kind": "scroll", "x": 0.25, "y": 0.75, "dx": 0.4, "dy": -0.4],
         ])
         XCTAssertEqual(
@@ -55,7 +57,7 @@ final class CoreTests: XCTestCase {
         )
 
         let outOfBounds = try JSONSerialization.data(withJSONObject: [
-            "v": 1, "type": "remote-control:input", "sessionId": "session", "sequence": 3,
+            "v": 2, "type": "remote-control:input", "sessionId": "session", "sequence": 3,
             "event": ["kind": "scroll", "x": 0.25, "y": 0.75, "dx": 4_097, "dy": 0],
         ])
         XCTAssertThrowsError(try ControlPacketDecoder.decode(outOfBounds))
@@ -79,32 +81,32 @@ final class CoreTests: XCTestCase {
 
     func testClipboardCommandsAreStrictlyBounded() throws {
         let copy = try JSONSerialization.data(withJSONObject: [
-            "v": 1, "type": "remote-control:clipboard-copy", "sessionId": "session", "sequence": 1,
+            "v": 2, "type": "remote-control:clipboard-copy", "sessionId": "session", "sequence": 1,
         ])
         XCTAssertEqual(try ControlPacketDecoder.decode(copy).command, .clipboardCopy)
 
         let paste = try JSONSerialization.data(withJSONObject: [
-            "v": 1, "type": "remote-control:clipboard-paste", "sessionId": "session", "sequence": 2, "text": "Hello",
+            "v": 2, "type": "remote-control:clipboard-paste", "sessionId": "session", "sequence": 2, "text": "Hello",
         ])
         XCTAssertEqual(try ControlPacketDecoder.decode(paste).command, .clipboardPaste("Hello"))
 
         let malformedCopy = try JSONSerialization.data(withJSONObject: [
-            "v": 1, "type": "remote-control:clipboard-copy", "sessionId": "session", "sequence": 3, "unexpected": true,
+            "v": 2, "type": "remote-control:clipboard-copy", "sessionId": "session", "sequence": 3, "unexpected": true,
         ])
         XCTAssertThrowsError(try ControlPacketDecoder.decode(malformedCopy))
 
         let empty = try JSONSerialization.data(withJSONObject: [
-            "v": 1, "type": "remote-control:clipboard-paste", "sessionId": "session", "sequence": 3, "text": "",
+            "v": 2, "type": "remote-control:clipboard-paste", "sessionId": "session", "sequence": 3, "text": "",
         ])
         XCTAssertThrowsError(try ControlPacketDecoder.decode(empty))
 
         let nonText = try JSONSerialization.data(withJSONObject: [
-            "v": 1, "type": "remote-control:clipboard-paste", "sessionId": "session", "sequence": 4, "text": ["formatted"],
+            "v": 2, "type": "remote-control:clipboard-paste", "sessionId": "session", "sequence": 4, "text": ["formatted"],
         ])
         XCTAssertThrowsError(try ControlPacketDecoder.decode(nonText))
 
         let tooLarge = try JSONSerialization.data(withJSONObject: [
-            "v": 1, "type": "remote-control:clipboard-paste", "sessionId": "session", "sequence": 5,
+            "v": 2, "type": "remote-control:clipboard-paste", "sessionId": "session", "sequence": 5,
             "text": String(repeating: "x", count: maximumClipboardTextBytes + 1),
         ])
         XCTAssertThrowsError(try ControlPacketDecoder.decode(tooLarge))
@@ -115,7 +117,7 @@ final class CoreTests: XCTestCase {
         let session = BootstrapSession(sessionID: "session", sharerIdentity: "sharer", sharerName: "Ada", controllerIdentity: "controller", controllerName: "Bo", agentIdentity: "control-agent:session", renewalDueAt: due)
         let snapshot = GrantSnapshot(room: "room", session: session)
         var gate = GrantGate(bootstrap: snapshot)
-        let token = AgentTokenMetadata(role: "control-agent", room: "room", sessionID: "session", sharerIdentity: "sharer", controllerIdentity: "controller", agentIdentity: "control-agent:session")
+        let token = AgentTokenMetadata(protocolVersion: 2, role: "control-agent", room: "room", sessionID: "session", sharerIdentity: "sharer", controllerIdentity: "controller", agentIdentity: "control-agent:session")
         let projection = RemoteControlProjection(sessionID: "session", status: "active", sharerIdentity: "sharer", sharerName: "Ada", controllerIdentity: "controller", controllerName: "Bo", agentIdentity: "control-agent:session", agentConnected: true, renewalDueAt: due)
         let packet = ControlCommandPacket(sessionID: "session", sequence: 1, command: .input(.move(x: 0.5, y: 0.5)))
         XCTAssertTrue(gate.canPublishDesktop(tokenMetadata: token, localAgentIdentity: "control-agent:session", projection: projection, now: Date()))

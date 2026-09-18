@@ -72,7 +72,8 @@ export class RemoteControlService implements OnModuleInit, OnModuleDestroy {
     if (this.expiryTimer) clearInterval(this.expiryTimer);
   }
 
-  async requestControl(roomSlug: string, controller: CallParticipant, sharerIdentity: string): Promise<RemoteControlRequestSummary> {
+  async requestControl(roomSlug: string, controller: CallParticipant, sharerIdentity: string, protocolVersion = 2): Promise<RemoteControlRequestSummary> {
+    this.requireProtocolVersion(protocolVersion);
     const room = await this.requireRoom(roomSlug);
     if (controller.identity === sharerIdentity) {
       throw this.notAllowed('You cannot request control of your own participant');
@@ -156,10 +157,12 @@ export class RemoteControlService implements OnModuleInit, OnModuleDestroy {
     roomSlug: string,
     requestId: string,
     sharerParticipant: CallParticipant,
+    protocolVersion = 2,
   ): Promise<{
     session: RemoteControlSessionSummary;
     helper: { bootstrapCode: string; expiresAt: string };
   }> {
+    this.requireProtocolVersion(protocolVersion);
     const room = await this.requireRoom(roomSlug);
     const pending = await this.requirePending(roomSlug, requestId);
     if (sharerParticipant.identity !== pending.sharerIdentity) {
@@ -259,12 +262,14 @@ export class RemoteControlService implements OnModuleInit, OnModuleDestroy {
     room: string,
     sessionId: string,
     bootstrapCode: string,
+    protocolVersion = 2,
   ): Promise<{
     token: string;
     livekitUrl: string;
     room: string;
     session: RemoteControlSessionSummary;
   }> {
+    this.requireProtocolVersion(protocolVersion);
     const bootstrap = await this.state.consumeBootstrap(room, sessionId, bootstrapCode);
     if (!bootstrap) throw this.bootstrapInvalid();
 
@@ -281,6 +286,7 @@ export class RemoteControlService implements OnModuleInit, OnModuleDestroy {
         sharerIdentity: grant.sharerIdentity,
         controllerIdentity: grant.controllerIdentity,
         agentIdentity: grant.agentIdentity,
+        protocolVersion: 2,
       });
       const summary = this.toSessionSummary(grant);
       return {
@@ -428,6 +434,29 @@ export class RemoteControlService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  // Operator-only hard-cutover primitive. It deliberately touches Remote
+  // Control state only: ordinary LiveKit participants and calls stay connected.
+  async forceProtocolUpgradeCutover(): Promise<{ roomsEnumerated: number; grantsEnded: number; requestsEnded: number; remaining: number }> {
+    const rooms = await this.livekit.listActiveRooms();
+    const rows = await this.audit.findRequestedOrActive();
+    let grantsEnded = 0;
+    let requestsEnded = 0;
+    const now = new Date();
+    for (const row of rows) {
+      if (row.status === 'requested') {
+        await this.state.releasePending(row.room.slug, row.id);
+        if (await this.audit.failRequest(row.id, 'protocol_upgrade', now)) requestsEnded++;
+        continue;
+      }
+      const grant = await this.state.getActive(row.room.slug);
+      if (grant?.sessionId === row.id) await this.endGrant(grant, 'ended', 'protocol_upgrade', now);
+      else await this.endAuditFallback(row, row.room.slug, 'ended', 'protocol_upgrade', now);
+      grantsEnded++;
+    }
+    const remaining = (await this.audit.findRequestedOrActive()).length;
+    return { roomsEnumerated: rooms.length, grantsEnded, requestsEnded, remaining };
+  }
+
   private async requirePending(room: string, requestId: string): Promise<PendingRemoteControlRequest> {
     const pending = await this.state.getPending(room, requestId);
     if (pending && !this.isRequestExpired(pending)) return pending;
@@ -549,6 +578,14 @@ export class RemoteControlService implements OnModuleInit, OnModuleDestroy {
 
   private presentActive(): ConflictException {
     return new ConflictException(faultBody(FaultCode.REMOTE_CONTROL_PRESENT_ACTIVE, 'Remote Control cannot start while someone is presenting'));
+  }
+
+  private requireProtocolVersion(protocolVersion: number): void {
+    if (protocolVersion !== 2) {
+      throw new ConflictException(
+        faultBody(FaultCode.REMOTE_CONTROL_PROTOCOL_UNSUPPORTED, 'Update the Control Agent and refresh Huddle before starting Remote Control.'),
+      );
+    }
   }
 
   private notFound(message: string): NotFoundException {

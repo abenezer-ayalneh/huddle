@@ -17,6 +17,7 @@ void main() {
     renewalDueAt: due,
   );
   const token = AgentTokenMetadata(
+    protocolVersion: 2,
     role: 'control-agent',
     room: 'room',
     sessionId: 'session',
@@ -87,6 +88,7 @@ void main() {
       GrantRejection.wrongSender,
     );
     const wrongRoom = AgentTokenMetadata(
+        protocolVersion: 2,
         role: 'control-agent',
         room: 'other',
         sessionId: 'session',

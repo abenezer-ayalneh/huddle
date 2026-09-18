@@ -11,7 +11,17 @@ import RecordingControls from './RecordingControls';
 import { isControlAgentParticipant } from '@/lib/controlProtocol';
 import { playCallDing } from '@/components/call/callSounds';
 
-export default function HostPanel({ room, hostKey, onWaitingCountChange }: { room: string; hostKey: string; onWaitingCountChange?: (count: number) => void }) {
+export default function HostPanel({
+  room,
+  hostKey,
+  onLeave,
+  onWaitingCountChange,
+}: {
+  room: string;
+  hostKey: string;
+  onLeave: () => void;
+  onWaitingCountChange?: (count: number) => void;
+}) {
   const participants = useRemoteParticipants();
   const humanParticipants = useMemo(() => participants.filter((participant) => !isControlAgentParticipant(participant)), [participants]);
   const controlAgents = useMemo(() => participants.filter((participant) => isControlAgentParticipant(participant)), [participants]);
@@ -175,7 +185,7 @@ export default function HostPanel({ room, hostKey, onWaitingCountChange }: { roo
         </Section>
 
         <Section title="Recording">
-          <RecordingControls room={room} hostKey={hostKey} />
+          <RecordingControls room={room} hostKey={hostKey} onLeave={onLeave} />
         </Section>
 
         <Section title="Waiting room" badge={knocks.length > 0 ? knocks.length : undefined}>

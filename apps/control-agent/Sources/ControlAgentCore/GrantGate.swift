@@ -79,6 +79,10 @@ public struct GrantGate: Sendable {
             return .failure(.expired)
         }
         guard packet.sessionID == bootstrap.sessionID else { return .failure(.wrongSession) }
+        if case .stopIntent = packet.command {
+            guard senderIdentity == bootstrap.controllerIdentity || senderIdentity == bootstrap.sharerIdentity else { return .failure(.wrongSender) }
+            return .success(.stopIntent)
+        }
         guard senderIdentity == bootstrap.controllerIdentity else { return .failure(.wrongSender) }
         guard sequence.accept(packet.sequence) else { return .failure(.replayedSequence) }
         return .success(packet.command)
@@ -90,7 +94,8 @@ public struct GrantGate: Sendable {
 
     private func hasMatchingTokenMetadata(_ tokenMetadata: AgentTokenMetadata?, localAgentIdentity: String) -> Bool {
         guard let tokenMetadata else { return false }
-        return tokenMetadata.role == "control-agent" &&
+        return tokenMetadata.protocolVersion == 2 &&
+            tokenMetadata.role == "control-agent" &&
             tokenMetadata.room == bootstrap.room &&
             tokenMetadata.sessionID == bootstrap.sessionID &&
             tokenMetadata.sharerIdentity == bootstrap.sharerIdentity &&

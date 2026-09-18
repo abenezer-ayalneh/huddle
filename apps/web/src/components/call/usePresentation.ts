@@ -8,11 +8,13 @@ import { isControlAgentParticipant } from '@/lib/controlProtocol';
 import type { PresentationDisplaySurface } from './pictureInPicture.types';
 
 export type OutgoingRequest = {
+  requestId: string;
   presenterIdentity: string;
   presenterName: string;
 };
 
 export type IncomingRequest = {
+  requestId: string;
   requesterId: string;
   requesterName: string;
 };
@@ -37,8 +39,8 @@ export function usePresentation(isHost: boolean, remoteControlActive = false) {
   const presenterTrack = screenTracks.find((track) => !isControlAgentParticipant(track.participant)) ?? null;
   const presenterIdentity = presenterTrack?.participant.identity ?? null;
   const presenterName = presenterTrack?.participant.name || presenterIdentity;
-  const iAmPresenting = presenterIdentity === localParticipant.identity;
-  const someoneElsePresenting = presenterIdentity !== null && !iAmPresenting;
+  const rawIAmPresenting = presenterIdentity === localParticipant.identity;
+  const someoneElsePresenting = presenterIdentity !== null && !rawIAmPresenting;
   const displaySurface: PresentationDisplaySurface | null = (() => {
     if (!presenterTrack || !isTrackReference(presenterTrack)) return null;
     const value = presenterTrack.publication.track?.mediaStreamTrack.getSettings().displaySurface;
@@ -53,6 +55,14 @@ export function usePresentation(isHost: boolean, remoteControlActive = false) {
   const outgoingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const outcomeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingStartShare = useRef(false);
+  const [stoppingPresentation, setStoppingPresentation] = useState(false);
+  const presentationRetryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const unmountedRef = useRef(false);
+  const localPresentationRef = useRef(rawIAmPresenting);
+
+  useEffect(() => {
+    localPresentationRef.current = rawIAmPresenting;
+  }, [rawIAmPresenting]);
 
   function showOutcome(o: PresentationOutcome) {
     setOutcome(o);
@@ -117,16 +127,21 @@ export function usePresentation(isHost: boolean, remoteControlActive = false) {
 
       switch (msg.type) {
         case 'present:request':
-          if (iAmPresenting) {
+          if (rawIAmPresenting) {
             setIncoming({
+              requestId: msg.requestId,
               requesterId: msg.requesterId,
               requesterName: msg.requesterName,
             });
           }
           break;
 
+        case 'present:cancel':
+          setIncoming((current) => (current?.requestId === msg.requestId && current.requesterId === msg.requesterId ? null : current));
+          break;
+
         case 'present:yield':
-          if (outgoing) {
+          if (outgoing && outgoing.requestId === msg.requestId) {
             clearOutgoing();
             showOutcome({
               kind: 'yielded',
@@ -137,7 +152,7 @@ export function usePresentation(isHost: boolean, remoteControlActive = false) {
           break;
 
         case 'present:decline':
-          if (outgoing) {
+          if (outgoing && outgoing.requestId === msg.requestId) {
             showOutcome({
               kind: 'declined',
               name: outgoing.presenterName,
@@ -147,7 +162,7 @@ export function usePresentation(isHost: boolean, remoteControlActive = false) {
           break;
 
         case 'present:force-take':
-          if (iAmPresenting) {
+          if (rawIAmPresenting) {
             stopMyShare();
             showOutcome({ kind: 'force-taken' });
             setIncoming(null);
@@ -160,7 +175,39 @@ export function usePresentation(isHost: boolean, remoteControlActive = false) {
     return () => {
       room.off(RoomEvent.DataReceived, handleData);
     };
-  }, [room, iAmPresenting, outgoing, stopMyShare]);
+  }, [room, rawIAmPresenting, outgoing, stopMyShare]);
+
+  // Stop is optimistic: presenting surfaces disappear immediately. Failed
+  // unpublishes are reconciled quietly because browser/OS indicators remain
+  // authoritative while the track is still live.
+  const stopMyShareOptimistically = useCallback(async () => {
+    if (!rawIAmPresenting || stoppingPresentation) return;
+    setStoppingPresentation(true);
+    const deadline = Date.now() + 10_000;
+    let pause = 250;
+    while (!unmountedRef.current && Date.now() < deadline) {
+      try {
+        await localParticipant.setScreenShareEnabled(false);
+        return;
+      } catch {
+        await new Promise<void>((resolve) => window.setTimeout(resolve, pause));
+        pause = Math.min(pause * 2, 2_000);
+      }
+    }
+    const reconcile = async () => {
+      if (unmountedRef.current || !localPresentationRef.current) return;
+      try {
+        await localParticipant.setScreenShareEnabled(false);
+      } finally {
+        if (!unmountedRef.current) presentationRetryRef.current = setTimeout(reconcile, 30_000);
+      }
+    };
+    presentationRetryRef.current = setTimeout(reconcile, 30_000);
+  }, [localParticipant, rawIAmPresenting, stoppingPresentation]);
+
+  useEffect(() => {
+    if (!rawIAmPresenting && stoppingPresentation) setStoppingPresentation(false);
+  }, [rawIAmPresenting, stoppingPresentation]);
 
   // Clean up incoming request if the requester disconnects.
   useEffect(() => {
@@ -177,15 +224,18 @@ export function usePresentation(isHost: boolean, remoteControlActive = false) {
   }, [room, incoming]);
 
   const requestPresentation = useCallback(async () => {
-    if (!presenterIdentity || iAmPresenting) return;
+    if (!presenterIdentity || rawIAmPresenting) return;
 
+    const requestId = crypto.randomUUID();
     await sendPresentMessage(localParticipant, presenterIdentity, {
       type: 'present:request',
+      requestId,
       requesterId: localParticipant.identity,
       requesterName: localParticipant.name || localParticipant.identity,
     });
 
     setOutgoing({
+      requestId,
       presenterIdentity,
       presenterName: presenterName || presenterIdentity,
     });
@@ -199,16 +249,25 @@ export function usePresentation(isHost: boolean, remoteControlActive = false) {
       });
       outgoingTimerRef.current = null;
     }, REQUEST_TIMEOUT_MS);
-  }, [presenterIdentity, presenterName, iAmPresenting, localParticipant]);
+  }, [presenterIdentity, presenterName, rawIAmPresenting, localParticipant]);
 
   const cancelRequest = useCallback(() => {
+    const cancelled = outgoing;
     clearOutgoing();
-  }, []);
+    if (cancelled) {
+      void sendPresentMessage(localParticipant, cancelled.presenterIdentity, {
+        type: 'present:cancel',
+        requestId: cancelled.requestId,
+        requesterId: localParticipant.identity,
+      }).catch(() => undefined);
+    }
+  }, [localParticipant, outgoing]);
 
   const yieldPresentation = useCallback(async () => {
     if (!incoming) return;
     await sendPresentMessage(localParticipant, incoming.requesterId, {
       type: 'present:yield',
+      requestId: incoming.requestId,
     });
     setIncoming(null);
     await stopMyShare();
@@ -218,6 +277,7 @@ export function usePresentation(isHost: boolean, remoteControlActive = false) {
     if (!incoming) return;
     await sendPresentMessage(localParticipant, incoming.requesterId, {
       type: 'present:decline',
+      requestId: incoming.requestId,
     });
     setIncoming(null);
   }, [incoming, localParticipant]);
@@ -232,8 +292,8 @@ export function usePresentation(isHost: boolean, remoteControlActive = false) {
 
   const handleShareClick = useCallback(async () => {
     if (remoteControlActive) return;
-    if (iAmPresenting) {
-      await stopMyShare();
+    if (rawIAmPresenting) {
+      await stopMyShareOptimistically();
     } else if (!someoneElsePresenting) {
       await startMyShare();
     } else if (isHost) {
@@ -241,13 +301,15 @@ export function usePresentation(isHost: boolean, remoteControlActive = false) {
     } else {
       await requestPresentation();
     }
-  }, [iAmPresenting, someoneElsePresenting, isHost, stopMyShare, startMyShare, forceTake, requestPresentation, remoteControlActive]);
+  }, [rawIAmPresenting, someoneElsePresenting, isHost, stopMyShareOptimistically, startMyShare, forceTake, requestPresentation, remoteControlActive]);
 
   // Cleanup timers on unmount.
   useEffect(() => {
     return () => {
       if (outgoingTimerRef.current) clearTimeout(outgoingTimerRef.current);
       if (outcomeTimerRef.current) clearTimeout(outcomeTimerRef.current);
+      if (presentationRetryRef.current) clearTimeout(presentationRetryRef.current);
+      unmountedRef.current = true;
     };
   }, []);
 
@@ -255,7 +317,8 @@ export function usePresentation(isHost: boolean, remoteControlActive = false) {
     presenterIdentity,
     presenterName,
     displaySurface,
-    iAmPresenting,
+    iAmPresenting: rawIAmPresenting && !stoppingPresentation,
+    stopping: stoppingPresentation,
     someoneElsePresenting,
     outgoing,
     incoming,

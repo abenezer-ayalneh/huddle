@@ -6,14 +6,22 @@ import { MaintenanceService } from './maintenance/maintenance.service';
 import { MaintenanceWorker } from './maintenance/maintenance.worker';
 import { LivekitService } from './rooms/livekit.service';
 import { PrismaService } from './prisma/prisma.service';
+import { RemoteControlService } from './rooms/remote-control.service';
 
 async function main() {
   const command = process.argv[2];
-  if (!['on', 'off', 'status', 'owner'].includes(command)) throw new Error('Usage: maintenance-operator.js on|off|status|owner [email]');
+  if (!['on', 'off', 'status', 'owner', 'remote-control-cutover'].includes(command))
+    throw new Error('Usage: maintenance-operator.js on|off|status|owner|remote-control-cutover [email]');
   const app = await NestFactory.createApplicationContext(AppModule, { logger: false });
   try {
     const maintenance = app.get(MaintenanceService);
     const prisma = app.get(PrismaService);
+    if (command === 'remote-control-cutover') {
+      const result = await app.get(RemoteControlService).forceProtocolUpgradeCutover();
+      if (result.remaining !== 0) throw new Error(`Remote Control cutover incomplete: ${result.remaining} grants or requests remain`);
+      process.stdout.write(`${JSON.stringify(result)}\n`);
+      return;
+    }
     if (command === 'owner') {
       const email = process.argv[3];
       if (!email) throw new Error('Provide the owner email to verify');

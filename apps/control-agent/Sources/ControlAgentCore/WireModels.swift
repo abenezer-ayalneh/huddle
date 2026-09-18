@@ -82,6 +82,7 @@ public struct BootstrapSession: Decodable, Equatable, Sendable {
 }
 
 public struct AgentTokenMetadata: Decodable, Equatable, Sendable {
+    public let protocolVersion: Int
     public let role: String
     public let room: String
     public let sessionID: String
@@ -90,7 +91,7 @@ public struct AgentTokenMetadata: Decodable, Equatable, Sendable {
     public let agentIdentity: String
 
     enum CodingKeys: String, CodingKey {
-        case role, room
+        case protocolVersion, role, room
         case sessionID = "sessionId"
         case sharerIdentity, controllerIdentity, agentIdentity
     }

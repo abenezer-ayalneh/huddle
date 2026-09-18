@@ -117,7 +117,7 @@ export default function RoomClient({ room }: { room: string }) {
       onError={setError}
       overlay={
         <ErrorBoundary label="Host panel" fallback={null}>
-          <HostPanel room={room} hostKey={host.hostKey} onWaitingCountChange={setHostWaitingCount} />
+          <HostPanel room={room} hostKey={host.hostKey} onLeave={leave} onWaitingCountChange={setHostWaitingCount} />
         </ErrorBoundary>
       }
       isHost

@@ -140,15 +140,16 @@ function toRecordingSummary(r: RecordingWire, room: string): RecordingSummary {
 // Per-call options. `surfaceFault: true` opts a user-initiated request into the
 // Fault toast (default passive — see docs/adr/0019); `hostKey` adds the host
 // capability header.
-type RequestInitX = RequestInit & { hostKey?: string; surfaceFault?: boolean };
+type RequestInitX = RequestInit & { hostKey?: string; surfaceFault?: boolean; timeoutMs?: number };
 
 async function request<T>(path: string, init?: RequestInitX): Promise<T> {
-  const { hostKey, headers, surfaceFault, ...rest } = init ?? {};
+  const { hostKey, headers, surfaceFault, timeoutMs, ...rest } = init ?? {};
   const res = await httpFetch(`${API_URL}${path}`, {
     // Send the BetterAuth session cookie on cross-origin API calls (the auth
     // routes that need a signed-in host depend on it).
     credentials: 'include',
     surfaceFault,
+    timeoutMs,
     headers: {
       'Content-Type': 'application/json',
       ...(hostKey ? { 'x-host-key': hostKey } : {}),
@@ -276,10 +277,11 @@ export const api = {
 
   // The requester stops the recording they were approved for, authorized by
   // their own LiveKit token (x-participant-token).
-  stopRecordingAsParticipant: async (room: string, participantToken: string): Promise<RecordingSummary> => {
+  stopRecordingAsParticipant: async (room: string, participantToken: string, timeoutMs?: number): Promise<RecordingSummary> => {
     const r = await request<RecordingWire>(`/rooms/${encodeURIComponent(room)}/recordings/stop-by-participant`, {
       method: 'POST',
       headers: { 'x-participant-token': participantToken },
+      timeoutMs,
     });
     return toRecordingSummary(r, room);
   },
@@ -296,7 +298,7 @@ export const api = {
     request<RemoteControlRequestSummary>(`/rooms/${encodeURIComponent(room)}/remote-control/requests`, {
       method: 'POST',
       headers: { 'x-participant-token': participantToken },
-      body: JSON.stringify({ sharerIdentity }),
+      body: JSON.stringify({ sharerIdentity, protocolVersion: 2 }),
     }),
 
   getRemoteControlRequest: (room: string, requestId: string, participantToken: string) =>
@@ -318,6 +320,7 @@ export const api = {
     request<RemoteControlApproval>(`/rooms/${encodeURIComponent(room)}/remote-control/requests/${encodeURIComponent(requestId)}/approve`, {
       method: 'POST',
       headers: { 'x-participant-token': participantToken },
+      body: JSON.stringify({ protocolVersion: 2 }),
     }),
 
   reissueRemoteControlBootstrap: (room: string, sessionId: string, participantToken: string) =>
@@ -332,10 +335,11 @@ export const api = {
       headers: { 'x-participant-token': participantToken },
     }),
 
-  stopRemoteControl: (room: string, sessionId: string, participantToken: string) =>
+  stopRemoteControl: (room: string, sessionId: string, participantToken: string, timeoutMs?: number) =>
     request<{ status: 'ended'; endedAt: string }>(`/rooms/${encodeURIComponent(room)}/remote-control/${encodeURIComponent(sessionId)}/stop`, {
       method: 'POST',
       headers: { 'x-participant-token': participantToken },
+      timeoutMs,
     }),
 
   renewRemoteControl: (room: string, sessionId: string, participantToken: string) =>

@@ -220,7 +220,7 @@ private enum BootstrapClient {
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONSerialization.data(withJSONObject: ["bootstrapCode": descriptor.bootstrapCode])
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["bootstrapCode": descriptor.bootstrapCode, "protocolVersion": 2])
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, (200 ..< 300).contains(http.statusCode) else {
             throw NSError(domain: "HuddleControlAgent", code: 1, userInfo: [NSLocalizedDescriptionKey: "The one-time Control Agent code was rejected or expired."])
@@ -463,6 +463,8 @@ private actor LiveKitAgent {
             clipboardEcho.recordLocalPasteboardWrite(changeCount: changeCount)
             clipboardChangeCount = changeCount
             input.paste()
+        case .stopIntent:
+            await stop()
         }
     }
 
@@ -536,7 +538,7 @@ private actor LiveKitAgent {
         else { return }
         clipboardRevision &+= 1
         let payload: [String: Any] = [
-            "v": 1,
+            "v": 2,
             "type": "remote-control:clipboard-update",
             "sessionId": response.session.sessionID,
             "revision": clipboardRevision,

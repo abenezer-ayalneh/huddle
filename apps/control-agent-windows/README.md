@@ -44,7 +44,7 @@ out of scope.
 Public beta installers use only the version supplied to the build:
 
 ```powershell
-flutter build windows --release --dart-define=WINDOWS_CONTROL_AGENT_VERSION=0.1.1
+flutter build windows --release --dart-define=WINDOWS_CONTROL_AGENT_VERSION=0.2.0
 ```
 
 Updates are manual. Download the newer installer from Huddle's Downloads page

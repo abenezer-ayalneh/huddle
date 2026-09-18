@@ -4,7 +4,7 @@
       "name": "normalized pointer move",
       "valid": true,
       "payload": {
-        "v": 1,
+        "v": 2,
         "type": "remote-control:input",
         "sessionId": "session-1",
         "sequence": 1,
@@ -15,7 +15,7 @@
       "name": "keyboard event without optional key text",
       "valid": true,
       "payload": {
-        "v": 1,
+        "v": 2,
         "type": "remote-control:input",
         "sessionId": "session-1",
         "sequence": 2,
@@ -26,7 +26,7 @@
       "name": "clipboard paste within the shared bound",
       "valid": true,
       "payload": {
-        "v": 1,
+        "v": 2,
         "type": "remote-control:clipboard-paste",
         "sessionId": "session-1",
         "sequence": 3,
@@ -37,7 +37,7 @@
       "name": "root extra field",
       "valid": false,
       "payload": {
-        "v": 1,
+        "v": 2,
         "type": "remote-control:clipboard-copy",
         "sessionId": "session-1",
         "sequence": 4,
@@ -48,7 +48,7 @@
       "name": "fractional sequence",
       "valid": false,
       "payload": {
-        "v": 1,
+        "v": 2,
         "type": "remote-control:clipboard-copy",
         "sessionId": "session-1",
         "sequence": 4.5
@@ -58,7 +58,7 @@
       "name": "empty clipboard",
       "valid": false,
       "payload": {
-        "v": 1,
+        "v": 2,
         "type": "remote-control:clipboard-paste",
         "sessionId": "session-1",
         "sequence": 5,

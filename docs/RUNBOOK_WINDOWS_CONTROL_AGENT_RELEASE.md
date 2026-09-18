@@ -36,6 +36,9 @@ acceptance evidence.
    Confirm the captured Windows cursor is suppressed while Huddle's browser
    cursor overlay remains visible. If the pinned Flutter WebRTC build cannot
    suppress it, add and audit a narrowly pinned patch before tagging a beta.
+   For the 0.2.0 protocol cutover, test Stop from both Sharer and Controller,
+   API-outage fallback, held-key release, clipboard shutdown, and agent
+   disconnect.
 4. Record whether Windows publisher warnings were shown. The installer is
    unsigned; do not describe its checksum as publisher identity.
 5. Ensure the repository is publicly readable so the Downloads page can read
@@ -52,6 +55,12 @@ acceptance evidence.
 3. Test a clean install and upgrade from physical x64 and ARM64 Windows PCs.
    Verify the app blocks a cached required version while the channel is
    unreachable, and shows a newer release only as a manual update.
+4. Publish the immutable 0.2.0 artifacts and checksums before setting the
+   signed Windows minimum version to 0.2.0. Then deploy the API v2 guard, run
+   `maintenance-operator remote-control-cutover`, verify its `remaining` count
+   is zero, deploy the v2 web client, and complete a browser/native smoke test.
+   This command ends Remote Control only; it must not be replaced by general
+   maintenance because ordinary calls must remain connected.
 
 ## Rollback
 

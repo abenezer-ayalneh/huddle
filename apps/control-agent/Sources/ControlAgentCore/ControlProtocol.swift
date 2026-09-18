@@ -30,6 +30,7 @@ public enum ControlCommand: Equatable, Sendable {
     case input(ControlInputEvent)
     case clipboardCopy
     case clipboardPaste(String)
+    case stopIntent
 }
 
 public struct ControlCommandPacket: Equatable, Sendable {
@@ -115,10 +116,14 @@ public enum ControlPacketDecoder {
         guard let root = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
             throw ControlPacketError.malformed
         }
-        guard integer(root["v"]) == 1 else { throw ControlPacketError.unsupportedVersion }
+        guard integer(root["v"]) == 2 else { throw ControlPacketError.unsupportedVersion }
         guard let type = root["type"] as? String else { throw ControlPacketError.unsupportedType }
         guard let sessionID = root["sessionId"] as? String, validIdentifier(sessionID) else {
             throw ControlPacketError.invalidSession
+        }
+        if type == "remote-control:stop-intent" {
+            guard exactKeys(root, ["v", "type", "sessionId"]) else { throw ControlPacketError.invalidEvent }
+            return ControlCommandPacket(sessionID: sessionID, sequence: 0, command: .stopIntent)
         }
         guard let sequenceNumber = number(root["sequence"]), sequenceNumber.isFinite,
               sequenceNumber >= 0, sequenceNumber <= maximumJavaScriptInteger,

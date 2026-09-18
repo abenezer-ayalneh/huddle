@@ -3,9 +3,10 @@ import type { LocalParticipant } from 'livekit-client';
 export const PRESENT_TOPIC = 'huddle:present';
 
 export type PresentMessage =
-  | { type: 'present:request'; requesterId: string; requesterName: string }
-  | { type: 'present:yield' }
-  | { type: 'present:decline' }
+  | { type: 'present:request'; requestId: string; requesterId: string; requesterName: string }
+  | { type: 'present:cancel'; requestId: string; requesterId: string }
+  | { type: 'present:yield'; requestId: string }
+  | { type: 'present:decline'; requestId: string }
   | { type: 'present:force-take' };
 
 const encoder = new TextEncoder();

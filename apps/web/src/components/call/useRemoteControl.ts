@@ -83,7 +83,7 @@ function clientSignalFault(message: string): void {
   emitFault({ code: 'REMOTE_CONTROL_SIGNAL_FAILED', message, statusCode: 0 });
 }
 
-export function useRemoteControl({ room, participantToken }: { room: string; participantToken: string }) {
+export function useRemoteControl({ room, participantToken, onTerminalStop }: { room: string; participantToken: string; onTerminalStop?: () => void }) {
   const lkRoom = useRoomContext();
   const { localParticipant } = useLocalParticipant();
   const { metadata } = useRoomInfo();
@@ -102,6 +102,8 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
   const [renewalOverride, setRenewalOverride] = useState<{ sessionId: string; renewalDueAt: string } | null>(null);
   const [pendingClipboardText, setPendingClipboardText] = useState<string | null>(null);
   const [now, setNow] = useState(0);
+  const [stoppingSessionId, setStoppingSessionId] = useState<string | null>(null);
+  const [receivedStopIntentSessionId, setReceivedStopIntentSessionId] = useState<string | null>(null);
 
   const noticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const verificationRef = useRef(0);
@@ -211,6 +213,18 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
       }
 
       if (
+        message.type === 'remote-control:stop-intent' &&
+        session &&
+        message.sessionId === session.sessionId &&
+        (participant.identity === session.sharerIdentity || participant.identity === session.controllerIdentity)
+      ) {
+        setStoppingSessionId(session.sessionId);
+        setReceivedStopIntentSessionId(session.sessionId);
+        setPendingClipboardText(null);
+        return;
+      }
+
+      if (
         message.type === 'remote-control:clipboard-update' &&
         session &&
         iAmController &&
@@ -313,6 +327,11 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
   }, [session?.sessionId]);
 
   useEffect(() => {
+    if (!stoppingSessionId || !session || session.sessionId === stoppingSessionId) return;
+    setStoppingSessionId(null);
+  }, [session, stoppingSessionId]);
+
+  useEffect(() => {
     if (!helperBootstrap) return;
     if (!session || session.sessionId !== helperBootstrap.sessionId || session.agentConnected) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -365,7 +384,7 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
         setOutgoingRequest(created);
         try {
           await sendRemoteControlMessage(localParticipant, [created.sharerIdentity], {
-            v: 1,
+            v: 2,
             type: 'remote-control:request',
             requestId: created.requestId,
           });
@@ -433,7 +452,7 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
     if (!sessionId || !controllerIdentity || !iAmSharer || session?.status !== 'awaiting-agent' || unavailableNoticeSessionRef.current === sessionId) return;
     unavailableNoticeSessionRef.current = sessionId;
     void sendRemoteControlMessage(localParticipant, [controllerIdentity], {
-      v: 1,
+      v: 2,
       type: 'remote-control:agent-unavailable',
       sessionId,
     }).catch(() => {
@@ -451,7 +470,7 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
       setIncomingRequest(null);
       try {
         await sendRemoteControlMessage(localParticipant, [denied.controllerIdentity], {
-          v: 1,
+          v: 2,
           type: 'remote-control:denied',
           requestId: denied.requestId,
         });
@@ -468,17 +487,51 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
 
   const stop = useCallback(async () => {
     if (!session || (!iAmSharer && !iAmController)) return;
+    const stopping = session;
+    setStoppingSessionId(stopping.sessionId);
+    setPendingClipboardText(null);
+    setHelperBootstrap(null);
     setBusy('stop');
-    try {
-      await api.stopRemoteControl(room, session.sessionId, participantToken);
-      setHelperBootstrap(null);
-      showNotice({ tone: 'info', message: 'Remote Control ended.' });
-    } catch (error) {
-      handleActionError(error, 'stop');
-    } finally {
-      setBusy(null);
+    void sendRemoteControlMessage(localParticipant, [stopping.sharerIdentity, stopping.controllerIdentity, stopping.agentIdentity], {
+      v: 2,
+      type: 'remote-control:stop-intent',
+      sessionId: stopping.sessionId,
+    }).catch(() => undefined);
+
+    const deadline = Date.now() + 10_000;
+    let pause = 250;
+    while (Date.now() < deadline) {
+      try {
+        await api.stopRemoteControl(room, stopping.sessionId, participantToken, 2_000);
+        showNotice({ tone: 'info', message: 'Remote Control ended.' });
+        setBusy(null);
+        return;
+      } catch (error) {
+        if (isFaultError(error) && error.code === 'REMOTE_CONTROL_NOT_FOUND') {
+          setBusy(null);
+          return;
+        }
+        await new Promise<void>((resolve) => window.setTimeout(resolve, pause));
+        pause = Math.min(pause * 2, 2_000);
+      }
     }
-  }, [handleActionError, iAmController, iAmSharer, participantToken, room, session, showNotice]);
+    setBusy(null);
+    emitFault({
+      code: 'REMOTE_CONTROL_STOP_TIMEOUT',
+      message: 'Remote Control could not be confirmed as stopped. Huddle left the call to protect the session.',
+      statusCode: 0,
+    });
+    onTerminalStop?.();
+  }, [iAmController, iAmSharer, localParticipant, onTerminalStop, participantToken, room, session, showNotice]);
+
+  // A recipient joins the API cleanup after authenticating the data signal.
+  // Its own Stop broadcast is harmless and makes delivery resilient if the
+  // original sender disconnects mid-teardown.
+  useEffect(() => {
+    if (!session || receivedStopIntentSessionId !== session.sessionId) return;
+    setReceivedStopIntentSessionId(null);
+    void stop();
+  }, [receivedStopIntentSessionId, session, stop]);
 
   const renew = useCallback(async () => {
     if (!session || !iAmSharer) return;
@@ -498,10 +551,10 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
 
   const sendInput = useCallback(
     (event: RemoteControlInputEvent) => {
-      if (!session || !iAmController || session.status !== 'active' || !session.agentConnected) return;
+      if (!session || stoppingSessionId === session.sessionId || !iAmController || session.status !== 'active' || !session.agentConnected) return;
       const sequence = ++sequenceRef.current;
       void sendRemoteControlMessage(localParticipant, [session.agentIdentity], {
-        v: 1,
+        v: 2,
         type: 'remote-control:input',
         sessionId: session.sessionId,
         sequence,
@@ -511,15 +564,15 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
         // persistent failure state; never log the input payload.
       });
     },
-    [iAmController, localParticipant, session],
+    [iAmController, localParticipant, session, stoppingSessionId],
   );
 
   const sendClipboardCopy = useCallback(() => {
-    if (!session || !iAmController || session.status !== 'active' || !session.agentConnected) return;
+    if (!session || stoppingSessionId === session.sessionId || !iAmController || session.status !== 'active' || !session.agentConnected) return;
     try {
       const sequence = ++sequenceRef.current;
       void sendRemoteControlMessage(localParticipant, [session.agentIdentity], {
-        v: 1,
+        v: 2,
         type: 'remote-control:clipboard-copy',
         sessionId: session.sessionId,
         sequence,
@@ -527,10 +580,10 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
     } catch {
       showNotice({ tone: 'error', message: 'Remote copy could not be sent. Try again.' });
     }
-  }, [iAmController, localParticipant, session, showNotice]);
+  }, [iAmController, localParticipant, session, showNotice, stoppingSessionId]);
 
   const pasteClipboard = useCallback(() => {
-    if (!session || !iAmController || session.status !== 'active' || !session.agentConnected) return;
+    if (!session || stoppingSessionId === session.sessionId || !iAmController || session.status !== 'active' || !session.agentConnected) return;
     void (async () => {
       try {
         const text = await navigator.clipboard.readText();
@@ -540,7 +593,7 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
         }
         const sequence = ++sequenceRef.current;
         await sendRemoteControlMessage(localParticipant, [session.agentIdentity], {
-          v: 1,
+          v: 2,
           type: 'remote-control:clipboard-paste',
           sessionId: session.sessionId,
           sequence,
@@ -554,7 +607,7 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
         showNotice({ tone: 'error', message: 'Huddle could not read your clipboard. Allow clipboard access, then try Paste again.' });
       }
     })();
-  }, [iAmController, localParticipant, session, showNotice]);
+  }, [iAmController, localParticipant, session, showNotice, stoppingSessionId]);
 
   const copyReceivedClipboard = useCallback(async () => {
     if (!pendingClipboardText) return;
@@ -586,6 +639,7 @@ export function useRemoteControl({ room, participantToken }: { room: string; par
     requestingIdentity,
     renewalRemainingMs,
     pendingClipboardText,
+    stopping: !!session && stoppingSessionId === session.sessionId,
     requestControl,
     approve,
     reopenAgent,

@@ -63,6 +63,7 @@ class BootstrapResponse {
 
 class AgentTokenMetadata {
   const AgentTokenMetadata({
+    required this.protocolVersion,
     required this.role,
     required this.room,
     required this.sessionId,
@@ -71,6 +72,7 @@ class AgentTokenMetadata {
     required this.agentIdentity,
   });
 
+  final int protocolVersion;
   final String role;
   final String room;
   final String sessionId;
@@ -90,6 +92,7 @@ class AgentTokenMetadata {
       final decoded = jsonDecode(metadata);
       if (decoded is! Map<String, dynamic>) return null;
       return AgentTokenMetadata(
+        protocolVersion: _requiredInt(decoded, 'protocolVersion'),
         role: _requiredString(decoded, 'role'),
         room: _requiredString(decoded, 'room'),
         sessionId: _requiredString(decoded, 'sessionId'),
@@ -146,6 +149,12 @@ class RemoteControlProjection {
 String _requiredString(Map<String, dynamic> json, String key) {
   final value = json[key];
   if (value is! String || value.isEmpty || value.length > 512) throw const FormatException('Invalid Control Agent response');
+  return value;
+}
+
+int _requiredInt(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value is! int) throw const FormatException('Invalid Control Agent response');
   return value;
 }
 

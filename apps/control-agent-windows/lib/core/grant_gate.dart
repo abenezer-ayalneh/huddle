@@ -32,6 +32,10 @@ class GrantGate {
       return GrantRejection.expired;
     }
     if (packet.sessionId != bootstrap.sessionId) return GrantRejection.wrongSession;
+    if (packet.command is StopIntentCommand) {
+      if (senderIdentity != bootstrap.controllerIdentity && senderIdentity != bootstrap.sharerIdentity) return GrantRejection.wrongSender;
+      return null;
+    }
     if (senderIdentity != bootstrap.controllerIdentity) return GrantRejection.wrongSender;
     if (_lastSequence != null && packet.sequence <= _lastSequence!) return GrantRejection.replayedSequence;
     _lastSequence = packet.sequence;
@@ -42,6 +46,7 @@ class GrantGate {
 
   bool _matchesToken(AgentTokenMetadata? metadata, String identity) =>
       metadata != null &&
+      metadata.protocolVersion == 2 &&
       metadata.role == 'control-agent' &&
       metadata.room == room &&
       metadata.sessionId == bootstrap.sessionId &&

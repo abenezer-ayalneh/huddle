@@ -152,14 +152,10 @@ export default function GuestGate({
 
   // Withdraw the pending knock before leaving, so the host stops seeing it.
   // Best-effort: navigate home regardless of whether the request succeeds.
-  const cancel = useCallback(async () => {
-    if (knockId) {
-      try {
-        await api.cancelKnock(room, knockId);
-      } catch {
-        // ignore — the host can still deny a stale knock
-      }
-    }
+  const cancel = useCallback(() => {
+    // Navigation is the user-visible operation. The withdrawal is safe to let
+    // finish after this component unmounts, and prevents a stale host prompt.
+    if (knockId) void api.cancelKnock(room, knockId).catch(() => undefined);
     onLeave();
   }, [knockId, room, onLeave]);
 

@@ -314,6 +314,15 @@ Phase 10 authority boundary.
 
 Linux Control Agents remain future work with no release date.
 
+### Remote Control protocol v2 cutover
+
+- [x] Require protocol v2 on browser startup, approval, helper-token redemption,
+      and native token metadata; reject v1 data packets fail-closed.
+- [x] Add authenticated `stop-intent` and optimistic local Stop reconciliation.
+- [ ] Publish and physically accept immutable Control Agent 0.2.0 artifacts for
+      macOS arm64 and Windows x64/arm64, then perform the Remote-Control-only
+      operator cutover. Source checks do not prove this release or deployment.
+
 ### Phase 13 — Windows Control Agent public beta
 
 Port the attended Remote Control companion to Windows 10 22H2 and Windows 11

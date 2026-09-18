@@ -4,7 +4,7 @@ import type { LocalParticipant, Participant } from 'livekit-client';
 // schema additive within a version, and reject malformed/unbounded packets at
 // the edge rather than casting JSON into a privileged input type.
 export const REMOTE_CONTROL_TOPIC = 'huddle:remote-control';
-export const REMOTE_CONTROL_VERSION = 1 as const;
+export const REMOTE_CONTROL_VERSION = 2 as const;
 export const CONTROL_AGENT_IDENTITY_PREFIX = 'control-agent:';
 
 export const MAX_REMOTE_CONTROL_PACKET_BYTES = 8192;
@@ -43,13 +43,14 @@ export type RemoteControlInputEvent =
   | { kind: 'release-all' };
 
 export type RemoteControlMessage =
-  | { v: 1; type: 'remote-control:request'; requestId: string }
-  | { v: 1; type: 'remote-control:denied'; requestId: string }
-  | { v: 1; type: 'remote-control:agent-unavailable'; sessionId: string }
-  | { v: 1; type: 'remote-control:input'; sessionId: string; sequence: number; event: RemoteControlInputEvent }
-  | { v: 1; type: 'remote-control:clipboard-copy'; sessionId: string; sequence: number }
-  | { v: 1; type: 'remote-control:clipboard-paste'; sessionId: string; sequence: number; text: string }
-  | { v: 1; type: 'remote-control:clipboard-update'; sessionId: string; revision: number; text: string };
+  | { v: 2; type: 'remote-control:request'; requestId: string }
+  | { v: 2; type: 'remote-control:denied'; requestId: string }
+  | { v: 2; type: 'remote-control:agent-unavailable'; sessionId: string }
+  | { v: 2; type: 'remote-control:stop-intent'; sessionId: string }
+  | { v: 2; type: 'remote-control:input'; sessionId: string; sequence: number; event: RemoteControlInputEvent }
+  | { v: 2; type: 'remote-control:clipboard-copy'; sessionId: string; sequence: number }
+  | { v: 2; type: 'remote-control:clipboard-paste'; sessionId: string; sequence: number; text: string }
+  | { v: 2; type: 'remote-control:clipboard-update'; sessionId: string; revision: number; text: string };
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -158,20 +159,21 @@ export function decodeRemoteControlMessage(data: Uint8Array): RemoteControlMessa
       case 'remote-control:request':
       case 'remote-control:denied':
         if (!hasOnlyKeys(value, ['v', 'type', 'requestId']) || !isBoundedString(value.requestId)) return null;
-        return { v: 1, type: value.type, requestId: value.requestId };
+        return { v: 2, type: value.type, requestId: value.requestId };
       case 'remote-control:agent-unavailable':
+      case 'remote-control:stop-intent':
         if (!hasOnlyKeys(value, ['v', 'type', 'sessionId']) || !isBoundedString(value.sessionId)) return null;
-        return { v: 1, type: value.type, sessionId: value.sessionId };
+        return { v: 2, type: value.type, sessionId: value.sessionId };
       case 'remote-control:input': {
         if (!hasOnlyKeys(value, ['v', 'type', 'sessionId', 'sequence', 'event']) || !isBoundedString(value.sessionId) || !isSequence(value.sequence))
           return null;
         const event = decodeInputEvent(value.event);
         if (!event) return null;
-        return { v: 1, type: 'remote-control:input', sessionId: value.sessionId, sequence: value.sequence, event };
+        return { v: 2, type: 'remote-control:input', sessionId: value.sessionId, sequence: value.sequence, event };
       }
       case 'remote-control:clipboard-copy':
         if (!hasOnlyKeys(value, ['v', 'type', 'sessionId', 'sequence']) || !isBoundedString(value.sessionId) || !isSequence(value.sequence)) return null;
-        return { v: 1, type: value.type, sessionId: value.sessionId, sequence: value.sequence };
+        return { v: 2, type: value.type, sessionId: value.sessionId, sequence: value.sequence };
       case 'remote-control:clipboard-paste':
         if (
           !hasOnlyKeys(value, ['v', 'type', 'sessionId', 'sequence', 'text']) ||
@@ -180,7 +182,7 @@ export function decodeRemoteControlMessage(data: Uint8Array): RemoteControlMessa
           !isClipboardText(value.text)
         )
           return null;
-        return { v: 1, type: value.type, sessionId: value.sessionId, sequence: value.sequence, text: value.text };
+        return { v: 2, type: value.type, sessionId: value.sessionId, sequence: value.sequence, text: value.text };
       case 'remote-control:clipboard-update':
         if (
           !hasOnlyKeys(value, ['v', 'type', 'sessionId', 'revision', 'text']) ||
@@ -189,7 +191,7 @@ export function decodeRemoteControlMessage(data: Uint8Array): RemoteControlMessa
           !isClipboardText(value.text)
         )
           return null;
-        return { v: 1, type: value.type, sessionId: value.sessionId, revision: value.revision, text: value.text };
+        return { v: 2, type: value.type, sessionId: value.sessionId, revision: value.revision, text: value.text };
       default:
         return null;
     }

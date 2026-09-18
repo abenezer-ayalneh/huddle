@@ -326,7 +326,8 @@ hide it locally. The tint makes an **infinite mirror** (the Droste tunnel when
 the presented surface contains the call window) less visually disruptive, but a
 live preview cannot eliminate recursive capture. It affects only the Presenter;
 everyone else receives the unmasked presentation, and the camera thumbnail stays
-in the sidebar.
+in the sidebar. It disappears immediately when the Presenter stops, even while
+the browser silently reconciles an unpublished track.
 _Avoid_: Presenter Placeholder (the retired static-card behavior), Self-view
 (that is the camera thumbnail, a different thing), self-mirror
 
@@ -373,7 +374,8 @@ The persistent room-wide signal that identifies the Controller and Sharer and
 states whether their Remote Control is waiting for the Control Agent, switching
 displays, or active. During display switching the room shows a non-interactive
 safety surface instead of another participant's video. Only the Sharer also
-sees that Clipboard Sharing is enabled.
+sees that Clipboard Sharing is enabled. It normally remains room-wide, but may
+disappear immediately for the participant who initiated Stop.
 _Avoid_: Remote Control banner, control toast, control notification
 
 **Control Cursor**:
@@ -485,7 +487,8 @@ _Avoid_: Accept/reject, admit/deny (admit is the knock decision), grant/revoke
 The room-wide signal that a Recording is active, shown to **every** participant
 regardless of who started it. Driven by a flag in the LiveKit room's metadata
 (the same real-time propagation as Mute on Entry), so it appears and clears for
-all clients at once. Its purpose is consent: no one is recorded without an
+all clients at once. A local Stop never removes it; only confirmed metadata can
+clear it. Its purpose is consent: no one is recorded without an
 on-screen signal.
 _Avoid_: Rec light, recording badge (fine in UI copy, but "Recording Indicator"
 is the domain term)

@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 const remoteControlTopic = 'huddle:remote-control';
-const remoteControlVersion = 1;
+const remoteControlVersion = 2;
 const maximumControlPacketBytes = 8 * 1024;
 const maximumClipboardTextBytes = 6 * 1024;
 
@@ -23,6 +23,10 @@ class ClipboardPasteCommand extends ControlCommand {
   final String text;
 }
 
+class StopIntentCommand extends ControlCommand {
+  const StopIntentCommand();
+}
+
 class ControlPacket {
   const ControlPacket({required this.sessionId, required this.sequence, required this.command});
   final String sessionId;
@@ -39,7 +43,12 @@ class ControlProtocol {
       final type = root['type'] as String;
       final sessionId = root['sessionId'];
       final sequence = root['sequence'];
-      if (!_identifier(sessionId) || sequence is! num || !sequence.isFinite || sequence < 0 || sequence > 9007199254740991 || sequence.truncateToDouble() != sequence) return null;
+      if (!_identifier(sessionId)) return null;
+      if (type == 'remote-control:stop-intent') {
+        if (!_exactKeys(root, {'v', 'type', 'sessionId'})) return null;
+        return ControlPacket(sessionId: sessionId as String, sequence: 0, command: const StopIntentCommand());
+      }
+      if (sequence is! num || !sequence.isFinite || sequence < 0 || sequence > 9007199254740991 || sequence.truncateToDouble() != sequence) return null;
 
       switch (type) {
         case 'remote-control:input':

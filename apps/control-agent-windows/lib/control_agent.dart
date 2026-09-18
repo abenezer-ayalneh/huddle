@@ -369,6 +369,8 @@ class WindowsControlAgent extends ChangeNotifier {
           await _windows.writeClipboardText(command.text);
       _clipboardChangeCount = _expectedClipboardChangeCount!;
       await _windows.sendClipboardShortcut('paste');
+    } else if (command is StopIntentCommand) {
+      await stop();
     }
   }
 
@@ -513,7 +515,7 @@ class WindowsControlAgent extends ChangeNotifier {
               'Content-Type': 'application/json',
               'Cache-Control': 'no-store'
             },
-            body: jsonEncode({'bootstrapCode': descriptor.bootstrapCode}))
+            body: jsonEncode({'bootstrapCode': descriptor.bootstrapCode, 'protocolVersion': 2}))
         .timeout(const Duration(seconds: 15));
     if (response.statusCode != 200) {
       throw BootstrapRedemptionException(response.statusCode);

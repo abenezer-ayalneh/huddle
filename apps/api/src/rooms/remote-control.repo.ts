@@ -103,6 +103,13 @@ export class RemoteControlRepository {
     });
   }
 
+  findRequestedOrActive(): Promise<RemoteControlSessionWithRoom[]> {
+    return this.prisma.remoteControlSession.findMany({
+      where: { status: { in: ['requested', 'active'] } },
+      include: { room: { select: { slug: true } } },
+    });
+  }
+
   private async transitionRequested(id: string, status: 'denied' | 'expired' | 'failed', endReason: string, endedAt: Date): Promise<boolean> {
     const result = await this.prisma.remoteControlSession.updateMany({
       where: { id, status: 'requested' },

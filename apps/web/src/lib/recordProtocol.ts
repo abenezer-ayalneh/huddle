@@ -10,7 +10,11 @@ import type { LocalParticipant } from 'livekit-client';
 
 export const RECORD_TOPIC = 'huddle:record';
 
-export type RecordMessage = { type: 'record:request'; requesterId: string; requesterName: string } | { type: 'record:approve' } | { type: 'record:deny' };
+export type RecordMessage =
+  | { type: 'record:request'; requestId: string; requesterId: string; requesterName: string }
+  | { type: 'record:cancel'; requestId: string; requesterId: string }
+  | { type: 'record:approve'; requestId: string }
+  | { type: 'record:deny'; requestId: string };
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();

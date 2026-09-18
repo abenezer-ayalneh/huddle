@@ -428,6 +428,7 @@ Do not turn it into a passive toast or weaken its consent and room scope.
 - **Do** keep the Huddle brand on the left and navigation/theme/actions on the right at every breakpoint.
 - **Do** reserve purple for authority, yellow for focus/active/recoverable state, and red for recording, Stop/Leave, or true failure.
 - **Do** preserve `object-contain`, protected media geometry, consent, admission, Direct Rejoin, Recording, Google Drive, and attended Remote Control behavior.
+- **Do** remove a local Stop/Cancel affordance in the same render that accepts it. Recording remains represented by its metadata-backed indicator; presentation and Remote Control feedback do not reappear during silent teardown reconciliation.
 - **Do** provide visible keyboard focus and reduced-motion fallbacks on authored motion.
 - **Do** use the supplied Huddle mark and link route-level marks home.
 
