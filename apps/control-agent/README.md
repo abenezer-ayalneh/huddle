@@ -51,7 +51,9 @@ second publishes an immutable versioned DMG and advances the permanent
 signed appcast. A free GitHub account with write access is enough, but it must
 be authenticated locally first.
 
-This path is ad-hoc signed and unnotarized.
+This path requires a persistent Apple Development or Developer ID application
+identity and is unnotarized. The persistent identity is required so an update
+does not lose the Mac's Screen Recording or Accessibility grant.
 macOS will show a warning on first launch; after verifying the checksum from the
 same GitHub release, the tester must explicitly choose **Open Anyway** in
 **System Settings → Privacy & Security**. It is a testing/public-beta path only,

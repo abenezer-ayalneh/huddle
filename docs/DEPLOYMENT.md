@@ -406,8 +406,11 @@ Publish the Apple-Silicon beta from an Apple-Silicon Mac with:
 ```
 
 Publish the GitHub release before deploying a page change, so the direct
-download link never points at a missing asset. The beta is ad-hoc signed and
-unnotarized; retain its Gatekeeper warning and publish its SHA-256 checksum.
+download link never points at a missing asset. The beta uses a persistent Apple
+Development or Developer ID application identity and is unnotarized; retain its
+Gatekeeper warning and publish its SHA-256 checksum. Do not publish an
+updater-enabled archive with an ad-hoc signature, because macOS treats it as a
+new privacy client on every update.
 The local Sparkle private key remains in the publisher's login Keychain;
 publication embeds its public key into the app and uploads a signed appcast
 whose archive is an immutable versioned DMG. Existing builds without that
