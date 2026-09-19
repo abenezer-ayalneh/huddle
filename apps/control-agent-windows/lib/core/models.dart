@@ -54,7 +54,9 @@ class BootstrapResponse {
   final BootstrapSession session;
 
   factory BootstrapResponse.fromJson(Map<String, dynamic> json) => BootstrapResponse(
-        token: _requiredString(json, 'token'),
+        // LiveKit JWTs include encoded grants and participant metadata. They
+        // exceed the short-field limit even for ordinary approved sessions.
+        token: _requiredString(json, 'token', maxLength: 16384),
         livekitUrl: _requiredString(json, 'livekitUrl'),
         room: _requiredString(json, 'room'),
         session: BootstrapSession.fromJson(_requiredMap(json, 'session')),
@@ -146,9 +148,10 @@ class RemoteControlProjection {
   }
 }
 
-String _requiredString(Map<String, dynamic> json, String key) {
+String _requiredString(Map<String, dynamic> json, String key,
+    {int maxLength = 512}) {
   final value = json[key];
-  if (value is! String || value.isEmpty || value.length > 512) throw const FormatException('Invalid Control Agent response');
+  if (value is! String || value.isEmpty || value.length > maxLength) throw const FormatException('Invalid Control Agent response');
   return value;
 }
 

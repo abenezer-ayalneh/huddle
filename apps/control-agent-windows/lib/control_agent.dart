@@ -211,7 +211,6 @@ class WindowsControlAgent extends ChangeNotifier {
       }
       _connectionStage = AgentConnectionStage.bootstrapRedemption;
       final response = await _redeem(descriptor);
-      _connectionStage = AgentConnectionStage.responseValidation;
       if (response.room != descriptor.room ||
           response.session.sessionId != descriptor.sessionId) {
         throw const FormatException(
@@ -520,6 +519,9 @@ class WindowsControlAgent extends ChangeNotifier {
     if (response.statusCode != 200) {
       throw BootstrapRedemptionException(response.statusCode);
     }
+    // The one-time code has been consumed. Malformed success bodies are
+    // response failures, not expired or rejected bootstrap links.
+    _connectionStage = AgentConnectionStage.responseValidation;
     final json = jsonDecode(response.body);
     if (json is! Map<String, dynamic>) {
       throw const FormatException('Invalid Control Agent response');

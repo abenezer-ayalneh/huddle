@@ -50,6 +50,14 @@ flutter build windows --release --dart-define=WINDOWS_CONTROL_AGENT_VERSION=0.2.
 Updates are manual. Download the newer installer from Huddle's Downloads page
 and install it after ending any active Remote Control session.
 
+The helper-token response parser allows LiveKit JWTs up to 16,384 characters
+while retaining the 512-character limit for ordinary string fields. The former
+shared 512-character limit rejected valid tokens after consuming the one-time
+bootstrap code. Response parsing failures are now reported separately from
+bootstrap rejection; only HTTP 401 is described as a rejected or expired link.
+This correction was reviewed in source only, without running tests or a Windows
+build. It requires a rebuilt Windows installer; physical acceptance is pending.
+
 Create the unsigned installer on a Windows computer with the matching native
 processor architecture:
 

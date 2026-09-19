@@ -30,8 +30,14 @@ String safeConnectionFailureMessage(
   Object error,
 ) {
   if (error is BootstrapRedemptionException) {
-    if (error.statusCode >= 400 && error.statusCode < 500) {
+    if (error.statusCode == 401) {
       return 'This approved link was rejected or has expired. Return to the Huddle room and choose Open Agent to create a fresh link.';
+    }
+    if (error.statusCode == 400 || error.statusCode == 409) {
+      return 'Huddle rejected this Control Agent request. Install the current Control Agent from Huddle Downloads, refresh the room, and request a new approval.';
+    }
+    if (error.statusCode == 429) {
+      return 'Huddle is receiving too many requests. Wait briefly, then return to the room and create a fresh link.';
     }
     return 'Huddle could not prepare this Control Agent session. Check the Huddle server, then request a new approval.';
   }
