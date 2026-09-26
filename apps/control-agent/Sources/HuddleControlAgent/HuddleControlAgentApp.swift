@@ -156,21 +156,23 @@ final class AgentModel: ObservableObject {
 
     func resetPermissions() {
         guard !screenPublished, !switchingDisplay else {
-            error = "Stop Remote Control before resetting this Mac's privacy permissions."
+            error = "Stop Remote Control before clearing this Mac's privacy permissions."
             return
         }
 
         if let message = MacOSTCCPermissionReset.perform() {
-            error = "Could not reset Huddle Control Agent permissions. \(message)"
+            error = "Could not clear Huddle Control Agent permissions. \(message)"
             return
         }
 
-        // TCC can cache the running process's old decision. Keep the UI safe
-        // until the app is relaunched and macOS has applied the reset.
+        // Re-read the permissions just like Refresh. TCC may still return this
+        // process's cached approval after a successful reset, so show the
+        // cleared state until the app is relaunched and macOS applies it.
+        refreshPermissions()
         screenPermission = false
         accessibilityPermission = false
         error = nil
-        status = "Permissions reset. Quit and reopen Huddle Control Agent, then prepare it again."
+        status = "Permissions cleared. Quit and reopen Huddle Control Agent, then prepare it again."
     }
 
     private let permissionRuntime = MacOSPermissionRuntime()
@@ -836,6 +838,7 @@ private extension View {
 
 private struct HuddleButtonStyle: ButtonStyle {
     let tone: HuddleButtonTone
+    var pressScaleEffect = false
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
@@ -853,7 +856,8 @@ private struct HuddleButtonStyle: ButtonStyle {
                     .stroke(border)
             )
             .opacity(isEnabled ? 1 : 0.42)
-            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+            .scaleEffect(configuration.isPressed && pressScaleEffect ? 0.96 : 1)
+            .animation(.spring(response: 0.18, dampingFraction: 0.68), value: configuration.isPressed)
             .pointingHandCursor()
     }
 
@@ -959,11 +963,11 @@ struct AgentView: View {
             if phase == .active { model.refreshPermissions() }
         }
         .confirmationDialog(
-            "Reset privacy permissions?",
+            "Clear privacy permissions?",
             isPresented: $permissionResetConfirmationPresented,
             titleVisibility: .visible,
         ) {
-            Button("Reset all Huddle permissions", role: .destructive) {
+            Button("Clear all Huddle permissions", role: .destructive) {
                 model.resetPermissions()
             }
             Button("Cancel", role: .cancel) {}
@@ -1059,11 +1063,11 @@ struct AgentView: View {
                     Button(permissionsReady ? "Permissions ready" : "Prepare for Remote Control") { model.requestPermissions() }
                         .buttonStyle(HuddleButtonStyle(tone: permissionsReady ? .secondary : .primary))
                     Button("Refresh") { model.refreshPermissions() }
-                        .buttonStyle(HuddleButtonStyle(tone: .secondary))
-                    Button("Reset permissions…") { permissionResetConfirmationPresented = true }
-                        .buttonStyle(HuddleButtonStyle(tone: .danger))
+                        .buttonStyle(HuddleButtonStyle(tone: .secondary, pressScaleEffect: true))
+                    Button("Clear permissions") { permissionResetConfirmationPresented = true }
+                        .buttonStyle(HuddleButtonStyle(tone: .danger, pressScaleEffect: true))
                         .disabled(model.screenPublished || model.switchingDisplay)
-                        .help("Reset all macOS privacy decisions for Huddle Control Agent")
+                        .help("Clear all macOS privacy decisions for Huddle Control Agent")
                 }
             }
         }
