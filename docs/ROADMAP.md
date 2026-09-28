@@ -301,6 +301,8 @@ Phase 10 authority boundary.
       x64/ARM64 prerelease support.
 - [x] Sharer-only launch recovery: bootstrap rotation, full-link paste fallback,
       explicit origin trust, permission preparation, and display selection.
+- [x] User-accepted local macOS single-window Control Agent handoff
+      (2026-09-28).
 - [x] No-cost Apple-Silicon DMG packaging, checksum publication script, and an
       explicitly unnotarized Downloads-page default with an opt-in,
       Ed25519-signed Sparkle updater that points to immutable DMGs.

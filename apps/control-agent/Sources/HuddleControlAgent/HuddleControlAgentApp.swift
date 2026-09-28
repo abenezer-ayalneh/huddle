@@ -1298,7 +1298,7 @@ struct AgentView: View {
 struct HuddleControlAgentApp: App {
     @StateObject private var model = AgentModel()
     var body: some Scene {
-        WindowGroup("Huddle Control Agent") {
+        Window("Huddle Control Agent", id: "main") {
             AgentView(model: model)
                 .onOpenURL { url in
                     do { model.accept(try BootstrapLink.parse(url)) } catch { model.error = error.localizedDescription }
