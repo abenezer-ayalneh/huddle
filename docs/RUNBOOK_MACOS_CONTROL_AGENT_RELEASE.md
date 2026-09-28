@@ -1,7 +1,7 @@
 # Release the macOS Control Agent
 
 **Owner:** Huddle release maintainer | **Frequency:** for every public macOS candidate
-**Last updated:** 2026-09-18 | **Last channel verification:** Apple-Silicon no-cost beta 0.2.0 (6), an ad-hoc build
+**Last updated:** 2026-09-28 | **Last channel verification:** Apple-Silicon no-cost beta 0.2.0 (9), an ad-hoc build
 
 ## Purpose
 

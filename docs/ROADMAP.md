@@ -308,9 +308,8 @@ Phase 10 authority boundary.
       Ed25519-signed Sparkle updater that points to immutable DMGs.
 - [x] Publish the first no-cost Apple-Silicon beta to the public GitHub release
       channel with its SHA-256 checksum.
-- [ ] Verify the recorded public release from GitHub before relying on this
-      historical publication claim; source and release scripts alone cannot
-      establish the current artifact/channel state.
+- [x] Verify the current no-cost Apple-Silicon release, checksum, and signed
+      appcast on GitHub (2026-09-28; version 0.2.0, build 9).
 - [ ] Physical two-browser acceptance of the no-cost Apple-Silicon beta,
       including its one-time Gatekeeper override and macOS privacy permissions.
 - [ ] Pre-tag physical acceptance on Apple Silicon and Intel Macs, followed by
