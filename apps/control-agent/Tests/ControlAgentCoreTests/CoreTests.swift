@@ -9,17 +9,12 @@ private final class FakePermissionRuntime: PermissionPreparationRuntime {
     private(set) var snapshotReadCount = 0
     private(set) var screenRecordingRequestCount = 0
     private(set) var accessibilityPromptCount = 0
-    private(set) var screenRecordingSettingsOpenCount = 0
-    private let screenRecordingSettingsOpenSucceeds: Bool
-
     init(
         snapshots: [PermissionSnapshot],
         screenRecordingRequestResult: Bool,
-        screenRecordingSettingsOpenSucceeds: Bool = true,
     ) {
         self.snapshots = snapshots
         self.screenRecordingRequestResult = screenRecordingRequestResult
-        self.screenRecordingSettingsOpenSucceeds = screenRecordingSettingsOpenSucceeds
     }
 
     func readPermissionSnapshot() -> PermissionSnapshot {
@@ -37,10 +32,6 @@ private final class FakePermissionRuntime: PermissionPreparationRuntime {
         accessibilityPromptCount += 1
     }
 
-    func openScreenRecordingSettings() -> Bool {
-        screenRecordingSettingsOpenCount += 1
-        return screenRecordingSettingsOpenSucceeds
-    }
 }
 
 @MainActor
@@ -56,13 +47,11 @@ final class CoreTests: XCTestCase {
 
         let result = PermissionPreparation.perform(using: runtime)
 
-        XCTAssertEqual(result.action, .screenRecording(requestGranted: false, didOpenSettings: true))
+        XCTAssertEqual(result.action, .screenRecording)
         XCTAssertEqual(result.snapshot, PermissionSnapshot(screenRecordingGranted: true, accessibilityGranted: false))
-        XCTAssertTrue(result.action.requiresScreenRecordingSettingsFallback)
         XCTAssertEqual(runtime.snapshotReadCount, 2)
         XCTAssertEqual(runtime.screenRecordingRequestCount, 1)
         XCTAssertEqual(runtime.accessibilityPromptCount, 0)
-        XCTAssertEqual(runtime.screenRecordingSettingsOpenCount, 1)
     }
 
     func testPermissionPreparationRequestsScreenRecordingWhenOnlyItIsMissing() {
@@ -76,13 +65,11 @@ final class CoreTests: XCTestCase {
 
         let result = PermissionPreparation.perform(using: runtime)
 
-        XCTAssertEqual(result.action, .screenRecording(requestGranted: true, didOpenSettings: nil))
+        XCTAssertEqual(result.action, .screenRecording)
         XCTAssertTrue(result.snapshot.isReady)
-        XCTAssertFalse(result.action.requiresScreenRecordingSettingsFallback)
         XCTAssertEqual(runtime.snapshotReadCount, 2)
         XCTAssertEqual(runtime.screenRecordingRequestCount, 1)
         XCTAssertEqual(runtime.accessibilityPromptCount, 0)
-        XCTAssertEqual(runtime.screenRecordingSettingsOpenCount, 0)
     }
 
     func testPermissionPreparationPromptsAccessibilityOnlyWhenScreenRecordingIsGranted() {
@@ -101,7 +88,6 @@ final class CoreTests: XCTestCase {
         XCTAssertEqual(runtime.snapshotReadCount, 2)
         XCTAssertEqual(runtime.screenRecordingRequestCount, 0)
         XCTAssertEqual(runtime.accessibilityPromptCount, 1)
-        XCTAssertEqual(runtime.screenRecordingSettingsOpenCount, 0)
     }
 
     func testPermissionPreparationDoesNothingWhenPermissionsAreAlreadyGranted() {
@@ -117,7 +103,6 @@ final class CoreTests: XCTestCase {
         XCTAssertEqual(runtime.snapshotReadCount, 1)
         XCTAssertEqual(runtime.screenRecordingRequestCount, 0)
         XCTAssertEqual(runtime.accessibilityPromptCount, 0)
-        XCTAssertEqual(runtime.screenRecordingSettingsOpenCount, 0)
     }
 
     func testPermissionPreparationReadsFreshStateOnEveryClick() {
@@ -134,43 +119,27 @@ final class CoreTests: XCTestCase {
         let first = PermissionPreparation.perform(using: runtime)
         let second = PermissionPreparation.perform(using: runtime)
 
-        XCTAssertEqual(first.action, .screenRecording(requestGranted: true, didOpenSettings: nil))
+        XCTAssertEqual(first.action, .screenRecording)
         XCTAssertEqual(second.action, .accessibility)
         XCTAssertEqual(runtime.snapshotReadCount, 4)
         XCTAssertEqual(runtime.screenRecordingRequestCount, 1)
         XCTAssertEqual(runtime.accessibilityPromptCount, 1)
-        XCTAssertEqual(runtime.screenRecordingSettingsOpenCount, 0)
     }
 
-    func testFailedScreenRecordingRequestOpensSettingsAndReportsRecoveryIfThatFails() {
+    func testFailedScreenRecordingRequestDoesNotOpenSettings() {
         let runtime = FakePermissionRuntime(
             snapshots: [
                 PermissionSnapshot(screenRecordingGranted: false, accessibilityGranted: true),
                 PermissionSnapshot(screenRecordingGranted: false, accessibilityGranted: true),
             ],
             screenRecordingRequestResult: false,
-            screenRecordingSettingsOpenSucceeds: false,
         )
 
         let result = PermissionPreparation.perform(using: runtime)
 
-        XCTAssertEqual(result.action, .screenRecording(requestGranted: false, didOpenSettings: false))
+        XCTAssertEqual(result.action, .screenRecording)
         XCTAssertEqual(runtime.screenRecordingRequestCount, 1)
-        XCTAssertEqual(runtime.screenRecordingSettingsOpenCount, 1)
         XCTAssertEqual(runtime.accessibilityPromptCount, 0)
-        XCTAssertEqual(result.action.recoveryMessage, PermissionSettingsFallback.manualScreenRecordingInstructions)
-    }
-
-    func testScreenRecordingSettingsFallbackURLIsScopedToScreenRecording() {
-        XCTAssertEqual(
-            PermissionSettingsFallback.screenRecordingURL.absoluteString,
-            "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenRecording",
-        )
-        XCTAssertNil(PermissionSettingsFallback.recoveryMessage(didOpenSettings: true))
-        XCTAssertEqual(
-            PermissionSettingsFallback.recoveryMessage(didOpenSettings: false),
-            PermissionSettingsFallback.manualScreenRecordingInstructions,
-        )
     }
 
     func testPermissionResetIsScopedToTheAgentBundle() {

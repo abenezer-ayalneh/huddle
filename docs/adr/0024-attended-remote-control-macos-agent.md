@@ -139,7 +139,10 @@ The Sharer must reconfirm every 30 minutes. The confirmation explicitly restates
 mouse, keyboard, and plain-text clipboard sharing. Renewal advances the deadline
 by another 30 minutes; missing it expires the grant, clears room metadata,
 disconnects the agent, and completes the audit row. The grant also ends when the
-Sharer, Controller, or Control Agent disconnects.
+Sharer, Controller, or Control Agent disconnects. When the server ends a grant,
+the agent releases input, stops clipboard monitoring, unpublishes its display,
+and disconnects its companion LiveKit session. This leaves both participants'
+browser Huddle call untouched and lets the agent accept a fresh approved link.
 
 Only the Sharer and Controller may call the Remote Control stop endpoint. The
 room Host gains no special Remote Control stop authority, although the existing

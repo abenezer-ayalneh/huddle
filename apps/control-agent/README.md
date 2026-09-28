@@ -116,21 +116,23 @@ tccutil reset Accessibility com.huddle.control-agent
 ```
 
 The user must grant Screen Recording and Accessibility permissions in macOS
-System Settings. **Prepare for Remote Control** rechecks the current app's
-permissions every time it is clicked and requests only one missing permission:
-Screen Recording first, then Accessibility. macOS handles the first-time
-prompts. When Screen Recording was previously denied and macOS cannot prompt
-again, the agent opens its Settings pane instead; if that fails, it tells the
-Sharer where to grant it manually. macOS may require quitting and reopening the
-agent before a newly granted Screen Recording permission takes effect. Return to
-the agent after granting each permission; its badges refresh automatically and
-the next click continues with only a permission that is still missing.
+System Settings. Separate Screen Recording and Accessibility cards each show a
+**Prepare** button while their permission is missing. Clicking it requests only
+that permission and shows macOS's permission prompt. Click **Open Settings** in
+that prompt to visit the matching Privacy & Security subsection. After a
+permission is granted, its button disappears and the card shows the granted
+status. On newer macOS versions, Accessibility may be labelled **Device Control
+and Data Access**. macOS may require quitting and reopening the agent before a
+newly granted Screen Recording permission takes effect. Return to the agent
+after granting each permission; its status refreshes automatically.
 
 For a clean local test state, **Reset permissions…** in the agent runs the
 scoped equivalent of `tccutil reset All com.huddle.control-agent`. It is blocked
 while Remote Control is active, asks for confirmation, and resets only this
-agent's TCC decisions. Quit and reopen the agent before granting Screen Recording
-and Accessibility again.
+agent's TCC decisions. macOS can cache the prior permission result for the
+running app, so Refresh continues to show both permissions as required after a
+successful reset. Quit and reopen the agent before granting Screen Recording and
+Accessibility again.
 
 During an active, approved Remote Control session, the agent
 observes and relays only transferable plain-text clipboard changes to the exact

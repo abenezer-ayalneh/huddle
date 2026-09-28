@@ -30,26 +30,12 @@ package protocol PermissionPreparationRuntime: AnyObject {
     func readPermissionSnapshot() -> PermissionSnapshot
     func requestScreenRecordingAccess() -> Bool
     func promptForAccessibilityAccess()
-    func openScreenRecordingSettings() -> Bool
 }
 
 package enum PermissionPreparationAction: Equatable, Sendable {
     case none
-    case screenRecording(requestGranted: Bool, didOpenSettings: Bool?)
+    case screenRecording
     case accessibility
-
-    package var requiresScreenRecordingSettingsFallback: Bool {
-        guard case .screenRecording(requestGranted: false, didOpenSettings: _) = self else { return false }
-        return true
-    }
-
-    package var recoveryMessage: String? {
-        guard case let .screenRecording(_, didOpenSettings: openedSettings) = self,
-              let openedSettings else {
-            return nil
-        }
-        return PermissionSettingsFallback.recoveryMessage(didOpenSettings: openedSettings)
-    }
 }
 
 package struct PermissionPreparationResult: Equatable, Sendable {
@@ -57,49 +43,48 @@ package struct PermissionPreparationResult: Equatable, Sendable {
     package let action: PermissionPreparationAction
 }
 
-/// Coordinates one user-initiated preparation action. The runtime is injected
-/// so selection, fresh reads, and request ordering can be tested without TCC.
+/// Prompts for one specific permission per user action. The runtime is injected
+/// so the native prompt and fresh reads can be coordinated without TCC.
 @MainActor
 package enum PermissionPreparation {
-    package static func perform(using runtime: PermissionPreparationRuntime) -> PermissionPreparationResult {
+    package static func perform(
+        for permission: RequiredPermission,
+        using runtime: PermissionPreparationRuntime,
+    ) -> PermissionPreparationResult {
         let snapshot = runtime.readPermissionSnapshot()
+        return perform(for: permission, with: snapshot, using: runtime)
+    }
 
-        switch snapshot.nextMissingPermission {
+    private static func perform(
+        for permission: RequiredPermission,
+        with snapshot: PermissionSnapshot,
+        using runtime: PermissionPreparationRuntime,
+    ) -> PermissionPreparationResult {
+        switch permission {
         case .screenRecording:
-            let requestGranted = runtime.requestScreenRecordingAccess()
-            let didOpenSettings = requestGranted ? nil : runtime.openScreenRecordingSettings()
+            if !snapshot.screenRecordingGranted {
+                _ = runtime.requestScreenRecordingAccess()
+            }
             return PermissionPreparationResult(
                 snapshot: runtime.readPermissionSnapshot(),
-                action: .screenRecording(
-                    requestGranted: requestGranted,
-                    didOpenSettings: didOpenSettings,
-                ),
+                action: .screenRecording,
             )
         case .accessibility:
-            // Re-read after the prompt just as we do for Screen Recording:
-            // retaining the pre-prompt snapshot leaves the badge showing
-            // "Required" after the app has become trusted.
-            runtime.promptForAccessibilityAccess()
+            if !snapshot.accessibilityGranted {
+                runtime.promptForAccessibilityAccess()
+            }
             return PermissionPreparationResult(
                 snapshot: runtime.readPermissionSnapshot(),
                 action: .accessibility,
             )
-        case nil:
-            return PermissionPreparationResult(snapshot: snapshot, action: .none)
         }
     }
-}
 
-/// An undocumented but isolated fallback route for the documented case where a
-/// denied Screen Recording request cannot be prompted again by Core Graphics.
-package enum PermissionSettingsFallback {
-    package static let screenRecordingURL = URL(
-        string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenRecording"
-    )!
-    package static let manualScreenRecordingInstructions =
-        "Could not open System Settings. Open Privacy & Security > Screen Recording and allow Huddle Control Agent."
-
-    package static func recoveryMessage(didOpenSettings: Bool) -> String? {
-        didOpenSettings ? nil : manualScreenRecordingInstructions
+    package static func perform(using runtime: PermissionPreparationRuntime) -> PermissionPreparationResult {
+        let snapshot = runtime.readPermissionSnapshot()
+        guard let permission = snapshot.nextMissingPermission else {
+            return PermissionPreparationResult(snapshot: snapshot, action: .none)
+        }
+        return perform(for: permission, with: snapshot, using: runtime)
     }
 }

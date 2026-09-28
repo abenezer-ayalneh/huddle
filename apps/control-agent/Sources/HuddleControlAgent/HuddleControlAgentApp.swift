@@ -26,6 +26,10 @@ final class AgentModel: ObservableObject {
     private var agent: LiveKitAgent?
     private var pendingDescriptor: BootstrapDescriptor?
     private var handledDescriptor: BootstrapDescriptor?
+    // `tccutil reset` clears the system decision, but Core Graphics and
+    // Accessibility can retain this process's previous result until relaunch.
+    // Do not let Refresh turn a confirmed reset back into a false “Granted”.
+    @Published private(set) var permissionsResetThisLaunch = false
     private let releaseChecker = AgentReleaseChecker()
     let updater = AgentUpdater()
 
@@ -153,16 +157,18 @@ final class AgentModel: ObservableObject {
     }
 
     func refreshPermissions() {
+        guard !permissionsResetThisLaunch else {
+            screenPermission = false
+            accessibilityPermission = false
+            return
+        }
         apply(permissionRuntime.readPermissionSnapshot())
     }
 
-    func requestPermissions() {
-        let result = PermissionPreparation.perform(using: permissionRuntime)
+    func requestPermission(_ permission: RequiredPermission) {
+        guard !permissionsResetThisLaunch else { return }
+        let result = PermissionPreparation.perform(for: permission, using: permissionRuntime)
         apply(result.snapshot)
-
-        if let message = result.action.recoveryMessage {
-            error = message
-        }
     }
 
     func resetPermissions() {
@@ -176,14 +182,14 @@ final class AgentModel: ObservableObject {
             return
         }
 
-        // Re-read the permissions just like Refresh. TCC may still return this
-        // process's cached approval after a successful reset, so show the
-        // cleared state until the app is relaunched and macOS applies it.
-        refreshPermissions()
+        // TCC can retain this process's prior approval after a successful
+        // reset. Keep the cleared state through this app launch; the next
+        // launch is the first reliable point to query the new decision.
+        permissionsResetThisLaunch = true
         screenPermission = false
         accessibilityPermission = false
         error = nil
-        status = "Permissions cleared. Quit and reopen Huddle Control Agent, then prepare it again."
+        status = "Permissions cleared. Quit and reopen Huddle Control Agent before preparing permissions again."
     }
 
     private let permissionRuntime = MacOSPermissionRuntime()
@@ -213,9 +219,6 @@ private final class MacOSPermissionRuntime: PermissionPreparationRuntime {
         _ = AXIsProcessTrustedWithOptions(["AXTrustedCheckOptionPrompt": true] as CFDictionary)
     }
 
-    func openScreenRecordingSettings() -> Bool {
-        NSWorkspace.shared.open(PermissionSettingsFallback.screenRecordingURL)
-    }
 }
 
 private enum MacOSTCCPermissionReset {
@@ -266,6 +269,7 @@ extension AgentModel {
             let next = LiveKitAgent(model: self, descriptor: descriptor, response: response)
             agent = next
             try await next.connect()
+            guard agent === next, session?.sessionID == response.session.sessionID else { return }
             connected = true
             updater.setRemoteControlActive(true)
             status = "Connected to \(response.room). Choose a display, then start Remote Control."
@@ -284,6 +288,23 @@ extension AgentModel {
         switchingDisplay = switching
         if !isConnected { updater.setRemoteControlActive(false) }
         status = message
+    }
+
+    fileprivate func remoteControlEnded(sessionID: String) {
+        guard session?.sessionID == sessionID else { return }
+        agent = nil
+        connected = false
+        screenPublished = false
+        switchingDisplay = false
+        session = nil
+        descriptor = nil
+        displays = []
+        selectedDisplayID = nil
+        pendingDescriptor = nil
+        pendingTrustOrigin = nil
+        error = nil
+        updater.setRemoteControlActive(false)
+        status = "Remote Control ended. The Control Agent is ready for a new Huddle link."
     }
 
     fileprivate func setDisplays(_ next: [DisplayOption]) {
@@ -353,6 +374,7 @@ private actor LiveKitAgent {
     private var clipboardRevision: UInt64 = 0
     private var clipboardEcho = ClipboardEchoSuppression()
     private var clipboardMonitor: Task<Void, Never>?
+    private var hasSeenSessionProjection = false
 
     init(model: AgentModel, descriptor: BootstrapDescriptor, response: BootstrapResponse) {
         self.model = model
@@ -503,6 +525,19 @@ private actor LiveKitAgent {
             return
         }
         projection = envelope.remoteControl
+        if projection?.sessionID == response.session.sessionID {
+            hasSeenSessionProjection = true
+        }
+        let sessionEnded = hasSeenSessionProjection && (
+            projection == nil ||
+                projection?.sessionID != response.session.sessionID ||
+                (projection?.status != "active" && projection?.status != "awaiting-agent")
+        )
+        if sessionEnded {
+            await stop()
+            await model?.remoteControlEnded(sessionID: response.session.sessionID)
+            return
+        }
         guard gate.canPublishDesktop(
             tokenMetadata: tokenMetadata,
             localAgentIdentity: response.session.agentIdentity,
@@ -928,18 +963,37 @@ private struct StepHeading: View {
 private struct PermissionBadge: View {
     let name: String
     let granted: Bool
+    let preparationAvailable: Bool
+    let onPrepare: () -> Void
 
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: granted ? "checkmark.shield.fill" : "exclamationmark.triangle.fill")
                 .foregroundStyle(granted ? HuddleTheme.purple : HuddleTheme.red)
+                .accessibilityLabel(granted ? "Granted" : "Required")
             VStack(alignment: .leading, spacing: 2) {
                 Text(name).font(.system(size: 13, weight: .medium)).foregroundStyle(HuddleTheme.text)
-                Text(granted ? "Granted" : "Required").font(.caption).foregroundStyle(granted ? HuddleTheme.purple : HuddleTheme.red)
+                if !granted {
+                    Text("Required").font(.caption).foregroundStyle(HuddleTheme.red)
+                }
             }
-            Spacer()
+            Spacer(minLength: 12)
+            if !granted {
+                if preparationAvailable {
+                    Button(action: onPrepare) {
+                        Text("Prepare")
+                            .frame(width: 70)
+                    }
+                    .buttonStyle(HuddleButtonStyle(tone: .secondary, pressScaleEffect: true))
+                } else {
+                    Text("Restart required")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(HuddleTheme.muted)
+                }
+            }
         }
         .padding(11)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(HuddleTheme.backgroundDeep, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
     }
 }
@@ -1082,18 +1136,31 @@ struct AgentView: View {
         HuddleCard {
             VStack(alignment: .leading, spacing: 12) {
                 StepHeading(number: 2, title: "Allow control on this Mac", complete: permissionsReady)
-                Text("Screen Recording publishes the selected display. Accessibility applies only the approved Controller's mouse and keyboard input.")
+                Text(model.permissionsResetThisLaunch
+                     ? "Permissions were cleared. Quit and reopen the Control Agent before preparing them again."
+                     : "Prepare one permission at a time, then choose Open Settings in the macOS prompt. Screen Recording publishes the selected display; Accessibility applies only the approved Controller's mouse and keyboard input.")
                     .font(.caption)
                     .foregroundStyle(HuddleTheme.muted)
                 VStack(spacing: 10) {
-                    PermissionBadge(name: "Screen Recording", granted: model.screenPermission)
-                    PermissionBadge(name: "Accessibility", granted: model.accessibilityPermission)
+                    PermissionBadge(
+                        name: "Screen Recording",
+                        granted: model.screenPermission,
+                        preparationAvailable: !model.permissionsResetThisLaunch,
+                    ) {
+                        model.requestPermission(.screenRecording)
+                    }
+                    PermissionBadge(
+                        name: "Accessibility",
+                        granted: model.accessibilityPermission,
+                        preparationAvailable: !model.permissionsResetThisLaunch,
+                    ) {
+                        model.requestPermission(.accessibility)
+                    }
                 }
                 HStack(spacing: 8) {
-                    Button(permissionsReady ? "Permissions ready" : "Prepare for Remote Control") { model.requestPermissions() }
-                        .buttonStyle(HuddleButtonStyle(tone: permissionsReady ? .secondary : .primary))
                     Button("Refresh") { model.refreshPermissions() }
                         .buttonStyle(HuddleButtonStyle(tone: .secondary, pressScaleEffect: true))
+                        .disabled(model.permissionsResetThisLaunch)
                     Button("Clear permissions") { permissionResetConfirmationPresented = true }
                         .buttonStyle(HuddleButtonStyle(tone: .danger, pressScaleEffect: true))
                         .disabled(model.screenPublished || model.switchingDisplay)

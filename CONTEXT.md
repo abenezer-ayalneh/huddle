@@ -419,8 +419,10 @@ no room Host authority, and holds no standing credential. The installed app is
 inert until the Sharer trusts the Huddle server, chooses a display, and confirms
 Start Remote Control. Its local Change display picker switches immediately
 within the same approved session; its local Stop action disconnects it, which
-ends Remote Control. Windows supports an explicit local UAC relaunch before
-connection when the Sharer needs to control administrator applications. Linux
+ends Remote Control. When the server ends a grant, the Control Agent disconnects
+its companion session and returns to idle; the participants' browser Huddle call
+continues. Windows supports an explicit local UAC relaunch before connection
+when the Sharer needs to control administrator applications. Linux
 downloads are not available in the public beta.
 _Avoid_: Host (already the room role), daemon, desktop client
 
