@@ -25,6 +25,7 @@ final class AgentModel: ObservableObject {
 
     private var agent: LiveKitAgent?
     private var pendingDescriptor: BootstrapDescriptor?
+    private var handledDescriptor: BootstrapDescriptor?
     private let releaseChecker = AgentReleaseChecker()
     let updater = AgentUpdater()
 
@@ -40,10 +41,19 @@ final class AgentModel: ObservableObject {
     var updatePublicKey: String { (Bundle.main.object(forInfoDictionaryKey: "ControlAgentUpdatePublicKey") as? String) ?? "" }
 
     func accept(_ descriptor: BootstrapDescriptor) {
+        // A one-time bearer must never be submitted twice. Coalesce duplicate
+        // custom-URL deliveries even if the second event arrives just after
+        // the first HTTP request has already returned.
+        if handledDescriptor == descriptor { return }
+        guard pendingDescriptor == nil else {
+            error = "Finish the current Control Agent launch before opening another link."
+            return
+        }
         guard agent == nil else {
             error = "Stop the current Control Agent session before opening another link."
             return
         }
+        handledDescriptor = descriptor
         self.descriptor = descriptor
         pendingDescriptor = descriptor
         error = nil
@@ -63,7 +73,7 @@ final class AgentModel: ObservableObject {
     }
 
     func confirmServerTrust() {
-        guard let descriptor else { return }
+        guard let descriptor, pendingTrustOrigin != nil else { return }
         ServerTrustStore.shared.trust(descriptor.apiOrigin)
         pendingTrustOrigin = nil
         status = "Redeeming one-time Control Agent code…"
@@ -120,6 +130,7 @@ final class AgentModel: ObservableObject {
         if let releaseChannelURL {
             switch await releaseChecker.check(currentVersion: appVersion, channelURL: releaseChannelURL, publicKeyBase64: updatePublicKey) {
             case let .required(version, notes):
+                pendingDescriptor = nil
                 updateNotice = "Update required before Remote Control can start (version \(version))."
                 error = "Install the required Control Agent update, then return to Huddle."
                 NSWorkspace.shared.open(notes)
@@ -261,6 +272,9 @@ extension AgentModel {
         } catch let caught {
             error = caught.localizedDescription
             status = "Could not start Control Agent."
+            // A failed HTTP redemption consumes or invalidates the one-time
+            // code. Allow a fresh link from Huddle to start a new attempt.
+            if agent == nil { pendingDescriptor = nil }
         }
     }
 
@@ -298,11 +312,27 @@ private enum BootstrapClient {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: ["bootstrapCode": descriptor.bootstrapCode, "protocolVersion": 2])
         let (data, response) = try await URLSession.shared.data(for: request)
-        guard let http = response as? HTTPURLResponse, (200 ..< 300).contains(http.statusCode) else {
-            throw NSError(domain: "HuddleControlAgent", code: 1, userInfo: [NSLocalizedDescriptionKey: "The one-time Control Agent code was rejected or expired."])
+        guard let http = response as? HTTPURLResponse else {
+            throw URLError(.badServerResponse)
+        }
+        guard (200 ..< 300).contains(http.statusCode) else {
+            let fault = try? JSONDecoder().decode(BootstrapFault.self, from: data)
+            let code = fault?.code.map { ", \($0)" } ?? ""
+            let message = http.statusCode == 401
+                ? "The one-time Control Agent code was rejected or expired (HTTP 401\(code)). Open a fresh Control Agent link and try again."
+                : "The Huddle server could not redeem the Control Agent link (HTTP \(http.statusCode)\(code)). Retry from Huddle or check that the app and server are up to date."
+            throw NSError(
+                domain: "HuddleControlAgent",
+                code: http.statusCode,
+                userInfo: [NSLocalizedDescriptionKey: message],
+            )
         }
         return try JSONDecoder().decode(BootstrapResponse.self, from: data)
     }
+}
+
+private struct BootstrapFault: Decodable {
+    let code: String?
 }
 
 private actor LiveKitAgent {

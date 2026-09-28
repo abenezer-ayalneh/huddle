@@ -110,10 +110,13 @@ general remote-support system:
 2. The Sharer explicitly approves. The API creates audit metadata and an
    identity-bound, renewable grant; LiveKit room metadata is display state, not
    the authority.
-3. The Sharer launches the native agent with a short-lived one-time bootstrap.
-   After origin trust, platform-local permissions or optional Windows elevation,
-   selected-display choice, and local Start, the agent publishes the entire
-   physical display.
+3. After approval, the browser tries the registered Control Agent link before
+   showing its launch-recovery dialog. A custom-protocol link has no reliable
+   browser success callback, so the dialog remains available and the expected
+   LiveKit participant confirms connection. Administrator-app mode gets a
+   freshly rotated one-time bootstrap. After origin trust, platform-local
+   permissions or optional Windows elevation, selected-display choice, and
+   local Start, the agent publishes the entire physical display.
 4. Only the approved Controller's versioned, session-scoped packets are
    accepted. The Agent verifies the sender and current grant before injecting
    input or handling an allowed clipboard action.

@@ -17,17 +17,14 @@ afterEach(() => {
 });
 
 describe('AgentLaunchDialog recovery', () => {
-  it('does not spend the one-time link until the Sharer explicitly opens the agent and never infers a failed handoff', async () => {
+  it('attempts the one-time link before showing recovery and never infers a failed handoff', async () => {
     render(<AgentLaunchDialog bootstrap={bootstrap} onReopen={vi.fn()} onDismiss={vi.fn()} />);
 
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    expect(document.querySelector('iframe')?.getAttribute('src')).toContain('code=bootstrap-code');
     await act(async () => {
       await vi.advanceTimersByTimeAsync(3_000);
     });
-    expect(screen.getByRole('dialog')).toBeTruthy();
-    expect(document.querySelector('iframe')).toBeNull();
-
-    fireEvent.click(screen.getByRole('button', { name: /open agent/i }));
-    expect(document.querySelector('iframe')?.getAttribute('src')).toContain('code=bootstrap-code');
 
     Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
     await act(async () => {
@@ -44,7 +41,6 @@ describe('AgentLaunchDialog recovery', () => {
     const fresh = { ...bootstrap, code: 'fresh-bootstrap-code' };
     const onReopen = vi.fn().mockResolvedValue(fresh);
     render(<AgentLaunchDialog bootstrap={bootstrap} onReopen={onReopen} onDismiss={vi.fn()} />);
-    fireEvent.click(screen.getByRole('button', { name: /open agent/i }));
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: /try again/i }));
     });

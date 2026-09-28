@@ -1,7 +1,7 @@
 'use client';
 
 import { Check, Copy, Download, ExternalLink } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { API_URL } from '@/lib/api';
 import type { HelperBootstrap } from './useRemoteControl';
 
@@ -15,35 +15,59 @@ export default function AgentLaunchDialog({
   onDismiss: () => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [copying, setCopying] = useState(false);
   const [opening, setOpening] = useState(false);
   const [launchedSessionId, setLaunchedSessionId] = useState<string | null>(null);
+  const [visibleSessionId, setVisibleSessionId] = useState<string | null>(null);
+  const autoLaunchAttemptedSessionId = useRef<string | null>(null);
   const deepLink = useMemo(() => {
     if (!bootstrap) return '';
     const query = new URLSearchParams({ room: bootstrap.room, session: bootstrap.sessionId, code: bootstrap.code, api: API_URL });
     return `huddle-control://join?${query.toString()}`;
   }, [bootstrap]);
 
-  const launch = (link: string, sessionId: string) => {
-    // Only launch after an explicit click. Auto-launching when the dialog
-    // mounted could redeem this one-time code in the standard process before
-    // the Sharer copied it into the agent's administrator-mode fallback. A
-    // Browser focus and visibility are not reliable evidence of whether a
-    // native protocol handler opened. The server-confirmed agent connection
-    // remains the authoritative session transition.
+  const launch = useCallback((link: string, sessionId: string) => {
     const frame = document.createElement('iframe');
     frame.style.display = 'none';
     frame.src = link;
     document.body.appendChild(frame);
     setLaunchedSessionId(sessionId);
-  };
+  }, []);
 
-  if (!bootstrap) return null;
-  const copy = async () => {
+  const sessionId = bootstrap?.sessionId;
+  useEffect(() => {
+    if (!sessionId || !deepLink || autoLaunchAttemptedSessionId.current === sessionId) return;
+
+    // Try the registered protocol handler before the recovery dialog appears.
+    // There is no browser callback for custom-protocol success; LiveKit still
+    // confirms the agent connection, and the popup remains the fallback.
+    autoLaunchAttemptedSessionId.current = sessionId;
     try {
-      await navigator.clipboard.writeText(deepLink);
+      launch(deepLink, sessionId);
+    } catch {
+      // Keep the recovery dialog available if this browser cannot attempt launch.
+    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setVisibleSessionId(sessionId);
+  }, [deepLink, launch, sessionId]);
+
+  if (!bootstrap || visibleSessionId !== bootstrap.sessionId) return null;
+  const copy = async () => {
+    setCopying(true);
+    try {
+      // The automatic launch may have redeemed the original one-time code.
+      // Rotate it before offering a link for the administrator-mode fallback.
+      const fresh = await onReopen();
+      if (!fresh) return;
+      const query = new URLSearchParams({ room: fresh.room, session: fresh.sessionId, code: fresh.code, api: API_URL });
+      await navigator.clipboard.writeText(`huddle-control://join?${query.toString()}`);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1_500);
-    } catch {}
+    } catch {
+      // Clipboard access can be unavailable; the user can still retry from the dialog.
+    } finally {
+      setCopying(false);
+    }
   };
 
   const retry = async () => {
@@ -68,8 +92,8 @@ export default function AgentLaunchDialog({
         <div>
           <h2 className="font-display text-lg font-semibold">Opening the Control Agent</h2>
           <p className="mt-1 text-sm text-white/65">
-            Open the local Control Agent in standard mode, or copy the unredeemed link first if you need administrator-app mode. The link is one-time and
-            expires shortly; Open Agent creates a fresh link when needed.
+            Huddle tried to open the local Control Agent. If it is installed, it should launch. Copy a fresh link first if you need administrator-app mode. The
+            link is one-time and expires shortly; Open Agent creates a fresh link when needed.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -78,11 +102,12 @@ export default function AgentLaunchDialog({
           </code>
           <button
             type="button"
+            disabled={copying}
             onClick={copy}
             className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-2 text-xs font-semibold text-white/80 hover:bg-white/20"
           >
             {copied ? <Check className="h-4 w-4 text-cyan" /> : <Copy className="h-4 w-4" />}
-            {copied ? 'Copied' : 'Copy for admin mode'}
+            {copied ? 'Copied' : copying ? 'Preparing…' : 'Copy for admin mode'}
           </button>
         </div>
         <p className="text-xs text-white/45">
