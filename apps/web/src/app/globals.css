@@ -2277,6 +2277,13 @@ html[data-theme='dark'] .huddle-brand-theme-header {
   font-size: 9px;
 }
 
+.landing-footer-signature {
+  grid-column: 1 / -1;
+  padding-top: 16px;
+  border-top: 1px solid var(--landing-border);
+  color: var(--landing-ink);
+}
+
 /* Story-specific proof panels. */
 .landing-control-scene,
 .landing-collab-scene {

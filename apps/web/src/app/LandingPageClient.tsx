@@ -36,6 +36,7 @@ import Link from 'next/link';
 import type { ComponentProps } from 'react';
 import { useEffect, useState } from 'react';
 import HuddleIcon from '@/components/HuddleIcon';
+import { MakerSignature } from '@/components/maker/react/MakerSignature';
 import HuddleBrandThemeHeader from '@/components/HuddleBrandThemeHeader';
 import LandingJoinForm from './LandingJoinForm';
 import LandingStory from '@/components/landing/LandingStory';
@@ -544,6 +545,7 @@ export default function LandingPageClient() {
               </a>
             </div>
             <p>Apache-2.0 · illustrative portraits and product scenes are fictional.</p>
+            <MakerSignature className="landing-footer-signature" />
           </div>
         </footer>
       </main>

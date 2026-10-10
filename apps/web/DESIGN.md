@@ -156,6 +156,14 @@ components:
     padding: '8px 10px 8px 18px'
 ---
 
+The landing footer includes one centered maker signature below the existing
+navigation and license note, separated by a hairline. The copied source kit in
+`src/components/maker/` preserves the AA mark, 44px link target, keyboard focus,
+name tooltip, and portfolio navigation in a new tab with an accessible announcement.
+Its compact 13px text and 4–5px
+radii are intentional signature details. Inherit `--landing-ink` for readable
+light and dark themes; keep attribution outside meeting controls.
+
 # Design System: Huddle Web
 
 ## Overview
