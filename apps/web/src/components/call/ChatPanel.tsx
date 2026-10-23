@@ -1,22 +1,28 @@
 'use client';
 
 import type { ReceivedChatMessage } from '@livekit/components-react';
+import { useParticipantInfo } from '@livekit/components-react';
 import { Send, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import ChatExtras from './ChatExtras';
+import ChatFileMessage from './ChatFileMessage';
 import { useDismissOnOutside } from './useDismissOnOutside';
 
 // Custom in-call chat (replaces the chat panel that shipped inside LiveKit's
 // <VideoConference>). Messages ride the room data channel; history is in-memory
-// for the session, same as the prebuilt behaviour. Docked to the left so it
-// never collides with the host sidebar on the right. Controlled: the useChat
+// for the session, same as the prebuilt behaviour. Docked to the right; desktop workspace chrome and media reserve its width. Controlled: the useChat
 // subscription lives once in CallView, which feeds messages/send in as props.
 export default function ChatPanel({
+  room,
+  participantToken,
   open,
   onClose,
   messages,
   onSend,
   isSending,
 }: {
+  room?: string;
+  participantToken?: string;
   open: boolean;
   onClose: () => void;
   messages: ReceivedChatMessage[];
@@ -56,7 +62,8 @@ export default function ChatPanel({
   return (
     <aside
       ref={panelRef}
-      className="signal-call-side-panel signal-call-chat-panel glass-strong absolute inset-y-0 left-0 z-30 flex w-80 max-w-[85vw] flex-col border-r border-white/10 shadow-[8px_0_50px_oklch(0_0_0/0.5)] animate-in slide-in-from-left duration-200"
+      aria-label="Chat"
+      className="signal-call-side-panel signal-call-chat-panel glass-strong absolute inset-y-0 right-0 z-30 flex w-80 max-w-[85vw] flex-col border-l border-white/10 shadow-[-8px_0_50px_oklch(0_0_0/0.5)] animate-in slide-in-from-right duration-200"
     >
       <header className="signal-call-side-panel-header flex items-center justify-between border-b border-white/10 px-5 py-4">
         <span className="font-display text-base font-semibold tracking-wide text-white">Chat</span>
@@ -77,11 +84,10 @@ export default function ChatPanel({
         ) : (
           messages.map((m) => {
             const mine = m.from?.isLocal ?? false;
-            const who = m.from?.name || m.from?.identity || 'Participant';
             return (
               <div key={`${m.timestamp}-${m.from?.identity ?? ''}`} className={`flex flex-col ${mine ? 'items-end' : 'items-start'}`}>
                 <span className="mb-0.5 px-1 text-[11px] text-white/45">
-                  {mine ? 'You' : who} ·{' '}
+                  {mine ? 'You' : m.from ? <ChatParticipantName participant={m.from} /> : 'Participant'} ·{' '}
                   {new Date(m.timestamp).toLocaleTimeString([], {
                     hour: '2-digit',
                     minute: '2-digit',
@@ -94,7 +100,7 @@ export default function ChatPanel({
                       : 'signal-call-chat-message rounded-bl-sm bg-white/8 text-white/90 ring-1 ring-white/10'
                   }`}
                 >
-                  {m.message}
+                  <ChatFileMessage message={m.message} room={room} token={participantToken} sender={m.from?.identity} />
                 </span>
               </div>
             );
@@ -102,6 +108,7 @@ export default function ChatPanel({
         )}
       </div>
 
+      <ChatExtras room={room} token={participantToken} onSend={onSend} onEmoji={(emoji) => setDraft((value) => value + emoji)} />
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -127,4 +134,9 @@ export default function ChatPanel({
       </form>
     </aside>
   );
+}
+
+function ChatParticipantName({ participant }: { participant: NonNullable<ReceivedChatMessage['from']> }) {
+  const { name } = useParticipantInfo({ participant });
+  return <>{name || participant.identity || 'Participant'}</>;
 }

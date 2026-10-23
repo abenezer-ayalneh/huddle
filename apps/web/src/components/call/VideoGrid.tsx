@@ -7,10 +7,12 @@ import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from
 import FocusLayout, { trackKey } from './FocusLayout';
 import SelfView, { type Corner } from './SelfView';
 import VideoTile from './VideoTile';
+import SharedScreenView from './SharedScreenView';
 import { isControlAgentParticipant, type RemoteControlSession } from '@/lib/controlProtocol';
 
 export default function VideoGrid({
   iAmPresenting = false,
+  recordingActive = false,
   onStopPresenting,
   onStageTrackChange,
   localName,
@@ -26,6 +28,7 @@ export default function VideoGrid({
   // When the local participant is the Presenter, they see their own shared
   // track through the protected local-only PresenterPreview below.
   iAmPresenting?: boolean;
+  recordingActive?: boolean;
   onStopPresenting?: () => void;
   // Reports the feed that owns the main stage so it can be mirrored into
   // Picture-in-Picture. Same precedence the layout below uses: presented screen
@@ -128,11 +131,13 @@ export default function VideoGrid({
             <RemoteControlPlaceholder />
           ) : iAmPresenting ? (
             <PresenterPreview key={trackKey(screenTrack)} trackRef={screenTrack} onStop={onStopPresenting} />
-          ) : (
+          ) : remoteControlSession ? (
             <>
               <VideoTile trackRef={screenTrack} active={false} />
               {remoteControlInput}
             </>
+          ) : (
+            <SharedScreenView key={trackKey(screenTrack)} trackRef={screenTrack} recordingActive={recordingActive} />
           )
         }
         stripTracks={cameraTracks}

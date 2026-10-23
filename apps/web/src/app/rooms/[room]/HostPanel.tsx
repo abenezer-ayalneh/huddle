@@ -1,6 +1,8 @@
 'use client';
 
-import { useRemoteParticipants, useRoomInfo } from '@livekit/components-react';
+import InvitePeople from '@/components/call/InvitePeople';
+
+import { useParticipantInfo, useRemoteParticipants, useRoomInfo } from '@livekit/components-react';
 import { Check, Copy, ShieldCheck, UserCheck, UserMinus, UserX, VolumeX, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { api, type PendingKnock } from '@/lib/api';
@@ -133,7 +135,7 @@ export default function HostPanel({
 
   if (!open) {
     return (
-      <div className="absolute right-4 top-4 z-30 flex items-center gap-2">
+      <div className="signal-call-host-toolbar absolute right-4 top-4 z-30 flex items-center gap-2">
         <CallThemeToggle />
         <button
           type="button"
@@ -184,6 +186,7 @@ export default function HostPanel({
           </div>
         </Section>
 
+        <InvitePeople room={room} hostKey={hostKey} />
         <Section title="Recording">
           <RecordingControls room={room} hostKey={hostKey} onLeave={onLeave} />
         </Section>
@@ -253,27 +256,7 @@ export default function HostPanel({
           ) : (
             <ul className="space-y-2">
               {humanParticipants.map((p) => (
-                <li key={p.identity} className="flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2">
-                  <span className="truncate text-white/90">{p.name || p.identity}</span>
-                  <span className="flex shrink-0 gap-1">
-                    <IconButton
-                      icon={VolumeX}
-                      label={`Mute ${p.name || p.identity}`}
-                      variant="subtle"
-                      size="sm"
-                      disabled={busy === `mute-${p.identity}`}
-                      onClick={() => mute(p.identity)}
-                    />
-                    <IconButton
-                      icon={UserMinus}
-                      label={`Remove ${p.name || p.identity}`}
-                      variant="danger"
-                      size="sm"
-                      disabled={busy === `remove-${p.identity}`}
-                      onClick={() => remove(p.identity)}
-                    />
-                  </span>
-                </li>
+                <HostParticipantRow key={p.identity} participant={p} busy={busy} onMute={mute} onRemove={remove} />
               ))}
             </ul>
           )}
@@ -300,6 +283,44 @@ export default function HostPanel({
         )}
       </div>
     </aside>
+  );
+}
+
+function HostParticipantRow({
+  participant,
+  busy,
+  onMute,
+  onRemove,
+}: {
+  participant: ReturnType<typeof useRemoteParticipants>[number];
+  busy: string | null;
+  onMute: (identity: string) => void;
+  onRemove: (identity: string) => void;
+}) {
+  const { name } = useParticipantInfo({ participant });
+  const label = name || participant.identity;
+  return (
+    <li className="flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+      <span className="truncate text-white/90">{label}</span>
+      <span className="flex shrink-0 gap-1">
+        <IconButton
+          icon={VolumeX}
+          label={`Mute ${label}`}
+          variant="subtle"
+          size="sm"
+          disabled={busy === `mute-${participant.identity}`}
+          onClick={() => onMute(participant.identity)}
+        />
+        <IconButton
+          icon={UserMinus}
+          label={`Remove ${label}`}
+          variant="danger"
+          size="sm"
+          disabled={busy === `remove-${participant.identity}`}
+          onClick={() => onRemove(participant.identity)}
+        />
+      </span>
+    </li>
   );
 }
 

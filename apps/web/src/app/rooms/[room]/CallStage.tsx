@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useBackgroundCall } from '@/components/call/useBackgroundCall';
 import { usePictureInPicture } from '@/components/call/usePictureInPicture';
 import ChatPanel from '@/components/call/ChatPanel';
+import ParticipantsPanel from '@/components/call/ParticipantsPanel';
 import ConnectionStatus from '@/components/call/ConnectionStatus';
 import CallTimer from '@/components/call/CallTimer';
 import ControlBar from '@/components/call/ControlBar';
@@ -31,6 +32,8 @@ import { useParticipantJoinSound } from '@/components/call/useParticipantJoinSou
 import { setCallNoticeTrayOffset } from '@/lib/systemNotices';
 import MaintenanceWarning from '@/components/maintenance/MaintenanceWarning';
 import LeaveConfirmDialog from './LeaveConfirmDialog';
+import AccountSettings from '@/components/AccountSettings';
+import { useSession } from '@/lib/auth-client';
 
 /*
  * SIGNAL HANDOFF CALL WORKSPACE
@@ -245,11 +248,14 @@ function CallView({
   hostWaitingCount: number;
 }) {
   const { chatMessages, send, isSending } = useChat();
+  const { data: authSession } = useSession();
   useParticipantJoinSound(announceLocalJoin);
   const [chatOpen, setChatOpen] = useState(false);
+  const [participantsOpen, setParticipantsOpen] = useState(false);
   const [pipChatOpen, setPipChatOpen] = useState(false);
   const [pipChatDraft, setPipChatDraft] = useState('');
   const [pinnedIdentity, setPinnedIdentity] = useState<string | null>(null);
+  const [accountSettingsOpen, setAccountSettingsOpen] = useState(false);
 
   const recording = useRecording({ room, token, isHost, hostKey });
   const remoteControl = useRemoteControl({ room, participantToken: token, onTerminalStop: onLeaveConfirm });
@@ -308,6 +314,7 @@ function CallView({
   return (
     <>
       <VideoGrid
+        recordingActive={recording.recordingActive}
         iAmPresenting={presentation.iAmPresenting}
         suppressLocalPresentation={presentation.stopping}
         onStopPresenting={presentation.handleShareClick}
@@ -352,16 +359,36 @@ function CallView({
           nothing and is logged — it must never unmount <LiveKitRoom> and drop the
           participant from the call. */}
       <ErrorBoundary label="Chat" fallback={null}>
-        <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} messages={chatMessages} onSend={send} isSending={isSending} />
+        <ChatPanel
+          room={room}
+          participantToken={token}
+          open={chatOpen}
+          onClose={() => setChatOpen(false)}
+          messages={chatMessages}
+          onSend={send}
+          isSending={isSending}
+        />
       </ErrorBoundary>
+      <ParticipantsPanel open={participantsOpen} onClose={() => setParticipantsOpen(false)} />
       <ControlBar
+        participantsOpen={participantsOpen}
+        onToggleParticipants={() => {
+          setChatOpen(false);
+          setParticipantsOpen((v) => !v);
+        }}
         onLeave={onLeaveClick}
         chatOpen={chatOpen}
-        onToggleChat={() => setChatOpen((v) => !v)}
+        onToggleChat={() => {
+          setParticipantsOpen(false);
+          setChatOpen((v) => !v);
+        }}
         unreadChat={unread}
         iAmPresenting={presentation.iAmPresenting}
         someoneElsePresenting={presentation.someoneElsePresenting}
         onShareClick={presentation.handleShareClick}
+        onChangeSharedScreen={() => void presentation.changeMyShare()}
+        switchingPresentation={presentation.switchingPresentation}
+        onOpenAccountSettings={authSession ? () => setAccountSettingsOpen(true) : undefined}
         hasOutgoingRequest={!!presentation.outgoing}
         recordMode={recordMode}
         onRecordClick={recordMode ? onRecordClick : undefined}
@@ -450,6 +477,7 @@ function CallView({
         createPortal(
           <PictureInPictureSurface
             roomCode={room}
+            participantToken={token}
             localName={displayName}
             pinnedIdentity={pinnedIdentity}
             iAmPresenting={presentation.iAmPresenting}
@@ -506,6 +534,7 @@ function CallView({
           and playing (PiP requires that) but visually out of the way — the grid
           renders the real tiles. */}
       <video ref={pipVideoRef} autoPlay playsInline muted className="pointer-events-none fixed bottom-0 right-0 -z-10 h-px w-px opacity-0" />
+      {accountSettingsOpen && <AccountSettings onClose={() => setAccountSettingsOpen(false)} />}
     </>
   );
 }

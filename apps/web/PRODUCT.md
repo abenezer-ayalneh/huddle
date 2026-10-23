@@ -75,7 +75,8 @@ replacement.
 - The calling experience includes camera and microphone publishing, live
   participant layouts, brief join cues for participants already in the call and
   the admitted participant, mute and camera controls, connection recovery,
-  Present, chat, host controls, scheduling, Recording, and progressive desktop
+  Present, chat with emoji and 24-hour private call-scoped file attachments,
+  Host-sent email invitations, host controls, scheduling, Recording, and progressive desktop
   Picture-in-Picture. Rich PiP is a view of the existing call, not a second
   media or authority path.
 - Direct Rejoin is available only to an admitted signed-in Guest for the same
@@ -94,7 +95,7 @@ replacement.
   ephemeral and must not enter HTTP, Redis, Postgres, room metadata, logs,
   recordings, or audit records.
 - Unattended access, support codes outside a room, rich or binary clipboard
-  transfer, files, desktop audio, and Linux Control Agents are out of scope.
+  transfer, Remote Control file transfer, desktop audio, and Linux Control Agents are out of scope.
   Bounded plain-text Clipboard Sharing is ephemeral and room-scoped. macOS and
   Windows x64/ARM64 Control Agents are narrow native companions; the meeting
   itself remains browser-based.

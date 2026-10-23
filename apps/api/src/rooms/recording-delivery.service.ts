@@ -131,12 +131,14 @@ export class RecordingDeliveryService {
 
   private async claimNextDelivery(): Promise<{ id: string } | null> {
     const now = new Date();
+    const deleting = await this.prisma.accountDeletion.findMany({ select: { userId: true } });
+    const blockedUserIds = deleting.map((entry) => entry.userId);
     const candidate = await this.prisma.recordingDelivery.findFirst({
       where: {
         status: { in: ['queued', 'uploading'] },
         nextAttemptAt: { lte: now },
         OR: [{ leaseUntil: null }, { leaseUntil: { lt: now } }],
-        recording: { localDeletedAt: null },
+        recording: { localDeletedAt: null, room: { hostUserId: { notIn: blockedUserIds } } },
       },
       orderBy: { nextAttemptAt: 'asc' },
       select: { id: true },
@@ -235,6 +237,19 @@ export class RecordingDeliveryService {
   }
 
   private async heartbeat(id: string): Promise<void> {
+    const delivery = await this.prisma.recordingDelivery.findUnique({
+      where: { id },
+      select: { recording: { select: { room: { select: { hostUserId: true } } } } },
+    });
+    const pendingDeletion = delivery
+      ? await this.prisma.accountDeletion.findUnique({
+          where: { userId: delivery.recording.room.hostUserId },
+          select: { userId: true },
+        })
+      : null;
+    if (pendingDeletion) {
+      throw new Error('Account deletion has stopped recording delivery');
+    }
     await this.prisma.recordingDelivery.updateMany({
       where: { id, leaseOwner: this.owner },
       data: { leaseUntil: new Date(Date.now() + LEASE_MS) },

@@ -28,8 +28,24 @@ model User {
   rooms         Room[]
   cloudStorageConnections CloudStorageConnection[]
   recordingRecipients     RecordingRecipient[]
+  accountDeletion          AccountDeletion?
 
   @@map("user")
+}
+
+// Durable cleanup marker. The User relation cascades only when the worker
+// deletes the User after all external cleanup has succeeded.
+model AccountDeletion {
+  userId      String   @id
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status      String   @default("pending")
+  attempts    Int      @default(0)
+  lastError   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status, updatedAt])
+  @@map("account_deletion")
 }
 
 model Session {

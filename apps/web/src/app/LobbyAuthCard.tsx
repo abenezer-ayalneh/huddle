@@ -1,9 +1,11 @@
 'use client';
 
+import InvitePeople from '@/components/call/InvitePeople';
+
 import Link from 'next/link';
 import OwnerMaintenanceLink from '@/components/maintenance/OwnerMaintenanceLink';
 import { useRouter } from 'next/navigation';
-import { Calendar, Check, Copy, LogOut, MailCheck, Play } from 'lucide-react';
+import { Calendar, Check, Copy, LogOut, MailCheck, Play, UserRoundCog } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { api, isFaultError, type RoomSummary } from '@/lib/api';
 import { signIn, signUp, signOut, useSession } from '@/lib/auth-client';
@@ -12,6 +14,7 @@ import { saveHostSession } from '@/lib/hostSession';
 import DateTimePicker from '@/components/DateTimePicker';
 import IconButton from '@/components/IconButton';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import AccountSettings from '@/components/AccountSettings';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -220,6 +223,7 @@ function SignIn() {
 function HostDashboard({ userName, onSignOut }: { userName: string; onSignOut: () => void }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const [rooms, setRooms] = useState<RoomSummary[] | null>(null);
   const refresh = useCallback(() => {
@@ -285,7 +289,10 @@ function HostDashboard({ userName, onSignOut }: { userName: string; onSignOut: (
           <h2>Your rooms</h2>
           <p>Signed in as {userName}</p>
         </div>
-        <IconButton icon={LogOut} label="Sign out" className="lobby-icon-button" onClick={onSignOut} />
+        <div className="flex gap-2">
+          <IconButton icon={UserRoundCog} label="Account settings" className="lobby-icon-button" onClick={() => setSettingsOpen(true)} />
+          <IconButton icon={LogOut} label="Sign out" className="lobby-icon-button" onClick={onSignOut} />
+        </div>
       </header>
 
       <div className="lobby-room-actions">
@@ -306,6 +313,7 @@ function HostDashboard({ userName, onSignOut }: { userName: string; onSignOut: (
         View past recordings
       </Link>
       <OwnerMaintenanceLink />
+      {settingsOpen && <AccountSettings onClose={() => setSettingsOpen(false)} />}
     </div>
   );
 }
@@ -370,6 +378,7 @@ function MeetingRow({ room, onStart }: { room: RoomSummary; onStart: () => void 
           </button>
         </div>
       </div>
+      <InvitePeople room={room.room} hostKey={room.hostKey} />
     </li>
   );
 }

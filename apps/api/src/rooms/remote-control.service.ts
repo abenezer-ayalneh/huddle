@@ -401,12 +401,20 @@ export class RemoteControlService implements OnModuleInit, OnModuleDestroy {
 
   async onParticipantLeft(room: string, identity: string): Promise<void> {
     const grant = await this.state.getActive(room);
-    if (!grant) return;
-    let reason: string | null = null;
-    if (identity === grant.sharerIdentity) reason = 'sharer_disconnected';
-    else if (identity === grant.controllerIdentity) reason = 'controller_disconnected';
-    else if (identity === grant.agentIdentity) reason = 'agent_disconnected';
-    if (reason) await this.endGrant(grant, 'ended', reason, new Date());
+    if (grant) {
+      let reason: string | null = null;
+      if (identity === grant.sharerIdentity) reason = 'sharer_disconnected';
+      else if (identity === grant.controllerIdentity) reason = 'controller_disconnected';
+      else if (identity === grant.agentIdentity) reason = 'agent_disconnected';
+      if (reason) await this.endGrant(grant, 'ended', reason, new Date());
+      return;
+    }
+
+    const pending = await this.state.getPendingForRoom(room);
+    if (!pending || (identity !== pending.sharerIdentity && identity !== pending.controllerIdentity)) return;
+    const now = new Date();
+    await this.state.releasePending(room, pending.requestId);
+    await this.audit.failRequest(pending.requestId, 'participant_disconnected', now);
   }
 
   async onRoomFinished(roomSlug: string): Promise<void> {

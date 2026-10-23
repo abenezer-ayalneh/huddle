@@ -45,6 +45,7 @@ export interface GuestJoinResult {
 
 @Injectable()
 export class RoomsService {
+  private readonly admissions = new Map<string, Promise<void>>();
   constructor(
     private readonly repo: RoomRepository,
     private readonly state: RoomStateService,
@@ -190,19 +191,40 @@ export class RoomsService {
   }
 
   async admit(slug: string, knockId: string): Promise<{ status: string }> {
+    // This API is single-instance (ADR 0005). Serialize a room's decisions so
+    // duplicate clicks cannot mint a token against an already-replaced grant.
+    const previous = this.admissions.get(slug) ?? Promise.resolve();
+    let release!: () => void;
+    const next = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    this.admissions.set(slug, next);
+    await previous;
+    try {
+      return await this.admitOnce(slug, knockId);
+    } finally {
+      release();
+      if (this.admissions.get(slug) === next) this.admissions.delete(slug);
+    }
+  }
+
+  private async admitOnce(slug: string, knockId: string): Promise<{ status: string }> {
     const knock = await this.requireKnock(slug, knockId);
     if (knock.status === 'pending') {
-      const identity = makeIdentity(knock.name);
       const roomSid = knock.userId ? await this.ensureLivekitRoom(slug) : null;
+      const existing = knock.userId ? await this.state.getDirectRejoinGrant(slug, knock.userId) : undefined;
+      const reusableGrant = existing?.roomSid === roomSid ? existing : undefined;
+      const identity = reusableGrant?.identity ?? makeIdentity(knock.name);
       const directRejoinGrant =
-        knock.userId && roomSid
+        reusableGrant ??
+        (knock.userId && roomSid
           ? await this.state.addDirectRejoinGrant({
               room: slug,
               roomSid,
               userId: knock.userId,
               identity,
             })
-          : null;
+          : null);
       let token: string;
       try {
         token = await this.livekit.mintToken({
@@ -214,7 +236,7 @@ export class RoomsService {
           directRejoin: directRejoinGrant ? { grantId: directRejoinGrant.grantId, roomSid: directRejoinGrant.roomSid } : undefined,
         });
       } catch (error) {
-        if (directRejoinGrant) await this.state.removeDirectRejoinGrant(directRejoinGrant);
+        if (directRejoinGrant && !reusableGrant) await this.state.removeDirectRejoinGrant(directRejoinGrant);
         throw error;
       }
       await this.state.resolveKnock(knock, 'admitted', { identity, token });

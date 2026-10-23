@@ -9224,3 +9224,75 @@ html[data-theme='dark'] .signal-not-found-shell {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* Desktop drawers reserve stage space; narrow screens retain an overlay. */
+.signal-call-chat-panel,
+.signal-call-participants-panel {
+  box-shadow: -8px 0 0 var(--call-shadow) !important;
+}
+
+@media (min-width: 1024px) {
+  .signal-call-shell:has(.signal-call-side-panel) {
+    --call-panel-width: 20rem;
+  }
+
+  .signal-call-shell:has(.signal-call-chat-panel, .signal-call-participants-panel):has(.signal-call-host-panel) {
+    --call-panel-width: 40rem;
+  }
+
+  .signal-call-shell:has(.signal-call-chat-panel, .signal-call-participants-panel) .signal-call-host-panel {
+    right: 20rem;
+  }
+
+  .signal-call-shell .signal-call-grid,
+  .signal-call-shell .signal-call-focus,
+  .signal-call-shell .signal-call-controls,
+  .signal-call-shell .signal-call-notice-tray {
+    right: var(--call-panel-width, 0px);
+  }
+
+  .signal-call-shell .signal-call-top-rail.right-3 {
+    right: calc(var(--call-panel-width, 0px) + 0.75rem);
+  }
+
+  .signal-call-shell .signal-call-host-toolbar {
+    right: calc(var(--call-panel-width, 0px) + 1rem);
+  }
+
+  .signal-call-shell .signal-call-self-view.right-3 {
+    right: calc(var(--call-panel-width, 0px) + 1.5rem);
+  }
+}
+
+/* Device off is explicit; enabled devices stay neutral. */
+.signal-call-merged-control[data-device-state='on'] .signal-call-merged-main,
+.signal-call-merged-control[data-device-state='on'] .signal-call-merged-menu,
+.signal-call-pip-control[data-device-state='on'] {
+  border-color: var(--call-border) !important;
+  background: transparent !important;
+  color: var(--call-ink) !important;
+}
+
+.signal-call-merged-control[data-device-state='off'] .signal-call-merged-main,
+.signal-call-merged-control[data-device-state='off'] .signal-call-merged-menu,
+.signal-call-pip-control[data-device-state='off'] {
+  border-color: var(--call-red) !important;
+  background: var(--call-red) !important;
+  color: var(--call-danger-foreground) !important;
+}
+
+.signal-call-speaking-dot {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1px solid var(--call-surface);
+  background: var(--call-yellow);
+}
+
+.signal-call-device-alert {
+  background: var(--call-red) !important;
+  color: var(--call-danger-foreground) !important;
+}

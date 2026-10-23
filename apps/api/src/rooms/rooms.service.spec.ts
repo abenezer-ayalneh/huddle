@@ -71,6 +71,59 @@ describe('RoomsService', () => {
     service = new RoomsService(repo as unknown as RoomRepository, state, livekit as unknown as LivekitService);
   });
 
+  it('keeps an admitted token valid when the Host admits the same Knock twice concurrently', async () => {
+    const { room } = await service.createRoom(ada, {});
+    const { knockId } = await service.knock(room, bo.name, null, bo.id);
+    let release!: () => void;
+    let started!: () => void;
+    const blocked = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const entered = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    livekit.mintToken.mockImplementationOnce(async () => {
+      started();
+      await blocked;
+      return 'first-token';
+    });
+    const first = service.admit(room, knockId);
+    await entered;
+    const second = service.admit(room, knockId);
+    // Let a second admission race past the first token mint if admission has no lock.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    release();
+    await Promise.all([first, second]);
+    const admitted = await service.knockStatus(room, knockId);
+    const mint = livekit.mintToken.mock.calls.find(([input]) => input.identity === admitted.identity)?.[0];
+    expect(await service.isDirectRejoinParticipantValid(room, 'RM_current', admitted.identity!, mint!.directRejoin!)).toBe(true);
+  });
+
+  it('preserves the same account identity across separately admitted Knocks in one call', async () => {
+    const { room } = await service.createRoom(ada, {});
+    const first = await service.knock(room, bo.name, null, bo.id);
+    await service.admit(room, first.knockId);
+    const firstJoin = await service.knockStatus(room, first.knockId);
+    const second = await service.knock(room, bo.name, null, bo.id);
+    await service.admit(room, second.knockId);
+    const secondJoin = await service.knockStatus(room, second.knockId);
+    expect(secondJoin.identity).toBe(firstJoin.identity);
+  });
+
+  it('admits 64 distinct signed-in and anonymous Guests without dropping their grants', async () => {
+    const { room } = await service.createRoom(ada, {});
+    const knocks = await Promise.all(Array.from({ length: 64 }, (_, index) => service.knock(room, 'Guest', null, index % 2 ? `account-${index}` : undefined)));
+    await Promise.all(knocks.map((knock) => service.admit(room, knock.knockId)));
+    const joins = await Promise.all(knocks.map((knock) => service.knockStatus(room, knock.knockId)));
+    expect(new Set(joins.map((join) => join.identity)).size).toBe(64);
+    expect(joins.every((join) => join.status === 'admitted')).toBe(true);
+    for (let index = 1; index < 64; index += 2) {
+      const join = joins[index];
+      const input = livekit.mintToken.mock.calls.find(([mint]) => mint.identity === join.identity)![0];
+      expect(await service.isDirectRejoinParticipantValid(room, 'RM_current', join.identity!, input.directRejoin!)).toBe(true);
+    }
+  });
+
   it('creates a room with a generated code and mints a host token', async () => {
     const res = await service.createRoom(ada, {});
     expect(res.room).toEqual(expect.any(String));

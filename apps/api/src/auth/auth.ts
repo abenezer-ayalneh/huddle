@@ -1,6 +1,6 @@
 import type { ConfigService } from '@nestjs/config';
 import { PrismaClient } from '@prisma/client';
-import { buildVerificationMailer } from './mailer';
+import { buildPasswordResetMailer, buildVerificationMailer } from './mailer';
 
 // BetterAuth is ESM-only and NestJS compiles to CommonJS, so we load it through
 // a dynamic import() (legal from CJS) and build the instance once, lazily. The
@@ -14,8 +14,11 @@ export type Auth = {
   handler: (req: Request) => Promise<Response>;
   api: {
     getSession: (opts: { headers: Headers }) => Promise<{
+      session: { createdAt: Date };
       user: { id: string; name: string; email: string; image?: string | null };
     } | null>;
+    verifyPassword: (opts: { body: { password: string }; headers: Headers }) => Promise<{ status: boolean }>;
+    setPassword: (opts: { body: { newPassword: string }; headers: Headers }) => Promise<unknown>;
   };
 };
 
@@ -57,7 +60,50 @@ async function build(config: ConfigService): Promise<Auth> {
     // Local email + password is the primary login; Google is optional.
     // Verification is required: signups can't log in until they confirm their
     // address via the link we email them (see emailVerification below).
-    emailAndPassword: { enabled: true, requireEmailVerification: true },
+    emailAndPassword: {
+      enabled: true,
+      requireEmailVerification: true,
+      resetPasswordTokenExpiresIn: 60 * 60,
+      revokeSessionsOnPasswordReset: true,
+      sendResetPassword: buildPasswordResetMailer(config),
+    },
+    user: {
+      changeEmail: { enabled: true },
+    },
+    // A queued deletion is a terminal account state. Block new BetterAuth
+    // sessions and credential/profile mutations while cleanup is retrying.
+    databaseHooks: {
+      session: {
+        create: {
+          before: async (session) => {
+            if (await isDeletionPending(prisma, session.userId)) return false;
+            return undefined;
+          },
+        },
+      },
+      user: {
+        update: {
+          before: async (user) => {
+            if (await isDeletionPending(prisma, user.id)) return false;
+            return undefined;
+          },
+        },
+      },
+      account: {
+        create: {
+          before: async (account) => {
+            if (await isDeletionPending(prisma, account.userId)) return false;
+            return undefined;
+          },
+        },
+        update: {
+          before: async (account) => {
+            if (await isDeletionPending(prisma, account.userId)) return false;
+            return undefined;
+          },
+        },
+      },
+    },
     // Deliver the verification link on signup and sign the user in once they
     // confirm. The sender uses SMTP when configured; an unconfigured local API
     // deliberately does not deliver a bearer link (see mailer.ts).
@@ -85,4 +131,9 @@ async function build(config: ConfigService): Promise<Auth> {
       },
     },
   });
+}
+
+async function isDeletionPending(prisma: PrismaClient, userId: string | undefined): Promise<boolean> {
+  if (!userId) return false;
+  return Boolean(await prisma.accountDeletion.findUnique({ where: { userId }, select: { userId: true } }));
 }

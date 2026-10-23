@@ -75,12 +75,12 @@ The public HTTP boundary and fault behavior are in
 
 ## Data ownership and retention
 
-| Store             | Durable?                      | Current use                                                                                                                                                          |
-| ----------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Postgres / Prisma | Yes                           | BetterAuth records, managed rooms and host capabilities, recording metadata/delivery state, Remote Control audit metadata, and maintenance state/cleanup queue       |
-| Redis             | No; TTL/call-scoped           | LiveKit coordination, Knocks, Direct Rejoin Grants, recording consent indexes, Remote Control requests/grants/bootstrap codes, and one-time Google Drive OAuth state |
-| MinIO             | Temporary media object store  | Recording MP4s until the configured local-retention/deletion workflow removes them                                                                                   |
-| Google Drive      | Optional external destination | Host-connected private recording delivery after explicit configuration and eligible participant consent                                                              |
+| Store             | Durable?                      | Current use                                                                                                                                                              |
+| ----------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Postgres / Prisma | Yes                           | BetterAuth records, managed rooms and host capabilities, recording metadata/delivery state, Remote Control audit metadata, maintenance state, and account-deletion queue |
+| Redis             | No; TTL/call-scoped           | LiveKit coordination, Knocks, Direct Rejoin Grants, recording consent indexes, Remote Control requests/grants/bootstrap codes, and one-time Google Drive OAuth state     |
+| MinIO             | Private object store          | Recording MP4s until retention/deletion; opaque public avatar reads are proxied by the API                                                                               |
+| Google Drive      | Optional external destination | Host-connected private recording delivery after explicit configuration and eligible participant consent                                                                  |
 
 Postgres never stores recording media, screen frames, Remote Control input,
 clipboard content, bootstrap codes, or LiveKit API credentials. Redis is
@@ -91,8 +91,11 @@ coordination state, not a durable system of record. See ADRs 0003, 0005, 0024,
 
 Hosts start/stop room-composite Egress recordings through host-authorized API
 routes. The API tracks the Egress lifecycle from signed webhooks, lists
-recordings, and issues short-lived native-download tokens; bucket credentials do
-not reach the browser. The separate `recording-worker` process leases optional
+recordings, issues short-lived native-download tokens, and serves re-encoded
+profile avatars; bucket credentials do not reach the browser. Account deletion
+uses a durable API worker to stop rooms/egress, fence Drive delivery jobs, remove
+Huddle objects, revoke the Drive token, and delete account records. It leaves
+already delivered Drive files in place. The separate `recording-worker` process leases optional
 Google Drive delivery through Postgres and deletes the local MinIO object only
 after the delivery safeguards documented in ADR 0029.
 
@@ -163,3 +166,32 @@ surface and Caddy static override are separate recovery paths. See
 - **Future scale:** LiveKit is configured to share Redis and can be extended to
   additional SFUs, but every node needs its own reachable UDP/TURN network path.
   The checkout does not establish that a multi-node deployment has been run.
+
+### Meeting invitation and chat-file extension
+
+Host-authorized invitations use the existing SMTP provider for both active and
+scheduled rooms. Redis holds a recipient cooldown and an account-wide hourly
+attempt budget; recipient hashes, rather than addresses, form the cooldown keys.
+Emails contain only the ordinary room link and optional UTC scheduled time.
+Waiting Room admission remains required.
+
+Meeting-chat files use a dedicated private S3/MinIO bucket, separate from
+recordings. The browser sends sequential file slices through participant-
+authorized API routes into multipart storage without buffering entire files.
+Redis retains room-SID/uploader-bound upload metadata, confirmed part ETags,
+and a persistent expiry index. File references, rather than bytes, travel over
+chat. Metadata and short-lived download links require connected human membership;
+downloads re-check that membership and the call SID. This does not extend the
+Remote Control protocol or its file-transfer exclusion.
+
+Access ends 24 hours after upload initialization. An API cleanup loop retries
+physical deletion every minute, and the bucket lifecycle supplies a recovery
+fallback for orphaned objects and multipart uploads. The bucket must be dedicated:
+Huddle installs its one-day lifecycle rule there. Store lifecycle expiration can
+lag the access deadline; downloads remain denied at the deadline.
+
+Room admission is serialized within the documented single API process to prevent
+duplicate Admit requests from replacing a grant while its token is still being
+minted. A repeated admission of an already-admitted signed-in Guest in the same
+call preserves the existing identity/grant. Multi-instance admission would require
+shared locking before adding another API instance.

@@ -151,7 +151,7 @@ async function request<T>(path: string, init?: RequestInitX): Promise<T> {
     surfaceFault,
     timeoutMs,
     headers: {
-      'Content-Type': 'application/json',
+      ...(typeof FormData !== 'undefined' && rest.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
       ...(hostKey ? { 'x-host-key': hostKey } : {}),
       ...headers,
     },
@@ -172,6 +172,19 @@ async function request<T>(path: string, init?: RequestInitX): Promise<T> {
 }
 
 export const api = {
+  getProfile: () => request<{ id: string; name: string; email: string; emailVerified: boolean; image: string | null; hasPassword: boolean }>('/profile'),
+  updateProfile: (name: string) => request<{ id: string; name: string; image: string | null }>('/profile', { method: 'PATCH', body: JSON.stringify({ name }) }),
+  uploadAvatar: (file: File) => {
+    const body = new FormData();
+    body.append('file', file);
+    return request<{ image: string }>('/profile/avatar', { method: 'POST', body });
+  },
+  removeAvatar: () => request<{ image: null }>('/profile/avatar', { method: 'DELETE' }),
+  setPassword: (newPassword: string) => request<unknown>('/profile/password/set', { method: 'POST', body: JSON.stringify({ newPassword }) }),
+  deleteAccount: (confirmation: string, password?: string) =>
+    request<{ accepted: boolean }>('/profile/account', { method: 'DELETE', body: JSON.stringify({ confirmation, password }) }),
+  invite: (room: string, hostKey: string, email: string) =>
+    request<{ sent: boolean }>(`/rooms/${encodeURIComponent(room)}/invitations`, { method: 'POST', hostKey, body: JSON.stringify({ email }) }),
   // Signed-in host creates a meeting; the server generates its Room Code. The
   // only input is an optional scheduled start. Auth via session cookie.
   createRoom: (input: { scheduledStart?: string } = {}) =>

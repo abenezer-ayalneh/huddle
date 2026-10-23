@@ -375,5 +375,62 @@ identity.
       Remote Control, restart, and SSH-recovery path. See
       `docs/RUNBOOK_MAINTENANCE.md`.
 
+### Trello call usability follow-up — 2026-10-22
+
+- [x] Chat docks on the right; desktop drawers reserve media and control space
+      at 1024px and above. Narrow viewports retain overlay drawers.
+- [x] All call participants can open a read-only roster of joined people;
+      companion agents and Host admission/moderation actions are excluded.
+- [x] Ordinary presentation viewers can request browser fullscreen where
+      supported, with a Recording Indicator retained in the fullscreen surface.
+      Remote Control retains its existing attended stage and Stop rail.
+- [x] User clarification maps Trello #58 to the same joined-person roster as
+      #59; no new speaker-order policy was requested by that clarification.
+- [x] Device-off mic/camera controls use red; enabled devices stay neutral.
+      Local speech has an accessible indicator in the main call and rich PiP.
+- [x] Serialize duplicate Admit decisions and preserve a signed-in Guest's
+      identity/grant across separately admitted Knocks in the same call.
+      Regression tests reproduce the old immediate-invalid-token race, and
+      64 concurrent admissions retain valid distinct participant grants.
+- [x] macOS synthetic clicks carry native down/up click counts; standalone
+      CoreGraphics verification confirms single/double-click event state.
+- [x] Host email invitations for ongoing/upcoming rooms use configured SMTP,
+      ordinary admission links, validation, cooldown, and sending budget.
+      Local HTTP + SMTP sink acceptance passes; external delivery is pending.
+- [x] Meeting-chat multipart attachments and emoji in main/rich PiP chat:
+      private call-SID authorization, binary streaming, short-lived downloads,
+      exact 24-hour access expiry, cleanup retries, and bucket lifecycle fallback.
+      Local HTTP + Redis + MinIO roundtrip/cleanup acceptance passes.
+- [ ] Physical two-Mac double-click acceptance and full Agent build/test using
+      Xcode. This environment's Command Line Tools lack XCTest and SwiftUI macros.
+- [ ] Reproduce the reported join-then-disappear symptom on the affected
+      deployment after the admission race fix; do not claim a measured capacity
+      increase or rule out WebRTC/network/resource failures from unit tests.
+- [ ] Manual two-browser acceptance of drawer reflow, mobile overlays,
+      participant joins/leaves, device/speech states, fullscreen exit/failure,
+      Recording state, file sharing/cancel/download, and external SMTP delivery.
+- [ ] Environment-specific large-file/provider maximum-size acceptance.
+- Control Agent platform expansion (#44) is explicitly skipped by the user.
+
+### Trello account and presentation follow-up — 2026-10-23
+
+- [x] Add in-call browser screen replacement through the existing published
+      track, preserving presenter identity and retaining the current share when
+      the picker is cancelled or replacement fails.
+- [x] Add lobby and meeting account settings for display name, uploaded avatar,
+      verified email change, password set/change, and account deletion.
+- [x] Propagate profile name/avatar changes to connected LiveKit participants
+      and waiting-room entries; retry temporary synchronization failures.
+- [x] Queue account deletion durably, revoke active sessions/Drive credentials,
+      end owned rooms and Remote Control sessions, stop recordings, remove
+      Huddle media, and retain already delivered Google Drive copies.
+- [ ] Manual two-browser screen switching, cancellation, presenter handoff,
+      profile propagation, email confirmation, Google-only password setup, and
+      upload/delete acceptance.
+- [ ] Exercise account cleanup against live egress, leased Drive delivery,
+      LiveKit/MinIO outages, retry/restart, and retained Google Drive copies.
+- [ ] Physical macOS/Windows display-switch consent acceptance remains pending;
+      this work does not widen supported Agent platforms.
+
 Keep this file honest: check boxes as you go, and move items between phases if
 priorities change.

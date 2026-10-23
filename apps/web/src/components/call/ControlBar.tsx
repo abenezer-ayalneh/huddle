@@ -1,6 +1,6 @@
 'use client';
 
-import { useRoomContext, useTrackToggle } from '@livekit/components-react';
+import { useRoomContext, useTrackToggle, useSpeakingParticipants } from '@livekit/components-react';
 import { Track } from 'livekit-client';
 import {
   Circle,
@@ -12,9 +12,11 @@ import {
   MonitorUp,
   MonitorOff,
   MessageSquare,
+  Users,
   PhoneOff,
   PictureInPicture2,
   Square,
+  Settings2,
   type LucideIcon,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -32,12 +34,17 @@ export default function ControlBar({
   chatOpen,
   onToggleChat,
   unreadChat = 0,
+  participantsOpen = false,
+  onToggleParticipants,
   iAmPresenting,
   someoneElsePresenting,
   onShareClick,
+  onChangeSharedScreen,
+  switchingPresentation = false,
   hasOutgoingRequest,
   recordMode,
   onRecordClick,
+  onOpenAccountSettings,
   recordBusy = false,
   remoteControlActive = false,
   onPopOut,
@@ -52,15 +59,20 @@ export default function ControlBar({
   chatOpen: boolean;
   onToggleChat: () => void;
   unreadChat?: number;
+  participantsOpen?: boolean;
+  onToggleParticipants?: () => void;
   iAmPresenting: boolean;
   someoneElsePresenting: boolean;
   onShareClick: () => void;
+  onChangeSharedScreen?: () => void;
+  switchingPresentation?: boolean;
   hasOutgoingRequest: boolean;
   // Request to Record (docs/adr/0011): the non-host's record affordance. The
   // host records from the Host panel instead, so this is hidden (mode
   // undefined) for the host and when someone else is already recording.
   recordMode?: 'request' | 'pending' | 'recording';
   onRecordClick?: () => void;
+  onOpenAccountSettings?: () => void;
   recordBusy?: boolean;
   remoteControlActive?: boolean;
   // Picture-in-Picture (CONTEXT.md): pop the main stage into the OS-level
@@ -146,6 +158,8 @@ export default function ControlBar({
   // Listens to the active mic only while muted; reads the chosen device so we
   // analyse the same input the call uses.
   const room = useRoomContext();
+  const speakers = useSpeakingParticipants();
+  const localSpeaking = speakers.some((participant) => participant.isLocal);
   const showMuteReminder = useMuteReminder(!mic.enabled, room.getActiveDevice('audioinput'));
 
   // Keyboard Shortcuts + Push to Talk (docs/adr/0013): Cmd/Ctrl+D and +E mirror
@@ -214,6 +228,7 @@ export default function ControlBar({
             }
             menuLabel="Switch microphone or speaker"
             active={mic.enabled}
+            speaking={localSpeaking}
             danger={!mic.enabled}
             disabled={mic.pending}
             alert={!!micCause}
@@ -240,6 +255,16 @@ export default function ControlBar({
         <span className="contents" data-chat-toggle>
           <ControlButton icon={MessageSquare} label={chatOpen ? 'Hide chat' : 'Show chat'} active={chatOpen} badge={unreadChat} onClick={onToggleChat} />
         </span>
+        {onToggleParticipants && (
+          <span className="contents" data-participants-toggle>
+            <ControlButton
+              icon={Users}
+              label={participantsOpen ? 'Hide participants' : 'Show participants'}
+              active={participantsOpen}
+              onClick={onToggleParticipants}
+            />
+          </span>
+        )}
         <MoreControls
           open={moreOpen}
           onOpenChange={setMoreOpen}
@@ -249,6 +274,8 @@ export default function ControlBar({
           presenting={iAmPresenting}
           presentDisabled={hasOutgoingRequest || remoteControlActive}
           onShareClick={onShareClick}
+          onChangeSharedScreen={onChangeSharedScreen}
+          switchingPresentation={switchingPresentation}
           onPopOut={onPopOut}
           pipActive={pipActive}
           pipRichSupported={pipRichSupported}
@@ -256,6 +283,7 @@ export default function ControlBar({
           onPipAutoPreferenceChange={onPipAutoPreferenceChange}
           recordMode={recordMode}
           onRecordClick={onRecordClick}
+          onOpenAccountSettings={onOpenAccountSettings}
           recordBusy={recordBusy}
           presentationSupported={presentationSupported}
         />
@@ -283,6 +311,8 @@ function MoreControls({
   presenting,
   presentDisabled,
   onShareClick,
+  onChangeSharedScreen,
+  switchingPresentation,
   onPopOut,
   pipActive,
   pipRichSupported,
@@ -290,6 +320,7 @@ function MoreControls({
   onPipAutoPreferenceChange,
   recordMode,
   onRecordClick,
+  onOpenAccountSettings,
   recordBusy,
   presentationSupported,
 }: {
@@ -301,6 +332,8 @@ function MoreControls({
   presenting: boolean;
   presentDisabled: boolean;
   onShareClick: () => void;
+  onChangeSharedScreen?: () => void;
+  switchingPresentation: boolean;
   onPopOut?: () => void;
   pipActive: boolean;
   pipRichSupported: boolean;
@@ -308,6 +341,7 @@ function MoreControls({
   onPipAutoPreferenceChange?: (preference: PipAutoPreference) => void;
   recordMode?: 'request' | 'pending' | 'recording';
   onRecordClick?: () => void;
+  onOpenAccountSettings?: () => void;
   recordBusy: boolean;
   presentationSupported: boolean;
 }) {
@@ -341,6 +375,16 @@ function MoreControls({
             close={() => onOpenChange(false)}
           />
         )}
+        {presenting && onChangeSharedScreen && (
+          <MoreControlAction
+            icon={MonitorUp}
+            label={switchingPresentation ? 'Changing shared screen…' : 'Change shared screen'}
+            active={false}
+            disabled={switchingPresentation}
+            onClick={onChangeSharedScreen}
+            close={() => onOpenChange(false)}
+          />
+        )}
         {onPopOut && (
           <MoreControlAction
             icon={PictureInPicture2}
@@ -349,6 +393,9 @@ function MoreControls({
             onClick={onPopOut}
             close={() => onOpenChange(false)}
           />
+        )}
+        {onOpenAccountSettings && (
+          <MoreControlAction icon={Settings2} label="Account settings" active={false} onClick={onOpenAccountSettings} close={() => onOpenChange(false)} />
         )}
         {onPopOut && pipRichSupported && pipAutoPreference && onPipAutoPreferenceChange && (
           <label className="signal-call-pip-auto-setting flex min-w-0 flex-col items-stretch gap-1.5 border-t border-white/10 px-3 py-2.5 text-xs">

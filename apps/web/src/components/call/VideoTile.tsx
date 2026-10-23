@@ -1,6 +1,6 @@
 'use client';
 
-import { VideoTrack, isTrackReference, type TrackReferenceOrPlaceholder } from '@livekit/components-react';
+import { VideoTrack, isTrackReference, useParticipantInfo, type TrackReferenceOrPlaceholder } from '@livekit/components-react';
 import { Track } from 'livekit-client';
 import { MicOff, MonitorUp, MousePointer2, Pin, PinOff } from 'lucide-react';
 import { useState } from 'react';
@@ -51,6 +51,7 @@ export default function VideoTile({
   onRequestControl?: () => void;
 }) {
   const participant = trackRef.participant;
+  const participantInfo = useParticipantInfo({ participant });
   const { cameraOn, micOn } = useParticipantMedia(participant);
 
   const isScreenShare = trackRef.source === Track.Source.ScreenShare;
@@ -65,14 +66,14 @@ export default function VideoTile({
   // render sites pass the already-known display name. Remote tiles arrive with
   // their name on their token and need no fallback.
   const isSpeaking = speaking || active;
-  const label = participant.name || fallbackName || participant.identity || 'Participant';
+  const label = participantInfo.name || fallbackName || participant.identity || 'Participant';
   const initials = getInitials(label);
 
   // Avatar shown in the camera-off placeholder in place of the initials. A
   // broken/blocked image is not a Fault — it silently falls back to initials.
   // We remember which URL failed (not a bare boolean) so a tile reused for a
   // different participant re-tries the new Avatar without a reset effect.
-  const avatarUrl = getAvatarUrl(participant.metadata);
+  const avatarUrl = getAvatarUrl(participantInfo.metadata);
   const [failedAvatarUrl, setFailedAvatarUrl] = useState<string | undefined>(undefined);
   const showAvatar = !!avatarUrl && failedAvatarUrl !== avatarUrl;
 

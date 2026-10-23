@@ -5,6 +5,7 @@ import {
   VideoTrack,
   isTrackReference,
   useLocalParticipant,
+  useParticipantInfo,
   useSpeakingParticipants,
   useTracks,
   type ReceivedChatMessage,
@@ -32,11 +33,14 @@ import { isControlAgentParticipant } from '@/lib/controlProtocol';
 import { orderPictureInPictureTracks, selectPictureInPictureLayout } from './pictureInPictureLayout';
 import type { PresentationDisplaySurface } from './pictureInPicture.types';
 import VideoTile from './VideoTile';
+import ChatExtras from './ChatExtras';
+import ChatFileMessage from './ChatFileMessage';
 
 type PipPresentationMode = 'people' | 'presentation';
 
 export default function PictureInPictureSurface({
   roomCode,
+  participantToken,
   localName,
   pinnedIdentity,
   iAmPresenting,
@@ -59,6 +63,7 @@ export default function PictureInPictureSurface({
   onConfirmLeave,
 }: {
   roomCode: string;
+  participantToken?: string;
   localName: string;
   pinnedIdentity: string | null;
   iAmPresenting: boolean;
@@ -205,6 +210,9 @@ export default function PictureInPictureSurface({
       <main className={`signal-call-pip-main signal-call-pip-layout-${layout}`} data-display-surface={presentationDisplaySurface ?? undefined}>
         {chatOpen ? (
           <ChatDrawer
+            room={roomCode}
+            token={participantToken}
+            onSend={onSend}
             listRef={listRef}
             messages={messages}
             draft={chatDraft}
@@ -311,12 +319,15 @@ export default function PictureInPictureSurface({
           label={isMicrophoneEnabled ? 'Mute microphone' : 'Unmute microphone'}
           onClick={() => void toggleDevice('microphone')}
           active={isMicrophoneEnabled}
+          device
+          speaking={speaking.some((participant) => participant.isLocal)}
         />
         <PipControlButton
           icon={isCameraEnabled ? Camera : CameraOff}
           label={isCameraEnabled ? 'Turn camera off' : 'Turn camera on'}
           onClick={() => void toggleDevice('camera')}
           active={isCameraEnabled}
+          device
         />
         <PipControlButton
           icon={MessageSquare}
@@ -381,11 +392,26 @@ function PipMediaTile({
       className={`signal-call-pip-media ${primary ? 'signal-call-pip-primary' : ''} ${compact ? 'signal-call-pip-compact' : ''} ${active ? 'signal-call-pip-active' : ''}`}
     >
       <VideoTrack trackRef={trackRef} className="h-full w-full object-contain" />
-      <span className="signal-call-pip-media-label">
-        {label ?? (trackRef.participant.name || fallbackName || trackRef.participant.identity || 'Participant')}
-        {trackRef.participant.isLocal ? ' (You)' : ''}
-      </span>
+      <PipShareLabel participant={trackRef.participant} label={label} fallbackName={fallbackName} />
     </div>
+  );
+}
+
+function PipShareLabel({
+  participant,
+  label,
+  fallbackName,
+}: {
+  participant: TrackReferenceOrPlaceholder['participant'];
+  label?: string;
+  fallbackName?: string;
+}) {
+  const participantInfo = useParticipantInfo({ participant });
+  return (
+    <span className="signal-call-pip-media-label">
+      {label ?? (participantInfo.name || fallbackName || participant.identity || 'Participant')}
+      {participant.isLocal ? ' (You)' : ''}
+    </span>
   );
 }
 
@@ -394,6 +420,9 @@ function EmptyPeopleState() {
 }
 
 function ChatDrawer({
+  room,
+  token,
+  onSend,
   listRef,
   messages,
   draft,
@@ -402,6 +431,9 @@ function ChatDrawer({
   isSending,
   onClose,
 }: {
+  room?: string;
+  token?: string;
+  onSend: (message: string) => Promise<unknown>;
   listRef: RefObject<HTMLDivElement | null>;
   messages: ReceivedChatMessage[];
   draft: string;
@@ -425,14 +457,17 @@ function ChatDrawer({
           messages.map((message) => (
             <article key={`${message.timestamp}-${message.from?.identity ?? ''}`}>
               <small>
-                {message.from?.isLocal ? 'You' : message.from?.name || message.from?.identity || 'Participant'} ·{' '}
+                {message.from?.isLocal ? 'You' : message.from ? <PipChatParticipantName participant={message.from} /> : 'Participant'} ·{' '}
                 {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </small>
-              <span>{message.message}</span>
+              <span>
+                <ChatFileMessage message={message.message} room={room} token={token} sender={message.from?.identity} />
+              </span>
             </article>
           ))
         )}
       </div>
+      <ChatExtras room={room} token={token} onSend={onSend} onEmoji={(emoji) => onDraftChange(draft + emoji)} />
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -448,6 +483,11 @@ function ChatDrawer({
   );
 }
 
+function PipChatParticipantName({ participant }: { participant: NonNullable<ReceivedChatMessage['from']> }) {
+  const { name } = useParticipantInfo({ participant });
+  return <>{name || participant.identity || 'Participant'}</>;
+}
+
 function PipControlButton({
   icon: Icon,
   label,
@@ -455,6 +495,8 @@ function PipControlButton({
   active = false,
   danger = false,
   badge = 0,
+  device = false,
+  speaking = false,
 }: {
   icon: LucideIcon;
   label: string;
@@ -462,16 +504,20 @@ function PipControlButton({
   active?: boolean;
   danger?: boolean;
   badge?: number;
+  device?: boolean;
+  speaking?: boolean;
 }) {
   return (
     <button
       type="button"
       className={`signal-call-pip-control ${active ? 'signal-call-pip-control-active' : ''} ${danger ? 'signal-call-pip-control-danger' : ''}`}
       aria-label={label}
+      data-device-state={device ? (active ? 'on' : 'off') : undefined}
       aria-pressed={active}
       onClick={onClick}
     >
       <Icon aria-hidden="true" />
+      {device && active && speaking && <span role="status" aria-label="You are speaking" className="signal-call-speaking-dot" />}
       {badge > 0 && <span className="signal-call-pip-control-badge">{badge}</span>}
     </button>
   );

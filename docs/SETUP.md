@@ -6,8 +6,8 @@ acceptance. See [DOCUMENTATION.md](./DOCUMENTATION.md) for those boundaries.
 
 ## Prerequisites
 
-- Node.js 20+ and pnpm (`corepack enable` or `npm i -g pnpm`)
-- Docker + Docker Compose (Docker Desktop on macOS/Windows)
+- Node.js 22.22.2+ and pnpm 10.32.1 (matching `package.json`)
+- Docker + Docker Compose (Docker Desktop on macOS/Windows, or Colima on macOS)
 - A modern browser
 
 ## 1. Clone & configure env
@@ -90,10 +90,10 @@ only; 4xx Domain Outcomes remain quiet. It disables PII, performance tracing,
 and Session Replay, and scrubs request/user data plus room-scoped identifiers.
 The Control Agent never sends Sentry telemetry. See ADR 0027.
 
-## 2. Start LiveKit + Redis + Postgres + MinIO + Egress
+## 2. Start LiveKit + Redis + Postgres + MinIO + Egress + Mailpit
 
 ```bash
-pnpm infra:up                                      # docker compose --env-file .env --profile dev-egress-fix up -d
+pnpm infra:up                                      # base + local Compose overlay, dev profile
 docker compose -f infra/docker-compose.yml ps      # confirm all are up
 ```
 
@@ -107,6 +107,34 @@ LiveKit signaling/API is on `http://localhost:7880`; Postgres on `localhost:5432
 MinIO's S3 API on `http://localhost:9000` and its web console on
 `http://localhost:9001` (log in with `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD`).
 
+Mailpit captures verification emails locally at `http://localhost:8025`; SMTP
+listens on `localhost:1025` without credentials. The `.env.example` defaults use
+this inbox, so local sign-up needs no external mail provider. Both ports bind
+only to loopback, and Mailpit shares the opt-in development profile so it does
+not start with the production stack. Email verification remains required.
+
+The local overlay builds MinIO from official community source at commit
+`9e49d5e7a648f00e26f2246f4dc28e6b07f8c84a`
+(`RELEASE.2025-10-15T17-29-55Z`). On 2026-10-22 the configured Docker Hub image
+returned pull-access-denied, Quay returned unauthorized, and the official binary
+endpoint returned HTTP 410. The initial local build downloads Go dependencies
+and takes longer than subsequent starts. This fallback only applies to the
+local/tunnel scripts; production image selection and acceptance are separate.
+
+On macOS, Colima is an alternative Docker runtime:
+
+```bash
+brew install node@22 docker docker-compose colima
+export PATH="/opt/homebrew/opt/node@22/bin:$PATH" # Apple Silicon Homebrew
+npm install -g pnpm@10.32.1
+mkdir -p ~/.docker/cli-plugins
+ln -sf "$(brew --prefix)/opt/docker-compose/bin/docker-compose" ~/.docker/cli-plugins/docker-compose
+colima start --cpu 4 --memory 6 --disk 60
+```
+
+Keep the Node bin directory on your shell's PATH. Start Colima before running
+`pnpm infra:up`; Docker Desktop users should start Docker Desktop instead.
+
 > **Recording services (Phase 8):** `egress` (records the composited room) and
 > `minio` (stores the MP4) join the stack. Egress needs the `${LIVEKIT_*}` vars,
 > so start it with `pnpm infra:up` (which passes `--env-file .env`) — a bare
@@ -115,6 +143,20 @@ MinIO's S3 API on `http://localhost:9000` and its web console on
 > uploads via `S3_ENDPOINT_INTERNAL` (`minio:9000`); the API reads back via
 > `S3_ENDPOINT` (`localhost:9000`) — don't swap them. See
 > `docs/adr/0003-recording-egress-minio.md`.
+
+Profile pictures use the existing private `S3_BUCKET`: uploads are restricted
+to JPEG, PNG, and WebP, decoded and re-encoded as 512px WebP by the API, then
+served through the API using immutable opaque URLs. Configure the API's existing
+`BETTER_AUTH_URL` to its externally reachable HTTP origin so those URLs load for
+other participants. No bucket credentials or public bucket policy are needed.
+
+Apply the account-deletion migration with the normal `prisma:deploy` command.
+The API runs the durable cleanup queue every five seconds. Pending accounts are
+blocked and signed out while owned rooms, attended Remote Control sessions,
+active recordings, local recording objects, profile images, and the Drive
+refresh token are cleaned up and revoked. Copies already delivered to Google
+Drive remain there. Monitor API logs and Postgres
+`account_deletion` rows for retries after LiveKit, MinIO, or database outages.
 
 ## 3. Install dependencies
 
@@ -148,10 +190,25 @@ pnpm dev:web        # Next.js dev server
 # open http://localhost:3000
 ```
 
+### Run the recording retention/delivery worker
+
+In another terminal, build the API and start its worker with the same local env:
+
+```bash
+pnpm --filter @huddle/api build
+node scripts/with-env.mjs .env -- pnpm --filter @huddle/api start:worker
+```
+
+The worker enforces local recording retention. Google sign-in, private Drive
+delivery, and Sentry remain optional external integrations and are disabled
+when their credentials are blank; local recording uses MinIO.
+
 ## 6. Smoke test a call
 
 1. Open `http://localhost:3000`. **Create an account / sign in** (email +
    password, or Google if configured) to host.
+   For a local account, open `http://localhost:8025`, select its verification
+   email, and follow **Verify email** before signing in.
 2. Create (or schedule) a meeting; copy its link.
 3. Open the link in a second window, enter a name, and **knock**.
 4. Back in the host window, **admit** the guest. You should see/hear both, and
@@ -178,6 +235,11 @@ swift test --package-path apps/control-agent
 ./apps/control-agent/scripts/build-app.sh
 open "apps/control-agent/dist/Huddle Control Agent.app"
 ```
+
+Building and testing the companion requires full Xcode with its macOS SDK and
+XCTest, selected via `xcode-select`. Command Line Tools alone may lack XCTest
+and SwiftUI compiler plugins. An installed Control Agent can be used without
+Xcode; building the browser/API stack does not require it.
 
 The browser opens a one-time `huddle-control://join` link after Sharer consent.
 The agent redeems that code once, joins LiveKit with a server-minted token that
@@ -278,9 +340,14 @@ matrix.
 
 ## Stopping
 
+Stop the web, API, and recording worker processes with Ctrl+C in their terminals.
+
 ```bash
 pnpm infra:down
 ```
+
+Colima users can then stop its VM with `colima stop`. Named Docker volumes
+preserve accounts and recordings across these stops.
 
 ## Production
 
@@ -289,3 +356,20 @@ this local guide as a shortened deployment procedure. The committed CI/CD
 workflow still requires configured GitHub secrets, a provisioned VPS, and a
 successful external run before it can be treated as active. See
 [RUNBOOK_CICD.md](./RUNBOOK_CICD.md).
+
+### Verify invitations and chat storage locally
+
+With local Redis, MinIO, and the SMTP sink running, these checks use the normal
+HTTP controller/guard/validation paths and actual local storage/SMTP. They refuse
+non-loopback store/SMTP endpoints and allocate test-only data; no real recipient
+or WebRTC peer is involved.
+
+```bash
+pnpm --filter @huddle/api exec ts-node test/chat-files.storage-smoke.ts
+pnpm --filter @huddle/api exec ts-node test/invitations.smtp-smoke.ts
+```
+
+Chat files require a dedicated private `S3_CHAT_BUCKET` plus multipart and
+lifecycle permissions. They expire after 24 hours; `CHAT_FILE_MAX_BYTES` must
+match your provider's multipart ceiling. These local small-file checks do not
+prove provider maximum-size transfers, external inbox delivery, or physical media.

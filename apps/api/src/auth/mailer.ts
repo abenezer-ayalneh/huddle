@@ -15,6 +15,7 @@ const logger = new Logger('Mailer');
 
 // BetterAuth hands us the full user + a verification URL; we only need these.
 type VerificationEmail = { user: { email: string; name?: string | null }; url: string };
+type PasswordResetEmail = { user: { email: string; name?: string | null }; url: string };
 type MailerConfig = Pick<ConfigService, 'get'>;
 
 function describeMailerError(error: unknown): string {
@@ -113,6 +114,48 @@ export function buildVerificationMailer(config: MailerConfig) {
       // A send failure must not break signup, and the verification URL must
       // never be logged. Keep enough SMTP context to debug prod wiring.
       logger.warn(`Failed to send verification email to ${user.email} via ${host}:${port} from ${from}: ${describeMailerError(error)}`);
+    }
+  };
+}
+
+export function buildPasswordResetMailer(config: MailerConfig) {
+  const host = config.get<string>('SMTP_HOST');
+  const port = Number(config.get<string>('SMTP_PORT') ?? 587);
+  const smtpUser = config.get<string>('SMTP_USER');
+  const smtpPass = config.get<string>('SMTP_PASS');
+  const from = config.get<string>('SMTP_FROM') ?? smtpUser ?? 'no-reply@huddle.local';
+  let transport: nodemailer.Transporter | null = null;
+
+  return async function sendPasswordResetEmail({ user, url }: PasswordResetEmail): Promise<void> {
+    if (!host) return;
+    if (!transport) {
+      transport = nodemailer.createTransport({
+        host,
+        port,
+        secure: port === 465,
+        auth: smtpUser && smtpPass ? { user: smtpUser, pass: smtpPass } : undefined,
+      });
+    }
+    try {
+      const message = buildSignalHandoffEmail({
+        preheader: 'Set or reset your Huddle password.',
+        route: 'ACCOUNT SECURITY',
+        title: 'Set your password.',
+        body: 'Use this link to set or reset the password for your Huddle account. The link expires after one hour.',
+        action: { href: url, label: 'Set password' },
+        fallbackLabel: 'If the button does not work, copy and paste this link into your browser:',
+        note: "If you didn't request a password change, you can safely ignore this message.",
+      });
+      await transport.sendMail({
+        from: { name: 'Huddle', address: from },
+        to: user.email,
+        subject: 'Set your Huddle password',
+        text: message.text,
+        html: message.html,
+      });
+      logger.log(`Sent password setup email to ${user.email}`);
+    } catch (error) {
+      logger.warn(`Failed to send password setup email to ${user.email} via ${host}:${port} from ${from}: ${describeMailerError(error)}`);
     }
   };
 }

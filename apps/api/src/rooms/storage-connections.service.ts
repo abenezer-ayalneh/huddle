@@ -96,12 +96,27 @@ export class StorageConnectionsService {
   }
 
   async disconnect(userId: string): Promise<void> {
+    await this.disconnectUser(userId, false);
+  }
+
+  async disconnectForAccountDeletion(userId: string): Promise<void> {
+    await this.disconnectUser(userId, true);
+  }
+
+  private async disconnectUser(userId: string, retryRevocationFailure: boolean): Promise<void> {
     const connection = await this.getConnection(userId);
     if (connection?.encryptedRefreshToken) {
       try {
         const refreshToken = this.crypto.decrypt(connection.encryptedRefreshToken);
-        await fetch(`https://oauth2.googleapis.com/revoke?${new URLSearchParams({ token: refreshToken })}`, { method: 'POST' });
-      } catch {
+        const response = await fetch(`https://oauth2.googleapis.com/revoke?${new URLSearchParams({ token: refreshToken })}`, {
+          method: 'POST',
+          signal: AbortSignal.timeout(10_000),
+        });
+        // Google returns 400 when the token is already invalid or revoked.
+        // Treat that as completed revocation; retry network/server failures.
+        if (!response.ok && response.status !== 400) throw new Error(`Google token revocation returned HTTP ${response.status}`);
+      } catch (error) {
+        if (retryRevocationFailure) throw error;
         // Revocation is deliberately best effort; discard our token either way.
       }
     }

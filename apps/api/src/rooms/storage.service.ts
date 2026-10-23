@@ -1,4 +1,4 @@
-import { CreateBucketCommand, DeleteObjectCommand, GetObjectCommand, HeadBucketCommand, S3Client } from '@aws-sdk/client-s3';
+import { CreateBucketCommand, DeleteObjectCommand, GetObjectCommand, HeadBucketCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Readable } from 'node:stream';
@@ -14,6 +14,7 @@ export class StorageService {
   readonly bucket: string;
   // Endpoint Egress uses to upload (reachable from inside the docker network).
   readonly internalEndpoint: string;
+  readonly publicApiUrl: string;
   readonly region: string;
   readonly accessKey: string;
   readonly secretKey: string;
@@ -33,6 +34,7 @@ export class StorageService {
     this.secretKey = secretKey;
     this.region = this.config.get<string>('S3_REGION') ?? 'us-east-1';
     this.internalEndpoint = this.config.get<string>('S3_ENDPOINT_INTERNAL') ?? 'http://minio:9000';
+    this.publicApiUrl = (this.config.get<string>('BETTER_AUTH_URL') ?? 'http://localhost:3001').replace(/\/$/, '');
   }
 
   private get client(): S3Client {
@@ -115,6 +117,11 @@ export class StorageService {
       size: res.ContentLength,
       contentType: res.ContentType,
     };
+  }
+
+  async putObject(key: string, body: Buffer, contentType: string): Promise<void> {
+    await this.ensureBucket();
+    await this.client.send(new PutObjectCommand({ Bucket: this.bucket, Key: key, Body: body, ContentType: contentType }));
   }
 
   // Drive's resumable uploader requests a deterministic byte range at a time.

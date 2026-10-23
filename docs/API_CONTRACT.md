@@ -702,6 +702,40 @@ email`, `POST /api/auth/sign-in/email`, and `/api/auth/sign-in/social`.
   (`POST /rooms`, `GET /rooms/mine`, `POST /rooms/:room/host-token`) read it; the
   client must send `credentials: "include"`.
 
+### Profile and account lifecycle
+
+The following Huddle endpoints require a BetterAuth session. An account with a
+pending deletion job is rejected by session-gated API routes.
+
+| Method   | Path                    | Request                                             | Result                                                                                  |
+| -------- | ----------------------- | --------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `GET`    | `/profile`              | —                                                   | name, email, verification state, avatar URL, and whether a credential password exists   |
+| `PATCH`  | `/profile`              | `{ "name": string }`                                | saved display name; current LiveKit participants and waiting-room entries are refreshed |
+| `POST`   | `/profile/avatar`       | multipart `file` (JPEG, PNG, WebP; max 5 MiB)       | re-encoded 512px WebP URL                                                               |
+| `DELETE` | `/profile/avatar`       | —                                                   | removes the Huddle avatar and returns `{ "image": null }`                               |
+| `GET`    | `/profile/avatar/:key`  | opaque immutable key                                | public cached WebP bytes for participant rendering                                      |
+| `POST`   | `/profile/password/set` | `{ "newPassword": string }`                         | sets a credential for a signed-in account that has none                                 |
+| `DELETE` | `/profile/account`      | `{ "confirmation": "DELETE", "password"?: string }` | `{ "accepted": true }`; revokes sessions and queues retryable cleanup                   |
+
+The client calls BetterAuth `POST /api/auth/change-email` for a verified email
+change, `POST /api/auth/change-password` for a password change (other sessions
+are revoked). The browser refreshes its session after Huddle saves a profile
+name. Google-only users request
+a one-hour setup link through `POST /api/auth/request-password-reset` and set
+their credential through `POST /api/auth/reset-password` after following the
+verified email link. `verifyPassword` and `setPassword` are server-only
+BetterAuth APIs and are never exposed as public authentication routes. Email
+confirmation is delivered by the configured verification and password-reset
+mailers.
+
+Account removal requires a password check for password accounts, or a session
+created within the previous ten minutes for Google-only accounts. Huddle ends
+owned rooms and attended Remote Control sessions, stops recordings, removes
+Huddle-managed media and account data, and revokes the Drive connection.
+Recording files already delivered to Drive remain under the user's control.
+Cleanup retries from a durable Postgres job; the account remains blocked while
+the job is pending.
+
 ## Owner-controlled maintenance
 
 Maintenance is a server-enforced admission/shutdown policy. It deliberately
@@ -727,3 +761,59 @@ owner access.
 Allow the web app's origin (e.g. `http://localhost:3000` in dev) **with
 `credentials: true`** so the BetterAuth session cookie is sent on cross-origin
 calls. Keep the allowed-origins list in env/config (`WEB_ORIGIN`).
+
+## Meeting invitations and chat files (development implementation)
+
+These routes preserve managed-room admission. An invitation is a normal meeting
+link; it contains neither a Host key nor a participant token.
+
+- `POST /rooms/:room/invitations` — Host key required; JSON `{ email }` is
+  validated as one email address. Sends through the existing SMTP configuration
+  for ongoing or upcoming rooms. Returns `{ sent: true }` only after the provider
+  accepts the message; this does not prove inbox delivery. Missing SMTP returns
+  503, provider rejection 502, cooldown/rate limit 429. One recipient per request,
+  one send per recipient/room/minute, at most 50 attempts per Host account/hour.
+- Admission decisions are serialized per room in the single API instance.
+  Repeated Admit for one Knock is idempotent. Repeated admission of the same
+  signed-in Guest during one call reuses the existing identity and grant. A new
+  call SID or a Host Remove still requires new authority. Concurrent browser
+  logins remain permitted; joining the same call under the same Guest identity
+  lets LiveKit replace that connection rather than creating duplicate people.
+
+Chat-file upload, metadata, and cancellation routes require a participant token
+**and current connected human membership** in the matching LiveKit call SID.
+Neither a pending Knock nor a companion-agent token is sufficient. Upload writes
+also require the exact uploader identity. Files are downloaded as attachments,
+never rendered as HTML. Filenames and file contents are not Remote Control input.
+
+| Method | Path under `/rooms/:room/chat-files` | Request / result                                                                                |
+| ------ | ------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| POST   | `/`                                  | `{ name, size }` → `{ id, partSize, maxBytes, expiresAt }`                                      |
+| PUT    | `/:id/parts/:part`                   | Raw binary stream with exact Content-Length; sequential 1-based parts; same part may be retried |
+| POST   | `/:id/complete`                      | Confirms all parts and completes the object; empty files use an empty object                    |
+| DELETE | `/:id`                               | Aborts the uploader's incomplete upload                                                         |
+| GET    | `/:id`                               | Safe metadata and a five-minute download token bound to the reader, room, call SID, and file    |
+| GET    | `/:id/download?token=…`              | Streams the attachment; validates signed token and current connected membership                 |
+
+File references travel as `huddle-file:<uuid>` chat messages. The UI retrieves
+filenames and sizes from the authorized API and verifies the message sender
+against the stored uploader; no storage credentials or object-store URLs reach
+clients. Chat history remains session-memory history, including references.
+Main-call and rich PiP chat both support attachments and emoji insertion.
+
+Access expires exactly 24 hours after upload initialization. The API cleanup
+loop runs every minute, deleting expired objects/unfinished multipart uploads and
+then metadata; store failures retry without extending access. The dedicated
+private `S3_CHAT_BUCKET` also gets a one-day expiration/incomplete-upload lifecycle
+rule as a recovery fallback. S3 lifecycle deletion is asynchronous; it does not
+replace the exact API expiry or the cleanup loop. New participants must belong
+to the same active call; the 24-hour retention does not grant post-call access.
+
+`CHAT_FILE_MAX_BYTES` is the provider-specific multipart ceiling, bounded above
+by 10,000 parts × 5 GiB (53,687,091,200,000 bytes), matching the
+[S3 multipart part-count/size limits](https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html). Set it lower for providers with
+lower object limits. Parts stream through the API, so file size is not an API
+memory allocation. Large-file transfer still depends on provider limits, free
+storage, network throughput, and operator proxy/timeouts. Maximum-size transfers
+have not been exercised. Physical browser/media and deployed SMTP acceptance
+remain separate from source and local storage checks.

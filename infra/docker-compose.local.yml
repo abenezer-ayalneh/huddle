@@ -1,0 +1,11 @@
+# Local-only source build fallback. Production uses its existing image policy.
+services:
+  minio:
+    image: huddle-minio:local
+    build:
+      context: ./minio
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://127.0.0.1:9000/minio/health/live']
+      interval: 5s
+      timeout: 3s
+      retries: 5

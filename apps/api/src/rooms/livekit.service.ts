@@ -163,6 +163,38 @@ export class LivekitService {
     return this.svc.listRooms();
   }
 
+  async syncAccountProfile(userId: string, name: string, image: string | null): Promise<void> {
+    const rooms = await this.listActiveRooms();
+    for (const room of rooms) {
+      const participants = await this.svc.listParticipants(room.name);
+      for (const participant of participants) {
+        let metadata: Record<string, unknown>;
+        try {
+          metadata = this.parseMetadata(participant.metadata);
+        } catch {
+          continue;
+        }
+        if (metadata.accountBinding !== this.accountBindingFor(userId) || metadata.role === 'control-agent') continue;
+        metadata.avatarUrl = image ?? undefined;
+        await this.svc.updateParticipant(room.name, participant.identity, { name, metadata: JSON.stringify(metadata) });
+      }
+    }
+  }
+
+  async removeAccountParticipants(userId: string): Promise<void> {
+    const rooms = await this.listActiveRooms();
+    const binding = this.accountBindingFor(userId);
+    for (const room of rooms) {
+      const participants = await this.svc.listParticipants(room.name);
+      for (const participant of participants) {
+        const metadata = this.parseMetadata(participant.metadata);
+        if (metadata.accountBinding === binding && metadata.role !== 'control-agent') {
+          await this.svc.removeParticipant(room.name, participant.identity);
+        }
+      }
+    }
+  }
+
   async endRoom(name: string) {
     await this.svc.deleteRoom(name);
   }

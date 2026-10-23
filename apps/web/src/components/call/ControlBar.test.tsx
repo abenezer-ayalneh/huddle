@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import ControlBar from './ControlBar';
 
 vi.mock('@livekit/components-react', () => ({
+  useSpeakingParticipants: () => [],
   useRoomContext: () => ({ getActiveDevice: vi.fn() }),
   useTrackToggle: () => ({ enabled: true, pending: false, toggle: vi.fn() }),
 }));
@@ -67,6 +68,42 @@ describe('ControlBar secondary controls', () => {
 
     expect(onShareClick).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Share screen' })).toBeNull());
+  });
+
+  it('offers screen replacement to the active presenter and keeps it disabled while the picker is open', async () => {
+    const onChangeSharedScreen = vi.fn();
+    const { rerender } = render(
+      <ControlBar
+        onLeave={vi.fn()}
+        chatOpen={false}
+        onToggleChat={vi.fn()}
+        iAmPresenting
+        someoneElsePresenting={false}
+        onShareClick={vi.fn()}
+        onChangeSharedScreen={onChangeSharedScreen}
+        switchingPresentation={false}
+        hasOutgoingRequest={false}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /More controls/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Change shared screen' }));
+    expect(onChangeSharedScreen).toHaveBeenCalledOnce();
+
+    rerender(
+      <ControlBar
+        onLeave={vi.fn()}
+        chatOpen={false}
+        onToggleChat={vi.fn()}
+        iAmPresenting
+        someoneElsePresenting={false}
+        onShareClick={vi.fn()}
+        onChangeSharedScreen={onChangeSharedScreen}
+        switchingPresentation
+        hasOutgoingRequest={false}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /More controls/ }));
+    expect((screen.getByRole('button', { name: 'Changing shared screen…' }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('preserves unavailable and conditional secondary actions', () => {

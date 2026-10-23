@@ -178,7 +178,7 @@ tracing, and Session Replay are disabled; request/user data and room-scoped
 identifiers are scrubbed before delivery. The Control Agent remains
 telemetry-free. See ADR 0027.
 
-### Verification Email Delivery (SMTP) — required for email/password signups
+### Auth Email Delivery (SMTP) — required for signups and password recovery
 
 New local accounts must confirm their address before they can sign in
 (`requireEmailVerification: true` in `apps/api/src/auth/auth.ts`), and the
@@ -589,3 +589,29 @@ See [the maintenance runbook](./RUNBOOK_MAINTENANCE.md) for per-environment owne
 verification, the five-minute call shutdown, and the SSH static-page override.
 Apply the maintenance migrations before starting the updated API, and create
 `infra/maintenance-state/` as the deployment user before recreating Caddy.
+
+### Chat files and meeting invitations
+
+Set `S3_CHAT_BUCKET` to a dedicated private bucket (default `huddle-chat`), distinct
+from the recordings `S3_BUCKET`. The existing S3 credential needs bucket read/create,
+lifecycle configuration, multipart create/upload/complete/abort, object read, and
+delete rights on this bucket. Huddle installs a one-day object/incomplete-upload
+lifecycle rule. Do not point this setting at a bucket containing other data.
+
+Set `CHAT_FILE_MAX_BYTES` to the chosen provider's multipart object-size ceiling;
+the default is 53,687,091,200,000 bytes (10,000 × 5 GiB). Configure a lower value
+for providers that require it. Uploads are binary streamed parts, not JSON or
+whole-file API buffers. Keep reverse-proxy upload size/timeouts consistent with
+the largest selected part (up to 5 GiB); use TLS for browser access. Large-file
+transfer and storage exhaustion require environment-specific acceptance.
+
+Keep the API running for the minute-based 24-hour file cleanup loop. Redis holds
+the expiry index until physical deletion succeeds. Downloads stop at the exact
+deadline even if S3 deletion is delayed. The bucket lifecycle recovers orphaned
+uploads/objects if Redis state is lost. Monitor `Chat file cleanup failed` warnings.
+
+Invitations reuse `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, and
+`SMTP_FROM`. The first configured `WEB_ORIGIN` supplies the public room-link
+origin. Validate delivery with a controlled recipient before production use;
+provider acceptance alone does not prove inbox delivery. No deployment, live
+provider acceptance, or large-file maximum has been claimed by these changes.

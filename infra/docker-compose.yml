@@ -18,6 +18,17 @@
 # other devices on the LAN). See docs/SETUP.md.
 
 services:
+  # Local verification email inbox; opt-in with the same development profile
+  # as infra:up. Never included in the production stack's default services.
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    profiles:
+      - dev-egress-fix
+    ports:
+      - '127.0.0.1:1025:1025'
+      - '127.0.0.1:8025:8025'
+
   livekit:
     image: livekit/livekit-server:latest
     restart: unless-stopped

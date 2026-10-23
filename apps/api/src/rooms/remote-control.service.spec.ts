@@ -256,6 +256,17 @@ describe('RemoteControlService', () => {
     expect(state.releasePending).toHaveBeenCalledWith(room.slug, pending.requestId);
   });
 
+  it('releases a pending request when either participant disconnects', async () => {
+    const pending = pendingRequest();
+    state.getActive.mockResolvedValue(undefined);
+    state.getPendingForRoom.mockResolvedValue(pending);
+
+    await service.onParticipantLeft(room.slug, controller.identity);
+
+    expect(state.releasePending).toHaveBeenCalledWith(room.slug, pending.requestId);
+    expect(audit.failRequest).toHaveBeenCalledWith(pending.requestId, 'participant_disconnected', expect.any(Date));
+  });
+
   it('does not let the Sharer withdraw the Controller request', async () => {
     const pending = pendingRequest();
     state.getPending.mockResolvedValue(pending);

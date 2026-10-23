@@ -4,6 +4,7 @@ import type { IncomingHttpHeaders } from 'node:http';
 import type { Request } from 'express';
 import { FaultCode, faultBody } from '../common/faults';
 import { getAuth } from './auth';
+import { PrismaService } from '../prisma/prisma.service';
 
 export interface AuthUser {
   id: string;
@@ -29,7 +30,10 @@ function toHeaders(headers: IncomingHttpHeaders): Headers {
 // x-host-key (HostGuard) — this guard is only about "is someone signed in".
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private readonly config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<RequestWithUser>();
@@ -40,6 +44,8 @@ export class AuthGuard implements CanActivate {
     if (!session) {
       throw new UnauthorizedException(faultBody(FaultCode.SESSION_EXPIRED, 'Sign in required'));
     }
+    const deletion = await this.prisma.accountDeletion.findUnique({ where: { userId: session.user.id }, select: { userId: true } });
+    if (deletion) throw new UnauthorizedException(faultBody(FaultCode.SESSION_EXPIRED, 'This account is being deleted'));
     req.user = session.user;
     return true;
   }

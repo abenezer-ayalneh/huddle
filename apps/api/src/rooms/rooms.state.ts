@@ -134,6 +134,23 @@ export class RoomStateService {
     return pending;
   }
 
+  async updatePendingKnocksForUser(room: string, userId: string, name: string, image: string | null): Promise<void> {
+    const knocks = await this.listPendingKnocks(room);
+    for (const knock of knocks) {
+      if (knock.userId !== userId) continue;
+      knock.name = name;
+      knock.image = image;
+      await this.writeKnock(knock);
+    }
+  }
+
+  async removePendingKnocksForUser(room: string, userId: string): Promise<void> {
+    const knocks = await this.listPendingKnocks(room);
+    for (const knock of knocks) {
+      if (knock.userId === userId) await this.removeKnock(room, knock.knockId);
+    }
+  }
+
   // Advance a knock (admit/deny) and persist it, refreshing its TTL so an
   // admitted guest can still poll for their token before it expires.
   async resolveKnock(knock: Knock, status: Exclude<KnockStatus, 'pending'>, grant?: { identity: string; token: string }): Promise<void> {

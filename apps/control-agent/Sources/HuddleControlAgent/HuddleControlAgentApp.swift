@@ -735,6 +735,7 @@ extension LiveKitAgent: RoomDelegate {
 }
 
 private struct InputInjector {
+    private var mouseEvents = MouseEventBuilder()
     private var state = InputState()
     private var scroll = ScrollDeltaAccumulator()
 
@@ -768,6 +769,7 @@ private struct InputInjector {
         let held = state.drainHeldInputs()
         let point = NSEvent.mouseLocation
         for button in held.buttons { post(mouseUp(button), point: point, button: button) }
+        mouseEvents.reset()
         for code in held.keyCodes where KeyboardCodeMap.virtualKey(for: code) != nil {
             CGEvent(keyboardEventSource: nil, virtualKey: KeyboardCodeMap.virtualKey(for: code)!, keyDown: false)?.post(tap: .cghidEventTap)
         }
@@ -777,11 +779,11 @@ private struct InputInjector {
 
     func paste() { postCommandShortcut(code: "KeyV") }
 
-    private func postMouse(_ type: CGEventType, x: Double, y: Double, button: MouseButton, geometry: DisplayGeometry) {
+    private mutating func postMouse(_ type: CGEventType, x: Double, y: Double, button: MouseButton, geometry: DisplayGeometry) {
         guard let point = CoordinateMapper.point(x: x, y: y, in: geometry) else { return }
         post(type, point: point, button: button)
     }
-    private func post(_ type: CGEventType, point: CGPoint, button: MouseButton) { CGEvent(mouseEventSource: nil, mouseType: type, mouseCursorPosition: point, mouseButton: button == .right ? .right : button == .middle ? .center : .left)?.post(tap: .cghidEventTap) }
+    private mutating func post(_ type: CGEventType, point: CGPoint, button: MouseButton) { mouseEvents.make(type, point: point, button: button == .right ? .right : button == .middle ? .center : .left)?.post(tap: .cghidEventTap) }
     private func postCommandShortcut(code: String) {
         guard let keyCode = KeyboardCodeMap.virtualKey(for: code) else { return }
         let down = CGEvent(keyboardEventSource: nil, virtualKey: keyCode, keyDown: true)

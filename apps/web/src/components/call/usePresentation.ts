@@ -1,7 +1,7 @@
 'use client';
 
-import { isTrackReference, useLocalParticipant, useRoomContext, useTracks } from '@livekit/components-react';
-import { RoomEvent, Track, type RemoteParticipant } from 'livekit-client';
+import { isTrackReference, useLocalParticipant, useParticipantInfo, useRoomContext, useTracks } from '@livekit/components-react';
+import { LocalVideoTrack, RoomEvent, Track, type RemoteParticipant } from 'livekit-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { PRESENT_TOPIC, decode, sendPresentMessage } from '@/lib/presentProtocol';
 import { isControlAgentParticipant } from '@/lib/controlProtocol';
@@ -38,7 +38,8 @@ export function usePresentation(isHost: boolean, remoteControlActive = false) {
   // Present. It must never enter Ask to Present's client-side state machine.
   const presenterTrack = screenTracks.find((track) => !isControlAgentParticipant(track.participant)) ?? null;
   const presenterIdentity = presenterTrack?.participant.identity ?? null;
-  const presenterName = presenterTrack?.participant.name || presenterIdentity;
+  const presenterInfo = useParticipantInfo({ participant: presenterTrack?.participant ?? localParticipant });
+  const presenterName = presenterInfo.name || presenterIdentity;
   const rawIAmPresenting = presenterIdentity === localParticipant.identity;
   const someoneElsePresenting = presenterIdentity !== null && !rawIAmPresenting;
   const displaySurface: PresentationDisplaySurface | null = (() => {
@@ -56,6 +57,8 @@ export function usePresentation(isHost: boolean, remoteControlActive = false) {
   const outcomeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingStartShare = useRef(false);
   const [stoppingPresentation, setStoppingPresentation] = useState(false);
+  const [switchingPresentation, setSwitchingPresentation] = useState(false);
+  const switchingPresentationRef = useRef(false);
   const presentationRetryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const unmountedRef = useRef(false);
   const localPresentationRef = useRef(rawIAmPresenting);
@@ -89,6 +92,43 @@ export function usePresentation(isHost: boolean, remoteControlActive = false) {
   const stopMyShare = useCallback(async () => {
     await localParticipant.setScreenShareEnabled(false);
   }, [localParticipant]);
+
+  // Capture first, then replace the already-published video track in place.
+  // Keeping its publication/identity stable avoids a false "presenter left"
+  // transition that could auto-grant a waiting presentation request.
+  const changeMyShare = useCallback(async () => {
+    if (!rawIAmPresenting || switchingPresentationRef.current || stoppingPresentation) return;
+    const publication = localParticipant.getTrackPublication(Track.Source.ScreenShare);
+    const currentTrack = publication?.track;
+    if (!(currentTrack instanceof LocalVideoTrack)) return;
+
+    switchingPresentationRef.current = true;
+    setSwitchingPresentation(true);
+    let captured: Awaited<ReturnType<typeof localParticipant.createScreenTracks>> = [];
+    let replacementAdopted = false;
+    const previousMediaTrack = currentTrack.mediaStreamTrack;
+    try {
+      captured = await localParticipant.createScreenTracks({ audio: false });
+      const replacement = captured.find((track) => track.kind === Track.Kind.Video);
+      if (!replacement) throw new Error('Screen capture returned no video track');
+      await currentTrack.replaceTrack(replacement.mediaStreamTrack, true);
+      replacementAdopted = true;
+      previousMediaTrack.stop();
+      captured.filter((track) => track !== replacement).forEach((track) => track.stop());
+    } catch {
+      // Browser picker cancellation and replacement errors leave the current
+      // publication untouched. Stop every newly acquired track on failure.
+      if (!replacementAdopted) {
+        if (currentTrack.mediaStreamTrack !== previousMediaTrack) {
+          await currentTrack.replaceTrack(previousMediaTrack, true).catch(() => undefined);
+        }
+        captured.forEach((track) => track.stop());
+      }
+    } finally {
+      switchingPresentationRef.current = false;
+      setSwitchingPresentation(false);
+    }
+  }, [localParticipant, rawIAmPresenting, stoppingPresentation]);
 
   // When presenter disappears while we have a pending outgoing request,
   // auto-resolve: drop the request and start our share. The request is cleared
@@ -188,6 +228,7 @@ export function usePresentation(isHost: boolean, remoteControlActive = false) {
     while (!unmountedRef.current && Date.now() < deadline) {
       try {
         await localParticipant.setScreenShareEnabled(false);
+        if (!unmountedRef.current) setStoppingPresentation(false);
         return;
       } catch {
         await new Promise<void>((resolve) => window.setTimeout(resolve, pause));
@@ -204,10 +245,6 @@ export function usePresentation(isHost: boolean, remoteControlActive = false) {
     };
     presentationRetryRef.current = setTimeout(reconcile, 30_000);
   }, [localParticipant, rawIAmPresenting, stoppingPresentation]);
-
-  useEffect(() => {
-    if (!rawIAmPresenting && stoppingPresentation) setStoppingPresentation(false);
-  }, [rawIAmPresenting, stoppingPresentation]);
 
   // Clean up incoming request if the requester disconnects.
   useEffect(() => {
@@ -324,6 +361,8 @@ export function usePresentation(isHost: boolean, remoteControlActive = false) {
     incoming,
     outcome,
     handleShareClick,
+    changeMyShare,
+    switchingPresentation,
     cancelRequest,
     yieldPresentation,
     declinePresentation,

@@ -23,6 +23,18 @@ export const authClient = createAuthClient({
 
 export const { signOut, useSession } = authClient;
 
+export async function authPost<T = unknown>(path: string, body: Record<string, unknown>): Promise<T> {
+  const response = await httpFetch(`${AUTH_URL}/api/auth${path}`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const result = (await response.json().catch(() => ({}))) as { message?: string } & T;
+  if (!response.ok) throw new Error(result.message ?? 'The account request could not be completed.');
+  return result;
+}
+
 // Active wrappers: sign-in / sign-up are user-initiated, so a connectivity
 // failure on them is loud — the Fault toast, not just the banner (docs/adr/0019).
 // BetterAuth swallows the transport FaultError into its result or rejects;

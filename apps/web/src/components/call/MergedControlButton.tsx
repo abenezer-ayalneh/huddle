@@ -33,6 +33,7 @@ export default function MergedControlButton({
   danger = false,
   disabled = false,
   alert = false,
+  speaking = false,
   onClick,
   menu,
 }: {
@@ -46,6 +47,7 @@ export default function MergedControlButton({
   // Collapse to a single badged button — no Switch Device chevron — whose press
   // opens the recovery dialog instead of toggling.
   alert?: boolean;
+  speaking?: boolean;
   onClick?: () => void;
   // Popover body for the chevron side. Receives a close() it can call after a
   // pick so the menu dismisses itself.
@@ -71,7 +73,7 @@ export default function MergedControlButton({
 
   return (
     <Popover open={menuOpen} onOpenChange={setMenuOpen}>
-      <div className="signal-call-merged-control flex items-center">
+      <div className="signal-call-merged-control flex items-center" data-device-state={active ? 'on' : 'off'}>
         {/* Left: the primary control. */}
         <button
           type="button"
@@ -83,6 +85,7 @@ export default function MergedControlButton({
           className={`signal-call-merged-main relative flex h-8 w-8 items-center justify-center rounded-l-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-35 sm:h-11 sm:w-11 [&>svg]:h-4 [&>svg]:w-4 sm:[&>svg]:h-5 sm:[&>svg]:w-5 ${tone}`}
         >
           <Icon />
+          {speaking && active && <span role="status" aria-label="You are speaking" className="signal-call-speaking-dot" />}
         </button>
 
         {/* Separator. */}

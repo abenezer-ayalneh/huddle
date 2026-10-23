@@ -144,3 +144,14 @@ mutually exclusive.
 **Copy sanitized diagnostics** is an explicit user action for beta support; it
 writes only version, macOS, architecture, permission, and connection state to
 the clipboard.
+
+### Native multi-click development verification
+
+The macOS injector now assigns native click counts to down/up events using the
+system double-click interval and a small same-position tolerance. Stop/release
+clears the click sequence; this does not change the approved input wire protocol.
+`MouseEventBuilderTests` covers single/double-click counts and reset/distance/time
+boundaries. Full Agent/XCTest runs require an Xcode toolchain with XCTest and
+SwiftUI macro support. The current Command Line Tools installation lacks those
+components; a standalone compiled CoreGraphics check confirms the event fields,
+but two-Mac Finder double-click acceptance and release artifacts remain pending.

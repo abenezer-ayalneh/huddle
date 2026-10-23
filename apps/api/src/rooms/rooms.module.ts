@@ -1,4 +1,8 @@
 import { MaintenanceWorker } from '../maintenance/maintenance.worker';
+import { ChatFilesController } from './chat-files.controller';
+import { ChatFilesService } from './chat-files.service';
+import { InvitationsController } from './invitations.controller';
+import { InvitationsService } from './invitations.service';
 import { Module } from '@nestjs/common';
 import { DownloadTokenGuard } from './download-token.guard';
 import { DownloadTokenService } from './download-token.service';
@@ -26,12 +30,26 @@ import { SecretCryptoService } from './secret-crypto.service';
 import { StorageConnectionsController } from './storage-connections.controller';
 import { StorageConnectionsService } from './storage-connections.service';
 import { WebhookController } from './webhook.controller';
+import { ProfileController } from './profile.controller';
+import { ProfileService } from './profile.service';
+import { AccountDeletionService } from './account-deletion.service';
 
 @Module({
-  controllers: [RoomsController, RecordingsController, StorageConnectionsController, RemoteControlController, WebhookController],
+  controllers: [
+    ChatFilesController,
+    InvitationsController,
+    RoomsController,
+    RecordingsController,
+    StorageConnectionsController,
+    RemoteControlController,
+    WebhookController,
+    ProfileController,
+  ],
   providers: [
     MaintenanceWorker,
     RoomsService,
+    InvitationsService,
+    ChatFilesService,
     RoomRepository,
     RoomStateService,
     LivekitService,
@@ -52,6 +70,8 @@ import { WebhookController } from './webhook.controller';
     RemoteControlService,
     RemoteControlRepository,
     RemoteControlStateService,
+    ProfileService,
+    AccountDeletionService,
   ],
 })
 export class RoomsModule {}

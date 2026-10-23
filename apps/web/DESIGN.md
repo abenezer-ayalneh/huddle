@@ -293,7 +293,7 @@ is stable, equal, uncropped, and orientation-based: eight landscape slots or fou
 portrait slots per page, with centered incomplete rows. Speaking Participants use
 one yellow structural frame. Self-view persists Auto/Float/In-grid, corner, and
 minimized restore-chip state; demoted Present follows Self-view on every page.
-Pager dots and touch swipe change pages and reset speaker promotions. At 1024px
+Pager dots and touch swipe change pages and reset speaker promotions. Chat and the read-only Participants roster dock on the right. At 1024px
 panels reserve width and reflow media/chrome together; smaller panels overlay.
 
 Desktop Document Picture-in-Picture is a compact Signal Handoff companion: the
@@ -381,6 +381,12 @@ action; transparent or surface-toned buttons are secondary; yellow is a focus
 or active signal, not a competing primary action. Buttons move down 1px on
 press, use a visible 2px yellow focus outline, and preserve a disabled state
 with reduced opacity and a not-allowed cursor.
+
+Device controls are the intentional exception to active-fill chrome: enabled
+microphone/camera controls stay neutral, while off controls use solid red.
+A small yellow local-speech marker with an accessible label sits on the microphone
+control in both the full call and rich PiP. Chat supports a compact emoji chooser,
+file-upload progress/cancellation, and API-resolved attachment download actions.
 
 ### Chips
 
