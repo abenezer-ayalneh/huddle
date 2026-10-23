@@ -30,6 +30,7 @@ export default function ChatPanel({
   isSending: boolean;
 }) {
   const [draft, setDraft] = useState('');
+  const messageInput = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLElement>(null);
 
@@ -108,7 +109,7 @@ export default function ChatPanel({
         )}
       </div>
 
-      <ChatExtras room={room} token={participantToken} onSend={onSend} onEmoji={(emoji) => setDraft((value) => value + emoji)} />
+      <ChatExtras room={room} token={participantToken} onSend={onSend} onFocusMessage={() => messageInput.current?.focus()} />
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -117,6 +118,8 @@ export default function ChatPanel({
         className="signal-call-chat-form flex items-center gap-2 border-t border-white/10 p-3"
       >
         <input
+          ref={messageInput}
+          aria-label="Chat message"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="Type a message…"

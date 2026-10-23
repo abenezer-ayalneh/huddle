@@ -6,6 +6,7 @@ import { useState, type ReactNode } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { saveDevicePreference, type PreferenceKind } from '@/lib/devicePreferences';
 import DeviceAlertBadge from './DeviceAlertBadge';
+import MicrophoneActivity from './MicrophoneActivity';
 
 // A device picker section (one kind of device with its display label), used by
 // DeviceMenuContent.
@@ -34,6 +35,7 @@ export default function MergedControlButton({
   disabled = false,
   alert = false,
   speaking = false,
+  microphone = false,
   onClick,
   menu,
 }: {
@@ -48,6 +50,7 @@ export default function MergedControlButton({
   // opens the recovery dialog instead of toggling.
   alert?: boolean;
   speaking?: boolean;
+  microphone?: boolean;
   onClick?: () => void;
   // Popover body for the chevron side. Receives a close() it can call after a
   // pick so the menu dismisses itself.
@@ -84,8 +87,7 @@ export default function MergedControlButton({
           onClick={onClick}
           className={`signal-call-merged-main relative flex h-8 w-8 items-center justify-center rounded-l-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60 disabled:cursor-not-allowed disabled:opacity-35 sm:h-11 sm:w-11 [&>svg]:h-4 [&>svg]:w-4 sm:[&>svg]:h-5 sm:[&>svg]:w-5 ${tone}`}
         >
-          <Icon />
-          {speaking && active && <span role="status" aria-label="You are speaking" className="signal-call-speaking-dot" />}
+          {microphone && active ? <MicrophoneActivity speaking={speaking} /> : <Icon aria-hidden="true" />}
         </button>
 
         {/* Separator. */}

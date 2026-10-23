@@ -384,9 +384,15 @@ with reduced opacity and a not-allowed cursor.
 
 Device controls are the intentional exception to active-fill chrome: enabled
 microphone/camera controls stay neutral, while off controls use solid red.
-A small yellow local-speech marker with an accessible label sits on the microphone
-control in both the full call and rich PiP. Chat supports a compact emoji chooser,
-file-upload progress/cancellation, and API-resolved attachment download actions.
+In both the full call and rich PiP, the enabled microphone icon is replaced by
+three ink-colored bars driven by the published microphone volume during speech.
+The bars collapse to three dots when silent; muting restores the crossed-out mic.
+The accessible button action stays Mute/Unmute, and reduced motion removes the
+bar-height transition. In main and rich PiP chat, the emoji button focuses the message field and shows
+the device’s system-picker shortcut (or keyboard guidance on mobile). It does not
+invoke a native picker from JavaScript. Attachments use an icon-only paperclip
+with an “Attach file” tooltip and accessible label, alongside file-upload
+progress/cancellation and API-resolved attachment download actions.
 
 ### Chips
 

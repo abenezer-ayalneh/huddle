@@ -717,6 +717,13 @@ pending deletion job is rejected by session-gated API routes.
 | `POST`   | `/profile/password/set` | `{ "newPassword": string }`                         | sets a credential for a signed-in account that has none                                 |
 | `DELETE` | `/profile/account`      | `{ "confirmation": "DELETE", "password"?: string }` | `{ "accepted": true }`; revokes sessions and queues retryable cleanup                   |
 
+The account settings avatar picker previews a local circular crop before upload.
+Drag or arrow keys reposition the image; Zoom and Reset adjust the framing.
+Apply uploads a 512×512 PNG of the selected square crop through the existing
+endpoint, which still validates and re-encodes it as WebP. Cancel leaves the saved
+avatar unchanged. Selection accepts JPEG, PNG, and WebP up to 5 MiB and 20 million
+pixels; profile propagation uses the existing server path.
+
 The client calls BetterAuth `POST /api/auth/change-email` for a verified email
 change, `POST /api/auth/change-password` for a password change (other sessions
 are revoked). The browser refreshes its session after Huddle saves a profile

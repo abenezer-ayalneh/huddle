@@ -8,18 +8,19 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 describe('ChatExtras', () => {
-  it('inserts emoji into the draft instead of sending it immediately', () => {
-    const onEmoji = vi.fn();
+  it('focuses the composer and explains system emoji input without sending', () => {
+    const onFocusMessage = vi.fn();
     const onSend = vi.fn();
-    render(<ChatExtras onEmoji={onEmoji} onSend={onSend} />);
-    fireEvent.click(screen.getByLabelText('Insert 👍'));
-    expect(onEmoji).toHaveBeenCalledWith('👍');
+    render(<ChatExtras onFocusMessage={onFocusMessage} onSend={onSend} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Add emoji' }));
+    expect(onFocusMessage).toHaveBeenCalledOnce();
+    expect(screen.getByRole('status').textContent).toMatch(/emoji|keyboard/);
     expect(onSend).not.toHaveBeenCalled();
   });
   it('retries the message without re-uploading a successfully stored file', async () => {
     vi.mocked(uploadChatFile).mockResolvedValue('file-id');
     const onSend = vi.fn().mockRejectedValueOnce(new Error('Data channel down')).mockResolvedValueOnce(undefined);
-    render(<ChatExtras room="room" token="token" onEmoji={() => {}} onSend={onSend} />);
+    render(<ChatExtras room="room" token="token" onFocusMessage={() => {}} onSend={onSend} />);
     fireEvent.change(screen.getByLabelText('Choose chat attachment'), { target: { files: [new File(['abc'], 'notes.txt')] } });
     await waitFor(() => expect(screen.getByText('Retry sharing file')).toBeTruthy());
     fireEvent.click(screen.getByText('Retry sharing file'));

@@ -33,6 +33,7 @@ import { isControlAgentParticipant } from '@/lib/controlProtocol';
 import { orderPictureInPictureTracks, selectPictureInPictureLayout } from './pictureInPictureLayout';
 import type { PresentationDisplaySurface } from './pictureInPicture.types';
 import VideoTile from './VideoTile';
+import MicrophoneActivity from './MicrophoneActivity';
 import ChatExtras from './ChatExtras';
 import ChatFileMessage from './ChatFileMessage';
 
@@ -320,6 +321,7 @@ export default function PictureInPictureSurface({
           onClick={() => void toggleDevice('microphone')}
           active={isMicrophoneEnabled}
           device
+          microphone
           speaking={speaking.some((participant) => participant.isLocal)}
         />
         <PipControlButton
@@ -442,6 +444,7 @@ function ChatDrawer({
   isSending: boolean;
   onClose: () => void;
 }) {
+  const messageInput = useRef<HTMLInputElement>(null);
   return (
     <section className="signal-call-pip-chat" aria-label="Chat">
       <header>
@@ -467,14 +470,20 @@ function ChatDrawer({
           ))
         )}
       </div>
-      <ChatExtras room={room} token={token} onSend={onSend} onEmoji={(emoji) => onDraftChange(draft + emoji)} />
+      <ChatExtras room={room} token={token} onSend={onSend} onFocusMessage={() => messageInput.current?.focus()} />
       <form
         onSubmit={(event) => {
           event.preventDefault();
           onSubmit();
         }}
       >
-        <input value={draft} onChange={(event) => onDraftChange(event.target.value)} placeholder="Type a message…" aria-label="Chat message" />
+        <input
+          ref={messageInput}
+          value={draft}
+          onChange={(event) => onDraftChange(event.target.value)}
+          placeholder="Type a message…"
+          aria-label="Chat message"
+        />
         <button type="submit" aria-label="Send message" disabled={!draft.trim() || isSending}>
           <Send aria-hidden="true" />
         </button>
@@ -497,6 +506,7 @@ function PipControlButton({
   badge = 0,
   device = false,
   speaking = false,
+  microphone = false,
 }: {
   icon: LucideIcon;
   label: string;
@@ -506,6 +516,7 @@ function PipControlButton({
   badge?: number;
   device?: boolean;
   speaking?: boolean;
+  microphone?: boolean;
 }) {
   return (
     <button
@@ -516,8 +527,7 @@ function PipControlButton({
       aria-pressed={active}
       onClick={onClick}
     >
-      <Icon aria-hidden="true" />
-      {device && active && speaking && <span role="status" aria-label="You are speaking" className="signal-call-speaking-dot" />}
+      {microphone && active ? <MicrophoneActivity speaking={speaking} /> : <Icon aria-hidden="true" />}
       {badge > 0 && <span className="signal-call-pip-control-badge">{badge}</span>}
     </button>
   );

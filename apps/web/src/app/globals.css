@@ -9281,18 +9281,71 @@ html[data-theme='dark'] .signal-not-found-shell {
   color: var(--call-danger-foreground) !important;
 }
 
-.signal-call-speaking-dot {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  border: 1px solid var(--call-surface);
-  background: var(--call-yellow);
+.signal-call-mic-activity {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 20px;
+  height: 20px;
+  color: var(--call-ink);
+}
+
+.signal-call-mic-activity > span {
+  flex: 0 0 4px;
+  border-radius: 999px;
+  background: currentColor;
+  transition: height 100ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signal-call-mic-activity > span {
+    transition: none;
+  }
 }
 
 .signal-call-device-alert {
   background: var(--call-red) !important;
   color: var(--call-danger-foreground) !important;
+}
+
+/* Joined-person roster: quiet rows, stable media state, no moderation controls. */
+.signal-roster-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75rem;
+  height: 1.75rem;
+  padding-inline: 0.375rem;
+  border-radius: 0.5rem;
+  background: var(--call-surface);
+  color: var(--call-muted);
+  font: 500 0.75rem/1 var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+.signal-roster-row + .signal-roster-row {
+  border-top: 1px solid var(--call-border);
+}
+.signal-roster-avatar {
+  background: var(--call-surface-strong);
+  color: var(--call-purple);
+}
+.signal-roster-you,
+.signal-roster-mic {
+  color: var(--call-muted);
+}
+.signal-roster-close {
+  color: var(--call-muted);
+}
+.signal-roster-close:hover {
+  background: var(--call-surface);
+  color: var(--call-ink);
+}
+.signal-roster-close:focus-visible {
+  outline: 2px solid var(--call-purple);
+  outline-offset: 2px;
+}
+.signal-roster-list {
+  scrollbar-width: thin;
+  scrollbar-color: var(--call-muted) var(--call-surface);
 }

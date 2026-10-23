@@ -1,24 +1,25 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { Paperclip, Smile } from 'lucide-react';
 import { fileMessage, uploadChatFile } from './chatFiles';
 
-const EMOJI = ['😀', '😂', '❤️', '👍', '👎', '👏', '🎉', '🙏', '🤔', '👋', '✅', '🚀'];
 export default function ChatExtras({
   room,
   token,
   onSend,
-  onEmoji,
+  onFocusMessage,
 }: {
   room?: string;
   token?: string;
   onSend: (message: string) => Promise<unknown>;
-  onEmoji: (emoji: string) => void;
+  onFocusMessage: () => void;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const controller = useRef<AbortController | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
   const [notice, setNotice] = useState('');
+  const [emojiHint, setEmojiHint] = useState('');
   const [pending, setPending] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   useEffect(() => () => controller.current?.abort(), []);
@@ -38,18 +39,27 @@ export default function ChatExtras({
   return (
     <div className="border-t border-current/15 px-3 py-2 text-xs">
       <div className="flex flex-wrap items-center gap-2">
-        <details>
-          <summary className="cursor-pointer rounded-md px-2 py-1" aria-label="Add emoji">
-            😀 Emoji
-          </summary>
-          <div className="flex max-w-56 flex-wrap gap-1 py-2">
-            {EMOJI.map((emoji) => (
-              <button type="button" key={emoji} aria-label={`Insert ${emoji}`} onClick={() => onEmoji(emoji)} className="rounded p-2 text-lg">
-                {emoji}
-              </button>
-            ))}
-          </div>
-        </details>
+        <button
+          type="button"
+          aria-label="Add emoji"
+          title="Use system emoji picker"
+          className="flex h-9 w-9 items-center justify-center rounded-md border border-current/25 focus-visible:outline-2 focus-visible:outline-offset-2"
+          onClick={() => {
+            onFocusMessage();
+            const platform = navigator.userAgent;
+            setEmojiHint(
+              /iPhone|iPad|iPod|Android/i.test(platform) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+                ? 'Use the emoji key on your keyboard.'
+                : /Mac/i.test(platform)
+                  ? 'Press Control + Command + Space to open your emoji picker.'
+                  : /Windows/i.test(platform)
+                    ? 'Press Windows + . to open your emoji picker.'
+                    : 'Use your system’s emoji picker or keyboard to add emoji.',
+            );
+          }}
+        >
+          <Smile aria-hidden="true" className="h-4 w-4" />
+        </button>
         {room && token && (
           <>
             <input
@@ -81,9 +91,11 @@ export default function ChatExtras({
               type="button"
               disabled={progress !== null || !!pending || sending}
               onClick={() => input.current?.click()}
-              className="rounded-md border border-current/25 px-2 py-1 disabled:opacity-50"
+              aria-label="Attach file"
+              title="Attach file"
+              className="flex h-9 w-9 items-center justify-center rounded-md border border-current/25 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
             >
-              Attach file
+              <Paperclip aria-hidden="true" className="h-4 w-4" />
             </button>
           </>
         )}
@@ -101,6 +113,11 @@ export default function ChatExtras({
           </button>
         )}
       </div>
+      {emojiHint && (
+        <p role="status" className="mt-1">
+          {emojiHint}
+        </p>
+      )}
       {notice && (
         <p role="status" className="mt-1">
           {notice}

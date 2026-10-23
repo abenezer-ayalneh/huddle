@@ -228,6 +228,7 @@ export default function ControlBar({
             }
             menuLabel="Switch microphone or speaker"
             active={mic.enabled}
+            microphone
             speaking={localSpeaking}
             danger={!mic.enabled}
             disabled={mic.pending}

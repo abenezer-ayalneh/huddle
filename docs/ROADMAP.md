@@ -387,7 +387,8 @@ identity.
 - [x] User clarification maps Trello #58 to the same joined-person roster as
       #59; no new speaker-order policy was requested by that clarification.
 - [x] Device-off mic/camera controls use red; enabled devices stay neutral.
-      Local speech has an accessible indicator in the main call and rich PiP.
+      Local speech uses volume-reactive mic bars in the main call and rich PiP,
+      collapsing to dots when silent and restoring the crossed-out mic when muted.
 - [x] Serialize duplicate Admit decisions and preserve a signed-in Guest's
       identity/grant across separately admitted Knocks in the same call.
       Regression tests reproduce the old immediate-invalid-token race, and
@@ -419,6 +420,9 @@ identity.
       the picker is cancelled or replacement fails.
 - [x] Add lobby and meeting account settings for display name, uploaded avatar,
       verified email change, password set/change, and account deletion.
+- [x] Preview profile images with circular framing, drag/keyboard positioning,
+      zoom, Reset, and explicit Apply/Cancel; theme Account settings with the
+      shared warm dialog palette and responsive, keyboard-accessible controls.
 - [x] Propagate profile name/avatar changes to connected LiveKit participants
       and waiting-room entries; retry temporary synchronization failures.
 - [x] Queue account deletion durably, revoke active sessions/Drive credentials,
@@ -426,7 +430,7 @@ identity.
       Huddle media, and retain already delivered Google Drive copies.
 - [ ] Manual two-browser screen switching, cancellation, presenter handoff,
       profile propagation, email confirmation, Google-only password setup, and
-      upload/delete acceptance.
+      upload/delete acceptance, including adjusted avatar propagation in a live call.
 - [ ] Exercise account cleanup against live egress, leased Drive delivery,
       LiveKit/MinIO outages, retry/restart, and retained Google Drive copies.
 - [ ] Physical macOS/Windows display-switch consent acceptance remains pending;

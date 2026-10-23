@@ -14,3 +14,5 @@ related_targets:
 - **Constraints:** Keep `object-contain`, stage precedence, the orientation-based Equal Grid, the floating Self-view, below-stage Remote Control rail, distinct interactive consent tray, and global newest-first system notices.
 - **Direction:** Signal Handoff extends into the active call as warm cream/chocolate framed workspace chrome with purple authority, yellow focus, and red only for Recording, Stop, and Leave. Room Code, elapsed time, and a saved theme control form the compact technical rail; when Host controls are open, that theme control moves into the drawer header. Drawers and control dock stay flat and structural.
 - **Memorable moment:** A room feels like a shared field desk: warm rails and a decisive bottom action tray frame the live dark stage without ever crowding it.
+
+- **Participants drawer:** Read-only joined-person rows pair token avatars (initials fallback), names, a quiet You label, and reactive microphone status. Keep the 20rem drawer geometry, mobile overlay, companion exclusion, and Host moderation boundary.
